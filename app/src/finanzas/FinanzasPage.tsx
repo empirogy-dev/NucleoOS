@@ -4,40 +4,47 @@ import {
   TablesMissingError,
   addAccount,
   addCategory,
+  addGoal,
   addTransaction,
+  contributeToGoal,
   deleteAccount,
   deleteCategory,
+  deleteGoal,
   deleteTransaction,
   listAccounts,
+  listGoals,
   listTransactions,
   seedCategoriesIfEmpty,
   updateCategoryBudget,
 } from "./data";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
-import { fmtMoney, type Account, type Category, type Tx } from "./types";
+import { fmtMoney, type Account, type Category, type Goal, type Tx } from "./types";
 
-type TabKey = "resumen" | "transacciones" | "cuentas" | "categorias";
+type TabKey = "resumen" | "transacciones" | "metas" | "cuentas" | "categorias";
 
 export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState<"tx" | "account" | "category" | null>(null);
+  const [modal, setModal] = useState<"tx" | "account" | "category" | "goal" | null>(null);
   const [budgetCat, setBudgetCat] = useState<Category | null>(null);
+  const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const { currency: defaultCurrency } = useSettings();
 
   const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [a, c, t] = await Promise.all([listAccounts(), seedCategoriesIfEmpty(), listTransactions()]);
+      const [a, c, t, g] = await Promise.all([listAccounts(), seedCategoriesIfEmpty(), listTransactions(), listGoals()]);
       setAccounts(a);
       setCategories(c);
       setTxs(t);
+      setGoals(g);
       setNeedsMigration(false);
     } catch (e) {
       if (e instanceof TablesMissingError) setNeedsMigration(true);
@@ -116,6 +123,7 @@ export function FinanzasPage() {
           [
             ["resumen", "Resumen"],
             ["transacciones", "Transacciones"],
+            ["metas", "Metas"],
             ["cuentas", "Cuentas"],
             ["categorias", "Categorías"],
           ] as Array<[TabKey, string]>
@@ -208,6 +216,55 @@ export function FinanzasPage() {
             </div>
           )}
 
+          {tab === "metas" && (
+            <>
+              <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))" }}>
+                {goals.map((g) => {
+                  const target = Number(g.target_amount);
+                  const current = Number(g.current_amount);
+                  const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+                  const done = current >= target && target > 0;
+                  return (
+                    <div className="card pad" key={g.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <span style={{ fontSize: 22 }}>{g.icon ?? "🎯"}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <b style={{ fontSize: 14 }}>{g.name}</b>
+                          <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
+                            {g.deadline ? `para el ${g.deadline}` : "sin fecha límite"}
+                          </div>
+                        </div>
+                        <button className="xdel" aria-label="Eliminar meta" onClick={async () => { await deleteGoal(g.id); void reload(); }}><Trash2 size={14} /></button>
+                      </div>
+                      <div className="bar" style={{ marginBottom: 10 }}>
+                        <div className="top">
+                          <span className="tnum">{fmtMoney(current, currency)} / {fmtMoney(target, currency)}</span>
+                          <b className="tnum" style={done ? { color: "var(--ok)" } : undefined}>{pct}%</b>
+                        </div>
+                        <div className="track">
+                          <div className="fill" style={{ width: `${pct}%`, background: done ? "var(--ok)" : "var(--fin)" }} />
+                        </div>
+                      </div>
+                      {done ? (
+                        <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🎉 ¡Meta lograda!</span>
+                      ) : (
+                        <button className="btn ghost" style={{ width: "100%" }} onClick={() => setContributeGoal(g)}>Aportar</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {goals.length === 0 && (
+                <p style={{ color: "var(--muted)", marginBottom: 14 }}>
+                  Sin metas todavía. Crea la primera — juntar para un viaje, un fondo de emergencia, lo que sueñes. 🌱
+                </p>
+              )}
+              <button className="btn ghost" style={{ marginTop: goals.length ? 14 : 0 }} onClick={() => setModal("goal")}>
+                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nueva meta
+              </button>
+            </>
+          )}
+
           {tab === "cuentas" && (
             <>
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))" }}>
@@ -273,7 +330,78 @@ export function FinanzasPage() {
         <BudgetModal cat={budgetCat} currency={currency} onClose={() => setBudgetCat(null)}
           onSaved={() => { setBudgetCat(null); void reload(); }} />
       )}
+      {modal === "goal" && (
+        <GoalModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      )}
+      {contributeGoal && (
+        <ContributeModal goal={contributeGoal} currency={currency} onClose={() => setContributeGoal(null)}
+          onSaved={() => { setContributeGoal(null); void reload(); }} />
+      )}
     </div>
+  );
+}
+
+function GoalModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [target, setTarget] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [icon, setIcon] = useState("🎯");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addGoal({ name, target_amount: Number(target), deadline: deadline || null, icon });
+    onSaved();
+  }
+
+  return (
+    <Modal title="Nueva meta de ahorro" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="frow">
+          <div className="field" style={{ flex: 1 }}><label>Nombre</label>
+            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Viaje a Chile" autoFocus /></div>
+          <div className="field" style={{ width: 84 }}><label>Ícono</label>
+            <input value={icon} onChange={(e) => setIcon(e.target.value)} /></div>
+        </div>
+        <div className="field"><label>Monto objetivo</label>
+          <input type="number" required min="1" step="any" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="2000" /></div>
+        <div className="field"><label>Fecha límite (opcional)</label>
+          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear meta"}</button>
+      </form>
+    </Modal>
+  );
+}
+
+function ContributeModal({ goal, currency, onClose, onSaved }: {
+  goal: Goal;
+  currency: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [busy, setBusy] = useState(false);
+  const falta = Math.max(0, Number(goal.target_amount) - Number(goal.current_amount));
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await contributeToGoal(goal.id, Math.abs(Number(amount)));
+    onSaved();
+  }
+
+  return (
+    <Modal title={`Aportar · ${goal.icon ?? "🎯"} ${goal.name}`} onClose={onClose}>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        Te faltan <b className="tnum" style={{ color: "var(--ink)" }}>{fmtMoney(falta, currency)}</b> para lograrla.
+      </p>
+      <form onSubmit={save}>
+        <div className="field"><label>Monto a aportar</label>
+          <input type="number" required min="1" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" autoFocus /></div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Aportar"}</button>
+      </form>
+    </Modal>
   );
 }
 

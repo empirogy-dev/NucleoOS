@@ -19,6 +19,16 @@ export interface Category {
   color: string | null;
 }
 
+export interface Goal {
+  id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  deadline: string | null;
+  icon: string | null;
+  color: string | null;
+}
+
 export interface Tx {
   id: string;
   date: string;

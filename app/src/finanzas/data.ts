@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabase";
-import { DEFAULT_CATEGORIES, type Account, type Category, type Tx } from "./types";
+import { DEFAULT_CATEGORIES, type Account, type Category, type Goal, type Tx } from "./types";
 
 /** Error especial cuando faltan las tablas (migración no ejecutada). */
 export class TablesMissingError extends Error {
@@ -87,6 +87,36 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export async function updateCategoryBudget(id: string, budget: number | null): Promise<void> {
   const { error } = await sb().from("categories").update({ budget }).eq("id", id);
+  check(error);
+}
+
+// ---------- Metas de ahorro ----------
+export async function listGoals(): Promise<Goal[]> {
+  const { data, error } = await sb()
+    .from("goals")
+    .select("id,name,target_amount,current_amount,deadline,icon,color")
+    .order("created_at");
+  check(error);
+  return (data ?? []) as Goal[];
+}
+
+export async function addGoal(g: { name: string; target_amount: number; deadline: string | null; icon: string | null }): Promise<void> {
+  const { error } = await sb().from("goals").insert({ ...g, user_id: await uid() });
+  check(error);
+}
+
+export async function contributeToGoal(id: string, amount: number): Promise<void> {
+  const { data, error } = await sb().from("goals").select("current_amount").eq("id", id).single();
+  check(error);
+  const { error: e2 } = await sb()
+    .from("goals")
+    .update({ current_amount: Number(data?.current_amount ?? 0) + amount })
+    .eq("id", id);
+  check(e2);
+}
+
+export async function deleteGoal(id: string): Promise<void> {
+  const { error } = await sb().from("goals").delete().eq("id", id);
   check(error);
 }
 
