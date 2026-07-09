@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+*.log
+
+# Proyectos de referencia (se mantienen locales, se portan en Fase 1)
+/Fluxney/
+/Fluxney-Figma/

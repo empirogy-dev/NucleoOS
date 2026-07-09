@@ -1,0 +1,50 @@
+/* ==========================================================
+   Fuentes self-hosted
+   ========================================================== */
+@font-face{font-family:'Outfit';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/outfit-400.woff2') format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/outfit-500.woff2') format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/outfit-600.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-400.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/inter-500.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-600.woff2') format('woff2')}
+
+/* ==========================================================
+   Motor de temas — cada tema define 5 colores, el resto se deriva
+   ========================================================== */
+:root{
+  /* paleta por defecto: Verde salvia */
+  --paper:#F7F3EA; --ink:#2F3A35; --pri:#8FAF9B; --sec:#C7D7C2; --acc:#D9A38F;
+
+  /* derivados */
+  --surface:color-mix(in srgb,var(--paper) 58%,#fff);
+  --card:color-mix(in srgb,var(--paper) 24%,#fff);
+  --line:color-mix(in srgb,var(--ink) 13%,var(--paper));
+  --line-soft:color-mix(in srgb,var(--ink) 7%,var(--paper));
+  --ink-soft:color-mix(in srgb,var(--ink) 74%,var(--paper));
+  --muted:color-mix(in srgb,var(--ink) 46%,var(--paper));
+  --accent:var(--pri);
+  --accent-ink:color-mix(in srgb,var(--pri) 52%,var(--ink));
+  --accent-wash:color-mix(in srgb,var(--pri) 26%,var(--paper));
+
+  /* 7 áreas: sistema fijo suave */
+  --obj:#6FA79A; --fin:#84B183; --sal:#D2B36E; --tra:#9E96C9; --apr:#84A9C6; --hab:#C795AE; --rel:#CF9E77;
+  --ok:#6BA783; --warn:#C69A4D; --err:#C57A68; --info:#6E9BB5;
+
+  --serif:'Outfit',ui-sans-serif,system-ui,sans-serif;
+  --sans:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --r-sm:8px; --r-md:14px; --r-lg:20px; --r-full:999px;
+  --sh:0 1px 2px rgba(40,36,24,.03),0 10px 30px rgba(40,36,24,.05);
+  --sh-sm:0 1px 2px rgba(40,36,24,.04);
+}
+
+/* 10 paletas de la biblioteca */
+[data-pal="salvia"]   {--paper:#F7F3EA;--ink:#2F3A35;--pri:#8FAF9B;--sec:#C7D7C2;--acc:#D9A38F}
+[data-pal="niebla"]   {--paper:#FAFAF7;--ink:#263B45;--pri:#A9C7D8;--sec:#DCEBF2;--acc:#E8D9C5}
+[data-pal="lavanda"]  {--paper:#F5F4F8;--ink:#373142;--pri:#B8A9D9;--sec:#E3DDF2;--acc:#E6B8C4}
+[data-pal="arena"]    {--paper:#F3EDE2;--ink:#24292B;--pri:#4E7C90;--sec:#D8CFC0;--acc:#8AA399}
+[data-pal="menta"]    {--paper:#FBFDFB;--ink:#243C35;--pri:#8FCBB5;--sec:#D6F0E7;--acc:#E7B487}
+[data-pal="rosa"]     {--paper:#F8F1EA;--ink:#3B2F2C;--pri:#D9A7A0;--sec:#F0D6D2;--acc:#A8B89E}
+[data-pal="cielo"]    {--paper:#F2F8FA;--ink:#2C3E45;--pri:#8FBED0;--sec:#9DBEAE;--acc:#E7CE8C}
+[data-pal="verdemono"]{--paper:#F3F8F4;--ink:#1F3A2E;--pri:#78A88C;--sec:#CFE3D5;--acc:#BFD89E}
+[data-pal="azulgris"] {--paper:#F1F5F7;--ink:#25323A;--pri:#7FA6B8;--sec:#C8C3E0;--acc:#D8AFC0}
+[data-pal="tierra"]   {--paper:#FAF4E8;--ink:#342C24;--pri:#8E9F7D;--sec:#D8B59C;--acc:#D9C178}
