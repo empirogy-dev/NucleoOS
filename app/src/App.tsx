@@ -3,8 +3,10 @@ import { Layout } from "./components/Layout";
 import { Inicio } from "./pages/Inicio";
 import { AreaPage } from "./pages/AreaPage";
 import { FinanzasPage } from "./finanzas/FinanzasPage";
+import { Ajustes } from "./pages/Ajustes";
 import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
+import { SettingsProvider } from "./settings/SettingsProvider";
 import { AREAS } from "./areas";
 
 export default function App() {
@@ -21,16 +23,19 @@ export default function App() {
   if (!session) return <Login />;
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<Inicio />} />
-          <Route path="/finanzas" element={<FinanzasPage />} />
-          {AREAS.filter((a) => a.key !== "finanzas").map((a) => (
-            <Route key={a.key} path={a.path} element={<AreaPage />} />
-          ))}
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <SettingsProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Inicio />} />
+            <Route path="/finanzas" element={<FinanzasPage />} />
+            <Route path="/ajustes" element={<Ajustes />} />
+            {AREAS.filter((a) => a.key !== "finanzas").map((a) => (
+              <Route key={a.key} path={a.path} element={<AreaPage />} />
+            ))}
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </SettingsProvider>
   );
 }

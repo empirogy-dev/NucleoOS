@@ -20,6 +20,7 @@
 | **Agente por WhatsApp** (pospuesto) | **Meta WhatsApp Cloud API** | Registrar mandando audio/foto a WhatsApp. Idea guardada para más adelante, no en el MVP. |
 | **Cobros** | **Stripe** (web) + **RevenueCat** (móvil) | Suscripción/freemium; RevenueCat unifica cobros de App Store/Play Store. |
 | **Salud / reloj** | Capacitor Health → Apple HealthKit / Google Health Connect | Solo en móvil; frecuencia cardíaca, pasos, sueño. |
+| **Calendario / Google** (Fase 4) | **Google Calendar API** (OAuth) como adaptador | El módulo Calendario agrega eventos internos; Google se suma como fuente externa de solo lectura primero. |
 | **Banca (futuro)** | Adaptadores: Belvo (LatAm), Plaid (USA)… | Se enchufan a la capa de fuentes financieras sin tocar el núcleo. |
 
 ### ¿Por qué no React Native / Flutter?

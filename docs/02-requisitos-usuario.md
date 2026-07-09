@@ -25,6 +25,18 @@
 
 ---
 
+## Calendario (transversal — cruza todas las áreas)
+> La vida no puede depender solo del celular: un calendario unificado dentro de NucleoOS que muestre lo que está pasando en tu vida. Especialmente importante para personas con ADHD: los recordatorios visibles y repetidos evitan que las cosas se caigan.
+
+| ID | Historia | Prioridad |
+|----|----------|-----------|
+| RU-CAL-01 | Como usuaria quiero un **módulo Calendario** con vista unificada de mi vida: pagos, citas médicas, hábitos, eventos y fechas importantes de todas las áreas. | P1 |
+| RU-CAL-02 | Como usuaria quiero ver en el calendario las **fechas de pago de finanzas** (tarjetas de crédito, deudas, servicios como el celular) con recordatorios para nunca atrasarme. | P1 |
+| RU-CAL-03 | Como usuaria quiero **recordatorios amigables para ADHD**: configurables, repetidos si hace falta, visibles en el tablero y no solo una notificación que se pierde. | P1 |
+| RU-CAL-04 | Como usuaria quiero **conectar mi Google Calendar** para ver mis eventos dentro de NucleoOS y tener el panorama completo. | P2 |
+
+---
+
 ## Objetivos
 
 | ID | Historia | Prioridad |

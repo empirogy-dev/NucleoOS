@@ -85,6 +85,11 @@ export async function deleteCategory(id: string): Promise<void> {
   check(error);
 }
 
+export async function updateCategoryBudget(id: string, budget: number | null): Promise<void> {
+  const { error } = await sb().from("categories").update({ budget }).eq("id", id);
+  check(error);
+}
+
 // ---------- Transacciones ----------
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()

@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, Settings } from "lucide-react";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -38,6 +38,10 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         })}
       </nav>
       <div className="spacer" />
+      <NavLink to="/ajustes" className={({ isActive }) => "navitem" + (isActive ? " active" : "")} onClick={onNavigate}>
+        <Settings className="ico" size={18} strokeWidth={1.9} />
+        Ajustes
+      </NavLink>
       <div className="side-acct">
         <div className="ava">{initial}</div>
         <div className="meta" title={email}>{email}</div>

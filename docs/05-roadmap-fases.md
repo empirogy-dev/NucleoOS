@@ -28,6 +28,8 @@ FASE 3  Móvil + Escritorio  →  FASE 4  Salud/Reloj +    →  FASE 5  Banca gl
 ## FASE 1 — MVP web: las 7 áreas con registro manual
 **Objetivo:** que la app sea **útil** aunque todo se registre a mano.
 - **Finanzas:** migrar Fluxney al shell con la UI nueva (aquí está el grueso del valor y ya está casi listo). Añadir el campo `source`.
+  - Orden de bloques acordado: ① presupuestos por categoría → ② Inicio con datos reales → ③ metas de ahorro → ④ deudas/tarjetas **+ fechas de pago con recordatorios** → ⑤ cartola, reporte mensual, recibos.
+- **Calendario (módulo transversal):** vista unificada de pagos, citas, hábitos y eventos de todas las áreas + recordatorios ADHD-friendly (RF-41/42). La conexión con Google Calendar queda para Fase 4.
 - **Objetivos:** visión de vida + metas con % + avances.
 - **Trabajo:** proyectos + registro de trabajo.
 - **Hábitos:** sueño, ejercicio/caminata, hábitos con racha.
@@ -64,6 +66,7 @@ FASE 3  Móvil + Escritorio  →  FASE 4  Salud/Reloj +    →  FASE 5  Banca gl
 - **Hábitos:** coach conductual, rutina personalizada, contenido guiado (mindfulness, yoga, respiración).
 - **Objetivos:** desglose SMART automático + coach de metas.
 - **Salud:** medicamentos, citas, exámenes con recordatorios; datos base; **sincronización con reloj** (HealthKit/Health Connect).
+- **Calendario:** integración con **Google Calendar** (OAuth, lectura de eventos) para ver el panorama completo dentro de NucleoOS (RF-43).
 - **Requisitos:** todas las historias de IA del doc [06](06-ia-por-modulo.md) + RF-24..28, RF-33..35.
 
 ## FASE 5 — Banca global + monetización

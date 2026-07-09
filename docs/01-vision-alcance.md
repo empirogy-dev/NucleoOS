@@ -33,6 +33,7 @@ Hoy la vida está fragmentada en muchas apps: una para finanzas, otra para hábi
 **Capa transversal (vive sobre todas las áreas):**
 - **Agente de IA por voz** — registrar, consultar y recibir consejos hablando.
 - **Tablero de Inicio** — visión de vida, % meta-objetivo, áreas en riesgo, próximos pasos, avances recientes.
+- **Calendario** — vista unificada de la vida: pagos, citas, hábitos y eventos de todas las áreas, con recordatorios ADHD-friendly; conexión futura con Google Calendar.
 - **Seguimiento (tracking)** — historial de lo que has ido haciendo, por área y global.
 
 ## 6. Modelo de negocio: Freemium + Suscripción

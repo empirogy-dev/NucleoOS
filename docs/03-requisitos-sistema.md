@@ -34,6 +34,11 @@
 - **RF-19** **Capa de fuentes de datos financieras** con adaptadores: `manual`, `voz`, `recibo-ocr`, `import-cartola`, y (futuro) `api-bancaria`. Toda transacción registra su `source`.
 - **RF-20** (Futuro) Adaptador de conexión bancaria que importa movimientos y hace *match* con transacciones/recibos existentes.
 
+### Calendario (transversal)
+- **RF-41** Módulo Calendario con vista mensual/semanal unificada: agrega eventos de todas las áreas (pagos y vencimientos de Finanzas, citas de Salud, hábitos, hitos de Objetivos).
+- **RF-42** Recordatorios con recurrencia (una vez, mensual, quincenal) visibles en el tablero de Inicio además de notificaciones — diseñados para ADHD (repetibles, no se pierden).
+- **RF-43** (Futuro) Integración con **Google Calendar** vía OAuth como adaptador: primero lectura de eventos; escritura opcional después. Igual que banca/salud, se enchufa sin tocar el núcleo.
+
 ### Objetivos
 - **RF-21** Declarar visión de vida (texto).
 - **RF-22** CRUD de metas con % de progreso, estado y desglose en milestones.
