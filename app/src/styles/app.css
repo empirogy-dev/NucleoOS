@@ -132,6 +132,10 @@ button{font-family:inherit}
 .input-inline{flex:1;font-family:var(--sans);font-size:14px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .input-inline:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 
+/* ================= OBJETIVOS ================= */
+.slider{width:100%;margin-top:10px;accent-color:var(--accent);cursor:pointer}
+.ms-sel{font-family:var(--sans);font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+
 /* ================= FINANZAS ================= */
 .ftabs{display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .ftab{border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:var(--r-full);padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer}

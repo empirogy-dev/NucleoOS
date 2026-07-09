@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
 import { TablesMissingError, listAccounts, listCategories, listReminders, listTransactions } from "../finanzas/data";
 import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Category, type Reminder, type Tx } from "../finanzas/types";
+import { listActivity, listObjectives, type ActivityEntry, type Objective } from "../objetivos/data";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -16,6 +17,9 @@ export function Inicio() {
   const [txs, setTxs] = useState<Tx[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [finReady, setFinReady] = useState(false);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [objReady, setObjReady] = useState(false);
 
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
@@ -31,6 +35,14 @@ export function Inicio() {
       setFinReady(true);
     } catch (e) {
       if (e instanceof TablesMissingError) setFinReady(false);
+    }
+    try {
+      const [act, obj] = await Promise.all([listActivity(10), listObjectives()]);
+      setActivity(act);
+      setObjectives(obj);
+      setObjReady(true);
+    } catch {
+      setObjReady(false);
     }
   }, []);
 
@@ -150,46 +162,71 @@ export function Inicio() {
         <div className="card panel">
           <h3>Tus áreas</h3>
           {AREAS.map((a) => {
-            const activa = a.key === "finanzas" && finReady;
+            let badge: React.ReactNode = <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>próximamente</span>;
+            if (a.key === "finanzas" && finReady) {
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{monthTxs.length} mov. este mes</span>;
+            } else if (a.key === "objetivos" && objReady) {
+              const n = objectives.length;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 meta" : `${n} metas`}</span>;
+            }
             return (
               <Link to={a.path} key={a.key} className="area-row">
                 <span className="adot" style={{ width: 9, height: 9, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
                 <span className="area-name">{a.name}</span>
-                {activa ? (
-                  <span className="chip" style={{ marginLeft: "auto" }}>{monthTxs.length} mov. este mes</span>
-                ) : (
-                  <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>próximamente</span>
-                )}
+                {badge}
               </Link>
             );
           })}
         </div>
 
-        {/* Actividad reciente real */}
+        {/* Actividad reciente unificada: transacciones + avances de todas las áreas */}
         <div className="card panel">
           <h3>Actividad reciente</h3>
-          {txs.slice(0, 6).map((t) => {
-            const cat = t.category_id ? catById.get(t.category_id) : undefined;
-            return (
-              <div className="tl" key={t.id}>
-                <div className="row">
-                  <span className="tdot" style={{ background: "var(--fin)" }} />
-                  <div className="tx">
-                    <b>Finanzas, {t.date}</b>
-                    {t.type === "expense" ? "Gasto" : "Ingreso"} {cat ? `en ${cat.name}` : ""}: {t.description || "sin descripción"} ({fmtMoney(Number(t.amount), accounts[0]?.currency ?? currency)})
+          {(() => {
+            const items: Array<{ key: string; date: string; areaKey: string; areaLabel: string; text: string }> = [];
+            for (const t of txs.slice(0, 10)) {
+              const cat = t.category_id ? catById.get(t.category_id) : undefined;
+              items.push({
+                key: `tx-${t.id}`,
+                date: t.date,
+                areaKey: "finanzas",
+                areaLabel: "Finanzas",
+                text: `${t.type === "expense" ? "Gasto" : "Ingreso"}${cat ? ` en ${cat.name}` : ""}: ${t.description || "sin descripción"} (${fmtMoney(Number(t.amount), accounts[0]?.currency ?? currency)})`,
+              });
+            }
+            for (const a of activity) {
+              const area = AREAS.find((x) => x.key === a.area);
+              items.push({
+                key: `act-${a.id}`,
+                date: a.date,
+                areaKey: a.area,
+                areaLabel: area?.name ?? "Objetivos",
+                text: a.description,
+              });
+            }
+            items.sort((x, y) => y.date.localeCompare(x.date));
+            if (items.length === 0) {
+              return (
+                <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+                  Tu actividad aparecerá aquí. Empieza registrando algo en <Link to="/finanzas" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Finanzas</Link> o un avance en <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Objetivos</Link>.
+                </p>
+              );
+            }
+            return items.slice(0, 6).map((it) => {
+              const area = AREAS.find((x) => x.key === it.areaKey);
+              return (
+                <div className="tl" key={it.key}>
+                  <div className="row">
+                    <span className="tdot" style={{ background: area?.color ?? "var(--accent)" }} />
+                    <div className="tx">
+                      <b>{it.areaLabel}, {it.date}</b>
+                      {it.text}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-          {finReady && txs.length === 0 && (
-            <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-              Tu actividad aparecerá aquí. Empieza registrando algo en <Link to="/finanzas" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Finanzas</Link>.
-            </p>
-          )}
-          {!finReady && (
-            <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Corre las migraciones de Finanzas para activar tu actividad.</p>
-          )}
+              );
+            });
+          })()}
         </div>
       </div>
 

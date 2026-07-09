@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { Inicio } from "./pages/Inicio";
 import { AreaPage } from "./pages/AreaPage";
 import { FinanzasPage } from "./finanzas/FinanzasPage";
+import { ObjetivosPage } from "./objetivos/ObjetivosPage";
 import { Ajustes } from "./pages/Ajustes";
 import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
@@ -29,8 +30,9 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Inicio />} />
             <Route path="/finanzas" element={<FinanzasPage />} />
+            <Route path="/objetivos" element={<ObjetivosPage />} />
             <Route path="/ajustes" element={<Ajustes />} />
-            {AREAS.filter((a) => a.key !== "finanzas").map((a) => (
+            {AREAS.filter((a) => a.key !== "finanzas" && a.key !== "objetivos").map((a) => (
               <Route key={a.key} path={a.path} element={<AreaPage />} />
             ))}
           </Route>
