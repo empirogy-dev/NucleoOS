@@ -1,4 +1,4 @@
-# Sistema de Vida (Segundo Cerebro)
+# NucleoOS (Segundo Cerebro)
 
 > App SaaS todo-en-uno para organizar la vida en **7 áreas** (Objetivos, Finanzas, Salud, Trabajo y Proyectos, Aprendizaje, Hábitos y Rutinas, Relaciones), con un **agente de IA por voz** que registra, aconseja y hace seguimiento. Multi-plataforma (web → móvil → escritorio) desde una sola base de código.
 

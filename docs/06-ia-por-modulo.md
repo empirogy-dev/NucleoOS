@@ -3,7 +3,7 @@
 > Basado en investigación de los mejores productos con IA en cada dominio (julio 2026). Cada propuesta indica su prioridad sugerida y en qué se apoya. Estas ideas se integran como nuevas historias de usuario en [02-requisitos-usuario.md](02-requisitos-usuario.md).
 
 ## La idea rectora: el agente ve TODO
-El diferenciador del Sistema de Vida frente a apps sueltas es que **un solo agente observa las 7 áreas a la vez**. Eso habilita consejos imposibles para una app aislada:
+El diferenciador dNucleoOS frente a apps sueltas es que **un solo agente observa las 7 áreas a la vez**. Eso habilita consejos imposibles para una app aislada:
 - "Dormiste mal 4 noches y tu foco en Trabajo bajó — ¿bajamos la carga esta semana?"
 - "Gastaste 30% más este mes; tu meta de ahorro quedó en riesgo, ¿la ajustamos?"
 - "Llevas 3 semanas sin ver a tu mamá y marcaste esa relación como prioritaria."

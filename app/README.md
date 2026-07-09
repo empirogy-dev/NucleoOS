@@ -1,6 +1,6 @@
-# Sistema de Vida — app
+# NucleoOS — app
 
-App web (base para móvil y escritorio) del Sistema de Vida. React 19 + Vite + TypeScript.
+App web (base para móvil y escritorio) dNucleoOS. React 19 + Vite + TypeScript.
 
 ## Correr en local
 ```bash

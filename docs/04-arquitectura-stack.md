@@ -1,7 +1,7 @@
 # 04 — Arquitectura y stack tecnológico
 
 ## 1. Principio rector
-> **Escribir una vez, correr en web + móvil + escritorio.** Toda decisión se toma para maximizar el código compartido y evitar "versiones paralelas". Aprovechamos que Fluxney y el Sistema de Vida ya son **React + Supabase**.
+> **Escribir una vez, correr en web + móvil + escritorio.** Toda decisión se toma para maximizar el código compartido y evitar "versiones paralelas". Aprovechamos que Fluxney y NucleoOS ya son **React + Supabase**.
 
 ## 2. Stack recomendado
 
@@ -91,7 +91,7 @@ El resto de la app **no cambia**, porque todos consumen la misma tabla `transact
 
 ## 7. Estructura de carpetas propuesta (monorepo simple)
 ```
-sistema-de-vida/
+nucleoos/
 ├─ src/
 │  ├─ app/            # shell, layout, navegación, tablero Inicio
 │  ├─ areas/

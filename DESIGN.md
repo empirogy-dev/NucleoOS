@@ -1,4 +1,4 @@
-# Sistema de diseño — Sistema de Vida
+# Sistema de diseño — NucleoOS
 
 > Fuente de verdad del diseño. **Leer este archivo antes de cualquier decisión visual o de UI.** No desviarse sin aprobación explícita de la usuaria.
 

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Inicio } from "./pages/Inicio";
 import { AreaPage } from "./pages/AreaPage";
+import { FinanzasPage } from "./finanzas/FinanzasPage";
 import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
 import { AREAS } from "./areas";
@@ -24,7 +25,8 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Inicio />} />
-          {AREAS.map((a) => (
+          <Route path="/finanzas" element={<FinanzasPage />} />
+          {AREAS.filter((a) => a.key !== "finanzas").map((a) => (
             <Route key={a.key} path={a.path} element={<AreaPage />} />
           ))}
         </Route>

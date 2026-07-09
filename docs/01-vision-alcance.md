@@ -3,7 +3,7 @@
 ## 1. Visión de vida (norte del producto)
 > "Generar ingresos desde internet, desde cualquier parte, haciendo algo que me gusta, sin sentirme esclavizado."
 
-El **Sistema de Vida** es la herramienta que ayuda a una persona a diseñar, organizar y hacer seguimiento de su vida completa en un solo lugar, con un asistente de IA que reduce la fricción: en vez de llenar formularios, **le hablas** y él registra, ordena y aconseja.
+**NucleoOS** es la herramienta que ayuda a una persona a diseñar, organizar y hacer seguimiento de su vida completa en un solo lugar, con un asistente de IA que reduce la fricción: en vez de llenar formularios, **le hablas** y él registra, ordena y aconseja.
 
 ## 2. Problema
 Hoy la vida está fragmentada en muchas apps: una para finanzas, otra para hábitos, otra para notas, otra para salud. Nada conversa entre sí, todo exige escribir manualmente, y nadie te da una visión integral ni consejos accionables. La gente abandona porque **registrar cuesta demasiado esfuerzo**.
