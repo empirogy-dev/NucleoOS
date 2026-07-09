@@ -123,6 +123,15 @@ button{font-family:inherit}
 .scrim{display:none}
 @media (max-width:860px){.scrim.show{display:block;position:fixed;inset:0;background:rgba(20,18,12,.3);z-index:39}}
 
+/* ================= INICIO (extras) ================= */
+.vision-edit{width:100%;font-family:var(--sans);font-size:14.5px;line-height:1.5;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink);resize:vertical}
+.vision-edit:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.area-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:9px;font-size:13.5px;color:var(--ink-soft)}
+.area-row:hover{background:var(--line-soft);color:var(--ink)}
+.area-row .area-name{font-weight:500}
+.input-inline{flex:1;font-family:var(--sans);font-size:14px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.input-inline:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+
 /* ================= FINANZAS ================= */
 .ftabs{display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .ftab{border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:var(--r-full);padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer}

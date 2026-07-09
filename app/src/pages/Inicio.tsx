@@ -1,77 +1,167 @@
-import { Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Pencil, Sparkles } from "lucide-react";
 import { AREAS } from "../areas";
-
-const color = (key: string) => AREAS.find((a) => a.key === key)?.color ?? "var(--accent)";
-
-const AVANCES = [
-  { area: "finanzas", date: "07 JUL · FINANZAS", text: "Se fusionaron los posts de Finanzas y Plutus en un solo sistema." },
-  { area: "salud", date: "07 JUL · SALUD", text: "Fix del toggle kg/lb del picker de peso." },
-  { area: "objetivos", date: "03 JUL · OBJETIVOS", text: "REVIEW por área completado — objetivos reales definidos." },
-];
+import { useAuth } from "../auth/AuthProvider";
+import { useSettings } from "../settings/SettingsProvider";
+import { TablesMissingError, listAccounts, listCategories, listTransactions } from "../finanzas/data";
+import { fmtMoney, type Account, type Category, type Tx } from "../finanzas/types";
 
 export function Inicio() {
-  const META = 55;
+  const { session } = useAuth();
+  const { currency, displayName, lifeVision, updateProfile } = useSettings();
+
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [txs, setTxs] = useState<Tx[]>([]);
+  const [finReady, setFinReady] = useState(false);
+
+  const [editingVision, setEditingVision] = useState(false);
+  const [visionDraft, setVisionDraft] = useState("");
+  const [visionErr, setVisionErr] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    try {
+      const [a, c, t] = await Promise.all([listAccounts(), listCategories(), listTransactions(50)]);
+      setAccounts(a);
+      setCategories(c);
+      setTxs(t);
+      setFinReady(true);
+    } catch (e) {
+      if (e instanceof TablesMissingError) setFinReady(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const nombre = displayName || (session?.user?.email ?? "").split("@")[0] || "Hola";
+  const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+
+  const month = new Date().toISOString().slice(0, 7);
+  const monthTxs = txs.filter((t) => t.date.startsWith(month));
+  const gastosMes = monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+  const balanceTotal = accounts.reduce((s, a) => s + Number(a.balance), 0);
+
+  const gastoPorCatId = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of monthTxs) {
+      if (t.type !== "expense" || !t.category_id) continue;
+      m.set(t.category_id, (m.get(t.category_id) ?? 0) + Number(t.amount));
+    }
+    return m;
+  }, [monthTxs]);
+
+  const presupuestosAlLimite = categories.filter((c) => {
+    const b = Number(c.budget);
+    if (!(c.type === "expense" && b > 0)) return false;
+    return (gastoPorCatId.get(c.id) ?? 0) >= b * 0.9;
+  }).length;
+
+  async function saveVision() {
+    setVisionErr(null);
+    const err = await updateProfile({ life_vision: visionDraft.trim() });
+    if (err) setVisionErr(err);
+    else setEditingVision(false);
+  }
+
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow">
-          <Sparkles size={13} /> Inicio
-        </div>
-        <h1>Hola, Bárbara</h1>
+        <div className="eyebrow"><Sparkles size={13} /> Inicio</div>
+        <h1>Hola, {nombre}</h1>
         <p>Todas tus áreas de vida en un lugar. Esto es lo que está pasando hoy.</p>
       </div>
 
+      {/* Visión de vida (real, editable) */}
       <div className="card vision">
-        <div className="lb">Visión de vida</div>
-        <q>Generar ingresos desde internet, desde cualquier parte, haciendo algo que me gusta, sin sentirme esclavizado.</q>
-      </div>
-
-      <div className="statrow">
-        <div className="card stat" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div
-            className="ring"
-            style={{ background: `conic-gradient(var(--accent) 0 ${META}%, var(--line) ${META}% 100%)` }}
-          >
-            <div className="in">
-              <b className="tnum">{META}%</b>
-              <span>Meta</span>
+        <div className="lb" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          Visión de vida
+          {!editingVision && (
+            <button className="xdel" aria-label="Editar visión" style={{ width: 24, height: 24 }}
+              onClick={() => { setVisionDraft(lifeVision); setEditingVision(true); }}>
+              <Pencil size={12} />
+            </button>
+          )}
+        </div>
+        {editingVision ? (
+          <div>
+            <textarea className="vision-edit" rows={3} value={visionDraft} autoFocus
+              placeholder="¿Cómo quieres que sea tu vida? Escríbelo con tus palabras…"
+              onChange={(e) => setVisionDraft(e.target.value)} />
+            {visionErr && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 6 }}>{visionErr}</p>}
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <button className="btn primary" onClick={() => void saveVision()}>Guardar</button>
+              <button className="btn ghost" onClick={() => setEditingVision(false)}>Cancelar</button>
             </div>
           </div>
-        </div>
-        <div className="card stat"><div className="k">Áreas</div><div className="v tnum">7 / 7</div></div>
-        <div className="card stat"><div className="k">Próximos pasos</div><div className="v tnum">35</div></div>
-        <div className="card stat"><div className="k">En riesgo</div><div className="v tnum">0</div></div>
+        ) : lifeVision ? (
+          <q>{lifeVision}</q>
+        ) : (
+          <p style={{ color: "var(--muted)", fontSize: 14 }}>
+            Aún no escribes tu visión de vida. Es el norte de todo el sistema — presiona el lápiz. ✏️
+          </p>
+        )}
+      </div>
+
+      {/* Stats reales (Finanzas) */}
+      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+        <div className="card stat"><div className="k">Balance total</div><div className="v tnum">{finReady ? fmtMoney(balanceTotal, accounts[0]?.currency ?? currency) : "—"}</div></div>
+        <div className="card stat"><div className="k">Gastos del mes</div><div className="v tnum" style={{ color: "var(--err)" }}>{finReady ? fmtMoney(gastosMes, accounts[0]?.currency ?? currency) : "—"}</div></div>
+        <div className="card stat"><div className="k">Movimientos del mes</div><div className="v tnum">{finReady ? monthTxs.length : "—"}</div></div>
+        <div className="card stat"><div className="k">Presupuestos al límite</div><div className="v tnum" style={presupuestosAlLimite > 0 ? { color: "var(--warn)" } : undefined}>{finReady ? presupuestosAlLimite : "—"}</div></div>
       </div>
 
       <div className="panelgrid">
+        {/* Estado de las áreas */}
         <div className="card panel">
-          <h3>Progreso por área</h3>
-          {AREAS.map((a) => (
-            <div className="bar" key={a.key}>
-              <div className="top">
-                <span className="lbl"><span className="adot" style={{ background: a.color }} />{a.name}</span>
-                <b className="tnum">{a.progress}%</b>
-              </div>
-              <div className="track">
-                <div className="fill" style={{ width: `${a.progress}%`, background: a.color }} />
-              </div>
-            </div>
-          ))}
+          <h3>Tus áreas</h3>
+          {AREAS.map((a) => {
+            const activa = a.key === "finanzas" && finReady;
+            return (
+              <Link to={a.path} key={a.key} className="area-row">
+                <span className="adot" style={{ width: 9, height: 9, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
+                <span className="area-name">{a.name}</span>
+                {activa ? (
+                  <span className="chip" style={{ marginLeft: "auto" }}>{monthTxs.length} mov. este mes</span>
+                ) : (
+                  <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>próximamente</span>
+                )}
+              </Link>
+            );
+          })}
         </div>
 
+        {/* Actividad reciente real */}
         <div className="card panel">
-          <h3>Avances recientes</h3>
-          <div className="tl">
-            {AVANCES.map((v, i) => (
-              <div className="row" key={i}>
-                <span className="tdot" style={{ background: color(v.area) }} />
-                <div className="tx"><b>{v.date}</b>{v.text}</div>
+          <h3>Actividad reciente</h3>
+          {txs.slice(0, 6).map((t) => {
+            const cat = t.category_id ? catById.get(t.category_id) : undefined;
+            return (
+              <div className="tl" key={t.id}>
+                <div className="row">
+                  <span className="tdot" style={{ background: "var(--fin)" }} />
+                  <div className="tx">
+                    <b>{t.date} · FINANZAS</b>
+                    {t.type === "expense" ? "Gasto" : "Ingreso"} {cat ? `en ${cat.name}` : ""}: {t.description || "sin descripción"} ({fmtMoney(Number(t.amount), accounts[0]?.currency ?? currency)})
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+          {finReady && txs.length === 0 && (
+            <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+              Tu actividad aparecerá aquí. Empieza registrando algo en <Link to="/finanzas" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Finanzas</Link>.
+            </p>
+          )}
+          {!finReady && (
+            <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Corre las migraciones de Finanzas para activar tu actividad.</p>
+          )}
         </div>
       </div>
 
+      {/* Tracker de sobriedad (se hará configurable en el bloque de Salud) */}
       <div className="card sob">
         <span className="seed">🌱</span>
         <div>

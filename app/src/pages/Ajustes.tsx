@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Palette, Settings } from "lucide-react";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import { useAuth } from "../auth/AuthProvider";
@@ -50,6 +50,7 @@ export function Ajustes() {
       )}
 
       <div className="grid" style={{ maxWidth: 640 }}>
+        <NameCard />
         <div className="card pad">
           <h3 style={{ fontSize: 15, marginBottom: 4 }}>Moneda predeterminada</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
@@ -85,6 +86,39 @@ export function Ajustes() {
       </div>
 
       {pickerOpen && <ThemePicker onClose={() => setPickerOpen(false)} />}
+    </div>
+  );
+}
+
+function NameCard() {
+  const { displayName, updateProfile } = useSettings();
+  const [value, setValue] = useState(displayName);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => setValue(displayName), [displayName]);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    const res = await updateProfile({ display_name: value.trim() });
+    if (res) setErr(res);
+    else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  }
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>Tu nombre</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>Cómo quieres que te salude la app.</p>
+      <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
+        <input className="input-inline" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Bárbara" />
+        <button className="btn primary" type="submit">Guardar</button>
+      </form>
+      {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
+      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
     </div>
   );
 }
