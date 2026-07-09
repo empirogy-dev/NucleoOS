@@ -23,7 +23,7 @@ FASE 3  Móvil + Escritorio  →  FASE 4  Salud/Reloj +    →  FASE 5  Banca gl
 - Configurar Supabase: auth, tablas núcleo (`profiles`, `life_vision`, `activity_log`) con RLS.
 - **Entregable:** app web navegable, con login, tablero vacío y las 7 secciones esqueleto.
 - **Requisitos cubiertos:** RF-01, RF-02, RF-05, RF-06, RNF-01, RNF-02, RNF-04.
-- **Estado:** ✅ Diseño ([`DESIGN.md`](../DESIGN.md)) + ✅ shell navegable con las 7 áreas, tablero de Inicio y temas de usuario (carpeta [`app/`](../app)). ⏳ Falta: auth + login con Supabase.
+- **Estado:** ✅ **Fase 0 completa.** Diseño ([`DESIGN.md`](../DESIGN.md)) + shell navegable con las 7 áreas, tablero de Inicio, temas de usuario, y **auth/login con Supabase conectado y verificado** (carpeta [`app/`](../app)).
 
 ## FASE 1 — MVP web: las 7 áreas con registro manual
 **Objetivo:** que la app sea **útil** aunque todo se registre a mano.

@@ -16,7 +16,9 @@ Abre http://localhost:5180
 - ✅ Sistema de diseño aplicado (ver [`../DESIGN.md`](../DESIGN.md))
 - ✅ Temas elegibles por el usuario (10 paletas, se guardan en el navegador)
 - ✅ Fuentes self-hosted (Outfit + Inter)
-- ⏳ Pendiente Fase 0: autenticación + login (Supabase)
+- ✅ Autenticación + login/registro con Supabase (rutas protegidas)
+
+> Necesita `app/.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (ver `.env.example`).
 
 ## Estructura
 ```
