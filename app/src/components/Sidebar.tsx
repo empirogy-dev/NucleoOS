@@ -1,8 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { Home } from "lucide-react";
+import { Home, LogOut } from "lucide-react";
 import { AREAS } from "../areas";
+import { useAuth } from "../auth/AuthProvider";
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
+  const { session, signOut } = useAuth();
+  const email = session?.user?.email ?? "";
+  const initial = email ? email[0].toUpperCase() : "?";
   return (
     <aside className={"sidebar" + (open ? " open" : "")}>
       <div className="brand">
@@ -33,6 +37,14 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
           );
         })}
       </nav>
+      <div className="spacer" />
+      <div className="side-acct">
+        <div className="ava">{initial}</div>
+        <div className="meta" title={email}>{email}</div>
+        <button className="logout" aria-label="Cerrar sesión" title="Cerrar sesión" onClick={() => signOut()}>
+          <LogOut size={16} />
+        </button>
+      </div>
     </aside>
   );
 }
