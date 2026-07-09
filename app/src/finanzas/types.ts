@@ -29,6 +29,71 @@ export interface Goal {
   color: string | null;
 }
 
+export interface Debt {
+  id: string;
+  name: string;
+  institution: string | null;
+  balance: number;
+  interest_rate: number | null;
+  min_payment: number | null;
+  due_date: string | null;
+  currency: string;
+  notes: string | null;
+}
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  bank: string | null;
+  last_four: string | null;
+  credit_limit: number | null;
+  balance: number;
+  min_payment: number | null;
+  due_date: string | null;
+  currency: string;
+}
+
+export type ReminderRecurrence = "oneTime" | "monthly" | "biweekly";
+
+export interface Reminder {
+  id: string;
+  title: string;
+  amount: number | null;
+  date: string;
+  recurrence: ReminderRecurrence;
+  category: string; // custom | debt | creditCard
+  source_id: string | null;
+}
+
+/** Próxima ocurrencia de un recordatorio (>= hoy) según su recurrencia. */
+export function nextOccurrence(r: Reminder): string {
+  const today = new Date().toISOString().slice(0, 10);
+  if (r.recurrence === "oneTime" || r.date >= today) return r.date;
+  const d = new Date(r.date + "T00:00:00");
+  const now = new Date(today + "T00:00:00");
+  if (r.recurrence === "monthly") {
+    while (d < now) d.setMonth(d.getMonth() + 1);
+  } else {
+    while (d < now) d.setDate(d.getDate() + 14);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+/** Días desde hoy hasta la fecha (negativo = vencido). */
+export function daysUntil(dateStr: string): number {
+  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+  const d = new Date(dateStr + "T00:00:00");
+  return Math.round((d.getTime() - today.getTime()) / 86400000);
+}
+
+export function dueLabel(days: number): { text: string; tone: "err" | "warn" | "ok" } {
+  if (days < 0) return { text: `vencido hace ${-days} día${days === -1 ? "" : "s"}`, tone: "err" };
+  if (days === 0) return { text: "¡hoy!", tone: "warn" };
+  if (days === 1) return { text: "mañana", tone: "warn" };
+  if (days <= 7) return { text: `en ${days} días`, tone: "warn" };
+  return { text: `en ${days} días`, tone: "ok" };
+}
+
 export interface Tx {
   id: string;
   date: string;

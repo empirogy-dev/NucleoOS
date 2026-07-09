@@ -1,5 +1,15 @@
 import { supabase } from "../lib/supabase";
-import { DEFAULT_CATEGORIES, type Account, type Category, type Goal, type Tx } from "./types";
+import {
+  DEFAULT_CATEGORIES,
+  type Account,
+  type Category,
+  type CreditCard,
+  type Debt,
+  type Goal,
+  type Reminder,
+  type ReminderRecurrence,
+  type Tx,
+} from "./types";
 
 /** Error especial cuando faltan las tablas (migración no ejecutada). */
 export class TablesMissingError extends Error {
@@ -117,6 +127,101 @@ export async function contributeToGoal(id: string, amount: number): Promise<void
 
 export async function deleteGoal(id: string): Promise<void> {
   const { error } = await sb().from("goals").delete().eq("id", id);
+  check(error);
+}
+
+// ---------- Deudas ----------
+export async function listDebts(): Promise<Debt[]> {
+  const { data, error } = await sb()
+    .from("debts")
+    .select("id,name,institution,balance,interest_rate,min_payment,due_date,currency,notes")
+    .order("created_at");
+  check(error);
+  return (data ?? []) as Debt[];
+}
+
+export async function addDebt(d: {
+  name: string; institution: string | null; balance: number;
+  interest_rate: number | null; min_payment: number | null;
+  due_date: string | null; currency: string;
+}): Promise<void> {
+  const user_id = await uid();
+  const { data, error } = await sb().from("debts").insert({ ...d, user_id }).select("id").single();
+  check(error);
+  if (d.due_date && data) {
+    await addReminder({
+      title: `Pago deuda · ${d.name}`,
+      amount: d.min_payment,
+      date: d.due_date,
+      recurrence: "monthly",
+      category: "debt",
+      source_id: data.id,
+    });
+  }
+}
+
+export async function deleteDebt(id: string): Promise<void> {
+  await sb().from("reminders").delete().eq("source_id", id);
+  const { error } = await sb().from("debts").delete().eq("id", id);
+  check(error);
+}
+
+// ---------- Tarjetas de crédito ----------
+export async function listCards(): Promise<CreditCard[]> {
+  const { data, error } = await sb()
+    .from("credit_cards")
+    .select("id,name,bank,last_four,credit_limit,balance,min_payment,due_date,currency")
+    .order("created_at");
+  check(error);
+  return (data ?? []) as CreditCard[];
+}
+
+export async function addCard(c: {
+  name: string; bank: string | null; last_four: string | null;
+  credit_limit: number | null; balance: number; min_payment: number | null;
+  due_date: string | null; currency: string;
+}): Promise<void> {
+  const user_id = await uid();
+  const { data, error } = await sb().from("credit_cards").insert({ ...c, user_id }).select("id").single();
+  check(error);
+  if (c.due_date && data) {
+    await addReminder({
+      title: `Pago tarjeta · ${c.name}`,
+      amount: c.min_payment,
+      date: c.due_date,
+      recurrence: "monthly",
+      category: "creditCard",
+      source_id: data.id,
+    });
+  }
+}
+
+export async function deleteCard(id: string): Promise<void> {
+  await sb().from("reminders").delete().eq("source_id", id);
+  const { error } = await sb().from("credit_cards").delete().eq("id", id);
+  check(error);
+}
+
+// ---------- Recordatorios de pago ----------
+export async function listReminders(): Promise<Reminder[]> {
+  const { data, error } = await sb()
+    .from("reminders")
+    .select("id,title,amount,date,recurrence,category,source_id")
+    .order("date");
+  check(error);
+  return (data ?? []) as Reminder[];
+}
+
+export async function addReminder(r: {
+  title: string; amount: number | null; date: string;
+  recurrence: ReminderRecurrence; category: string; source_id?: string | null;
+}): Promise<void> {
+  const { error } = await sb().from("reminders").insert({ ...r, user_id: await uid() });
+  check(error);
+}
+
+export async function deleteReminder(id: string): Promise<void> {
+  const { error } = await sb().from("reminders").delete().eq("id", id);
   check(error);
 }
 

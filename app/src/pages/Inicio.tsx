@@ -4,8 +4,8 @@ import { Pencil, Sparkles } from "lucide-react";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
-import { TablesMissingError, listAccounts, listCategories, listTransactions } from "../finanzas/data";
-import { fmtMoney, type Account, type Category, type Tx } from "../finanzas/types";
+import { TablesMissingError, listAccounts, listCategories, listReminders, listTransactions } from "../finanzas/data";
+import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Category, type Reminder, type Tx } from "../finanzas/types";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -14,6 +14,7 @@ export function Inicio() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [finReady, setFinReady] = useState(false);
 
   const [editingVision, setEditingVision] = useState(false);
@@ -22,10 +23,11 @@ export function Inicio() {
 
   const reload = useCallback(async () => {
     try {
-      const [a, c, t] = await Promise.all([listAccounts(), listCategories(), listTransactions(50)]);
+      const [a, c, t, r] = await Promise.all([listAccounts(), listCategories(), listTransactions(50), listReminders()]);
       setAccounts(a);
       setCategories(c);
       setTxs(t);
+      setReminders(r);
       setFinReady(true);
     } catch (e) {
       if (e instanceof TablesMissingError) setFinReady(false);
@@ -112,6 +114,36 @@ export function Inicio() {
         <div className="card stat"><div className="k">Movimientos del mes</div><div className="v tnum">{finReady ? monthTxs.length : "—"}</div></div>
         <div className="card stat"><div className="k">Presupuestos al límite</div><div className="v tnum" style={presupuestosAlLimite > 0 ? { color: "var(--warn)" } : undefined}>{finReady ? presupuestosAlLimite : "—"}</div></div>
       </div>
+
+      {/* Próximos pagos — siempre visibles (ADHD-friendly) */}
+      {reminders.length > 0 && (
+        <div className="card panel" style={{ marginBottom: 16 }}>
+          <h3>🔔 Próximos pagos</h3>
+          {[...reminders]
+            .map((r) => ({ r, next: nextOccurrence(r) }))
+            .sort((a, b) => a.next.localeCompare(b.next))
+            .slice(0, 3)
+            .map(({ r, next }) => {
+              const lbl = dueLabel(daysUntil(next));
+              return (
+                <div className="txrow" key={r.id}>
+                  <span className="txicon">{r.category === "creditCard" ? "💳" : r.category === "debt" ? "🏦" : "🔔"}</span>
+                  <div className="txmeta">
+                    <b>{r.title}</b>
+                    <small>{next}{r.amount ? ` · ${fmtMoney(Number(r.amount), accounts[0]?.currency ?? currency)}` : ""}</small>
+                  </div>
+                  <span className="chip" style={{
+                    background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
+                    color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
+                  }}>{lbl.text}</span>
+                </div>
+              );
+            })}
+          <Link to="/finanzas" style={{ fontSize: 12.5, color: "var(--accent-ink)", textDecoration: "underline", display: "inline-block", marginTop: 8 }}>
+            ver todos en Finanzas → Deudas y tarjetas
+          </Link>
+        </div>
+      )}
 
       <div className="panelgrid">
         {/* Estado de las áreas */}

@@ -3,35 +3,59 @@ import { Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import {
   TablesMissingError,
   addAccount,
+  addCard,
   addCategory,
+  addDebt,
   addGoal,
+  addReminder,
   addTransaction,
   contributeToGoal,
   deleteAccount,
+  deleteCard,
   deleteCategory,
+  deleteDebt,
   deleteGoal,
+  deleteReminder,
   deleteTransaction,
   listAccounts,
+  listCards,
+  listDebts,
   listGoals,
+  listReminders,
   listTransactions,
   seedCategoriesIfEmpty,
   updateCategoryBudget,
 } from "./data";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
-import { fmtMoney, type Account, type Category, type Goal, type Tx } from "./types";
+import {
+  daysUntil,
+  dueLabel,
+  fmtMoney,
+  nextOccurrence,
+  type Account,
+  type Category,
+  type CreditCard,
+  type Debt,
+  type Goal,
+  type Reminder,
+  type Tx,
+} from "./types";
 
-type TabKey = "resumen" | "transacciones" | "metas" | "cuentas" | "categorias";
+type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "categorias";
 
 export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState<"tx" | "account" | "category" | "goal" | null>(null);
+  const [modal, setModal] = useState<"tx" | "account" | "category" | "goal" | "debt" | "card" | "reminder" | null>(null);
   const [budgetCat, setBudgetCat] = useState<Category | null>(null);
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const { currency: defaultCurrency } = useSettings();
@@ -40,11 +64,17 @@ export function FinanzasPage() {
     setLoading(true);
     setError(null);
     try {
-      const [a, c, t, g] = await Promise.all([listAccounts(), seedCategoriesIfEmpty(), listTransactions(), listGoals()]);
+      const [a, c, t, g, d, cc, r] = await Promise.all([
+        listAccounts(), seedCategoriesIfEmpty(), listTransactions(), listGoals(),
+        listDebts(), listCards(), listReminders(),
+      ]);
       setAccounts(a);
       setCategories(c);
       setTxs(t);
       setGoals(g);
+      setDebts(d);
+      setCards(cc);
+      setReminders(r);
       setNeedsMigration(false);
     } catch (e) {
       if (e instanceof TablesMissingError) setNeedsMigration(true);
@@ -124,6 +154,7 @@ export function FinanzasPage() {
             ["resumen", "Resumen"],
             ["transacciones", "Transacciones"],
             ["metas", "Metas"],
+            ["deudas", "Deudas y tarjetas"],
             ["cuentas", "Cuentas"],
             ["categorias", "Categorías"],
           ] as Array<[TabKey, string]>
@@ -265,6 +296,99 @@ export function FinanzasPage() {
             </>
           )}
 
+          {tab === "deudas" && (
+            <>
+              {/* Próximos pagos */}
+              <div className="card panel" style={{ marginBottom: 14 }}>
+                <h3>🔔 Próximos pagos</h3>
+                {reminders.length === 0 && (
+                  <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+                    Sin recordatorios. Se crean solos al agregar una deuda o tarjeta con fecha de pago — o agrega uno manual (el celular, el arriendo, lo que sea).
+                  </p>
+                )}
+                {[...reminders]
+                  .map((r) => ({ r, next: nextOccurrence(r) }))
+                  .sort((a, b) => a.next.localeCompare(b.next))
+                  .map(({ r, next }) => {
+                    const d = daysUntil(next);
+                    const lbl = dueLabel(d);
+                    return (
+                      <div className="txrow" key={r.id}>
+                        <span className="txicon">{r.category === "creditCard" ? "💳" : r.category === "debt" ? "🏦" : "🔔"}</span>
+                        <div className="txmeta">
+                          <b>{r.title}</b>
+                          <small>{next}{r.recurrence === "monthly" ? " · mensual" : r.recurrence === "biweekly" ? " · quincenal" : ""}{r.amount ? ` · ${fmtMoney(Number(r.amount), currency)}` : ""}</small>
+                        </div>
+                        <span className="chip" style={{
+                          background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
+                          color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
+                        }}>{lbl.text}</span>
+                        <button className="xdel" aria-label="Eliminar recordatorio" onClick={async () => { await deleteReminder(r.id); void reload(); }}><Trash2 size={14} /></button>
+                      </div>
+                    );
+                  })}
+                <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setModal("reminder")}>
+                  <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Recordatorio manual
+                </button>
+              </div>
+
+              {/* Tarjetas */}
+              <h3 style={{ fontSize: 15, margin: "4px 0 10px" }}>Tarjetas de crédito</h3>
+              <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))" }}>
+                {cards.map((c) => {
+                  const usado = Number(c.balance);
+                  const limite = Number(c.credit_limit ?? 0);
+                  const pct = limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
+                  return (
+                    <div className="card pad" key={c.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <span style={{ fontSize: 18 }}>💳</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <b style={{ fontSize: 14 }}>{c.name}</b>
+                          <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{c.bank ?? ""}{c.last_four ? ` ···· ${c.last_four}` : ""}</div>
+                        </div>
+                        <button className="xdel" aria-label="Eliminar tarjeta" onClick={async () => { await deleteCard(c.id); void reload(); }}><Trash2 size={14} /></button>
+                      </div>
+                      <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(usado, c.currency)}</div>
+                      {limite > 0 && (
+                        <div className="bar" style={{ marginTop: 8, marginBottom: 0 }}>
+                          <div className="top"><span>usado del cupo</span><b className="tnum">{pct}%</b></div>
+                          <div className="track"><div className="fill" style={{ width: `${pct}%`, background: pct >= 80 ? "var(--err)" : "var(--fin)" }} /></div>
+                        </div>
+                      )}
+                      {c.due_date && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>paga el día {new Date(c.due_date + "T00:00:00").getDate()} de cada mes</div>}
+                    </div>
+                  );
+                })}
+              </div>
+              <button className="btn ghost" style={{ margin: "12px 0 20px" }} onClick={() => setModal("card")}>
+                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Agregar tarjeta
+              </button>
+
+              {/* Deudas */}
+              <h3 style={{ fontSize: 15, margin: "4px 0 10px" }}>Deudas</h3>
+              <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))" }}>
+                {debts.map((d) => (
+                  <div className="card pad" key={d.id}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <span style={{ fontSize: 18 }}>🏦</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <b style={{ fontSize: 14 }}>{d.name}</b>
+                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d.institution ?? ""}{d.interest_rate ? ` · ${d.interest_rate}% interés` : ""}</div>
+                      </div>
+                      <button className="xdel" aria-label="Eliminar deuda" onClick={async () => { await deleteDebt(d.id); void reload(); }}><Trash2 size={14} /></button>
+                    </div>
+                    <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(Number(d.balance), d.currency)}</div>
+                    {d.min_payment != null && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>pago mínimo {fmtMoney(Number(d.min_payment), d.currency)}</div>}
+                  </div>
+                ))}
+              </div>
+              <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setModal("debt")}>
+                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Agregar deuda
+              </button>
+            </>
+          )}
+
           {tab === "cuentas" && (
             <>
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))" }}>
@@ -337,7 +461,152 @@ export function FinanzasPage() {
         <ContributeModal goal={contributeGoal} currency={currency} onClose={() => setContributeGoal(null)}
           onSaved={() => { setContributeGoal(null); void reload(); }} />
       )}
+      {modal === "debt" && (
+        <DebtModal currency={defaultCurrency} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      )}
+      {modal === "card" && (
+        <CardModal currency={defaultCurrency} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      )}
+      {modal === "reminder" && (
+        <ReminderModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      )}
     </div>
+  );
+}
+
+function DebtModal({ currency, onClose, onSaved }: { currency: string; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [balance, setBalance] = useState("");
+  const [rate, setRate] = useState("");
+  const [minPay, setMinPay] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addDebt({
+      name, institution: institution || null, balance: Number(balance || 0),
+      interest_rate: rate ? Number(rate) : null, min_payment: minPay ? Number(minPay) : null,
+      due_date: dueDate || null, currency,
+    });
+    onSaved();
+  }
+
+  return (
+    <Modal title="Agregar deuda" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="field"><label>Nombre</label>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Crédito de consumo" autoFocus /></div>
+        <div className="field"><label>Institución (opcional)</label>
+          <input value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Banco…" /></div>
+        <div className="frow">
+          <div className="field"><label>Saldo adeudado</label>
+            <input type="number" required min="0" step="any" value={balance} onChange={(e) => setBalance(e.target.value)} /></div>
+          <div className="field"><label>Interés % (opcional)</label>
+            <input type="number" min="0" step="any" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
+        </div>
+        <div className="frow">
+          <div className="field"><label>Pago mínimo (opcional)</label>
+            <input type="number" min="0" step="any" value={minPay} onChange={(e) => setMinPay(e.target.value)} /></div>
+          <div className="field"><label>Próximo pago (opcional)</label>
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+        </div>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual.</p>
+        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
+      </form>
+    </Modal>
+  );
+}
+
+function CardModal({ currency, onClose, onSaved }: { currency: string; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [bank, setBank] = useState("");
+  const [lastFour, setLastFour] = useState("");
+  const [limit, setLimit] = useState("");
+  const [balance, setBalance] = useState("");
+  const [minPay, setMinPay] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addCard({
+      name, bank: bank || null, last_four: lastFour || null,
+      credit_limit: limit ? Number(limit) : null, balance: Number(balance || 0),
+      min_payment: minPay ? Number(minPay) : null, due_date: dueDate || null, currency,
+    });
+    onSaved();
+  }
+
+  return (
+    <Modal title="Agregar tarjeta de crédito" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="field"><label>Nombre</label>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Visa" autoFocus /></div>
+        <div className="frow">
+          <div className="field"><label>Banco (opcional)</label>
+            <input value={bank} onChange={(e) => setBank(e.target.value)} /></div>
+          <div className="field" style={{ width: 110 }}><label>Últimos 4</label>
+            <input maxLength={4} value={lastFour} onChange={(e) => setLastFour(e.target.value.replace(/\D/g, ""))} placeholder="1234" /></div>
+        </div>
+        <div className="frow">
+          <div className="field"><label>Cupo (opcional)</label>
+            <input type="number" min="0" step="any" value={limit} onChange={(e) => setLimit(e.target.value)} /></div>
+          <div className="field"><label>Usado</label>
+            <input type="number" min="0" step="any" value={balance} onChange={(e) => setBalance(e.target.value)} /></div>
+        </div>
+        <div className="frow">
+          <div className="field"><label>Pago mínimo (opcional)</label>
+            <input type="number" min="0" step="any" value={minPay} onChange={(e) => setMinPay(e.target.value)} /></div>
+          <div className="field"><label>Próximo pago (opcional)</label>
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+        </div>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual.</p>
+        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
+      </form>
+    </Modal>
+  );
+}
+
+function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [recurrence, setRecurrence] = useState<"oneTime" | "monthly" | "biweekly">("monthly");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addReminder({
+      title, amount: amount ? Number(amount) : null, date, recurrence, category: "custom",
+    });
+    onSaved();
+  }
+
+  return (
+    <Modal title="Recordatorio de pago" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="field"><label>¿Qué hay que pagar?</label>
+          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Plan del celular" autoFocus /></div>
+        <div className="frow">
+          <div className="field"><label>Monto (opcional)</label>
+            <input type="number" min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="field"><label>Fecha</label>
+            <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
+        </div>
+        <div className="field"><label>Se repite</label>
+          <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as typeof recurrence)}>
+            <option value="monthly">Cada mes</option>
+            <option value="biweekly">Cada 2 semanas</option>
+            <option value="oneTime">Solo una vez</option>
+          </select></div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+      </form>
+    </Modal>
   );
 }
 
