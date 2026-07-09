@@ -7,6 +7,7 @@ import { useSettings } from "../settings/SettingsProvider";
 import { TablesMissingError, listAccounts, listCategories, listReminders, listTransactions } from "../finanzas/data";
 import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Category, type Reminder, type Tx } from "../finanzas/types";
 import { listActivity, listObjectives, type ActivityEntry, type Objective } from "../objetivos/data";
+import { listHabitLogs, listHabits, type Habit, type HabitLog } from "../habitos/data";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -20,6 +21,9 @@ export function Inicio() {
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [objReady, setObjReady] = useState(false);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
+  const [habReady, setHabReady] = useState(false);
 
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
@@ -43,6 +47,14 @@ export function Inicio() {
       setObjReady(true);
     } catch {
       setObjReady(false);
+    }
+    try {
+      const [h, hl] = await Promise.all([listHabits(), listHabitLogs()]);
+      setHabits(h);
+      setHabitLogs(hl);
+      setHabReady(true);
+    } catch {
+      setHabReady(false);
     }
   }, []);
 
@@ -168,6 +180,10 @@ export function Inicio() {
             } else if (a.key === "objetivos" && objReady) {
               const n = objectives.length;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 meta" : `${n} metas`}</span>;
+            } else if (a.key === "habitos" && habReady) {
+              const hoyStr = new Date().toISOString().slice(0, 10);
+              const hechos = new Set(habitLogs.filter((l) => l.date === hoyStr).map((l) => l.habit_id)).size;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{hechos} / {habits.length} hoy</span>;
             }
             return (
               <Link to={a.path} key={a.key} className="area-row">

@@ -222,7 +222,7 @@ function ObjectiveCard({ o, onChanged }: { o: Objective; onChanged: () => void }
 
       <div className="bar" style={{ margin: "12px 0 0" }}>
         <div className="top">
-          <span>{hasMs ? `${o.milestones.length} pasos` : "progreso manual"}</span>
+          <span>{hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}</span>
           <b className="tnum">{pct}%</b>
         </div>
         <div className="track">

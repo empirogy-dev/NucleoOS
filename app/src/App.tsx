@@ -4,6 +4,7 @@ import { Inicio } from "./pages/Inicio";
 import { AreaPage } from "./pages/AreaPage";
 import { FinanzasPage } from "./finanzas/FinanzasPage";
 import { ObjetivosPage } from "./objetivos/ObjetivosPage";
+import { HabitosPage } from "./habitos/HabitosPage";
 import { Ajustes } from "./pages/Ajustes";
 import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
@@ -31,8 +32,9 @@ export default function App() {
             <Route index element={<Inicio />} />
             <Route path="/finanzas" element={<FinanzasPage />} />
             <Route path="/objetivos" element={<ObjetivosPage />} />
+            <Route path="/habitos" element={<HabitosPage />} />
             <Route path="/ajustes" element={<Ajustes />} />
-            {AREAS.filter((a) => a.key !== "finanzas" && a.key !== "objetivos").map((a) => (
+            {AREAS.filter((a) => !["finanzas", "objetivos", "habitos"].includes(a.key)).map((a) => (
               <Route key={a.key} path={a.path} element={<AreaPage />} />
             ))}
           </Route>

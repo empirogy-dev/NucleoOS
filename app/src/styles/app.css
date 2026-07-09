@@ -136,6 +136,14 @@ button{font-family:inherit}
 .slider{width:100%;margin-top:10px;accent-color:var(--accent);cursor:pointer}
 .ms-sel{font-family:var(--sans);font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 
+/* ================= HÁBITOS ================= */
+.hcheck{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:grid;place-items:center;flex:none;transition:background .15s,border-color .15s}
+.hcheck:hover{border-color:var(--accent)}
+.hcheck.done{background:var(--accent);border-color:var(--accent)}
+.weekdots{display:flex;gap:3px;flex:none;margin-right:2px}
+.weekdots i{width:8px;height:8px;border-radius:50%;background:var(--line-soft);display:block}
+.weekdots i.on{background:var(--hab)}
+
 /* ================= FINANZAS ================= */
 .ftabs{display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .ftab{border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:var(--r-full);padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer}
