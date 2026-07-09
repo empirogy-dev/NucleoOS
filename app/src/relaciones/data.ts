@@ -1,0 +1,136 @@
+import { supabase } from "../lib/supabase";
+import { TablesMissingError } from "../finanzas/data";
+
+export interface Relationship {
+  id: string;
+  name: string;
+  relation: string | null;
+  birthday: string | null;
+  contact_every_days: number | null;
+  notes: string | null;
+}
+
+export interface RelLog {
+  id: string;
+  relationship_id: string;
+  date: string;
+  description: string;
+}
+
+/** Bandeja de tips: conexión y apertura emocional. El coach de IA los hará personalizados en Fase 4. */
+export const TIPS = [
+  "Pregunta cómo está de verdad, y espera la segunda respuesta. La primera casi siempre es \"bien\".",
+  "Un mensaje corto de \"me acordé de ti\" vale más que esperar el momento perfecto para escribir largo.",
+  "Comparte algo pequeño y vulnerable tuyo primero. La apertura invita apertura.",
+  "Anota lo que te cuentan (aquí mismo) y pregúntales después: \"¿cómo salió eso que me contaste?\".",
+  "Agradece en voz alta. Decir \"me hizo bien hablar contigo\" fortalece el vínculo más de lo que crees.",
+  "Si sientes distancia, nómbrala con cariño: \"te he echado de menos, ¿nos ponemos al día?\".",
+  "Escucha sin preparar tu respuesta. Cuando terminen de hablar, respira antes de contestar.",
+  "Celebra las noticias buenas de la otra persona con entusiasmo real. Eso construye confianza.",
+  "No esperes a estar bien para hablar con alguien que quieres. Compartir lo difícil también conecta.",
+  "Las relaciones se riegan con frecuencia, no con intensidad. Mejor cinco minutos seguidos que una hora una vez al año.",
+] as const;
+
+/** Tip del día, estable durante el día. */
+export function tipDelDia(): string {
+  const day = Math.floor(Date.now() / 86400000);
+  return TIPS[day % TIPS.length];
+}
+
+function check(error: { code?: string; message: string } | null) {
+  if (!error) return;
+  if (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    /does not exist|could not find the table/i.test(error.message)
+  ) {
+    throw new TablesMissingError();
+  }
+  throw new Error(error.message);
+}
+
+function sb() {
+  if (!supabase) throw new Error("Supabase no está configurado.");
+  return supabase;
+}
+
+async function uid(): Promise<string> {
+  const { data } = await sb().auth.getUser();
+  if (!data.user) throw new Error("Sin sesión.");
+  return data.user.id;
+}
+
+// ---------- Vínculos ----------
+export async function listRelationships(): Promise<Relationship[]> {
+  const { data, error } = await sb()
+    .from("relationships")
+    .select("id,name,relation,birthday,contact_every_days,notes")
+    .order("created_at");
+  check(error);
+  return (data ?? []) as Relationship[];
+}
+
+export async function addRelationship(r: {
+  name: string;
+  relation: string | null;
+  birthday: string | null;
+  contact_every_days: number | null;
+}): Promise<void> {
+  const { error } = await sb().from("relationships").insert({ ...r, user_id: await uid() });
+  check(error);
+}
+
+export async function deleteRelationship(id: string): Promise<void> {
+  const { error } = await sb().from("relationships").delete().eq("id", id);
+  check(error);
+}
+
+// ---------- Interacciones ----------
+export async function listRelLogs(): Promise<RelLog[]> {
+  const { data, error } = await sb()
+    .from("relationship_logs")
+    .select("id,relationship_id,date,description")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(400);
+  check(error);
+  return (data ?? []) as RelLog[];
+}
+
+export async function addRelLog(relationshipId: string, date: string, description: string): Promise<void> {
+  const { error } = await sb()
+    .from("relationship_logs")
+    .insert({ relationship_id: relationshipId, date, description, user_id: await uid() });
+  check(error);
+}
+
+export async function deleteRelLog(id: string): Promise<void> {
+  const { error } = await sb().from("relationship_logs").delete().eq("id", id);
+  check(error);
+}
+
+// ---------- Cálculos ----------
+export function daysSinceContact(relId: string, logs: RelLog[]): number | null {
+  const last = logs.find((l) => l.relationship_id === relId);
+  if (!last) return null;
+  const d = new Date(last.date + "T00:00:00");
+  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+  return Math.round((today.getTime() - d.getTime()) / 86400000);
+}
+
+/** true si toca reconectar (pasó la cadencia deseada, o nunca has registrado contacto). */
+export function needsReconnect(r: Relationship, logs: RelLog[]): boolean {
+  if (!r.contact_every_days) return false;
+  const days = daysSinceContact(r.id, logs);
+  return days === null || days >= r.contact_every_days;
+}
+
+/** Días hasta el próximo cumpleaños, o null. */
+export function daysToBirthday(birthday: string | null): number | null {
+  if (!birthday) return null;
+  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+  const [, m, d] = birthday.split("-").map(Number);
+  let next = new Date(today.getFullYear(), m - 1, d);
+  if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);
+  return Math.round((next.getTime() - today.getTime()) / 86400000);
+}

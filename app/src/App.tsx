@@ -1,18 +1,17 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Inicio } from "./pages/Inicio";
-import { AreaPage } from "./pages/AreaPage";
 import { FinanzasPage } from "./finanzas/FinanzasPage";
 import { ObjetivosPage } from "./objetivos/ObjetivosPage";
 import { HabitosPage } from "./habitos/HabitosPage";
 import { TrabajoPage } from "./trabajo/TrabajoPage";
 import { SaludPage } from "./salud/SaludPage";
 import { AprendizajePage } from "./aprendizaje/AprendizajePage";
+import { RelacionesPage } from "./relaciones/RelacionesPage";
 import { Ajustes } from "./pages/Ajustes";
 import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
 import { SettingsProvider } from "./settings/SettingsProvider";
-import { AREAS } from "./areas";
 
 export default function App() {
   const { session, loading } = useAuth();
@@ -39,10 +38,9 @@ export default function App() {
             <Route path="/trabajo" element={<TrabajoPage />} />
             <Route path="/salud" element={<SaludPage />} />
             <Route path="/aprendizaje" element={<AprendizajePage />} />
+            <Route path="/relaciones" element={<RelacionesPage />} />
             <Route path="/ajustes" element={<Ajustes />} />
-            {AREAS.filter((a) => !["finanzas", "objetivos", "habitos", "trabajo", "salud", "aprendizaje"].includes(a.key)).map((a) => (
-              <Route key={a.key} path={a.path} element={<AreaPage />} />
-            ))}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>

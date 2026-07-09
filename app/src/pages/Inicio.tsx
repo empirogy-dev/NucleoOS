@@ -11,6 +11,7 @@ import { listHabitLogs, listHabits, type Habit, type HabitLog } from "../habitos
 import { listProjects, type Project } from "../trabajo/data";
 import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSobriety, type Appointment, type Sobriety } from "../salud/data";
 import { listEntries, type Entry } from "../aprendizaje/data";
+import { listRelLogs, listRelationships, needsReconnect, type RelLog, type Relationship } from "../relaciones/data";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -34,6 +35,9 @@ export function Inicio() {
   const [salReady, setSalReady] = useState(false);
   const [notas, setNotas] = useState<Entry[]>([]);
   const [aprReady, setAprReady] = useState(false);
+  const [rels, setRels] = useState<Relationship[]>([]);
+  const [relLogs, setRelLogs] = useState<RelLog[]>([]);
+  const [relReady, setRelReady] = useState(false);
 
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
@@ -85,6 +89,14 @@ export function Inicio() {
       setAprReady(true);
     } catch {
       setAprReady(false);
+    }
+    try {
+      const [r, rl] = await Promise.all([listRelationships(), listRelLogs()]);
+      setRels(r);
+      setRelLogs(rl);
+      setRelReady(true);
+    } catch {
+      setRelReady(false);
     }
   }, []);
 
@@ -223,6 +235,11 @@ export function Inicio() {
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{prox === 1 ? "1 cita próxima" : `${prox} citas próximas`}</span>;
             } else if (a.key === "aprendizaje" && aprReady) {
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{notas.length === 1 ? "1 nota" : `${notas.length} notas`}</span>;
+            } else if (a.key === "relaciones" && relReady) {
+              const n = rels.filter((r) => needsReconnect(r, relLogs)).length;
+              badge = n > 0
+                ? <span className="chip" style={{ marginLeft: "auto", background: "color-mix(in srgb,var(--rel) 20%,var(--paper))", color: "color-mix(in srgb,var(--rel) 75%,var(--ink))" }}>💌 {n} por reconectar</span>
+                : <span className="chip" style={{ marginLeft: "auto" }}>{rels.length === 1 ? "1 vínculo" : `${rels.length} vínculos`}</span>;
             }
             return (
               <Link to={a.path} key={a.key} className="area-row">
