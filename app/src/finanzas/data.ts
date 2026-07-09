@@ -259,6 +259,57 @@ export async function addTransaction(t: {
   }
 }
 
+/** Importa filas de una cartola como transacciones (source: cartola), omitiendo duplicados. */
+export async function importStatementRows(
+  rows: Array<{ date: string; description: string; amount: number; type: "income" | "expense"; category: string }>,
+  accountId: string | null,
+  categories: Category[],
+  existing: Tx[],
+): Promise<{ imported: number; skipped: number }> {
+  const user_id = await uid();
+  const catByName = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
+  const seen = new Set(
+    existing.map((t) => `${t.date}|${Number(t.amount)}|${t.description.trim().toLowerCase()}`)
+  );
+
+  const toInsert: Array<Record<string, unknown>> = [];
+  let skipped = 0;
+  for (const r of rows) {
+    const key = `${r.date}|${Math.abs(r.amount)}|${r.description.trim().toLowerCase()}`;
+    if (seen.has(key)) {
+      skipped += 1;
+      continue;
+    }
+    seen.add(key);
+    toInsert.push({
+      user_id,
+      date: r.date,
+      amount: Math.abs(r.amount),
+      type: r.type,
+      description: r.description,
+      category_id: r.category ? catByName.get(r.category.toLowerCase()) ?? null : null,
+      account_id: accountId,
+      source: "cartola",
+    });
+  }
+
+  if (toInsert.length > 0) {
+    const { error } = await sb().from("transactions").insert(toInsert);
+    check(error);
+    if (accountId) {
+      const delta = toInsert.reduce(
+        (s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)),
+        0
+      );
+      const { data } = await sb().from("accounts").select("balance").eq("id", accountId).single();
+      if (data) {
+        await sb().from("accounts").update({ balance: Number(data.balance) + delta }).eq("id", accountId);
+      }
+    }
+  }
+  return { imported: toInsert.length, skipped };
+}
+
 export async function deleteTransaction(t: Tx): Promise<void> {
   const { error } = await sb().from("transactions").delete().eq("id", t.id);
   check(error);

@@ -17,6 +17,7 @@ import {
   deleteGoal,
   deleteReminder,
   deleteTransaction,
+  importStatementRows,
   listAccounts,
   listCards,
   listDebts,
@@ -26,6 +27,7 @@ import {
   seedCategoriesIfEmpty,
   updateCategoryBudget,
 } from "./data";
+import { StatementImportError, parseStatementFile, type StatementImportRow } from "./statementImport";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import {
   daysUntil,
@@ -41,7 +43,7 @@ import {
   type Tx,
 } from "./types";
 
-type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "categorias";
+type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
@@ -55,7 +57,7 @@ export function FinanzasPage() {
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState<"tx" | "account" | "category" | "goal" | "debt" | "card" | "reminder" | null>(null);
+  const [modal, setModal] = useState<"tx" | "account" | "category" | "goal" | "debt" | "card" | "reminder" | "import" | null>(null);
   const [budgetCat, setBudgetCat] = useState<Category | null>(null);
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const { currency: defaultCurrency } = useSettings();
@@ -65,7 +67,7 @@ export function FinanzasPage() {
     setError(null);
     try {
       const [a, c, t, g, d, cc, r] = await Promise.all([
-        listAccounts(), seedCategoriesIfEmpty(), listTransactions(), listGoals(),
+        listAccounts(), seedCategoriesIfEmpty(), listTransactions(1000), listGoals(),
         listDebts(), listCards(), listReminders(),
       ]);
       setAccounts(a);
@@ -157,6 +159,7 @@ export function FinanzasPage() {
             ["deudas", "Deudas y tarjetas"],
             ["cuentas", "Cuentas"],
             ["categorias", "Categorías"],
+            ["reporte", "Reporte"],
           ] as Array<[TabKey, string]>
         ).map(([k, label]) => (
           <button key={k} className={"ftab" + (tab === k ? " active" : "")} onClick={() => setTab(k)}>
@@ -164,6 +167,7 @@ export function FinanzasPage() {
           </button>
         ))}
         <span style={{ flex: 1 }} />
+        <button className="btn ghost" onClick={() => setModal("import")}>Importar cartola</button>
         <button className="btn primary" onClick={() => setModal("tx")}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
           Registrar
@@ -389,6 +393,10 @@ export function FinanzasPage() {
             </>
           )}
 
+          {tab === "reporte" && (
+            <ReporteTab txs={txs} categories={categories} currency={currency} />
+          )}
+
           {tab === "cuentas" && (
             <>
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))" }}>
@@ -470,7 +478,193 @@ export function FinanzasPage() {
       {modal === "reminder" && (
         <ReminderModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
       )}
+      {modal === "import" && (
+        <ImportModal accounts={accounts} categories={categories} existing={txs} currency={currency}
+          onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      )}
     </div>
+  );
+}
+
+function monthAdd(ym: string, delta: number): string {
+  const d = new Date(ym + "-01T00:00:00");
+  d.setMonth(d.getMonth() + delta);
+  return d.toISOString().slice(0, 7);
+}
+
+function ReporteTab({ txs, categories, currency }: { txs: Tx[]; categories: Category[]; currency: string }) {
+  const [ym, setYm] = useState(new Date().toISOString().slice(0, 7));
+  const prev = monthAdd(ym, -1);
+  const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+
+  function totals(month: string) {
+    const rows = txs.filter((t) => t.date.startsWith(month));
+    const ingresos = rows.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+    const gastos = rows.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+    return { rows, ingresos, gastos, neto: ingresos - gastos };
+  }
+
+  const actual = totals(ym);
+  const anterior = totals(prev);
+
+  function deltaText(a: number, b: number): string {
+    if (b === 0) return a === 0 ? "igual que el mes anterior" : "sin datos del mes anterior";
+    const pct = Math.round(((a - b) / b) * 100);
+    if (pct === 0) return "igual que el mes anterior";
+    return pct > 0 ? `${pct}% más que el mes anterior` : `${-pct}% menos que el mes anterior`;
+  }
+
+  const porCategoria = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of actual.rows) {
+      if (t.type !== "expense") continue;
+      m.set(t.category_id ?? "sin", (m.get(t.category_id ?? "sin") ?? 0) + Number(t.amount));
+    }
+    return [...m.entries()]
+      .map(([id, total]) => ({ cat: id === "sin" ? undefined : catById.get(id), total }))
+      .sort((a, b) => b.total - a.total);
+  }, [actual.rows, catById]);
+
+  return (
+    <>
+      <div className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
+        <label>Mes del reporte</label>
+        <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} />
+      </div>
+      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+        <div className="card stat">
+          <div className="k">Ingresos</div>
+          <div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(actual.ingresos, currency)}</div>
+          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.ingresos, anterior.ingresos)}</div>
+        </div>
+        <div className="card stat">
+          <div className="k">Gastos</div>
+          <div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(actual.gastos, currency)}</div>
+          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.gastos, anterior.gastos)}</div>
+        </div>
+        <div className="card stat">
+          <div className="k">Resultado del mes</div>
+          <div className="v tnum" style={{ color: actual.neto >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(actual.neto, currency)}</div>
+          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{actual.rows.length} movimientos</div>
+        </div>
+      </div>
+      <div className="card panel">
+        <h3>Gasto por categoría</h3>
+        {porCategoria.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin gastos en este mes.</p>}
+        {porCategoria.map(({ cat, total }) => (
+          <div className="bar" key={cat?.id ?? "sin"}>
+            <div className="top">
+              <span className="lbl">{cat?.icon} {cat?.name ?? "Sin categoría"}</span>
+              <b className="tnum">{fmtMoney(total, currency)}</b>
+            </div>
+            <div className="track">
+              <div className="fill" style={{ width: `${actual.gastos ? Math.round((total / actual.gastos) * 100) : 0}%`, background: "var(--fin)" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ImportModal({ accounts, categories, existing, currency, onClose, onSaved }: {
+  accounts: Account[];
+  categories: Category[];
+  existing: Tx[];
+  currency: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const [rows, setRows] = useState<StatementImportRow[] | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErr(null);
+    setRows(null);
+    setResult(null);
+    try {
+      const parsed = await parseStatementFile(file, categories);
+      setRows(parsed.rows);
+      setWarnings(parsed.warnings);
+    } catch (ex) {
+      if (ex instanceof StatementImportError && ex.code === "UNRECOGNIZED_COLUMNS") {
+        setErr("No reconocí las columnas del archivo. Exporta la cartola de tu banco como CSV con columnas de fecha, descripción y monto, e intenta de nuevo.");
+      } else {
+        setErr("No pude leer el archivo. Verifica que sea la cartola en formato CSV, OFX o QFX de tu banco.");
+      }
+    }
+  }
+
+  async function doImport() {
+    if (!rows) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await importStatementRows(rows, accountId || null, categories, existing);
+      setResult(res);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title="Importar cartola" onClose={onClose}>
+      {result ? (
+        <div>
+          <p style={{ fontSize: 14.5, marginBottom: 6 }}>
+            Se importaron <b>{result.imported}</b> movimientos.
+            {result.skipped > 0 && <> Se omitieron {result.skipped} que ya estaban registrados.</>}
+          </p>
+          <button className="btn primary" style={{ width: "100%", marginTop: 10 }} onClick={onSaved}>Listo</button>
+        </div>
+      ) : (
+        <>
+          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+            Descarga la cartola desde tu banco (CSV, OFX o QFX) y súbela aquí. Los movimientos repetidos se omiten solos.
+          </p>
+          <div className="field"><label>Cuenta de destino</label>
+            <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+              <option value="">Sin cuenta</option>
+              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select></div>
+          <div className="field"><label>Archivo</label>
+            <input type="file" accept=".csv,.ofx,.qfx,text/csv" onChange={onFile} /></div>
+          {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
+          {rows && (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 13.5, marginBottom: 8 }}>
+                Encontré <b>{rows.length}</b> movimientos.{warnings.length > 0 && <> Hubo {warnings.length} filas que no se pudieron leer.</>}
+              </p>
+              <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 10, padding: "4px 10px" }}>
+                {rows.slice(0, 12).map((r) => (
+                  <div className="txrow" key={r.id} style={{ padding: "7px 0" }}>
+                    <div className="txmeta">
+                      <b style={{ fontSize: 12.5 }}>{r.description || "Sin descripción"}</b>
+                      <small>{r.date}{r.category ? `, ${r.category}` : ""}</small>
+                    </div>
+                    <b className={"tnum txamt " + (r.type === "expense" ? "neg" : "pos")} style={{ fontSize: 12.5 }}>
+                      {r.type === "expense" ? "−" : "+"}{fmtMoney(Math.abs(r.amount), currency)}
+                    </b>
+                  </div>
+                ))}
+                {rows.length > 12 && <p style={{ fontSize: 12, color: "var(--muted)", padding: "6px 0" }}>y {rows.length - 12} más…</p>}
+              </div>
+            </div>
+          )}
+          <button className="btn primary" style={{ width: "100%" }} disabled={!rows || busy} onClick={() => void doImport()}>
+            {busy ? "Importando…" : rows ? `Importar ${rows.length} movimientos` : "Elige un archivo primero"}
+          </button>
+        </>
+      )}
+    </Modal>
   );
 }
 
