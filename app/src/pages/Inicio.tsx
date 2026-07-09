@@ -9,6 +9,7 @@ import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Categ
 import { listActivity, listObjectives, type ActivityEntry, type Objective } from "../objetivos/data";
 import { listHabitLogs, listHabits, type Habit, type HabitLog } from "../habitos/data";
 import { listProjects, type Project } from "../trabajo/data";
+import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSobriety, type Appointment, type Sobriety } from "../salud/data";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -27,6 +28,9 @@ export function Inicio() {
   const [habReady, setHabReady] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [traReady, setTraReady] = useState(false);
+  const [sobriety, setSobriety] = useState<Sobriety[]>([]);
+  const [citas, setCitas] = useState<Appointment[]>([]);
+  const [salReady, setSalReady] = useState(false);
 
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
@@ -64,6 +68,14 @@ export function Inicio() {
       setTraReady(true);
     } catch {
       setTraReady(false);
+    }
+    try {
+      const [s, c] = await Promise.all([listSobriety(), listAppointments()]);
+      setSobriety(s);
+      setCitas(c);
+      setSalReady(true);
+    } catch {
+      setSalReady(false);
     }
   }, []);
 
@@ -196,6 +208,10 @@ export function Inicio() {
             } else if (a.key === "trabajo" && traReady) {
               const n = projects.filter((p) => p.status === "activo").length;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 proyecto activo" : `${n} proyectos activos`}</span>;
+            } else if (a.key === "salud" && salReady) {
+              const hoyStr = new Date().toISOString().slice(0, 10);
+              const prox = citas.filter((c) => c.date >= hoyStr).length;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{prox === 1 ? "1 cita próxima" : `${prox} citas próximas`}</span>;
             }
             return (
               <Link to={a.path} key={a.key} className="area-row">
@@ -258,19 +274,25 @@ export function Inicio() {
         </div>
       </div>
 
-      {/* Tracker de sobriedad (se hará configurable en el bloque de Salud) */}
-      <div className="card sob">
-        <span className="seed">🌱</span>
-        <div>
-          <div className="t1">Libre de marihuana</div>
-          <div className="t2 tnum">1 año y 4 meses</div>
-        </div>
-        <div className="hitos">
-          <span className="hito">✓ THC eliminado</span>
-          <span className="hito">✓ Memoria recuperada</span>
-          <span className="hito next">Próximo: 18 meses</span>
-        </div>
-      </div>
+      {/* Sobriedad (datos reales desde Salud) */}
+      {sobriety.map((s) => {
+        const dias = daysSince(s.start_date);
+        const logrados = SOBRIETY_MILESTONES.filter((m) => dias >= m.days);
+        const proximo = SOBRIETY_MILESTONES.find((m) => dias < m.days);
+        return (
+          <div className="card sob" key={s.id}>
+            <span className="seed">🌱</span>
+            <div>
+              <div className="t1">Libre de {s.substance}</div>
+              <div className="t2 tnum">{humanizeDays(dias)}</div>
+            </div>
+            <div className="hitos">
+              {logrados.slice(-2).map((m) => <span className="hito" key={m.days}>✓ {m.label}</span>)}
+              {proximo ? <span className="hito next">Próximo: {proximo.label}</span> : <span className="hito">🎉 Más de 2 años</span>}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -1,0 +1,424 @@
+import { useCallback, useEffect, useState } from "react";
+import { HeartPulse, Plus, Trash2 } from "lucide-react";
+import { TablesMissingError } from "../finanzas/data";
+import { daysUntil, dueLabel } from "../finanzas/types";
+import {
+  BLOOD_TYPES,
+  SOBRIETY_MILESTONES,
+  addAppointment,
+  addExam,
+  addMedication,
+  addSobriety,
+  daysSince,
+  deleteAppointment,
+  deleteExam,
+  deleteMedication,
+  deleteSobriety,
+  getHealthProfile,
+  humanizeDays,
+  listAppointments,
+  listExams,
+  listMedications,
+  listSobriety,
+  saveHealthProfile,
+  type Appointment,
+  type HealthExam,
+  type HealthProfile,
+  type Medication,
+  type Sobriety,
+} from "./data";
+
+export function SaludPage() {
+  const [profile, setProfile] = useState<HealthProfile | null>(null);
+  const [meds, setMeds] = useState<Medication[]>([]);
+  const [citas, setCitas] = useState<Appointment[]>([]);
+  const [exams, setExams] = useState<HealthExam[]>([]);
+  const [sobriety, setSobriety] = useState<Sobriety[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [needsMigration, setNeedsMigration] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [modal, setModal] = useState<"med" | "cita" | "exam" | "sob" | null>(null);
+
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [p, m, c, e, s] = await Promise.all([
+        getHealthProfile(), listMedications(), listAppointments(), listExams(), listSobriety(),
+      ]);
+      setProfile(p ?? { blood_type: null, allergies: null, conditions: null, surgeries: null });
+      setMeds(m);
+      setCitas(c);
+      setExams(e);
+      setSobriety(s);
+      setNeedsMigration(false);
+    } catch (e) {
+      if (e instanceof TablesMissingError) setNeedsMigration(true);
+      else setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const proximas = citas.filter((c) => c.date >= hoy);
+  const pendientes = exams.filter((e) => !e.result);
+
+  if (needsMigration) {
+    return (
+      <div className="page">
+        <Head />
+        <div className="card pad" style={{ maxWidth: 640 }}>
+          <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
+          <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
+            Faltan las tablas de Salud. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+            <code> supabase/migrations/0007_salud.sql</code> y presiona Run.
+          </p>
+          <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page">
+      <Head />
+
+      {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
+      {loading ? (
+        <p style={{ color: "var(--muted)" }}>Cargando…</p>
+      ) : (
+        <>
+          <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+            <div className="card stat"><div className="k">Tiempo limpio</div><div className="v" style={{ fontSize: 20 }}>{sobriety[0] ? `🌱 ${humanizeDays(daysSince(sobriety[0].start_date))}` : "sin tracker"}</div></div>
+            <div className="card stat"><div className="k">Próximas citas</div><div className="v tnum">{proximas.length}</div></div>
+            <div className="card stat"><div className="k">Medicamentos</div><div className="v tnum">{meds.length}</div></div>
+            <div className="card stat"><div className="k">Exámenes pendientes</div><div className="v tnum" style={pendientes.length > 0 ? { color: "var(--warn)" } : undefined}>{pendientes.length}</div></div>
+          </div>
+
+          <div className="panelgrid">
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              {/* Sobriedad */}
+              <div className="card panel">
+                <h3>🌱 Sobriedad</h3>
+                {sobriety.length === 0 && (
+                  <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+                    Si estás dejando algo (marihuana, alcohol, cigarro), créale un tracker. Cada día limpio cuenta y aquí se celebra.
+                  </p>
+                )}
+                {sobriety.map((s) => {
+                  const dias = daysSince(s.start_date);
+                  const logrados = SOBRIETY_MILESTONES.filter((m) => dias >= m.days);
+                  const proximo = SOBRIETY_MILESTONES.find((m) => dias < m.days);
+                  return (
+                    <div className="sob" key={s.id} style={{ marginTop: 0, padding: "10px 0", borderBottom: "1px solid var(--line-soft)" }}>
+                      <span className="seed">🌱</span>
+                      <div>
+                        <div className="t1">Libre de {s.substance}</div>
+                        <div className="t2 tnum">{humanizeDays(dias)}</div>
+                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{dias} días desde el {s.start_date}</div>
+                      </div>
+                      <div className="hitos">
+                        {logrados.slice(-2).map((m) => <span className="hito" key={m.days}>✓ {m.label}</span>)}
+                        {proximo && <span className="hito next">Próximo: {proximo.label}</span>}
+                        {!proximo && <span className="hito">🎉 Más de 2 años</span>}
+                      </div>
+                      <button className="xdel" aria-label="Eliminar tracker" onClick={async () => { await deleteSobriety(s.id); void reload(); }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+                <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setModal("sob")}>
+                  <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo tracker
+                </button>
+              </div>
+
+              {/* Citas */}
+              <div className="card panel">
+                <h3>🩺 Citas</h3>
+                {proximas.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin citas próximas.</p>}
+                {proximas.map((c) => {
+                  const lbl = dueLabel(daysUntil(c.date));
+                  return (
+                    <div className="txrow" key={c.id}>
+                      <span className="txicon">🩺</span>
+                      <div className="txmeta">
+                        <b>{c.title}</b>
+                        <small>{c.date}{c.time ? ` a las ${c.time.slice(0, 5)}` : ""}{c.location ? `, ${c.location}` : ""}</small>
+                      </div>
+                      <span className="chip" style={{
+                        background: lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
+                        color: lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
+                      }}>{lbl.text}</span>
+                      <button className="xdel" aria-label="Eliminar cita" onClick={async () => { await deleteAppointment(c.id); void reload(); }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+                <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setModal("cita")}>
+                  <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nueva cita
+                </button>
+              </div>
+
+              {/* Exámenes */}
+              <div className="card panel">
+                <h3>🧪 Exámenes</h3>
+                {exams.length === 0 && (
+                  <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+                    Anota tus exámenes pendientes (sangre, vitaminas, chequeos) y registra el resultado cuando llegue.
+                  </p>
+                )}
+                {exams.map((e) => (
+                  <div className="txrow" key={e.id}>
+                    <span className="txicon">🧪</span>
+                    <div className="txmeta">
+                      <b>{e.name}</b>
+                      <small>
+                        {e.result ? `resultado: ${e.result}` : e.due_date ? `pendiente, para el ${e.due_date}` : "pendiente"}
+                      </small>
+                    </div>
+                    {!e.result && e.due_date && (() => {
+                      const lbl = dueLabel(daysUntil(e.due_date));
+                      return <span className="chip" style={{
+                        background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
+                        color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
+                      }}>{lbl.text}</span>;
+                    })()}
+                    <button className="xdel" aria-label="Eliminar examen" onClick={async () => { await deleteExam(e.id); void reload(); }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setModal("exam")}>
+                  <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo examen
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              {/* Ficha */}
+              {profile && <FichaCard profile={profile} onSaved={() => void reload()} />}
+
+              {/* Medicamentos */}
+              <div className="card panel">
+                <h3>💊 Medicamentos</h3>
+                {meds.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin medicamentos registrados.</p>}
+                {meds.map((m) => (
+                  <div className="txrow" key={m.id}>
+                    <span className="txicon">💊</span>
+                    <div className="txmeta">
+                      <b>{m.name}</b>
+                      <small>{[m.dose, m.schedule].filter(Boolean).join(", ") || "sin horario"}</small>
+                    </div>
+                    <button className="xdel" aria-label="Eliminar medicamento" onClick={async () => { await deleteMedication(m.id); void reload(); }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setModal("med")}>
+                  <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo medicamento
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {modal === "sob" && <SobModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
+      {modal === "cita" && <CitaModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
+      {modal === "exam" && <ExamModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
+      {modal === "med" && <MedModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
+    </div>
+  );
+}
+
+function Head() {
+  return (
+    <div className="page-head">
+      <div className="eyebrow"><HeartPulse size={13} /> Área</div>
+      <h1>Salud</h1>
+      <p>Tu ficha, medicamentos, citas, exámenes y tu camino de sobriedad.</p>
+    </div>
+  );
+}
+
+function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () => void }) {
+  const [blood, setBlood] = useState(profile.blood_type ?? "");
+  const [allergies, setAllergies] = useState(profile.allergies ?? "");
+  const [conditions, setConditions] = useState(profile.conditions ?? "");
+  const [surgeries, setSurgeries] = useState(profile.surgeries ?? "");
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await saveHealthProfile({
+      blood_type: blood || null,
+      allergies: allergies || null,
+      conditions: conditions || null,
+      surgeries: surgeries || null,
+    });
+    setBusy(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    onSaved();
+  }
+
+  return (
+    <div className="card panel">
+      <h3>📋 Mi ficha</h3>
+      <form onSubmit={save}>
+        <div className="field"><label>Tipo de sangre</label>
+          <select value={blood} onChange={(e) => setBlood(e.target.value)}>
+            <option value="">No lo sé</option>
+            {BLOOD_TYPES.map((b) => <option key={b}>{b}</option>)}
+          </select></div>
+        <div className="field"><label>Alergias</label>
+          <input value={allergies} onChange={(e) => setAllergies(e.target.value)} placeholder="Penicilina, maní…" /></div>
+        <div className="field"><label>Condiciones</label>
+          <input value={conditions} onChange={(e) => setConditions(e.target.value)} placeholder="ADHD, hipotiroidismo…" /></div>
+        <div className="field"><label>Operaciones</label>
+          <input value={surgeries} onChange={(e) => setSurgeries(e.target.value)} placeholder="Apendicectomía (2019)…" /></div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar ficha"}</button>
+        {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardada</span>}
+      </form>
+    </div>
+  );
+}
+
+function SobModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [substance, setSubstance] = useState("");
+  const [start, setStart] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addSobriety(substance, start);
+    onSaved();
+  }
+
+  return (
+    <ModalShell title="Nuevo tracker de sobriedad" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="field"><label>¿Qué estás dejando?</label>
+          <input required value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder="marihuana, alcohol, cigarro…" autoFocus /></div>
+        <div className="field"><label>¿Desde cuándo estás limpia?</label>
+          <input type="date" required value={start} onChange={(e) => setStart(e.target.value)} /></div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Empezar a contar"}</button>
+      </form>
+    </ModalShell>
+  );
+}
+
+function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [location, setLocation] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addAppointment({ title, date, time: time || null, location: location || null });
+    onSaved();
+  }
+
+  return (
+    <ModalShell title="Nueva cita" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="field"><label>¿Con quién?</label>
+          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Psicóloga, dentista, médica general…" autoFocus /></div>
+        <div className="frow">
+          <div className="field"><label>Fecha</label>
+            <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div className="field"><label>Hora (opcional)</label>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
+        </div>
+        <div className="field"><label>Lugar (opcional)</label>
+          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Clínica, en línea…" /></div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar cita"}</button>
+      </form>
+    </ModalShell>
+  );
+}
+
+function ExamModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [due, setDue] = useState("");
+  const [result, setResult] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addExam({ name, due_date: due || null, result: result || null });
+    onSaved();
+  }
+
+  return (
+    <ModalShell title="Nuevo examen" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="field"><label>Examen</label>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Examen de sangre, hierro, vitamina D…" autoFocus /></div>
+        <div className="frow">
+          <div className="field"><label>Para cuándo (opcional)</label>
+            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></div>
+          <div className="field"><label>Resultado (si ya lo tienes)</label>
+            <input value={result} onChange={(e) => setResult(e.target.value)} placeholder="normal, hierro bajo…" /></div>
+        </div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar examen"}</button>
+      </form>
+    </ModalShell>
+  );
+}
+
+function MedModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [dose, setDose] = useState("");
+  const [schedule, setSchedule] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    await addMedication({ name, dose: dose || null, schedule: schedule || null });
+    onSaved();
+  }
+
+  return (
+    <ModalShell title="Nuevo medicamento" onClose={onClose}>
+      <form onSubmit={save}>
+        <div className="field"><label>Nombre</label>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Levotiroxina" autoFocus /></div>
+        <div className="frow">
+          <div className="field"><label>Dosis (opcional)</label>
+            <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="50 mg" /></div>
+          <div className="field"><label>Horario (opcional)</label>
+            <input value={schedule} onChange={(e) => setSchedule(e.target.value)} placeholder="08:00 en ayunas" /></div>
+        </div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+      </form>
+    </ModalShell>
+  );
+}
+
+function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="tp-overlay" onClick={onClose}>
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
+        <h3 style={{ marginBottom: 14 }}>{title}</h3>
+        {children}
+      </div>
+    </div>
+  );
+}
