@@ -144,6 +144,12 @@ button{font-family:inherit}
 .weekdots i{width:8px;height:8px;border-radius:50%;background:var(--line-soft);display:block}
 .weekdots i.on{background:var(--hab)}
 
+/* ================= TRABAJO ================= */
+.moods{display:flex;gap:6px}
+.moodbtn{width:42px;height:42px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface);font-size:20px;cursor:pointer;display:grid;place-items:center;transition:border-color .15s,transform .1s}
+.moodbtn:hover{border-color:var(--muted);transform:scale(1.06)}
+.moodbtn.active{border-color:var(--accent);background:var(--accent-wash)}
+
 /* ================= FINANZAS ================= */
 .ftabs{display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .ftab{border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:var(--r-full);padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer}

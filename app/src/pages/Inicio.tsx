@@ -8,6 +8,7 @@ import { TablesMissingError, listAccounts, listCategories, listReminders, listTr
 import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Category, type Reminder, type Tx } from "../finanzas/types";
 import { listActivity, listObjectives, type ActivityEntry, type Objective } from "../objetivos/data";
 import { listHabitLogs, listHabits, type Habit, type HabitLog } from "../habitos/data";
+import { listProjects, type Project } from "../trabajo/data";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -24,6 +25,8 @@ export function Inicio() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [habReady, setHabReady] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [traReady, setTraReady] = useState(false);
 
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
@@ -55,6 +58,12 @@ export function Inicio() {
       setHabReady(true);
     } catch {
       setHabReady(false);
+    }
+    try {
+      setProjects(await listProjects());
+      setTraReady(true);
+    } catch {
+      setTraReady(false);
     }
   }, []);
 
@@ -184,6 +193,9 @@ export function Inicio() {
               const hoyStr = new Date().toISOString().slice(0, 10);
               const hechos = new Set(habitLogs.filter((l) => l.date === hoyStr).map((l) => l.habit_id)).size;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{hechos} / {habits.length} hoy</span>;
+            } else if (a.key === "trabajo" && traReady) {
+              const n = projects.filter((p) => p.status === "activo").length;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 proyecto activo" : `${n} proyectos activos`}</span>;
             }
             return (
               <Link to={a.path} key={a.key} className="area-row">
