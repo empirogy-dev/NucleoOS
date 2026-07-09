@@ -10,6 +10,7 @@ import { listActivity, listObjectives, type ActivityEntry, type Objective } from
 import { listHabitLogs, listHabits, type Habit, type HabitLog } from "../habitos/data";
 import { listProjects, type Project } from "../trabajo/data";
 import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSobriety, type Appointment, type Sobriety } from "../salud/data";
+import { listEntries, type Entry } from "../aprendizaje/data";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -31,6 +32,8 @@ export function Inicio() {
   const [sobriety, setSobriety] = useState<Sobriety[]>([]);
   const [citas, setCitas] = useState<Appointment[]>([]);
   const [salReady, setSalReady] = useState(false);
+  const [notas, setNotas] = useState<Entry[]>([]);
+  const [aprReady, setAprReady] = useState(false);
 
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
@@ -76,6 +79,12 @@ export function Inicio() {
       setSalReady(true);
     } catch {
       setSalReady(false);
+    }
+    try {
+      setNotas(await listEntries());
+      setAprReady(true);
+    } catch {
+      setAprReady(false);
     }
   }, []);
 
@@ -212,6 +221,8 @@ export function Inicio() {
               const hoyStr = new Date().toISOString().slice(0, 10);
               const prox = citas.filter((c) => c.date >= hoyStr).length;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{prox === 1 ? "1 cita próxima" : `${prox} citas próximas`}</span>;
+            } else if (a.key === "aprendizaje" && aprReady) {
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{notas.length === 1 ? "1 nota" : `${notas.length} notas`}</span>;
             }
             return (
               <Link to={a.path} key={a.key} className="area-row">

@@ -150,6 +150,19 @@ button{font-family:inherit}
 .moodbtn:hover{border-color:var(--muted);transform:scale(1.06)}
 .moodbtn.active{border-color:var(--accent);background:var(--accent-wash)}
 
+/* ================= APRENDIZAJE ================= */
+.apr-grid{display:grid;grid-template-columns:220px 250px 1fr;gap:14px}
+@media (max-width:960px){.apr-grid{grid-template-columns:1fr}}
+.searchbox{display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-full);padding:7px 14px;color:var(--muted);min-width:230px}
+.searchbox input{border:none;background:transparent;outline:none;font-family:var(--sans);font-size:13px;color:var(--ink);flex:1}
+.nb-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:9px;border:none;background:transparent;font-family:var(--sans);font-size:13.5px;color:var(--ink-soft);font-weight:500;cursor:pointer}
+.nb-row:hover{background:var(--line-soft);color:var(--ink)}
+.nb-row.active{background:var(--accent-wash);color:var(--accent-ink);font-weight:600}
+.nb-row small{color:var(--muted);font-size:11px;flex:none}
+.entry-title{width:100%;font-family:var(--serif);font-weight:500;font-size:19px;letter-spacing:-.01em;border:none;background:transparent;color:var(--ink);outline:none;padding:2px 0 10px;border-bottom:1px solid var(--line-soft);margin-bottom:10px}
+.entry-body{width:100%;font-family:var(--sans);font-size:14px;line-height:1.6;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);padding:12px;resize:vertical}
+.entry-body:focus{outline:2px solid var(--accent);outline-offset:1px}
+
 /* ================= FINANZAS ================= */
 .ftabs{display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .ftab{border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:var(--r-full);padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer}
