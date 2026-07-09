@@ -88,6 +88,15 @@ Identidad constante: un área siempre tiene su color, para reconocerla de un vis
 ## Modo oscuro
 Se deriva por cada tema al construir: `--paper` → neutro oscuro cálido/frío según el tema, `--ink` → claro, acentos +10–15% de brillo, mezclas de derivados hacia el fondo oscuro en vez de blanco. Mantener contraste AA.
 
+## Voz y redacción de la interfaz (regla de la usuaria, obligatoria)
+Los textos de la app deben leerse como escritos por una persona, no por una IA.
+- **Prohibido el guion como puntuación**: nada de guiones largos (—) ni guiones sueltos ( - ) para unir ideas. Usar comas, puntos, dos puntos y paréntesis.
+- Frases completas y naturales en español, con ortografía real (tildes, signos de apertura ¿¡).
+- Los separadores tipográficos (· entre datos) también se evitan; preferir comas.
+- Placeholders y opciones vacías sin adornos: "Sin categoría", no "— Sin categoría —".
+- Excepción: el enmascarado de tarjetas (•••• 1234) y los símbolos matemáticos (/, %) son convenciones, no puntuación.
+- Esta regla aplica a TODO texto nuevo de la interfaz, sin excepciones.
+
 ## Accesibilidad
 - Contraste texto/fondo AA. Foco visible (outline teal 2px). Navegación por teclado en web. Objetivos táctiles ≥40px en móvil.
 

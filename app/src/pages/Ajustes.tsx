@@ -59,7 +59,7 @@ export function Ajustes() {
           <div className="field" style={{ maxWidth: 320 }}>
             <select value={currency} onChange={(e) => void onCurrency(e.target.value)}>
               {CURRENCIES.map((c) => (
-                <option key={c} value={c}>{c} — {CURRENCY_NAMES[c]}</option>
+                <option key={c} value={c}>{CURRENCY_NAMES[c]} ({c})</option>
               ))}
             </select>
           </div>

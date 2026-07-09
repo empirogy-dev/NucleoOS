@@ -102,17 +102,17 @@ export function Inicio() {
           <q>{lifeVision}</q>
         ) : (
           <p style={{ color: "var(--muted)", fontSize: 14 }}>
-            Aún no escribes tu visión de vida. Es el norte de todo el sistema — presiona el lápiz. ✏️
+            Aún no escribes tu visión de vida. Es el norte de todo el sistema. Escríbela con el lápiz. ✏️
           </p>
         )}
       </div>
 
       {/* Stats reales (Finanzas) */}
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">Balance total</div><div className="v tnum">{finReady ? fmtMoney(balanceTotal, accounts[0]?.currency ?? currency) : "—"}</div></div>
-        <div className="card stat"><div className="k">Gastos del mes</div><div className="v tnum" style={{ color: "var(--err)" }}>{finReady ? fmtMoney(gastosMes, accounts[0]?.currency ?? currency) : "—"}</div></div>
-        <div className="card stat"><div className="k">Movimientos del mes</div><div className="v tnum">{finReady ? monthTxs.length : "—"}</div></div>
-        <div className="card stat"><div className="k">Presupuestos al límite</div><div className="v tnum" style={presupuestosAlLimite > 0 ? { color: "var(--warn)" } : undefined}>{finReady ? presupuestosAlLimite : "—"}</div></div>
+        <div className="card stat"><div className="k">Balance total</div><div className="v tnum">{finReady ? fmtMoney(balanceTotal, accounts[0]?.currency ?? currency) : "…"}</div></div>
+        <div className="card stat"><div className="k">Gastos del mes</div><div className="v tnum" style={{ color: "var(--err)" }}>{finReady ? fmtMoney(gastosMes, accounts[0]?.currency ?? currency) : "…"}</div></div>
+        <div className="card stat"><div className="k">Movimientos del mes</div><div className="v tnum">{finReady ? monthTxs.length : "…"}</div></div>
+        <div className="card stat"><div className="k">Presupuestos al límite</div><div className="v tnum" style={presupuestosAlLimite > 0 ? { color: "var(--warn)" } : undefined}>{finReady ? presupuestosAlLimite : "…"}</div></div>
       </div>
 
       {/* Próximos pagos — siempre visibles (ADHD-friendly) */}
@@ -130,7 +130,7 @@ export function Inicio() {
                   <span className="txicon">{r.category === "creditCard" ? "💳" : r.category === "debt" ? "🏦" : "🔔"}</span>
                   <div className="txmeta">
                     <b>{r.title}</b>
-                    <small>{next}{r.amount ? ` · ${fmtMoney(Number(r.amount), accounts[0]?.currency ?? currency)}` : ""}</small>
+                    <small>{next}{r.amount ? `, ${fmtMoney(Number(r.amount), accounts[0]?.currency ?? currency)}` : ""}</small>
                   </div>
                   <span className="chip" style={{
                     background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
@@ -140,7 +140,7 @@ export function Inicio() {
               );
             })}
           <Link to="/finanzas" style={{ fontSize: 12.5, color: "var(--accent-ink)", textDecoration: "underline", display: "inline-block", marginTop: 8 }}>
-            ver todos en Finanzas → Deudas y tarjetas
+            Ver todos en Finanzas, pestaña Deudas y tarjetas
           </Link>
         </div>
       )}
@@ -175,7 +175,7 @@ export function Inicio() {
                 <div className="row">
                   <span className="tdot" style={{ background: "var(--fin)" }} />
                   <div className="tx">
-                    <b>{t.date} · FINANZAS</b>
+                    <b>Finanzas, {t.date}</b>
                     {t.type === "expense" ? "Gasto" : "Ingreso"} {cat ? `en ${cat.name}` : ""}: {t.description || "sin descripción"} ({fmtMoney(Number(t.amount), accounts[0]?.currency ?? currency)})
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export function Inicio() {
         <span className="seed">🌱</span>
         <div>
           <div className="t1">Libre de marihuana</div>
-          <div className="t2 tnum">1 año · 4 meses</div>
+          <div className="t2 tnum">1 año y 4 meses</div>
         </div>
         <div className="hitos">
           <span className="hito">✓ THC eliminado</span>

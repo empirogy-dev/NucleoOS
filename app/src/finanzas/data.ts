@@ -150,7 +150,7 @@ export async function addDebt(d: {
   check(error);
   if (d.due_date && data) {
     await addReminder({
-      title: `Pago deuda · ${d.name}`,
+      title: `Pago de ${d.name}`,
       amount: d.min_payment,
       date: d.due_date,
       recurrence: "monthly",
@@ -186,7 +186,7 @@ export async function addCard(c: {
   check(error);
   if (c.due_date && data) {
     await addReminder({
-      title: `Pago tarjeta · ${c.name}`,
+      title: `Pago de la tarjeta ${c.name}`,
       amount: c.min_payment,
       date: c.due_date,
       recurrence: "monthly",

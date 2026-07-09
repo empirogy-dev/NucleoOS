@@ -137,7 +137,7 @@ export function FinanzasPage() {
             <li>Pégalo y presiona <b>Run</b>.</li>
           </ol>
           <button className="btn primary" style={{ marginTop: 16 }} onClick={() => void reload()}>
-            Ya lo hice — reintentar
+            Ya lo hice, reintentar
           </button>
         </div>
       </div>
@@ -224,7 +224,7 @@ export function FinanzasPage() {
                       <div className="top">
                         <span className="lbl">{c.icon} {c.name}</span>
                         <b className="tnum" style={over ? { color: "var(--err)" } : undefined}>
-                          {fmtMoney(spent, currency)} / {fmtMoney(budget, currency)}{over ? " · pasado" : ""}
+                          {fmtMoney(spent, currency)} / {fmtMoney(budget, currency)}{over ? ", te pasaste" : ""}
                         </b>
                       </div>
                       <div className="track">
@@ -287,7 +287,7 @@ export function FinanzasPage() {
               </div>
               {goals.length === 0 && (
                 <p style={{ color: "var(--muted)", marginBottom: 14 }}>
-                  Sin metas todavía. Crea la primera — juntar para un viaje, un fondo de emergencia, lo que sueñes. 🌱
+                  Sin metas todavía. Crea la primera: juntar para un viaje, un fondo de emergencia, lo que sueñes. 🌱
                 </p>
               )}
               <button className="btn ghost" style={{ marginTop: goals.length ? 14 : 0 }} onClick={() => setModal("goal")}>
@@ -303,7 +303,7 @@ export function FinanzasPage() {
                 <h3>🔔 Próximos pagos</h3>
                 {reminders.length === 0 && (
                   <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                    Sin recordatorios. Se crean solos al agregar una deuda o tarjeta con fecha de pago — o agrega uno manual (el celular, el arriendo, lo que sea).
+                    Sin recordatorios. Se crean solos al agregar una deuda o tarjeta con fecha de pago. También puedes agregar uno manual, como el celular o el arriendo.
                   </p>
                 )}
                 {[...reminders]
@@ -317,7 +317,7 @@ export function FinanzasPage() {
                         <span className="txicon">{r.category === "creditCard" ? "💳" : r.category === "debt" ? "🏦" : "🔔"}</span>
                         <div className="txmeta">
                           <b>{r.title}</b>
-                          <small>{next}{r.recurrence === "monthly" ? " · mensual" : r.recurrence === "biweekly" ? " · quincenal" : ""}{r.amount ? ` · ${fmtMoney(Number(r.amount), currency)}` : ""}</small>
+                          <small>{next}{r.recurrence === "monthly" ? ", mensual" : r.recurrence === "biweekly" ? ", quincenal" : ""}{r.amount ? `, ${fmtMoney(Number(r.amount), currency)}` : ""}</small>
                         </div>
                         <span className="chip" style={{
                           background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
@@ -345,7 +345,7 @@ export function FinanzasPage() {
                         <span style={{ fontSize: 18 }}>💳</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <b style={{ fontSize: 14 }}>{c.name}</b>
-                          <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{c.bank ?? ""}{c.last_four ? ` ···· ${c.last_four}` : ""}</div>
+                          <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{c.bank ?? ""}{c.last_four ? ` •••• ${c.last_four}` : ""}</div>
                         </div>
                         <button className="xdel" aria-label="Eliminar tarjeta" onClick={async () => { await deleteCard(c.id); void reload(); }}><Trash2 size={14} /></button>
                       </div>
@@ -374,7 +374,7 @@ export function FinanzasPage() {
                       <span style={{ fontSize: 18 }}>🏦</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <b style={{ fontSize: 14 }}>{d.name}</b>
-                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d.institution ?? ""}{d.interest_rate ? ` · ${d.interest_rate}% interés` : ""}</div>
+                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d.institution ?? ""}{d.interest_rate ? `, ${d.interest_rate}% de interés` : ""}</div>
                       </div>
                       <button className="xdel" aria-label="Eliminar deuda" onClick={async () => { await deleteDebt(d.id); void reload(); }}><Trash2 size={14} /></button>
                     </div>
@@ -422,7 +422,7 @@ export function FinanzasPage() {
                       <b style={{ fontSize: 13.5 }}>{c.name}</b>
                       <div style={{ fontSize: 11, color: "var(--muted)" }}>
                         {c.type === "income" ? "Ingreso" : c.type === "savings" ? "Ahorro" : "Gasto"}
-                        {c.type === "expense" && Number(c.budget) > 0 ? ` · presupuesto ${fmtMoney(Number(c.budget), currency)}` : ""}
+                        {c.type === "expense" && Number(c.budget) > 0 ? `, presupuesto ${fmtMoney(Number(c.budget), currency)}` : ""}
                       </div>
                     </div>
                     {c.type === "expense" && (
@@ -661,7 +661,7 @@ function ContributeModal({ goal, currency, onClose, onSaved }: {
   }
 
   return (
-    <Modal title={`Aportar · ${goal.icon ?? "🎯"} ${goal.name}`} onClose={onClose}>
+    <Modal title={`Aportar a ${goal.icon ?? "🎯"} ${goal.name}`} onClose={onClose}>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
         Te faltan <b className="tnum" style={{ color: "var(--ink)" }}>{fmtMoney(falta, currency)}</b> para lograrla.
       </p>
@@ -692,7 +692,7 @@ function BudgetModal({ cat, currency, onClose, onSaved }: {
   }
 
   return (
-    <Modal title={`Presupuesto · ${cat.icon ?? ""} ${cat.name}`} onClose={onClose}>
+    <Modal title={`Presupuesto de ${cat.icon ?? ""} ${cat.name}`} onClose={onClose}>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
         Tope mensual en {currency}. Déjalo vacío (o 0) para quitar el presupuesto.
       </p>
@@ -732,7 +732,7 @@ function TxRow({ t, catById, accById, currency, onDelete }: {
       <span className="txicon">{cat?.icon ?? (neg ? "💸" : "💰")}</span>
       <div className="txmeta">
         <b>{t.description || cat?.name || (neg ? "Gasto" : "Ingreso")}</b>
-        <small>{t.date} · {cat?.name ?? "Sin categoría"}{acc ? ` · ${acc.name}` : ""}{t.source !== "manual" ? ` · ${t.source}` : ""}</small>
+        <small>{t.date}, {cat?.name ?? "sin categoría"}{acc ? `, ${acc.name}` : ""}{t.source !== "manual" ? `, ${t.source}` : ""}</small>
       </div>
       <b className={"tnum txamt " + (neg ? "neg" : "pos")}>{neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
       {onDelete && <button className="xdel" aria-label="Eliminar" onClick={onDelete}><Trash2 size={14} /></button>}
@@ -792,12 +792,12 @@ function TxModal({ categories, accounts, onClose, onSaved }: {
         <div className="frow">
           <div className="field"><label>Categoría</label>
             <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">— Sin categoría —</option>
+              <option value="">Sin categoría</option>
               {cats.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
             </select></div>
           <div className="field"><label>Cuenta</label>
             <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-              <option value="">— Sin cuenta —</option>
+              <option value="">Sin cuenta</option>
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select></div>
         </div>
