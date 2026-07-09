@@ -27,10 +27,10 @@ export function Login() {
     <div className="auth-wrap">
       <div className="auth">
         <div className="auth-brand">
-          <div className="logo">SV</div>
+          <div className="logo">N</div>
           <div>
-            <b>Sistema de Vida</b>
-            <small>Tu segundo cerebro</small>
+            <b>NucleoOS</b>
+            <small>Tu sistema de vida</small>
           </div>
         </div>
 

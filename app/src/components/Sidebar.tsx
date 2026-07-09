@@ -10,10 +10,10 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   return (
     <aside className={"sidebar" + (open ? " open" : "")}>
       <div className="brand">
-        <div className="logo">SV</div>
+        <div className="logo">N</div>
         <div>
-          <b>Sistema de Vida</b>
-          <small>Tu segundo cerebro</small>
+          <b>NucleoOS</b>
+          <small>Tu sistema de vida</small>
         </div>
       </div>
       <nav className="nav">
