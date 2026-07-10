@@ -15,8 +15,8 @@ Las metas y avances se asignan a un área pero no se reflejan en ella, y el cale
 ## Auditoría completa de Fluxney (9 jul 2026): lo que faltaba portar a Finanzas
 Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 
-- [ ] `[Bug]` Transacciones: faltan los filtros de Fluxney (por cuenta o tarjeta, tipo, categoría y búsqueda). Cada cuenta y cada tarjeta debe poder ver SUS transacciones. (En curso)
-- [ ] `[Nuevo]` Deudas: plan para salir de deudas con estrategias bola de nieve (menor saldo primero) y avalancha (mayor interés primero), sugerencia de dónde aplicar el dinero extra, interés mensual por deuda y advertencia del interés anual si solo pagas el mínimo. Fluxney lo tenía en Debt.tsx y logicaFinanciera.js. (En curso)
+- [x] `[Bug]` Transacciones: filtros por cuenta o tarjeta, tipo, categoría y búsqueda, con contador (bbe8eb7).
+- [x] `[Nuevo]` Deudas: plan para salir de deudas con avalancha y bola de nieve, simulación de meses e intereses, y las tarjetas con saldo entran con su APR (8f07107).
 - [x] `[Nuevo]` Transferencias hacia metas de ahorro (con la 0011).
 - [x] `[Nuevo]` Resumen financiero: patrimonio neto, deuda total y balance en el Resumen de Finanzas.
 - [x] `[Nuevo]` Proyección de saldo a 3 meses con arrastre, en la pestaña Reporte.
