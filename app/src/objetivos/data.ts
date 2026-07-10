@@ -18,6 +18,7 @@ export interface Objective {
   status: ObjectiveStatus;
   progress: number;
   deadline: string | null;
+  dream_id: string | null;
   milestones: Milestone[];
 }
 
@@ -66,11 +67,18 @@ async function uid(): Promise<string> {
 
 // ---------- Metas ----------
 export async function listObjectives(): Promise<Objective[]> {
-  const [objRes, msRes] = await Promise.all([
-    sb().from("objectives").select("id,title,area,status,progress,deadline").order("created_at"),
-    sb().from("objective_milestones").select("id,objective_id,title,progress,position").order("position").order("created_at"),
-  ]);
-  check(objRes.error);
+  let objs: Array<Omit<Objective, "milestones">>;
+  const objRes = await sb().from("objectives").select("id,title,area,status,progress,deadline,dream_id").order("created_at");
+  if (objRes.error && /dream_id/.test(objRes.error.message)) {
+    // La migración 0019 aún no se corre: leemos sin el vínculo al sueño.
+    const legado = await sb().from("objectives").select("id,title,area,status,progress,deadline").order("created_at");
+    check(legado.error);
+    objs = (legado.data ?? []).map((o) => ({ ...o, dream_id: null })) as Array<Omit<Objective, "milestones">>;
+  } else {
+    check(objRes.error);
+    objs = (objRes.data ?? []) as Array<Omit<Objective, "milestones">>;
+  }
+  const msRes = await sb().from("objective_milestones").select("id,objective_id,title,progress,position").order("position").order("created_at");
   check(msRes.error);
   const byObj = new Map<string, Milestone[]>();
   for (const m of (msRes.data ?? []) as Milestone[]) {
@@ -78,14 +86,17 @@ export async function listObjectives(): Promise<Objective[]> {
     list.push(m);
     byObj.set(m.objective_id, list);
   }
-  return ((objRes.data ?? []) as Array<Omit<Objective, "milestones">>).map((o) => ({
+  return objs.map((o) => ({
     ...o,
     milestones: byObj.get(o.id) ?? [],
   }));
 }
 
-export async function addObjective(o: { title: string; area: string | null; deadline: string | null }): Promise<void> {
+export async function addObjective(o: { title: string; area: string | null; deadline: string | null; dream_id?: string | null }): Promise<void> {
   const { error } = await sb().from("objectives").insert({ ...o, user_id: await uid() });
+  if (error && /dream_id/.test(error.message)) {
+    throw new Error("Para convertir sueños en metas falta la migración 0019 (supabase/migrations/0019_suenos_vida_ideal.sql).");
+  }
   check(error);
 }
 

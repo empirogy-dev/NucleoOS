@@ -3,27 +3,18 @@ import { IconField } from "../components/IconField";
 import { Link } from "react-router-dom";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
-import { Moon, Plus, Repeat, Trash2 } from "lucide-react";
+import { Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import {
-  EXERCISE_KINDS,
-  addExercise,
   addHabit,
-  deleteExercise,
   deleteHabit,
-  listExercise,
   listHabitLogs,
   HABITOS_DE_PAZ,
   listHabits,
-  listRoutine,
-  saveRoutine,
-  sleepHours,
   streakFor,
   toggleHabit,
-  type ExerciseLog,
   type Habit,
   type HabitLog,
-  type RoutineLog,
 } from "./data";
 
 function isoDaysAgo(n: number): string {
@@ -35,8 +26,6 @@ function isoDaysAgo(n: number): string {
 export function HabitosPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
-  const [routine, setRoutine] = useState<RoutineLog[]>([]);
-  const [exercise, setExercise] = useState<ExerciseLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,11 +37,9 @@ export function HabitosPage() {
     setLoading(true);
     setError(null);
     try {
-      const [h, l, r, e] = await Promise.all([listHabits(), listHabitLogs(), listRoutine(), listExercise()]);
+      const [h, l] = await Promise.all([listHabits(), listHabitLogs()]);
       setHabits(h);
       setLogs(l);
-      setRoutine(r);
-      setExercise(e);
       setNeedsMigration(false);
     } catch (e) {
       if (e instanceof TablesMissingError) setNeedsMigration(true);
@@ -68,12 +55,6 @@ export function HabitosPage() {
 
   const doneToday = new Set(logs.filter((l) => l.date === hoy).map((l) => l.habit_id));
   const mejorRacha = habits.reduce((max, h) => Math.max(max, streakFor(h.id, logs)), 0);
-  const semana = isoDaysAgo(6);
-  const minutosSemana = exercise.filter((e) => e.date >= semana).reduce((s, e) => s + e.minutes, 0);
-  const sueños = routine.map(sleepHours).filter((h): h is number => h !== null);
-  const promedioSueño = sueños.length ? Math.round((sueños.reduce((a, b) => a + b, 0) / sueños.length) * 10) / 10 : null;
-
-  const rutinaHoy = routine.find((r) => r.date === hoy);
 
   if (needsMigration) {
     return (
@@ -95,20 +76,14 @@ export function HabitosPage() {
     <div className="page">
       <Head />
 
-      <p style={{ fontSize: 13, color: "var(--muted)", marginTop: -12, marginBottom: 16 }}>
-        Las meditaciones, la respiración guiada y el calendario lunar ahora viven en <Link to="/mente" style={{ color: "var(--accent-ink)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>Mente</Link>.
-      </p>
-
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
       ) : (
         <>
-          <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+          <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="card stat"><div className="k">Hábitos de hoy</div><div className="v tnum">{doneToday.size} / {habits.length}</div></div>
             <div className="card stat"><div className="k">Mejor racha</div><div className="v tnum">{mejorRacha > 0 ? `🔥 ${mejorRacha}` : "0"}</div></div>
-            <div className="card stat"><div className="k">Ejercicio (7 días)</div><div className="v tnum">{minutosSemana} min</div></div>
-            <div className="card stat"><div className="k">Sueño promedio</div><div className="v tnum">{promedioSueño !== null ? `${promedioSueño} h` : "sin datos"}</div></div>
           </div>
 
           <div className="panelgrid">
@@ -164,15 +139,20 @@ export function HabitosPage() {
               <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setHabitModal(true)}>
                 <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo hábito
               </button>
+            </div>
+
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              {/* Sugeridos */}
               {(() => {
                 const existentes = new Set(habits.map((x) => x.name.toLowerCase()));
                 const sugeridos = HABITOS_DE_PAZ.filter((x) => !existentes.has(x.name.toLowerCase()));
                 if (sugeridos.length === 0) return null;
                 return (
-                  <div style={{ marginTop: 14 }}>
-                    <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>
-                      Sugeridos para tu paz
-                    </div>
+                  <div className="card panel">
+                    <h3>🌿 Sugeridos para tu paz</h3>
+                    <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+                      Un toque y quedan creados con su desafío.
+                    </p>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {sugeridos.map((x) => (
                         <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
@@ -185,60 +165,26 @@ export function HabitosPage() {
                   </div>
                 );
               })()}
-            </div>
 
-            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-              {/* Sueño de hoy */}
-              <div className="card panel">
-                <h3><Moon size={14} style={{ verticalAlign: "-2px" }} /> Sueño</h3>
-                <div className="frow">
-                  <div className="field">
-                    <label>Anoche me acosté</label>
-                    <input type="time" defaultValue={rutinaHoy?.bed_time ?? ""} key={`bed-${rutinaHoy?.id ?? "new"}`}
-                      onBlur={async (e) => { if (e.target.value) { await saveRoutine(hoy, { bed_time: e.target.value }); void reload(); } }} />
-                  </div>
-                  <div className="field">
-                    <label>Hoy me levanté</label>
-                    <input type="time" defaultValue={rutinaHoy?.wake_time ?? ""} key={`wake-${rutinaHoy?.id ?? "new"}`}
-                      onBlur={async (e) => { if (e.target.value) { await saveRoutine(hoy, { wake_time: e.target.value }); void reload(); } }} />
-                  </div>
-                </div>
-                {rutinaHoy && sleepHours(rutinaHoy) !== null && (
-                  <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>Anoche dormiste <b className="tnum">{sleepHours(rutinaHoy)} horas</b>.</p>
-                )}
-                {routine.length > 1 && (
-                  <div style={{ borderTop: "1px solid var(--line-soft)", marginTop: 10, paddingTop: 8 }}>
-                    <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>Bitácora de sueño</div>
-                    {routine.slice(0, 7).map((r) => {
-                      const h = sleepHours(r);
-                      return (
-                        <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--ink-soft)", padding: "3px 0" }}>
-                          <span>{r.date}</span>
-                          <span className="tnum">{r.bed_time ? r.bed_time.slice(0, 5) : "?"} a {r.wake_time ? r.wake_time.slice(0, 5) : "?"}{h !== null ? `, ${h} h` : ""}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <Link to="/salud" className="card pad vb-link" style={{ marginBottom: 0 }}>
+                <span style={{ fontSize: 22 }}>⚡</span>
+                <span>
+                  <b style={{ display: "block", fontSize: 14 }}>El sueño y el ejercicio se mudaron a Energía</b>
+                  <small style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                    Ahí registras agua, proteína, movimiento y descanso, todo el combustible de tu cuerpo.
+                  </small>
+                </span>
+              </Link>
 
-              {/* Ejercicio */}
-              <div className="card panel">
-                <h3>Ejercicio</h3>
-                <ExerciseForm onSaved={() => void reload()} />
-                {exercise.slice(0, 5).map((e) => (
-                  <div className="txrow" key={e.id} style={{ padding: "7px 0" }}>
-                    <div className="txmeta">
-                      <b style={{ fontSize: 13 }}>{e.kind}</b>
-                      <small>{e.date}</small>
-                    </div>
-                    <b className="tnum" style={{ fontSize: 13 }}>{e.minutes} min</b>
-                    <button className="xdel" aria-label="Eliminar ejercicio" onClick={async () => { await deleteExercise(e.id); void reload(); }}>
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <Link to="/mente" className="card pad vb-link" style={{ marginBottom: 0 }}>
+                <span style={{ fontSize: 22 }}>🧘</span>
+                <span>
+                  <b style={{ display: "block", fontSize: 14 }}>Meditaciones y respiración en Mente</b>
+                  <small style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                    Sesiones guiadas de 2 a 30 minutos y el calendario lunar.
+                  </small>
+                </span>
+              </Link>
             </div>
           </div>
         </>
@@ -256,35 +202,8 @@ function Head() {
     <div className="page-head">
       <div className="eyebrow"><Repeat size={13} /> Núcleo</div>
       <h1>Hábitos</h1>
-      <p>Sueño, ejercicio y las rutinas que construyen tu día.</p>
+      <p>Las rutinas que construyen tu día, un check a la vez.</p>
     </div>
-  );
-}
-
-function ExerciseForm({ onSaved }: { onSaved: () => void }) {
-  const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
-  const [minutes, setMinutes] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-    if (!minutes) return;
-    setBusy(true);
-    await addExercise(hoyLocal(), kind, Number(minutes));
-    setMinutes("");
-    setBusy(false);
-    onSaved();
-  }
-
-  return (
-    <form onSubmit={save} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-      <select className="ms-sel" style={{ flex: 1 }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Tipo de ejercicio">
-        {EXERCISE_KINDS.map((k) => <option key={k}>{k}</option>)}
-      </select>
-      <input className="input-inline" style={{ width: 90, flex: "none" }} type="number" min="1" placeholder="min"
-        value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label="Minutos" />
-      <button className="btn ghost" type="submit" disabled={busy}>Anotar</button>
-    </form>
   );
 }
 

@@ -73,7 +73,13 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Módulo Mente: respiración guiada con círculo animado y señal sonora por fase, meditaciones de 5 a 30 minutos con guía paso a paso, campana de inicio y cierre, sonido ambiental opcional, pausar y reanudar, sesiones completadas con historial, y el calendario lunar.
 - [x] `[Nuevo]` Visión como collage libre: mover, redimensionar, rotar, superponer, notas de texto con colores y guardado automático del layout (migración 0017).
 - [ ] `[Nuevo]` Mente: guardar el historial de sesiones en Supabase (hoy vive en el navegador con localStorage).
-- [ ] `[Nuevo]` Energía: pestañas internas (Hoy, Ficha, Citas y medicamentos, Exámenes) si la página crece más.
+
+## Energía diaria y Visión/Dirección (10 jul 2026, tarde)
+- [x] `[Nuevo]` Energía rediseñada como combustible diario: pestañas Hoy, Nutrición, Movimiento, Sueño, Recuperación y Salud clínica. Lectura rápida arriba (sueño, agua, proteína, movimiento), vasos de agua tocables, proteína con meta según peso, energía percibida con emojis (migración 0018). El sueño y el ejercicio se mudaron desde Hábitos; la sobriedad vive en Recuperación; lo médico intacto en Salud clínica.
+- [x] `[Nuevo]` Visión con pestañas Sueños (bucket list con categoría, por qué, prioridad emocional y estados), Visual board (el collage) y Vida ideal (6 bloques guiados con autoguardado), migración 0019.
+- [x] `[Nuevo]` Dirección con pestañas Metas activas, Próximos pasos (milestones pendientes accionables), Avances y Logradas. Puente sueño → meta con origen visible (objectives.dream_id).
+- [ ] `[Nuevo]` Energía: gráfico de tendencia del nivel de energía percibida contra sueño y movimiento.
+- [ ] `[Nuevo]` Sueños con imagen propia (hoy usan el emoji de su categoría).
 
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
