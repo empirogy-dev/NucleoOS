@@ -12,6 +12,21 @@ Las metas y avances se asignan a un área pero no se reflejan en ella, y el cale
 - [x] `[Nuevo]` Finanzas: tipo Transferencia (pedido de la usuaria): no cuenta como gasto ni ingreso, mueve saldo entre cuentas, o solo descuenta del origen si el destino está fuera de la app, como el pago de la tarjeta.
 - [ ] `[Nuevo]` Seguimiento: vincular la transferencia "fuera de la app" directamente a una tarjeta de crédito registrada, para que baje su saldo usado.
 
+## Auditoría completa de Fluxney (9 jul 2026): lo que faltaba portar a Finanzas
+Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
+
+- [ ] `[Bug]` Transacciones: faltan los filtros de Fluxney (por cuenta o tarjeta, tipo, categoría y búsqueda). Cada cuenta y cada tarjeta debe poder ver SUS transacciones. (En curso)
+- [ ] `[Nuevo]` Deudas: plan para salir de deudas con estrategias bola de nieve (menor saldo primero) y avalancha (mayor interés primero), sugerencia de dónde aplicar el dinero extra, interés mensual por deuda y advertencia del interés anual si solo pagas el mínimo. Fluxney lo tenía en Debt.tsx y logicaFinanciera.js. (En curso)
+- [ ] `[Nuevo]` Transferencias hacia metas de ahorro: en Fluxney una transferencia podía tener como destino una meta (transferHelpers.ts) y el aporte quedaba como movimiento.
+- [ ] `[Nuevo]` Resumen financiero del Dashboard: patrimonio neto (cuentas menos deudas), deuda total, flujo de caja del mes.
+- [ ] `[Nuevo]` Proyección de flujo de caja a meses futuros con arrastre de saldo (proyectarFlujoCaja).
+- [ ] `[Nuevo]` Presupuestos avanzados: modo por categoría (fijo, flexible, variable), fondo de arrastre (rollover) y excluir del presupuesto. La columna budget_mode ya existe en la base.
+- [ ] `[Nuevo]` Editar categorías (nombre, ícono, tipo) y editar metas de ahorro; hoy solo se crean y eliminan.
+- [ ] `[Nuevo]` Deudas: campo de notas (la columna existe, falta en el formulario) y recordatorio configurable en días de anticipación.
+- [ ] `[Nuevo]` Multi moneda con conversión automática (CurrencyContext tenía tasas y ajuste autoConversion).
+- [ ] `[Nuevo]` Formato de fecha configurable en Ajustes.
+- Ya cubiertos por el plan: escaneo de recibos (Fase 2 con IA), conexión de banco y tarjetas (Fase 5), calendario financiero (Bloque C).
+
 ## Bloque B, Inicio orientado al avance
 - [ ] `[Nuevo]` Mostrar porcentaje de avance por área (no el balance financiero).
 - [ ] `[Nuevo]` "Actividad reciente" centrada en el avance hacia tu mejor versión, no en transacciones.
