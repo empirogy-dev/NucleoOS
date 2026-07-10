@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { AvancesArea } from "../components/AvancesArea";
+import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import {
@@ -241,10 +242,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutina
 }) {
   const pctProt = Math.min(100, Math.round((proteina / metaProt) * 100));
 
-  return (
-    <div className="panelgrid">
-      <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-        {/* Agua */}
+  const bloqueAgua = (
         <div className="card panel">
           <h3>💧 Agua</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
@@ -265,8 +263,9 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutina
           </div>
           {agua >= META_AGUA_VASOS && <span className="chip" style={{ marginTop: 10 }}>✓ Meta de agua cumplida</span>}
         </div>
+  );
 
-        {/* Proteína */}
+  const bloqueProteina = (
         <div className="card panel">
           <h3>🍗 Proteína</h3>
           <div className="bar" style={{ marginBottom: 10 }}>
@@ -290,16 +289,9 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutina
               : "Referencias: un huevo 6 g, pechuga de pollo 30 g, un yogur griego 15 g, una taza de lentejas 18 g."}
           </p>
         </div>
+  );
 
-        {/* Foto del plato */}
-        <PlatoCard onSaved={onChanged} />
-
-        {/* Movimiento de hoy */}
-        <MovimientoRapido exercise={exercise} onChanged={onChanged} />
-      </div>
-
-      <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-        {/* Energía percibida */}
+  const bloqueNivel = (
         <div className="card panel">
           <h3>⚡ ¿Cómo está tu energía?</h3>
           <div className="moods">
@@ -321,11 +313,25 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutina
             </p>
           )}
         </div>
+  );
 
-        {/* Sueño de anoche */}
-        <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} />
-      </div>
-    </div>
+  return (
+    <>
+      <p style={{ fontSize: 12, color: "var(--muted)", margin: "-4px 0 12px" }}>
+        Ordena las tarjetas a tu gusto: pasa el mouse por una y arrastra desde el agarre ⋮ de la esquina.
+      </p>
+      <OrdenGrid
+        clave="energia-hoy"
+        bloques={[
+          { id: "agua", el: bloqueAgua },
+          { id: "proteina", el: bloqueProteina },
+          { id: "plato", el: <PlatoCard onSaved={onChanged} /> },
+          { id: "movimiento", el: <MovimientoRapido exercise={exercise} onChanged={onChanged} /> },
+          { id: "nivel", el: bloqueNivel },
+          { id: "sueno", el: <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} /> },
+        ]}
+      />
+    </>
   );
 }
 

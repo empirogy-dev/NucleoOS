@@ -5,7 +5,10 @@ import { Check, ChevronDown, ChevronRight, Compass, Plus, Trash2 } from "lucide-
 import { AREAS } from "../areas";
 import { TablesMissingError } from "../finanzas/data";
 import { listDreams, type Dream } from "../vision/suenos";
+import { listExercise, type ExerciseLog } from "../habitos/data";
+import { listSesiones, type Sesion } from "../mente/practicas";
 import {
+  METRICAS_AUTO,
   STATUS_LABELS,
   addActivity,
   addMilestone,
@@ -46,11 +49,29 @@ const STATUS_TONES: Record<ObjectiveStatus, { bg: string; fg: string }> = {
 
 type Tab = "metas" | "pasos" | "avances" | "logradas";
 
+/** Valor real de una métrica automática, contado desde que la meta nació. */
+function valorAuto(o: Objective, ejercicio: ExerciseLog[], sesiones: Sesion[]): number {
+  const desde = o.created_at ? o.created_at.slice(0, 10) : "0000-00-00";
+  if (o.auto_metric === "mov_sesiones") return ejercicio.filter((e) => e.date >= desde).length;
+  if (o.auto_metric === "mov_minutos") return ejercicio.filter((e) => e.date >= desde).reduce((s, e) => s + e.minutes, 0);
+  if (o.auto_metric === "mente_sesiones") return sesiones.filter((s) => s.fecha >= desde).length;
+  return 0;
+}
+
+function progresoDe(o: Objective, ejercicio: ExerciseLog[], sesiones: Sesion[]): number {
+  if (o.auto_metric && o.auto_target) {
+    return Math.min(100, Math.round((valorAuto(o, ejercicio, sesiones) / o.auto_target) * 100));
+  }
+  return objectiveProgress(o);
+}
+
 export function ObjetivosPage() {
   const [tab, setTab] = useState<Tab>("metas");
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
+  const [ejercicio, setEjercicio] = useState<ExerciseLog[]>([]);
+  const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +94,12 @@ export function ObjetivosPage() {
     } catch {
       /* sin la 0019 no hay sueños vinculados, no bloquea */
     }
+    try {
+      setEjercicio(await listExercise(365));
+    } catch {
+      /* sin tablas de ejercicio, las metas automáticas parten en cero */
+    }
+    setSesiones(listSesiones());
     setLoading(false);
   }, []);
 
@@ -84,7 +111,7 @@ export function ObjetivosPage() {
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
   const promedio = activas.length
-    ? Math.round(activas.reduce((s, o) => s + objectiveProgress(o), 0) / activas.length)
+    ? Math.round(activas.reduce((s, o) => s + progresoDe(o, ejercicio, sesiones), 0) / activas.length)
     : 0;
   const suenoDe = new Map(dreams.map((d) => [d.id, d]));
   const pasosPendientes = activas.flatMap((o) =>
@@ -149,7 +176,8 @@ export function ObjetivosPage() {
                 </div>
               )}
               {activas.map((o) => (
-                <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null} onChanged={() => void reload()} />
+                <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null}
+                  ejercicio={ejercicio} sesiones={sesiones} onChanged={() => void reload()} />
               ))}
             </div>
           )}
@@ -271,10 +299,19 @@ function Head() {
   );
 }
 
-function ObjectiveCard({ o, sueno, onChanged }: { o: Objective; sueno: Dream | null; onChanged: () => void }) {
+function ObjectiveCard({ o, sueno, ejercicio, sesiones, onChanged }: {
+  o: Objective;
+  sueno: Dream | null;
+  ejercicio: ExerciseLog[];
+  sesiones: Sesion[];
+  onChanged: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [newMs, setNewMs] = useState("");
-  const pct = objectiveProgress(o);
+  const esAuto = Boolean(o.auto_metric && o.auto_target);
+  const metrica = METRICAS_AUTO.find((m) => m.key === o.auto_metric) ?? null;
+  const valor = esAuto ? valorAuto(o, ejercicio, sesiones) : 0;
+  const pct = progresoDe(o, ejercicio, sesiones);
   const tone = STATUS_TONES[o.status];
   const hasMs = o.milestones.length > 0;
 
@@ -318,14 +355,18 @@ function ObjectiveCard({ o, sueno, onChanged }: { o: Objective; sueno: Dream | n
 
       <div className="bar" style={{ margin: "12px 0 0" }}>
         <div className="top">
-          <span>{hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}</span>
+          <span>
+            {esAuto && metrica
+              ? `⚡ se alimenta solo: ${valor} de ${o.auto_target} ${metrica.unidad}`
+              : hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}
+          </span>
           <b className="tnum">{pct}%</b>
         </div>
         <div className="track">
           <div className="fill" style={{ width: `${pct}%`, background: areaColor(o.area) }} />
         </div>
       </div>
-      {!hasMs && (
+      {!hasMs && !esAuto && (
         <input type="range" min={0} max={100} step={5} defaultValue={o.progress} className="slider"
           aria-label="Progreso de la meta"
           onMouseUp={async (e) => { await updateObjective(o.id, { progress: Number((e.target as HTMLInputElement).value) }); onChanged(); }}
@@ -334,6 +375,7 @@ function ObjectiveCard({ o, sueno, onChanged }: { o: Objective; sueno: Dream | n
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
+          <AutoConfig o={o} onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
               <span style={{ flex: 1, fontSize: 13.5, color: m.progress >= 100 ? "var(--muted)" : "var(--ink-soft)", textDecoration: m.progress >= 100 ? "line-through" : "none" }}>
@@ -358,21 +400,88 @@ function ObjectiveCard({ o, sueno, onChanged }: { o: Objective; sueno: Dream | n
   );
 }
 
+/** Configuración del progreso automático de una meta, dentro de sus detalles. */
+function AutoConfig({ o, onChanged }: { o: Objective; onChanged: () => void }) {
+  const [metric, setMetric] = useState(o.auto_metric ?? "");
+  const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
+  const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function guardar() {
+    setErr(null);
+    try {
+      await updateObjective(o.id, {
+        auto_metric: metric || null,
+        auto_target: metric && target ? Number(target) : null,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid var(--line-soft)" }}>
+      <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
+        ⚡ Progreso automático
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <select className="ms-sel" style={{ padding: "8px 10px" }} value={metric} aria-label="Métrica automática"
+          onChange={(e) => setMetric(e.target.value)}>
+          <option value="">Sin conexión automática</option>
+          {METRICAS_AUTO.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+        </select>
+        {metric && (
+          <input className="input-inline" type="number" min={1} max={100000} value={target} placeholder="meta"
+            aria-label="Cantidad objetivo" style={{ maxWidth: 100, flex: "none" }}
+            onChange={(e) => setTarget(e.target.value)} />
+        )}
+        <button className="btn ghost" type="button" onClick={() => void guardar()}>Guardar</button>
+        {saved && <span className="chip">✓ Conectada</span>}
+      </div>
+      {metric && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+          La meta avanza sola con cada registro de {METRICAS_AUTO.find((m) => m.key === metric)?.fuente ?? "la app"}, contando desde que la creaste.
+        </p>
+      )}
+      {err && <p style={{ fontSize: 12, color: "var(--err)", marginTop: 6 }}>{err}</p>}
+    </div>
+  );
+}
+
 function ObjectiveModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [title, setTitle] = useState("");
   const [area, setArea] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [metric, setMetric] = useState("");
+  const [target, setTarget] = useState("");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addObjective({ title, area: area || null, deadline: deadline || null });
-    onSaved();
+    setErr(null);
+    try {
+      await addObjective({
+        title,
+        area: area || null,
+        deadline: deadline || null,
+        auto_metric: metric || null,
+        auto_target: metric && target ? Number(target) : null,
+      });
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+    }
   }
 
   return (
     <ModalShell title="Nueva meta" onClose={onClose}>
+      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
       <form onSubmit={save}>
         <div className="field"><label>¿Qué quieres lograr?</label>
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ahorrar para el viaje a Japón" autoFocus /></div>
@@ -382,6 +491,22 @@ function ObjectiveModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
           </select></div>
         <div className="field"><label>Fecha límite (opcional)</label>
           <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+        <div className="frow">
+          <div className="field"><label>Se alimenta de (opcional)</label>
+            <select value={metric} onChange={(e) => setMetric(e.target.value)}>
+              <option value="">Nada, progreso manual o por pasos</option>
+              {METRICAS_AUTO.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+            </select></div>
+          {metric && (
+            <div className="field" style={{ maxWidth: 110 }}><label>Objetivo</label>
+              <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="50" /></div>
+          )}
+        </div>
+        {metric && (
+          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+            Cada registro real (una rutina, una caminata, una sesión) hará avanzar esta meta solo.
+          </p>
+        )}
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear meta"}</button>
       </form>
     </ModalShell>

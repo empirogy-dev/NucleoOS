@@ -105,6 +105,16 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Notion API directa (Fase 4, requiere Edge Function porque la API de Notion no permite llamadas desde el navegador): exportar reportes automáticos, páginas de journaling y notas de aprendizaje.
 - [ ] `[Nuevo]` Patrones: sumar finanzas vs estado emocional cuando haya más días de energía percibida registrados.
 
+## Detalles de la usuaria (10 jul 2026, noche)
+- [x] `[Bug]` Sugeridos para tu paz no agregaban el hábito: la causa es que la migración 0014 no está corrida en Supabase (el error era silencioso). Ahora el chip abre el modal prellenado, se elige la duración, y cualquier error se muestra.
+- [x] `[Bug]` Formularios sin estilo: inputs, textareas y labels ahora usan el sistema de diseño (antes solo los select).
+- [x] `[Nuevo]` Tarjetas reordenables con el mouse en Energía → Hoy: arrastra desde el agarre ⋮ y el orden queda guardado.
+- [x] `[Nuevo]` Metas con progreso automático (migración 0024): una meta como Estar en forma se alimenta sola de sesiones o minutos de movimiento, o de sesiones de Mente, contando desde su creación.
+- [x] `[Nuevo]` Regulación: abrazo de mariposa y zumbido del nervio vago.
+- [x] `[Nuevo]` Movimiento sin la pestaña Mi material (se retirará o se moverá a Aprendizaje si la usuaria lo pide).
+- [ ] `[Nuevo]` Tarjetas reordenables en el resto de los módulos (el componente OrdenGrid ya es reutilizable).
+- [ ] `[Nuevo]` Reordenar con el dedo en el celular (hoy funciona con mouse; el arrastre táctil llega con la app móvil o con pointer events).
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

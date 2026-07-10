@@ -106,6 +106,25 @@ export const RESPIRACIONES: Practica[] = [
     ],
   },
   {
+    id: "resp-zumbido",
+    nombre: "Zumbido del nervio vago",
+    emoji: "🐝",
+    tipo: "respiracion",
+    categoria: "regulacion",
+    descripcion: "Exhalar zumbando estimula el nervio vago, el freno natural del sistema nervioso. Simple y potente.",
+    duraciones: [3, 5, 10],
+    pasos: [
+      "Cierra los labios suaves y relaja la mandíbula.",
+      "Inhala por la nariz, y al exhalar haz un zumbido como de abeja, mmm.",
+      "Siente la vibración en el pecho, la garganta y la cara.",
+      "Mientras más larga y cómoda la exhalación, más profundo el efecto.",
+    ],
+    fases: [
+      { etiqueta: "Inhala", segundos: 4, tipo: "inhala" },
+      { etiqueta: "Exhala zumbando", segundos: 8, tipo: "exhala" },
+    ],
+  },
+  {
     id: "resp-corazon",
     nombre: "Conexión con el corazón",
     emoji: "💛",
@@ -206,6 +225,22 @@ export const MEDITACIONES: Practica[] = [
       "Deja que la respiración vaya a su propio ritmo, sin controlarla.",
       "Cuando la mente se vaya (se va a ir), vuelve amable a la respiración.",
       "La campana te avisará cuando termine. Hasta entonces, nada que hacer.",
+    ],
+  },
+  {
+    id: "med-mariposa",
+    nombre: "Abrazo de mariposa",
+    emoji: "🦋",
+    tipo: "meditacion",
+    categoria: "regulacion",
+    descripcion: "Te abrazas y alternas toques suaves en los hombros. Regula el sistema nervioso, se usa incluso después de sustos grandes.",
+    duraciones: [3, 5, 10],
+    pasos: [
+      "Cruza los brazos sobre el pecho, cada mano en el hombro contrario.",
+      "Alterna toques suaves y lentos: izquierda, derecha, izquierda, como un aleteo.",
+      "Respira lento mientras tanto, con la exhalación un poco más larga.",
+      "Si aparecen emociones, déjalas pasar como nubes, sin pelearles.",
+      "Termina quedándote un momento en el abrazo, quieta.",
     ],
   },
   {

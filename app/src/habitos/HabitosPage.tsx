@@ -30,7 +30,7 @@ export function HabitosPage() {
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [habitModal, setHabitModal] = useState(false);
+  const [habitModal, setHabitModal] = useState<{ base?: { name: string; icon: string; dias: number } } | null>(null);
   const [tabH, setTabH] = useState<"habitos" | "retos">("habitos");
 
   const hoy = hoyLocal();
@@ -140,7 +140,7 @@ export function HabitosPage() {
                   </div>
                 );
               })}
-              <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setHabitModal(true)}>
+              <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setHabitModal({})}>
                 <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo hábito
               </button>
             </div>
@@ -155,13 +155,13 @@ export function HabitosPage() {
                   <div className="card panel">
                     <h3>🌿 Sugeridos para tu paz</h3>
                     <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-                      Un toque y quedan creados con su desafío.
+                      Tócalo, elige por cuántos días, y queda listo para trackear.
                     </p>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {sugeridos.map((x) => (
                         <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
-                          title={`Crear el hábito ${x.name} (${x.dias} días)`}
-                          onClick={async () => { await addHabit(x.name, x.icon, x.dias); void reload(); }}>
+                          title={`Crear el hábito ${x.name}`}
+                          onClick={() => setHabitModal({ base: x })}>
                           {x.icon} {x.name}
                         </button>
                       ))}
@@ -198,7 +198,7 @@ export function HabitosPage() {
 
       <AvancesArea area="habitos" />
 
-      {habitModal && <HabitModal onClose={() => setHabitModal(false)} onSaved={() => { setHabitModal(false); void reload(); }} />}
+      {habitModal && <HabitModal base={habitModal.base} onClose={() => setHabitModal(null)} onSaved={() => { setHabitModal(null); void reload(); }} />}
     </div>
   );
 }
@@ -213,10 +213,14 @@ function Head() {
   );
 }
 
-function HabitModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [icon, setIcon] = useState("🌱");
-  const [dias, setDias] = useState("28");
+function HabitModal({ base, onClose, onSaved }: {
+  base?: { name: string; icon: string; dias: number };
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(base?.name ?? "");
+  const [icon, setIcon] = useState(base?.icon ?? "🌱");
+  const [dias, setDias] = useState(String(base?.dias ?? 28));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

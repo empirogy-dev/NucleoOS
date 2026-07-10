@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, PersonStanding, Upload } from "lucide-react";
+import { PersonStanding } from "lucide-react";
 import { AvancesArea } from "../components/AvancesArea";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
@@ -8,26 +8,20 @@ import { addExercise } from "../habitos/data";
 import {
   PROGRAMAS,
   RUTINAS,
-  deleteMaterial,
-  listMaterial,
   listProgramDays,
-  openMaterial,
   rutinaPor,
   toggleProgramDay,
-  uploadMaterial,
-  type MaterialFile,
   type ProgramDay,
   type Programa,
   type Rutina,
   type TipoRutina,
 } from "./data";
-import { Trash2 } from "lucide-react";
 
 // Movimiento: el cuerpo en acción. Práctica suave (yoga, movilidad),
-// entrenamiento (fuerza, cardio, core), retos y tu material propio.
+// entrenamiento (fuerza, cardio, core) y programas guiados.
 // Completar una rutina se registra solo en Energía.
 
-type Tab = "suave" | "entrenamiento" | "programas" | "material";
+type Tab = "suave" | "entrenamiento" | "programas";
 
 const NIVEL_LABEL = { suave: "🌿 suave", medio: "💪 medio", intenso: "🔥 intenso" } as const;
 
@@ -47,14 +41,12 @@ export function MovimientoPage() {
         <button className={"ftab" + (tab === "suave" ? " active" : "")} onClick={() => setTab("suave")}>Práctica suave</button>
         <button className={"ftab" + (tab === "entrenamiento" ? " active" : "")} onClick={() => setTab("entrenamiento")}>Entrenamiento</button>
         <button className={"ftab" + (tab === "programas" ? " active" : "")} onClick={() => setTab("programas")}>Programas</button>
-        <button className={"ftab" + (tab === "material" ? " active" : "")} onClick={() => setTab("material")}>Mi material</button>
       </div>
 
       {(tab === "suave" || tab === "entrenamiento") && (
         <Catalogo tipo={tab} onAbrir={setRutina} />
       )}
       {tab === "programas" && <ProgramasTab onAbrirRutina={setRutina} />}
-      {tab === "material" && <MaterialTab />}
 
       <AvancesArea area="salud" />
 
@@ -280,88 +272,6 @@ function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina }: {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-// ---------- Material propio ----------
-function MaterialTab() {
-  const [archivos, setArchivos] = useState<MaterialFile[]>([]);
-  const [bucketFalta, setBucketFalta] = useState(false);
-  const [subiendo, setSubiendo] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    try {
-      setArchivos(await listMaterial());
-      setBucketFalta(false);
-    } catch (e) {
-      if (e instanceof Error && e.message === "BUCKET_MISSING") setBucketFalta(true);
-      else setErr(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      setErr("El archivo pesa más de 50 MB. Prueba con uno más liviano.");
-      return;
-    }
-    setSubiendo(true);
-    setErr(null);
-    try {
-      await uploadMaterial(file);
-      await reload();
-    } catch (ex) {
-      if (ex instanceof Error && ex.message === "BUCKET_MISSING") setBucketFalta(true);
-      else setErr(ex instanceof Error ? ex.message : String(ex));
-    } finally {
-      setSubiendo(false);
-    }
-  }
-
-  if (bucketFalta) {
-    return (
-      <div className="card pad" style={{ maxWidth: 640 }}>
-        <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
-        <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Para guardar tu material propio, corre <code>supabase/migrations/0021_movimiento.sql</code> en el SQL Editor.
-        </p>
-        <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="card panel" style={{ maxWidth: 780 }}>
-      <h3>📚 Tu material</h3>
-      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-        Tus PDFs, guías y clases, privados y a mano: lo que aprendiste en India, tus secuencias, tus apuntes de práctica.
-      </p>
-      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
-      {archivos.map((a) => (
-        <div className="txrow" key={a.path}>
-          <span className="txicon"><FileText size={15} /></span>
-          <div className="txmeta">
-            <button className="linklike" style={{ fontSize: 13.5 }} onClick={() => void openMaterial(a.path)}>{a.name}</button>
-          </div>
-          <button className="xdel" aria-label="Eliminar archivo"
-            onClick={async () => { if (!window.confirm(`¿Eliminar ${a.name}?`)) return; await deleteMaterial(a.path); void reload(); }}>
-            <Trash2 size={13} />
-          </button>
-        </div>
-      ))}
-      <label className="btn ghost" style={{ cursor: "pointer", marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <Upload size={14} />
-        {subiendo ? "Subiendo…" : "Subir material (PDF, foto, video o audio)"}
-        <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.mp4,.mov,.mp3,.m4a" style={{ display: "none" }} onChange={onFile} disabled={subiendo} />
-      </label>
     </div>
   );
 }
