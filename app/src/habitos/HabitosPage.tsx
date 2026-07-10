@@ -1,3 +1,4 @@
+import { AvancesArea } from "../components/AvancesArea";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Moon, Plus, Repeat, Trash2 } from "lucide-react";
@@ -160,6 +161,20 @@ export function HabitosPage() {
                 {rutinaHoy && sleepHours(rutinaHoy) !== null && (
                   <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>Anoche dormiste <b className="tnum">{sleepHours(rutinaHoy)} horas</b>.</p>
                 )}
+                {routine.length > 1 && (
+                  <div style={{ borderTop: "1px solid var(--line-soft)", marginTop: 10, paddingTop: 8 }}>
+                    <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>Bitácora de sueño</div>
+                    {routine.slice(0, 7).map((r) => {
+                      const h = sleepHours(r);
+                      return (
+                        <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--ink-soft)", padding: "3px 0" }}>
+                          <span>{r.date}</span>
+                          <span className="tnum">{r.bed_time ? r.bed_time.slice(0, 5) : "?"} a {r.wake_time ? r.wake_time.slice(0, 5) : "?"}{h !== null ? `, ${h} h` : ""}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Ejercicio */}
@@ -183,6 +198,8 @@ export function HabitosPage() {
           </div>
         </>
       )}
+
+      <AvancesArea area="habitos" />
 
       {habitModal && <HabitModal onClose={() => setHabitModal(false)} onSaved={() => { setHabitModal(false); void reload(); }} />}
     </div>
