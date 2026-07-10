@@ -1,3 +1,4 @@
+import { IconField } from "../components/IconField";
 import { AvancesArea } from "../components/AvancesArea";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, FileUp, Plus, Search, Sparkles, Trash2 } from "lucide-react";
@@ -430,8 +431,7 @@ function NotebookModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           <div className="frow">
             <div className="field" style={{ flex: 1 }}><label>Nombre</label>
               <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Inglés, programación, recetas…" autoFocus /></div>
-            <div className="field" style={{ width: 84 }}><label>Ícono</label>
-              <input value={icon} onChange={(e) => setIcon(e.target.value)} /></div>
+            <IconField value={icon} onChange={setIcon} />
           </div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear cuaderno"}</button>
         </form>

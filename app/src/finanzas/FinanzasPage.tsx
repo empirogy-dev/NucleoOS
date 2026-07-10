@@ -1,3 +1,4 @@
+import { IconField } from "../components/IconField";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, Wallet } from "lucide-react";
@@ -125,6 +126,7 @@ export function FinanzasPage() {
 
   // Filtros de la pestaña Transacciones (como en Fluxney)
   const [fq, setFq] = useState("");
+  const [mesesAbiertos, setMesesAbiertos] = useState<Set<string>>(() => new Set([mesActualLocal()]));
   const [fType, setFType] = useState<"all" | Tx["type"]>("all");
   const [fCat, setFCat] = useState("all");
   const [fAcc, setFAcc] = useState("all");
@@ -322,16 +324,46 @@ export function FinanzasPage() {
               <div className="card pad">
                 {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
                 {txs.length > 0 && filteredTxs.length === 0 && <p style={{ color: "var(--muted)" }}>Ningún movimiento calza con los filtros.</p>}
-                {filteredTxs.length > 0 && (
-                  <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
-                    {filteredTxs.length === 1 ? "1 movimiento" : `${filteredTxs.length} movimientos`}
-                  </p>
-                )}
-                {filteredTxs.map((t) => (
-                  <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
-                    onEdit={() => setEditTx(t)}
-                    onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
-                ))}
+                {(() => {
+                  // Agrupadas por mes para que la lista no sea gigante (pedido de la usuaria).
+                  const grupos = new Map<string, Tx[]>();
+                  for (const t of filteredTxs) {
+                    const k = t.date.slice(0, 7);
+                    const lista = grupos.get(k) ?? [];
+                    lista.push(t);
+                    grupos.set(k, lista);
+                  }
+                  return [...grupos.entries()].map(([mes, lista]) => {
+                    const abierto = mesesAbiertos.has(mes);
+                    const gastosMes = lista.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+                    const ingresosMes = lista.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+                    const [y, m] = mes.split("-").map(Number);
+                    const nombre = new Date(y, m - 1, 1).toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+                    return (
+                      <div key={mes}>
+                        <button type="button" className="mes-head" aria-expanded={abierto}
+                          onClick={() => {
+                            const next = new Set(mesesAbiertos);
+                            if (abierto) next.delete(mes);
+                            else next.add(mes);
+                            setMesesAbiertos(next);
+                          }}>
+                          <span className="mes-flecha">{abierto ? "▾" : "▸"}</span>
+                          <b>{nombre.charAt(0).toUpperCase() + nombre.slice(1)}</b>
+                          <small>{lista.length === 1 ? "1 movimiento" : `${lista.length} movimientos`}</small>
+                          <span style={{ flex: 1 }} />
+                          {ingresosMes > 0 && <small className="tnum" style={{ color: "var(--ok)" }}>+{fmtMoney(ingresosMes, currency)}</small>}
+                          {gastosMes > 0 && <small className="tnum" style={{ color: "var(--err)" }}>−{fmtMoney(gastosMes, currency)}</small>}
+                        </button>
+                        {abierto && lista.map((t) => (
+                          <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                            onEdit={() => setEditTx(t)}
+                            onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                        ))}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </>
           )}
@@ -993,8 +1025,7 @@ function GoalModal({ edit, onClose, onSaved }: { edit?: Goal | null; onClose: ()
         <div className="frow">
           <div className="field" style={{ flex: 1 }}><label>Nombre</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Viaje a Chile" autoFocus /></div>
-          <div className="field" style={{ width: 84 }}><label>Ícono</label>
-            <input value={icon} onChange={(e) => setIcon(e.target.value)} /></div>
+          <IconField value={icon} onChange={setIcon} />
         </div>
         <div className="frow">
           <div className="field"><label>Monto objetivo</label>
@@ -1386,8 +1417,7 @@ function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onC
         <div className="frow">
           <div className="field" style={{ flex: 1 }}><label>Nombre</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Mascotas" autoFocus /></div>
-          <div className="field" style={{ width: 84 }}><label>Ícono</label>
-            <input value={icon} onChange={(e) => setIcon(e.target.value)} /></div>
+          <IconField value={icon} onChange={setIcon} />
         </div>
         <div className="field"><label>Tipo</label>
           <select value={type} onChange={(e) => setType(e.target.value as Category["type"])}>
