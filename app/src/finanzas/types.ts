@@ -17,9 +17,18 @@ export interface Category {
   name: string;
   type: "income" | "expense" | "savings";
   budget: number | null;
+  budget_mode: string | null;
+  rollover_fund: boolean | null;
+  exclude_from_budget: boolean | null;
   icon: string | null;
   color: string | null;
 }
+
+export const BUDGET_MODE_LABELS: Record<string, string> = {
+  fixed: "Fijo",
+  flexible: "Flexible",
+  variable: "Variable (no mensual)",
+};
 
 export interface Goal {
   id: string;

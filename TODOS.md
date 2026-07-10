@@ -17,12 +17,12 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 
 - [ ] `[Bug]` Transacciones: faltan los filtros de Fluxney (por cuenta o tarjeta, tipo, categoría y búsqueda). Cada cuenta y cada tarjeta debe poder ver SUS transacciones. (En curso)
 - [ ] `[Nuevo]` Deudas: plan para salir de deudas con estrategias bola de nieve (menor saldo primero) y avalancha (mayor interés primero), sugerencia de dónde aplicar el dinero extra, interés mensual por deuda y advertencia del interés anual si solo pagas el mínimo. Fluxney lo tenía en Debt.tsx y logicaFinanciera.js. (En curso)
-- [ ] `[Nuevo]` Transferencias hacia metas de ahorro: en Fluxney una transferencia podía tener como destino una meta (transferHelpers.ts) y el aporte quedaba como movimiento.
-- [ ] `[Nuevo]` Resumen financiero del Dashboard: patrimonio neto (cuentas menos deudas), deuda total, flujo de caja del mes.
-- [ ] `[Nuevo]` Proyección de flujo de caja a meses futuros con arrastre de saldo (proyectarFlujoCaja).
-- [ ] `[Nuevo]` Presupuestos avanzados: modo por categoría (fijo, flexible, variable), fondo de arrastre (rollover) y excluir del presupuesto. La columna budget_mode ya existe en la base.
-- [ ] `[Nuevo]` Editar categorías (nombre, ícono, tipo) y editar metas de ahorro; hoy solo se crean y eliminan.
-- [ ] `[Nuevo]` Deudas: campo de notas (la columna existe, falta en el formulario) y recordatorio configurable en días de anticipación.
+- [x] `[Nuevo]` Transferencias hacia metas de ahorro (con la 0011).
+- [x] `[Nuevo]` Resumen financiero: patrimonio neto, deuda total y balance en el Resumen de Finanzas.
+- [x] `[Nuevo]` Proyección de saldo a 3 meses con arrastre, en la pestaña Reporte.
+- [x] `[Nuevo]` Presupuestos avanzados: modo por categoría, fondo de arrastre con acumulación de 12 meses, excluir del presupuesto y umbrales de alerta por modo (migración 0012).
+- [x] `[Nuevo]` Editar categorías (nombre, ícono, tipo, modo, arrastre, excluir) y editar metas de ahorro (incluido lo ahorrado).
+- [x] `[Nuevo]` Deudas: campo de notas en el formulario y la tarjeta. Pendiente: días de anticipación del recordatorio.
 - [ ] `[Nuevo]` Multi moneda con conversión automática (CurrencyContext tenía tasas y ajuste autoConversion).
 - [ ] `[Nuevo]` Formato de fecha configurable en Ajustes.
 - Ya cubiertos por el plan: escaneo de recibos (Fase 2 con IA), conexión de banco y tarjetas (Fase 5), calendario financiero (Bloque C).

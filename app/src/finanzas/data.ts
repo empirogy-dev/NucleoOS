@@ -72,8 +72,17 @@ export async function deleteAccount(id: string): Promise<void> {
 export async function listCategories(): Promise<Category[]> {
   const { data, error } = await sb()
     .from("categories")
-    .select("id,name,type,budget,icon,color")
+    .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color")
     .order("created_at");
+  if (error && /exclude_from_budget|rollover_fund/.test(error.message)) {
+    // La migración 0012 aún no se corre: leemos sin los campos nuevos.
+    const legado = await sb()
+      .from("categories")
+      .select("id,name,type,budget,budget_mode,icon,color")
+      .order("created_at");
+    check(legado.error);
+    return (legado.data ?? []).map((c) => ({ ...c, exclude_from_budget: false, rollover_fund: false })) as Category[];
+  }
   check(error);
   return (data ?? []) as Category[];
 }
@@ -105,6 +114,22 @@ export async function updateCategoryBudget(id: string, budget: number | null): P
   check(error);
 }
 
+export async function updateCategory(id: string, c: {
+  name: string;
+  type: Category["type"];
+  icon: string | null;
+  budget: number | null;
+  budget_mode: string | null;
+  exclude_from_budget: boolean;
+  rollover_fund: boolean;
+}): Promise<void> {
+  const { error } = await sb().from("categories").update(c).eq("id", id);
+  if (error && /exclude_from_budget/.test(error.message)) {
+    throw new Error("Falta la migración 0012 en Supabase (supabase/migrations/0012_presupuestos.sql).");
+  }
+  check(error);
+}
+
 // ---------- Metas de ahorro ----------
 export async function listGoals(): Promise<Goal[]> {
   const { data, error } = await sb()
@@ -130,6 +155,17 @@ export async function contributeToGoal(id: string, amount: number): Promise<void
   check(e2);
 }
 
+export async function updateGoal(id: string, g: {
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  deadline: string | null;
+  icon: string | null;
+}): Promise<void> {
+  const { error } = await sb().from("goals").update(g).eq("id", id);
+  check(error);
+}
+
 export async function deleteGoal(id: string): Promise<void> {
   const { error } = await sb().from("goals").delete().eq("id", id);
   check(error);
@@ -148,7 +184,7 @@ export async function listDebts(): Promise<Debt[]> {
 export async function addDebt(d: {
   name: string; institution: string | null; balance: number;
   interest_rate: number | null; min_payment: number | null;
-  due_date: string | null; currency: string;
+  due_date: string | null; currency: string; notes: string | null;
 }): Promise<void> {
   const user_id = await uid();
   const { data, error } = await sb().from("debts").insert({ ...d, user_id }).select("id").single();
@@ -190,7 +226,7 @@ async function syncReminderPago(
 export async function updateDebt(id: string, d: {
   name: string; institution: string | null; balance: number;
   interest_rate: number | null; min_payment: number | null;
-  due_date: string | null; currency: string;
+  due_date: string | null; currency: string; notes: string | null;
 }): Promise<void> {
   const { error } = await sb().from("debts").update(d).eq("id", id);
   check(error);

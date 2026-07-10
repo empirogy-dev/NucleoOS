@@ -28,16 +28,20 @@ import {
   seedCategoriesIfEmpty,
   updateAccount,
   updateCard,
+  updateCategory,
   updateCategoryBudget,
   updateDebt,
+  updateGoal,
   updateTransaction,
 } from "./data";
 import { StatementImportError, parseStatementFile, type StatementImportRow } from "./statementImport";
 import { interesMensual, ordenarDeudas, simularPlan, type Estrategia } from "./debtPlan";
+import { modoDe, resumenPresupuesto } from "./budgeting";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import {
   ACCOUNT_TYPES,
   ACCOUNT_TYPE_LABELS,
+  BUDGET_MODE_LABELS,
   daysUntil,
   dueLabel,
   fmtMoney,
@@ -72,6 +76,8 @@ export function FinanzasPage() {
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
+  const [editCat, setEditCat] = useState<Category | null>(null);
+  const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const { currency: defaultCurrency } = useSettings();
 
   const reload = useCallback(async () => {
@@ -150,16 +156,9 @@ export function FinanzasPage() {
   const balanceTotal = accounts.reduce((s, a) => s + Number(a.balance), 0);
   const currency = accounts[0]?.currency ?? defaultCurrency;
 
-  const gastoPorCatId = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const t of monthTxs) {
-      if (t.type !== "expense" || !t.category_id) continue;
-      m.set(t.category_id, (m.get(t.category_id) ?? 0) + Number(t.amount));
-    }
-    return m;
-  }, [monthTxs]);
-
-  const budgetCats = categories.filter((c) => c.type === "expense" && Number(c.budget) > 0);
+  const budgetCats = categories.filter((c) => c.type === "expense" && Number(c.budget) > 0 && !c.exclude_from_budget);
+  const deudaTotal = debts.reduce((s, d) => s + Number(d.balance), 0) + cards.reduce((s, c) => s + Number(c.balance), 0);
+  const patrimonio = balanceTotal - deudaTotal;
 
   const gastoPorCategoria = useMemo(() => {
     const m = new Map<string, number>();
@@ -231,8 +230,10 @@ export function FinanzasPage() {
         <>
           {tab === "resumen" && (
             <>
-              <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-                <div className="card stat"><div className="k">Balance total</div><div className="v tnum">{fmtMoney(balanceTotal, currency)}</div></div>
+              <div className="statrow" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+                <div className="card stat"><div className="k">Balance en cuentas</div><div className="v tnum">{fmtMoney(balanceTotal, currency)}</div></div>
+                <div className="card stat"><div className="k">Deuda total</div><div className="v tnum" style={deudaTotal > 0 ? { color: "var(--err)" } : undefined}>{fmtMoney(deudaTotal, currency)}</div></div>
+                <div className="card stat"><div className="k">Patrimonio neto</div><div className="v tnum" style={{ color: patrimonio >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(patrimonio, currency)}</div></div>
                 <div className="card stat"><div className="k">Ingresos del mes</div><div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(ingresos, currency)}</div></div>
                 <div className="card stat"><div className="k">Gastos del mes</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(gastos, currency)}</div></div>
               </div>
@@ -269,20 +270,22 @@ export function FinanzasPage() {
                   </p>
                 )}
                 {budgetCats.map((c) => {
-                  const spent = gastoPorCatId.get(c.id) ?? 0;
-                  const budget = Number(c.budget);
-                  const pct = Math.min(100, Math.round((spent / budget) * 100));
-                  const over = spent > budget;
+                  const r = resumenPresupuesto(c, txs, month);
+                  const pct = Math.min(100, Math.round(r.pct));
+                  const enAlerta = !r.excedido && r.pct >= r.umbral;
                   return (
                     <div className="bar" key={c.id}>
                       <div className="top">
-                        <span className="lbl">{c.icon} {c.name}</span>
-                        <b className="tnum" style={over ? { color: "var(--err)" } : undefined}>
-                          {fmtMoney(spent, currency)} / {fmtMoney(budget, currency)}{over ? ", te pasaste" : ""}
+                        <span className="lbl">
+                          {c.icon} {c.name}
+                          {r.arrastre > 0 && <span className="chip" style={{ marginLeft: 6, fontSize: 10 }}>arrastre +{fmtMoney(r.arrastre, currency)}</span>}
+                        </span>
+                        <b className="tnum" style={r.excedido ? { color: "var(--err)" } : enAlerta ? { color: "var(--warn)" } : undefined}>
+                          {fmtMoney(r.gastado, currency)} / {fmtMoney(r.disponible, currency)}{r.excedido ? ", te pasaste" : enAlerta ? ", cerca del tope" : ""}
                         </b>
                       </div>
                       <div className="track">
-                        <div className="fill" style={{ width: `${pct}%`, background: over ? "var(--err)" : "var(--fin)" }} />
+                        <div className="fill" style={{ width: `${pct}%`, background: r.excedido ? "var(--err)" : enAlerta ? "var(--warn)" : "var(--fin)" }} />
                       </div>
                     </div>
                   );
@@ -349,6 +352,7 @@ export function FinanzasPage() {
                             {g.deadline ? `para el ${g.deadline}` : "sin fecha límite"}
                           </div>
                         </div>
+                        <button className="xdel" aria-label="Editar meta" title="Editar" onClick={() => setEditGoal(g)}><Pencil size={14} /></button>
                         <button className="xdel" aria-label="Eliminar meta" onClick={async () => { if (!window.confirm(`¿Eliminar la meta ${g.name}?`)) return; await deleteGoal(g.id); void reload(); }}><Trash2 size={14} /></button>
                       </div>
                       <div className="bar" style={{ marginBottom: 10 }}>
@@ -470,6 +474,7 @@ export function FinanzasPage() {
                     </div>
                     <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(Number(d.balance), d.currency)}</div>
                     {d.min_payment != null && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>pago mínimo {fmtMoney(Number(d.min_payment), d.currency)}</div>}
+                    {d.notes && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>📝 {d.notes}</div>}
                   </div>
                 ))}
               </div>
@@ -480,7 +485,7 @@ export function FinanzasPage() {
           )}
 
           {tab === "reporte" && (
-            <ReporteTab txs={txs} categories={categories} currency={currency} />
+            <ReporteTab txs={txs} categories={categories} currency={currency} balance={balanceTotal} />
           )}
 
           {tab === "cuentas" && (
@@ -518,11 +523,15 @@ export function FinanzasPage() {
                       <div style={{ fontSize: 11, color: "var(--muted)" }}>
                         {c.type === "income" ? "Ingreso" : c.type === "savings" ? "Ahorro" : "Gasto"}
                         {c.type === "expense" && Number(c.budget) > 0 ? `, presupuesto ${fmtMoney(Number(c.budget), currency)}` : ""}
+                        {c.budget_mode ? `, ${BUDGET_MODE_LABELS[modoDe(c)].toLowerCase()}` : ""}
+                        {c.rollover_fund ? ", con arrastre" : ""}
+                        {c.exclude_from_budget ? ", fuera del presupuesto" : ""}
                       </div>
                     </div>
                     {c.type === "expense" && (
-                      <button className="xdel" aria-label="Editar presupuesto" title="Presupuesto mensual" onClick={() => setBudgetCat(c)}><Pencil size={14} /></button>
+                      <button className="xdel" aria-label="Editar presupuesto" title="Presupuesto mensual" onClick={() => setBudgetCat(c)}><Wallet size={14} /></button>
                     )}
+                    <button className="xdel" aria-label="Editar categoría" title="Editar" onClick={() => setEditCat(c)}><Pencil size={14} /></button>
                     <button className="xdel" aria-label="Eliminar categoría" onClick={async () => { if (!window.confirm(`¿Eliminar la categoría ${c.name}?`)) return; await deleteCategory(c.id); void reload(); }}><Trash2 size={14} /></button>
                   </div>
                 ))}
@@ -546,15 +555,19 @@ export function FinanzasPage() {
           onClose={() => { setModal(null); setEditAccount(null); }}
           onSaved={() => { setModal(null); setEditAccount(null); void reload(); }} />
       )}
-      {modal === "category" && (
-        <CategoryModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      {(modal === "category" || editCat) && (
+        <CategoryModal key={editCat?.id ?? "nueva"} edit={editCat}
+          onClose={() => { setModal(null); setEditCat(null); }}
+          onSaved={() => { setModal(null); setEditCat(null); void reload(); }} />
       )}
       {budgetCat && (
         <BudgetModal cat={budgetCat} currency={currency} onClose={() => setBudgetCat(null)}
           onSaved={() => { setBudgetCat(null); void reload(); }} />
       )}
-      {modal === "goal" && (
-        <GoalModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      {(modal === "goal" || editGoal) && (
+        <GoalModal key={editGoal?.id ?? "nueva"} edit={editGoal}
+          onClose={() => { setModal(null); setEditGoal(null); }}
+          onSaved={() => { setModal(null); setEditGoal(null); void reload(); }} />
       )}
       {contributeGoal && (
         <ContributeModal goal={contributeGoal} currency={currency} onClose={() => setContributeGoal(null)}
@@ -587,10 +600,30 @@ function monthAdd(ym: string, delta: number): string {
   return fmtFechaLocal(d).slice(0, 7);
 }
 
-function ReporteTab({ txs, categories, currency }: { txs: Tx[]; categories: Category[]; currency: string }) {
+function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categories: Category[]; currency: string; balance: number }) {
   const [ym, setYm] = useState(mesActualLocal());
   const prev = monthAdd(ym, -1);
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+
+  // Proyección de flujo de caja (portada de Fluxney): promedio de los últimos
+  // 3 meses con arrastre de saldo hacia los próximos 3 meses.
+  const proyeccion = useMemo(() => {
+    const hoyMes = mesActualLocal();
+    const mesesBase = [monthAdd(hoyMes, -1), monthAdd(hoyMes, -2), monthAdd(hoyMes, -3)];
+    const conDatos = mesesBase.filter((m) => txs.some((t) => t.date.startsWith(m)));
+    if (conDatos.length === 0) return null;
+    const suma = (m: string, tipo: "income" | "expense") =>
+      txs.filter((t) => t.date.startsWith(m) && t.type === tipo).reduce((s, t) => s + Number(t.amount), 0);
+    const promIngresos = conDatos.reduce((s, m) => s + suma(m, "income"), 0) / conDatos.length;
+    const promGastos = conDatos.reduce((s, m) => s + suma(m, "expense"), 0) / conDatos.length;
+    let saldo = balance;
+    const filas: Array<{ mes: string; saldo: number }> = [];
+    for (let i = 1; i <= 3; i += 1) {
+      saldo = saldo + promIngresos - promGastos;
+      filas.push({ mes: monthAdd(hoyMes, i), saldo });
+    }
+    return { filas, promIngresos, promGastos, mesesUsados: conDatos.length };
+  }, [txs, balance]);
 
   function totals(month: string) {
     const rows = txs.filter((t) => t.date.startsWith(month));
@@ -658,6 +691,21 @@ function ReporteTab({ txs, categories, currency }: { txs: Tx[]; categories: Cate
           </div>
         ))}
       </div>
+
+      {proyeccion && (
+        <div className="card panel" style={{ marginTop: 14 }}>
+          <h3>🔮 Proyección de saldo</h3>
+          <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
+            Si sigues como en {proyeccion.mesesUsados === 1 ? "el último mes" : `los últimos ${proyeccion.mesesUsados} meses`} (ingresos {fmtMoney(Math.round(proyeccion.promIngresos), currency)} y gastos {fmtMoney(Math.round(proyeccion.promGastos), currency)} al mes), tu saldo arrastrado sería:
+          </p>
+          {proyeccion.filas.map((f) => (
+            <div className="txrow" key={f.mes} style={{ padding: "7px 0" }}>
+              <div className="txmeta"><b style={{ fontSize: 13 }}>{f.mes}</b></div>
+              <b className={"tnum txamt " + (f.saldo >= 0 ? "pos" : "neg")}>{fmtMoney(Math.round(f.saldo), currency)}</b>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -770,6 +818,7 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
   const [rate, setRate] = useState(edit?.interest_rate != null ? String(edit.interest_rate) : "");
   const [minPay, setMinPay] = useState(edit?.min_payment != null ? String(edit.min_payment) : "");
   const [dueDate, setDueDate] = useState(edit?.due_date ?? "");
+  const [notes, setNotes] = useState(edit?.notes ?? "");
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
@@ -779,6 +828,7 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
       name, institution: institution || null, balance: Number(balance || 0),
       interest_rate: rate ? Number(rate) : null, min_payment: minPay ? Number(minPay) : null,
       due_date: dueDate || null, currency: edit?.currency ?? currency,
+      notes: notes.trim() || null,
     };
     if (edit) await updateDebt(edit.id, payload);
     else await addDebt(payload);
@@ -804,6 +854,8 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
           <div className="field"><label>Próximo pago (opcional)</label>
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
         </div>
+        <div className="field"><label>Notas (opcional)</label>
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Cuotas restantes, condiciones…" /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual.</p>
         <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
@@ -908,22 +960,33 @@ function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   );
 }
 
-function GoalModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [icon, setIcon] = useState("🎯");
+function GoalModal({ edit, onClose, onSaved }: { edit?: Goal | null; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(edit?.name ?? "");
+  const [target, setTarget] = useState(edit ? String(edit.target_amount) : "");
+  const [current, setCurrent] = useState(edit ? String(edit.current_amount) : "");
+  const [deadline, setDeadline] = useState(edit?.deadline ?? "");
+  const [icon, setIcon] = useState(edit?.icon ?? "🎯");
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addGoal({ name, target_amount: Number(target), deadline: deadline || null, icon });
+    if (edit) {
+      await updateGoal(edit.id, {
+        name,
+        target_amount: Number(target),
+        current_amount: Number(current || 0),
+        deadline: deadline || null,
+        icon,
+      });
+    } else {
+      await addGoal({ name, target_amount: Number(target), deadline: deadline || null, icon });
+    }
     onSaved();
   }
 
   return (
-    <Modal title="Nueva meta de ahorro" onClose={onClose}>
+    <Modal title={edit ? "Editar meta de ahorro" : "Nueva meta de ahorro"} onClose={onClose}>
       <form onSubmit={save}>
         <div className="frow">
           <div className="field" style={{ flex: 1 }}><label>Nombre</label>
@@ -931,11 +994,17 @@ function GoalModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <div className="field" style={{ width: 84 }}><label>Ícono</label>
             <input value={icon} onChange={(e) => setIcon(e.target.value)} /></div>
         </div>
-        <div className="field"><label>Monto objetivo</label>
-          <input type="number" required min="1" step="any" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="2000" /></div>
+        <div className="frow">
+          <div className="field"><label>Monto objetivo</label>
+            <input type="number" required min="1" step="any" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="2000" /></div>
+          {edit && (
+            <div className="field"><label>Llevo ahorrado</label>
+              <input type="number" min="0" step="any" value={current} onChange={(e) => setCurrent(e.target.value)} /></div>
+          )}
+        </div>
         <div className="field"><label>Fecha límite (opcional)</label>
           <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear meta"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : edit ? "Guardar" : "Crear meta"}</button>
       </form>
     </Modal>
   );
@@ -1229,21 +1298,43 @@ function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClo
   );
 }
 
-function CategoryModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState<Category["type"]>("expense");
-  const [icon, setIcon] = useState("🏷️");
+function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(edit?.name ?? "");
+  const [type, setType] = useState<Category["type"]>(edit?.type ?? "expense");
+  const [icon, setIcon] = useState(edit?.icon ?? "🏷️");
+  const [budgetMode, setBudgetMode] = useState(edit?.budget_mode ?? "");
+  const [budget, setBudget] = useState(edit?.budget != null ? String(edit.budget) : "");
+  const [rollover, setRollover] = useState(Boolean(edit?.rollover_fund));
+  const [exclude, setExclude] = useState(Boolean(edit?.exclude_from_budget));
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addCategory({ name, type, icon });
-    onSaved();
+    setErr(null);
+    try {
+      if (edit) {
+        await updateCategory(edit.id, {
+          name, type, icon,
+          budget: budget ? Number(budget) : null,
+          budget_mode: budgetMode || null,
+          exclude_from_budget: exclude,
+          rollover_fund: rollover,
+        });
+      } else {
+        await addCategory({ name, type, icon });
+      }
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+    }
   }
 
   return (
-    <Modal title="Agregar categoría" onClose={onClose}>
+    <Modal title={edit ? "Editar categoría" : "Agregar categoría"} onClose={onClose}>
+      {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
       <form onSubmit={save}>
         <div className="frow">
           <div className="field" style={{ flex: 1 }}><label>Nombre</label>
@@ -1257,6 +1348,27 @@ function CategoryModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             <option value="income">Ingreso</option>
             <option value="savings">Ahorro</option>
           </select></div>
+        {edit && type === "expense" && (
+          <>
+            <div className="field"><label>Presupuesto mensual (vacío para quitarlo)</label>
+              <input type="number" min="0" step="any" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="300" /></div>
+            <div className="field"><label>Modo de presupuesto</label>
+              <select value={budgetMode} onChange={(e) => setBudgetMode(e.target.value)}>
+                <option value="">Sin modo</option>
+                <option value="fixed">Fijo (mismo monto cada mes, como el arriendo)</option>
+                <option value="flexible">Flexible (varía mes a mes, como la comida)</option>
+                <option value="variable">Variable (gastos no mensuales)</option>
+              </select></div>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer" }}>
+              <input type="checkbox" checked={exclude} onChange={(e) => setExclude(e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--accent)" }} />
+              Excluir del presupuesto (no aparece en los paneles del mes)
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer" }}>
+              <input type="checkbox" checked={rollover} onChange={(e) => setRollover(e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--accent)" }} />
+              Fondo de arrastre (lo no gastado se acumula para los meses siguientes)
+            </label>
+          </>
+        )}
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
