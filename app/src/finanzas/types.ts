@@ -124,6 +124,7 @@ export interface Tx {
   amount: number;
   type: TxType;
   description: string;
+  merchant: string | null;
   category_id: string | null;
   account_id: string | null;
   destination_account_id: string | null;

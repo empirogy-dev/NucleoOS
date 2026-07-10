@@ -314,6 +314,7 @@ export interface TxInput {
   amount: number;
   type: Tx["type"];
   description: string;
+  merchant: string | null;
   category_id: string | null;
   account_id: string | null;
   destination_kind: Tx["destination_kind"];
@@ -379,10 +380,21 @@ function columnasTx(t: TxInput) {
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()
     .from("transactions")
-    .select("id,date,amount,type,description,category_id,account_id,destination_account_id,destination_kind,destination_ref,source")
+    .select("id,date,amount,type,description,merchant,category_id,account_id,destination_account_id,destination_kind,destination_ref,source")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (error && /merchant/.test(error.message)) {
+    // La migración 0013 aún no se corre: leemos sin comercio.
+    const sinComercio = await sb()
+      .from("transactions")
+      .select("id,date,amount,type,description,category_id,account_id,destination_account_id,destination_kind,destination_ref,source")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    check(sinComercio.error);
+    return (sinComercio.data ?? []).map((x) => ({ ...x, merchant: null })) as Tx[];
+  }
   if (error && /destination_kind|destination_ref/.test(error.message)) {
     // La migración 0011 aún no se corre: leemos el formato antiguo.
     const legado = await sb()
@@ -394,6 +406,7 @@ export async function listTransactions(limit = 200): Promise<Tx[]> {
     check(legado.error);
     return (legado.data ?? []).map((t) => ({
       ...t,
+      merchant: null,
       destination_kind: t.destination_account_id ? ("account" as const) : null,
       destination_ref: t.destination_account_id,
     })) as Tx[];
@@ -423,6 +436,7 @@ export async function importStatementRows(
     existing.map((t) => `${t.date}|${Number(t.amount)}|${t.description.trim().toLowerCase()}`)
   );
 
+  const reglas = await listMerchantRules();
   const toInsert: Array<Record<string, unknown>> = [];
   let skipped = 0;
   for (const r of rows) {
@@ -432,13 +446,15 @@ export async function importStatementRows(
       continue;
     }
     seen.add(key);
+    const regla = reglaPara(r.description, reglas);
     toInsert.push({
       user_id,
       date: r.date,
       amount: Math.abs(r.amount),
       type: r.type,
       description: r.description,
-      category_id: r.category ? catByName.get(r.category.toLowerCase()) ?? null : null,
+      ...(regla ? { merchant: regla.merchant } : {}),
+      category_id: regla?.category_id ?? (r.category ? catByName.get(r.category.toLowerCase()) ?? null : null),
       account_id: accountId,
       source: "cartola",
     });
@@ -488,4 +504,89 @@ export async function deleteTransaction(t: Tx): Promise<void> {
   const { error } = await sb().from("transactions").delete().eq("id", t.id);
   check(error);
   await aplicarEfectos(efectosMovimiento(normalizarDestino(t)), -1);
+}
+
+// ---------- Comercios y reglas de renombrado ----------
+export interface MerchantRule {
+  id: string;
+  pattern: string;
+  merchant: string;
+  category_id: string | null;
+}
+
+/** Normaliza el texto del banco: minúsculas, sin tildes ni símbolos. */
+export function normalizarComercio(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/s+/g, " ");
+}
+
+/** Patrón de una regla: las primeras palabras sin números del texto del banco.
+ *  "KLARNA*SPIKESEX CANADA TORONTO 0423" queda como "klarna spikesex canada". */
+export function patronDesde(texto: string): string {
+  const tokens = normalizarComercio(texto)
+    .split(" ")
+    .filter((t) => t && !/^d+$/.test(t));
+  return tokens.slice(0, 3).join(" ");
+}
+
+export async function listMerchantRules(): Promise<MerchantRule[]> {
+  const { data, error } = await sb()
+    .from("merchant_rules")
+    .select("id,pattern,merchant,category_id")
+    .order("created_at");
+  if (error) return []; // tabla aún no migrada: sin reglas
+  return (data ?? []) as MerchantRule[];
+}
+
+/** Busca la regla que calza con un texto del banco. */
+export function reglaPara(texto: string, reglas: MerchantRule[]): MerchantRule | null {
+  const norm = normalizarComercio(texto);
+  return reglas.find((r) => norm.includes(r.pattern)) ?? null;
+}
+
+/**
+ * Guarda una regla de renombrado y la aplica a los movimientos existentes
+ * del banco que calzan y aún no tienen comercio. Devuelve cuántos actualizó.
+ */
+export async function saveMerchantRule(
+  textoOriginal: string,
+  merchant: string,
+  categoryId: string | null,
+): Promise<number> {
+  const pattern = patronDesde(textoOriginal);
+  if (!pattern || !merchant.trim()) return 0;
+  const { error } = await sb()
+    .from("merchant_rules")
+    .upsert(
+      { user_id: await uid(), pattern, merchant: merchant.trim(), category_id: categoryId },
+      { onConflict: "user_id,pattern" },
+    );
+  if (error && /merchant_rules/.test(error.message)) {
+    throw new Error("Falta la migración 0013 en Supabase (supabase/migrations/0013_comercios.sql).");
+  }
+  check(error);
+
+  // aplicar a los existentes que calzan y no tienen comercio
+  const { data } = await sb()
+    .from("transactions")
+    .select("id,description,category_id")
+    .in("source", ["cartola", "banco"])
+    .is("merchant", null);
+  const calzan = (data ?? []).filter((t) => normalizarComercio(t.description).includes(pattern));
+  if (calzan.length > 0) {
+    const ids = calzan.map((t) => t.id);
+    await sb().from("transactions").update({ merchant: merchant.trim() }).in("id", ids);
+    if (categoryId) {
+      const sinCategoria = calzan.filter((t) => !t.category_id).map((t) => t.id);
+      if (sinCategoria.length > 0) {
+        await sb().from("transactions").update({ category_id: categoryId }).in("id", sinCategoria);
+      }
+    }
+  }
+  return calzan.length;
 }

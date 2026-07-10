@@ -19,6 +19,7 @@ import {
   deleteReminder,
   deleteTransaction,
   importStatementRows,
+  saveMerchantRule,
   listAccounts,
   listCards,
   listDebts,
@@ -140,6 +141,7 @@ export function FinanzasPage() {
       if (q) {
         const texto = [
           t.description,
+          t.merchant,
           t.category_id ? catById.get(t.category_id)?.name : "",
           t.account_id ? accById.get(t.account_id)?.name : "",
         ].filter(Boolean).join(" ").toLowerCase();
@@ -570,7 +572,7 @@ export function FinanzasPage() {
           onSaved={() => { setModal(null); setEditGoal(null); void reload(); }} />
       )}
       {contributeGoal && (
-        <ContributeModal goal={contributeGoal} currency={currency} onClose={() => setContributeGoal(null)}
+        <ContributeModal goal={contributeGoal} accounts={accounts} currency={currency} onClose={() => setContributeGoal(null)}
           onSaved={() => { setContributeGoal(null); void reload(); }} />
       )}
       {(modal === "debt" || editDebt) && (
@@ -1010,20 +1012,39 @@ function GoalModal({ edit, onClose, onSaved }: { edit?: Goal | null; onClose: ()
   );
 }
 
-function ContributeModal({ goal, currency, onClose, onSaved }: {
+function ContributeModal({ goal, accounts, currency, onClose, onSaved }: {
   goal: Goal;
+  accounts: Account[];
   currency: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const falta = Math.max(0, Number(goal.target_amount) - Number(goal.current_amount));
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await contributeToGoal(goal.id, Math.abs(Number(amount)));
+    const monto = Math.abs(Number(amount));
+    if (accountId) {
+      // Como en Fluxney: el aporte queda como transferencia hacia la meta,
+      // descuenta de la cuenta y la meta avanza por los efectos del movimiento.
+      await addTransaction({
+        date: hoyLocal(),
+        amount: monto,
+        type: "transfer",
+        description: `Aporte a ${goal.name}`,
+        merchant: null,
+        category_id: null,
+        account_id: accountId,
+        destination_kind: "goal",
+        destination_ref: goal.id,
+      });
+    } else {
+      await contributeToGoal(goal.id, monto);
+    }
     onSaved();
   }
 
@@ -1035,6 +1056,14 @@ function ContributeModal({ goal, currency, onClose, onSaved }: {
       <form onSubmit={save}>
         <div className="field"><label>Monto a aportar</label>
           <input type="number" required min="1" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" autoFocus /></div>
+        <div className="field"><label>Desde la cuenta</label>
+          <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+            <option value="">Sin cuenta (solo anota el avance)</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select></div>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+          Con una cuenta elegida, el aporte queda como transferencia: descuenta de la cuenta y suma a la meta.
+        </p>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Aportar"}</button>
       </form>
     </Modal>
@@ -1102,9 +1131,9 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit }:
     <div className="txrow">
       <span className="txicon">{esTransfer ? "🔁" : cat?.icon ?? (neg ? "💸" : "💰")}</span>
       <div className="txmeta">
-        <b>{t.description || cat?.name || (esTransfer ? "Transferencia" : neg ? "Gasto" : "Ingreso")}</b>
+        <b>{t.merchant || t.description || cat?.name || (esTransfer ? "Transferencia" : neg ? "Gasto" : "Ingreso")}</b>
         <small>
-          {t.date}
+          {t.merchant && t.description ? `${t.description}, ` : ""}{t.date}
           {esTransfer
             ? `, transferencia${acc ? ` desde ${acc.name}` : ""}${dest ? ` hacia ${dest}` : ""}`
             : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : ""}`}
@@ -1138,6 +1167,10 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
   const [type, setType] = useState<Tx["type"]>(edit?.type ?? "expense");
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const [description, setDescription] = useState(edit?.description ?? "");
+  const [merchant, setMerchant] = useState(edit?.merchant ?? "");
+  const [recordar, setRecordar] = useState(true);
+  const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
+  const textoOriginal = edit?.description ?? "";
   const [categoryId, setCategoryId] = useState(edit?.category_id ?? "");
   const [accountId, setAccountId] = useState(edit ? (edit.account_id ?? "") : (accounts[0]?.id ?? ""));
   const [destino, setDestino] = useState(destinoInicial);
@@ -1162,6 +1195,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
         amount: Math.abs(Number(amount)),
         type,
         description,
+        merchant: merchant.trim() || null,
         category_id: type === "transfer" ? null : (categoryId || null),
         account_id: accountId || null,
         destination_kind: type === "transfer" ? destKind : null,
@@ -1169,12 +1203,17 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
       };
       if (edit) await updateTransaction(edit, payload);
       else await addTransaction(payload);
+      if (esDelBanco && recordar && merchant.trim() && merchant.trim() !== (edit?.merchant ?? "")) {
+        await saveMerchantRule(textoOriginal, merchant.trim(), type === "transfer" ? null : (categoryId || null));
+      }
       onSaved();
     } catch (ex) {
       const msg = ex instanceof Error ? ex.message : String(ex);
       setErr(/destination_kind|destination_ref/.test(msg)
         ? "Falta la migración 0011 en Supabase (supabase/migrations/0011_transferencias.sql)."
-        : msg);
+        : /merchant/.test(msg)
+          ? "Falta la migración 0013 en Supabase (supabase/migrations/0013_comercios.sql)."
+          : msg);
       setBusy(false);
     }
   }
@@ -1190,8 +1229,16 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
       <form onSubmit={save}>
         <div className="field"><label>Monto</label>
           <input type="number" required min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="36000" autoFocus /></div>
-        <div className="field"><label>Descripción</label>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Frutillas y frambuesas" /></div>
+        <div className="field"><label>Comercio (a quién le pagaste)</label>
+          <input value={merchant} onChange={(e) => setMerchant(e.target.value)} placeholder="Amazon, Spice Sex, Metro…" /></div>
+        <div className="field"><label>Descripción (qué fue)</label>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="el internet, frutillas, regalo…" /></div>
+        {esDelBanco && merchant.trim() !== (edit?.merchant ?? "") && merchant.trim() !== "" && (
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer", lineHeight: 1.45 }}>
+            <input type="checkbox" checked={recordar} onChange={(e) => setRecordar(e.target.checked)} style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+            <span>Recordar: cuando llegue una boleta parecida a "{textoOriginal.slice(0, 40)}{textoOriginal.length > 40 ? "…" : ""}", llamarla <b>{merchant.trim()}</b> y usar esta categoría. También se aplica a las que ya tienes.</span>
+          </label>
+        )}
         <div className="frow">
           {type !== "transfer" && (
             <div className="field"><label>Categoría</label>
