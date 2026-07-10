@@ -32,9 +32,9 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Reglas automáticas: al renombrar una boleta del banco, las siguientes llegan con ese nombre y categoría, y se aplican a las existentes.
 - [ ] `[Nuevo]` Administrar las reglas guardadas (verlas, editarlas, borrarlas), quizás en Ajustes.
 
-## Bloque B, Inicio orientado al avance
-- [ ] `[Nuevo]` Mostrar porcentaje de avance por área (no el balance financiero).
-- [ ] `[Nuevo]` "Actividad reciente" centrada en el avance hacia tu mejor versión, no en transacciones.
+## Bloque B, Inicio orientado al avance (completado el 9 jul 2026)
+- [x] `[Nuevo]` Avance por área con barras de color desde las metas de Objetivos, y anillo global hacia tu mejor versión.
+- [x] `[Nuevo]` Avances recientes en vez de transacciones; las stats financieras viven en Finanzas.
 
 ## Bloque C, Calendario v1 (módulo transversal)
 - [ ] `[Nuevo]` Vista mensual que centraliza: pagos (Finanzas), citas y exámenes (Salud), cumpleaños (Relaciones), jornadas (Trabajo) y estudio (Aprendizaje).
