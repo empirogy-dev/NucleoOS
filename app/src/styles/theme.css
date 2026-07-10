@@ -27,7 +27,7 @@
   --accent-wash:color-mix(in srgb,var(--pri) 26%,var(--paper));
 
   /* 7 áreas: sistema fijo suave */
-  --obj:#6FA79A; --fin:#84B183; --sal:#D2B36E; --tra:#9E96C9; --apr:#84A9C6; --hab:#C795AE; --rel:#CF9E77; --men:#A78BBF;
+  --obj:#6FA79A; --fin:#84B183; --sal:#D2B36E; --tra:#9E96C9; --apr:#84A9C6; --hab:#C795AE; --rel:#CF9E77; --men:#A78BBF; --mov:#A3B37E;
   --ok:#6BA783; --warn:#C69A4D; --err:#C57A68; --info:#6E9BB5;
 
   --serif:'Outfit',ui-sans-serif,system-ui,sans-serif;

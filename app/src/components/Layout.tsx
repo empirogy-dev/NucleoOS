@@ -12,6 +12,7 @@ const NOMBRES: Record<string, string> = {
   "/": "Inicio",
   "/calendario": "Calendario",
   "/mente": "Mente",
+  "/movimiento": "Movimiento",
   "/vision": "Visión",
   "/ajustes": "Ajustes",
 };

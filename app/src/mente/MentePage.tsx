@@ -3,10 +3,14 @@ import { Brain } from "lucide-react";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { faseLunar, proximasLunas } from "./lunar";
 import { MEDITACIONES, RESPIRACIONES, listSesiones, type Practica, type Sesion } from "./practicas";
+import { SADHANAS, minutosSadhana, type Sadhana } from "./sadhana";
+import { SadhanaPlayer } from "./SadhanaPlayer";
 import { SesionModal } from "./SesionModal";
 
 export function MentePage() {
+  const [tab, setTab] = useState<"practicas" | "sadhana">("practicas");
   const [sesion, setSesion] = useState<{ practica: Practica; minutos: number } | null>(null);
+  const [sadhana, setSadhana] = useState<Sadhana | null>(null);
   const [historial, setHistorial] = useState<Sesion[]>(listSesiones());
 
   const hoy = hoyLocal();
@@ -35,6 +39,41 @@ export function MentePage() {
         <div className="card stat"><div className="k">Próxima luna llena</div><div className="v" style={{ fontSize: 17 }}>{lunas.llena.toLocaleDateString("es-CL", { day: "numeric", month: "long" })}</div></div>
       </div>
 
+      <div className="ftabs">
+        <button className={"ftab" + (tab === "practicas" ? " active" : "")} onClick={() => setTab("practicas")}>Prácticas</button>
+        <button className={"ftab" + (tab === "sadhana" ? " active" : "")} onClick={() => setTab("sadhana")}>Sadhana 🕉</button>
+      </div>
+
+      {tab === "sadhana" && (
+        <>
+          <p style={{ fontSize: 13.5, color: "var(--ink-soft)", maxWidth: "64ch", marginBottom: 16 }}>
+            La sadhana es una práctica diaria de trabajo interior, una tradición que viene de India. No necesitas experiencia:
+            la secuencia avanza sola, paso a paso, con una campana suave entre cada uno. Tu único trabajo es quedarte.
+          </p>
+          <div className="dream-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))" }}>
+            {SADHANAS.map((s) => (
+              <div className="card dream-card" key={s.id}>
+                <div className="dc-top">
+                  <span className="dc-emoji">{s.emoji}</span>
+                  <span className="chip">{minutosSadhana(s)} min</span>
+                </div>
+                <b className="dc-title">{s.nombre}</b>
+                <p className="dc-why">“{s.intencion}”</p>
+                <p className="dc-notes">{s.descripcion}</p>
+                <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>
+                  {s.pasos.map((p) => `${p.emoji} ${p.titulo}`).join(", ")}
+                </div>
+                <div className="dc-foot">
+                  <span style={{ flex: 1 }} />
+                  <button className="btn primary" onClick={() => setSadhana(s)}>Comenzar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab === "practicas" && (
       <div className="panelgrid">
         <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
           <ListaPracticas
@@ -88,12 +127,20 @@ export function MentePage() {
           </div>
         </div>
       </div>
+      )}
 
       {sesion && (
         <SesionModal
           practica={sesion.practica}
           minutos={sesion.minutos}
           onClose={() => setSesion(null)}
+          onCompleta={() => setHistorial(listSesiones())}
+        />
+      )}
+      {sadhana && (
+        <SadhanaPlayer
+          sadhana={sadhana}
+          onClose={() => setSadhana(null)}
           onCompleta={() => setHistorial(listSesiones())}
         />
       )}

@@ -16,6 +16,9 @@ import {
 } from "../habitos/data";
 import { ClinicaTab } from "./ClinicaTab";
 import { RecuperacionTab } from "./RecuperacionTab";
+import { PlatoCard } from "./PlatoCard";
+import { GUIAS_NUTRICION } from "./nutricionGuias";
+import { deleteMeal, listMeals, totalesDia, type Meal } from "./comidas";
 import { getHealthProfile, type HealthProfile } from "./data";
 import {
   META_AGUA_VASOS,
@@ -45,6 +48,7 @@ export function SaludPage() {
   const [tab, setTab] = useState<Tab>("hoy");
   const [energy, setEnergy] = useState<EnergyLog[]>([]);
   const [energiaFalta, setEnergiaFalta] = useState(false);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [routine, setRoutine] = useState<RoutineLog[]>([]);
   const [exercise, setExercise] = useState<ExerciseLog[]>([]);
   const [habitosFalta, setHabitosFalta] = useState(false);
@@ -85,6 +89,13 @@ export function SaludPage() {
           /* la ficha es opcional para la meta de proteína */
         }
       })(),
+      (async () => {
+        try {
+          setMeals(await listMeals(7));
+        } catch {
+          /* sin la 0020 aún no hay comidas, el aviso vive en la tarjeta del plato */
+        }
+      })(),
     ]);
     setLoading(false);
   }, []);
@@ -95,7 +106,9 @@ export function SaludPage() {
 
   const hoyLog = energy.find((e) => e.date === hoy) ?? null;
   const agua = hoyLog?.water_cups ?? 0;
-  const proteina = hoyLog?.protein_g ?? 0;
+  const protManual = Number(hoyLog?.protein_g ?? 0);
+  const totHoy = totalesDia(meals, hoy);
+  const proteina = protManual + totHoy.proteina;
   const nivel = hoyLog?.energy_level ?? null;
   const metaProt = metaProteina(profile);
 
@@ -185,17 +198,20 @@ export function SaludPage() {
         <>
           {tab === "hoy" && (
             <HoyTab
-              agua={agua} proteina={Number(proteina)} nivel={nivel} metaProt={metaProt}
+              agua={agua} proteina={proteina} protComidas={totHoy.proteina} nivel={nivel} metaProt={metaProt}
               exercise={exercise.filter((e) => e.date === hoy)}
               rutinaHoy={rutinaHoy}
               deshabilitado={energiaFalta}
               onAgua={(n) => void guardarHoy({ water_cups: n })}
-              onProteina={(g) => void guardarHoy({ protein_g: Math.max(0, Number(proteina) + g) })}
+              onProteina={(g) => void guardarHoy({ protein_g: Math.max(0, protManual + g) })}
               onNivel={(n) => void guardarHoy({ energy_level: n })}
               onChanged={() => void reload()}
             />
           )}
-          {tab === "nutricion" && <NutricionTab energy={energy} metaProt={metaProt} profile={profile} irAClinica={() => setTab("clinica")} />}
+          {tab === "nutricion" && (
+            <NutricionTab energy={energy} meals={meals} metaProt={metaProt} profile={profile}
+              irAClinica={() => setTab("clinica")} onChanged={() => void reload()} />
+          )}
           {tab === "movimiento" && <MovimientoTab exercise={exercise} onChanged={() => void reload()} />}
           {tab === "sueno" && <SuenoTab routine={routine} onChanged={() => void reload()} />}
           {tab === "recuperacion" && <RecuperacionTab />}
@@ -209,9 +225,10 @@ export function SaludPage() {
 }
 
 // ---------- Hoy ----------
-function HoyTab({ agua, proteina, nivel, metaProt, exercise, rutinaHoy, deshabilitado, onAgua, onProteina, onNivel, onChanged }: {
+function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutinaHoy, deshabilitado, onAgua, onProteina, onNivel, onChanged }: {
   agua: number;
   proteina: number;
+  protComidas: number;
   nivel: number | null;
   metaProt: number;
   exercise: ExerciseLog[];
@@ -268,9 +285,14 @@ function HoyTab({ agua, proteina, nivel, metaProt, exercise, rutinaHoy, deshabil
             <button className="btn ghost" disabled={deshabilitado || proteina <= 0} onClick={() => onProteina(-10)}>-10 g</button>
           </div>
           <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-            Referencias: un huevo 6 g, pechuga de pollo 30 g, un yogur griego 15 g, una taza de lentejas 18 g.
+            {protComidas > 0
+              ? `${protComidas} g vienen de tus platos registrados. Los botones suman lo demás.`
+              : "Referencias: un huevo 6 g, pechuga de pollo 30 g, un yogur griego 15 g, una taza de lentejas 18 g."}
           </p>
         </div>
+
+        {/* Foto del plato */}
+        <PlatoCard onSaved={onChanged} />
 
         {/* Movimiento de hoy */}
         <MovimientoRapido exercise={exercise} onChanged={onChanged} />
@@ -389,12 +411,17 @@ function SuenoRapido({ rutinaHoy, onChanged }: { rutinaHoy: RoutineLog | null; o
 }
 
 // ---------- Nutrición ----------
-function NutricionTab({ energy, metaProt, profile, irAClinica }: {
+function NutricionTab({ energy, meals, metaProt, profile, irAClinica, onChanged }: {
   energy: EnergyLog[];
+  meals: Meal[];
   metaProt: number;
   profile: HealthProfile | null;
   irAClinica: () => void;
+  onChanged: () => void;
 }) {
+  const hoy = hoyLocal();
+  const tot = totalesDia(meals, hoy);
+  const comidasHoy = meals.filter((m) => m.date === hoy);
   const dias = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -406,18 +433,53 @@ function NutricionTab({ energy, metaProt, profile, irAClinica }: {
   };
 
   return (
+    <>
     <div className="panelgrid">
-      <div className="card panel" style={{ alignSelf: "start" }}>
+      <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+      <div className="card panel">
+        <h3>🍽 Tus comidas de hoy</h3>
+        {comidasHoy.length === 0 ? (
+          <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+            Aún no hay platos registrados hoy. Usa la foto del plato en la pestaña Hoy y el acumulado aparece aquí.
+          </p>
+        ) : (
+          <>
+            {comidasHoy.map((m) => (
+              <div className="txrow" key={m.id}>
+                <span className="txicon">🍽</span>
+                <div className="txmeta">
+                  <b>{m.description}</b>
+                  <small>
+                    {m.kcal ?? 0} kcal, 🍗 {Math.round(m.protein_g ?? 0)} g, 🍞 {Math.round(m.carbs_g ?? 0)} g, 🥑 {Math.round(m.fat_g ?? 0)} g
+                  </small>
+                </div>
+                <button className="xdel" aria-label="Eliminar comida" onClick={async () => { await deleteMeal(m.id); onChanged(); }}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+            <div className="macro-fila" style={{ marginTop: 10 }}>
+              <span className="macro"><b className="tnum">{tot.kcal}</b> kcal</span>
+              <span className="macro">🍗 <b className="tnum">{tot.proteina} g</b></span>
+              <span className="macro">🍞 <b className="tnum">{tot.carbos} g</b></span>
+              <span className="macro">🥑 <b className="tnum">{tot.grasas} g</b></span>
+              <span className="macro">🌾 <b className="tnum">{tot.fibra} g</b></span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="card panel">
         <h3>📈 Tu semana de nutrición</h3>
         {dias.map((d) => {
           const log = energy.find((e) => e.date === d);
           const cups = log?.water_cups ?? 0;
-          const prot = Number(log?.protein_g ?? 0);
+          const prot = Number(log?.protein_g ?? 0) + totalesDia(meals, d).proteina;
           return (
             <div key={d} style={{ padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 5 }}>
                 <b style={{ textTransform: "capitalize" }}>{fmtDia(d)}</b>
-                <span className="tnum">💧 {cups}/{META_AGUA_VASOS} · 🍗 {Math.round(prot)} g</span>
+                <span className="tnum">💧 {cups} de {META_AGUA_VASOS}, 🍗 {Math.round(prot)} g</span>
               </div>
               <div style={{ display: "grid", gap: 3 }}>
                 <div className="track" style={{ height: 5 }}>
@@ -430,6 +492,7 @@ function NutricionTab({ energy, metaProt, profile, irAClinica }: {
             </div>
           );
         })}
+      </div>
       </div>
 
       <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
@@ -469,6 +532,41 @@ function NutricionTab({ energy, metaProt, profile, irAClinica }: {
         </div>
       </div>
     </div>
+
+    {/* Capa educativa: guías breves, humanas y aplicables */}
+    <div style={{ marginTop: 18 }}>
+      <h3 style={{ fontSize: 16, marginBottom: 4 }}>🌱 Aprende, sin moralismos</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        Mini guías para entender tu comida y aplicar cambios chicos. Toca una para abrirla.
+      </p>
+      <div className="guia-grid">
+        {GUIAS_NUTRICION.map((g) => <GuiaCard key={g.id} guia={g} />)}
+      </div>
+    </div>
+    </>
+  );
+}
+
+function GuiaCard({ guia }: { guia: (typeof GUIAS_NUTRICION)[number] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button className={"card guia-card" + (open ? " open" : "")} onClick={() => setOpen(!open)}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 22 }}>{guia.emoji}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <b style={{ fontSize: 14, display: "block" }}>{guia.titulo}</b>
+          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>{guia.resumen}</small>
+        </div>
+        <span style={{ color: "var(--muted)", fontSize: 12 }}>{open ? "▴" : "▾"}</span>
+      </div>
+      {open && (
+        <ul style={{ marginTop: 10, paddingLeft: 18, display: "grid", gap: 6, textAlign: "left" }}>
+          {guia.consejos.map((c) => (
+            <li key={c} style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>{c}</li>
+          ))}
+        </ul>
+      )}
+    </button>
   );
 }
 

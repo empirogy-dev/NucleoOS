@@ -72,6 +72,57 @@ export async function blobToBase64(blob: Blob): Promise<string> {
   return btoa(binary);
 }
 
+// ---------- Análisis visual del plato ----------
+export interface AnalisisPlato {
+  descripcion: string;
+  kcal: number;
+  proteina_g: number;
+  carbohidratos_g: number;
+  grasas_g: number;
+  fibra_g: number;
+  saciedad: number; // 1 a 5
+  impacto: string; // efecto general en la energía, en una frase
+}
+
+const PROMPT_PLATO =
+  "Eres la nutricionista amable de NucleoOS. Mira la foto de esta comida y estima sus valores. " +
+  "No necesito precisión clínica, solo una estimación útil para acompañar hábitos diarios. " +
+  "Responde SOLO con un objeto JSON válido, sin texto extra ni bloques de código, con estas llaves exactas: " +
+  '{"descripcion": "qué es el plato en pocas palabras, en español", "kcal": número entero, ' +
+  '"proteina_g": número, "carbohidratos_g": número, "grasas_g": número, "fibra_g": número, ' +
+  '"saciedad": entero de 1 a 5, "impacto": "una frase corta y amable sobre cómo afectará la energía, sin guiones largos"}. ' +
+  "Si la imagen no parece comida, usa kcal 0 y explica en descripcion.";
+
+/** Estima macros de una foto de comida. Devuelve una estimación, no un diagnóstico. */
+export async function analizarPlato(base64: string, mimeType: string): Promise<AnalisisPlato> {
+  const texto = await generate([
+    { inlineData: { mimeType, data: base64 } },
+    { text: PROMPT_PLATO },
+  ]);
+  // El modelo a veces envuelve el JSON en ```json ... ```
+  const limpio = texto.replace(/```json|```/g, "").trim();
+  const inicio = limpio.indexOf("{");
+  const fin = limpio.lastIndexOf("}");
+  if (inicio === -1 || fin === -1) throw new Error("La IA no devolvió un análisis legible. Intenta con otra foto.");
+  let crudo: Record<string, unknown>;
+  try {
+    crudo = JSON.parse(limpio.slice(inicio, fin + 1));
+  } catch {
+    throw new Error("No pude leer el análisis de la IA. Intenta de nuevo.");
+  }
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : Number(v) || 0);
+  return {
+    descripcion: String(crudo.descripcion ?? "Comida"),
+    kcal: Math.round(num(crudo.kcal)),
+    proteina_g: Math.round(num(crudo.proteina_g)),
+    carbohidratos_g: Math.round(num(crudo.carbohidratos_g)),
+    grasas_g: Math.round(num(crudo.grasas_g)),
+    fibra_g: Math.round(num(crudo.fibra_g)),
+    saciedad: Math.min(5, Math.max(1, Math.round(num(crudo.saciedad)) || 3)),
+    impacto: String(crudo.impacto ?? ""),
+  };
+}
+
 const PROMPT_COACH =
   "Eres el coach personal de NucleoOS, un sistema de vida. Hablas en español cercano, cálido y directo, " +
   "sin guiones largos, con comas y puntos. Con el estado real que te paso, entrega: " +

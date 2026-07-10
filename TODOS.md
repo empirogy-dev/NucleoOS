@@ -81,6 +81,15 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Energía: gráfico de tendencia del nivel de energía percibida contra sueño y movimiento.
 - [ ] `[Nuevo]` Sueños con imagen propia (hoy usan el emoji de su categoría).
 
+## Plataforma holística (10 jul 2026, noche)
+- [x] `[Nuevo]` Nutrición con IA: foto del plato → estimación de calorías, proteína, carbohidratos, grasas, fibra, saciedad e impacto en la energía (Gemini), guardado por día con acumulados (migración 0020). La proteína de los platos suma sola al contador de Hoy.
+- [x] `[Nuevo]` Capa educativa de nutrición: 6 mini guías expandibles, claras y sin moralismos.
+- [x] `[Nuevo]` Mente: sección Sadhana con 3 secuencias guiadas (amanecer, regular, noche) que avanzan solas con campana entre pasos, círculo de respiración y registro. Nuevas prácticas: suspiro fisiológico, exhalación larga, grounding 5 4 3 2 1, tensión emocional.
+- [x] `[Nuevo]` Módulo Movimiento en el Núcleo: práctica suave (yoga, movilidad, estiramientos) y entrenamiento (fuerza, cardio, core) con filtros por duración, reproductor de rutina que registra en Energía, retos de 7 y 21 días con progreso (migración 0021) y Mi material (bucket privado para PDFs, clases, videos y audios propios).
+- [ ] `[Nuevo]` Movimiento: reproducir videos propios dentro de la app (hoy se abren en otra pestaña) y clases con audio guiado.
+- [ ] `[Nuevo]` Sadhana: audio narrado de las guías (hoy es texto más campana y tonos).
+- [ ] `[Nuevo]` Nutrición: editar los macros estimados antes de guardar el plato.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

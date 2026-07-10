@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Brain, CalendarDays, Home, LogOut, Sparkles, type LucideIcon } from "lucide-react";
+import { Brain, CalendarDays, Home, LogOut, PersonStanding, Sparkles, type LucideIcon } from "lucide-react";
 import { areaPor } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -21,6 +21,7 @@ const PANORAMA: Item[] = [
 const NUCLEO: Item[] = [
   areaPor("salud"),
   { name: "Mente", path: "/mente", icon: Brain, color: "var(--men)" },
+  { name: "Movimiento", path: "/movimiento", icon: PersonStanding, color: "var(--mov)" },
   areaPor("habitos"),
 ];
 
