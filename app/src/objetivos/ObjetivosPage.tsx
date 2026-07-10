@@ -1,3 +1,4 @@
+import { VisionBoard } from "./VisionBoard";
 import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Target, Trash2 } from "lucide-react";
@@ -107,6 +108,8 @@ export function ObjetivosPage() {
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
       ) : (
         <>
+          <VisionBoard />
+
           <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
             <div className="card stat"><div className="k">Progreso promedio</div><div className="v tnum">{promedio}%</div></div>
             <div className="card stat"><div className="k">En camino</div><div className="v tnum">{enCamino}</div></div>
