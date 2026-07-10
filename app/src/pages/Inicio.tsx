@@ -1,13 +1,13 @@
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Sparkles } from "lucide-react";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
-import { TablesMissingError, listAccounts, listCategories, listReminders, listTransactions } from "../finanzas/data";
-import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Category, type Reminder, type Tx } from "../finanzas/types";
-import { listActivity, listObjectives, type ActivityEntry, type Objective } from "../objetivos/data";
+import { TablesMissingError, listAccounts, listReminders, listTransactions } from "../finanzas/data";
+import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Reminder, type Tx } from "../finanzas/types";
+import { listActivity, listObjectives, objectiveProgress, type ActivityEntry, type Objective } from "../objetivos/data";
 import { listHabitLogs, listHabits, type Habit, type HabitLog } from "../habitos/data";
 import { listProjects, type Project } from "../trabajo/data";
 import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSobriety, type Appointment, type Sobriety } from "../salud/data";
@@ -19,7 +19,6 @@ export function Inicio() {
   const { currency, displayName, lifeVision, updateProfile } = useSettings();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [finReady, setFinReady] = useState(false);
@@ -46,9 +45,8 @@ export function Inicio() {
 
   const reload = useCallback(async () => {
     try {
-      const [a, c, t, r] = await Promise.all([listAccounts(), listCategories(), listTransactions(50), listReminders()]);
+      const [a, t, r] = await Promise.all([listAccounts(), listTransactions(50), listReminders()]);
       setAccounts(a);
-      setCategories(c);
       setTxs(t);
       setReminders(r);
       setFinReady(true);
@@ -106,27 +104,23 @@ export function Inicio() {
   }, [reload]);
 
   const nombre = displayName || (session?.user?.email ?? "").split("@")[0] || "Hola";
-  const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
-  const gastosMes = monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
-  const balanceTotal = accounts.reduce((s, a) => s + Number(a.balance), 0);
 
-  const gastoPorCatId = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const t of monthTxs) {
-      if (t.type !== "expense" || !t.category_id) continue;
-      m.set(t.category_id, (m.get(t.category_id) ?? 0) + Number(t.amount));
-    }
-    return m;
-  }, [monthTxs]);
+  // El Inicio habla de tu avance de vida, no de plata (bloque B del reporte).
+  const avancesMes = activity.filter((a) => a.date.startsWith(month)).length;
+  const metasEnCamino = objectives.filter((o) => o.status === "en_camino").length;
+  const globalPct = objectives.length
+    ? Math.round(objectives.reduce((s, o) => s + objectiveProgress(o), 0) / objectives.length)
+    : null;
+  const hechosHoy = new Set(habitLogs.filter((l) => l.date === hoyLocal()).map((l) => l.habit_id)).size;
 
-  const presupuestosAlLimite = categories.filter((c) => {
-    const b = Number(c.budget);
-    if (!(c.type === "expense" && b > 0)) return false;
-    return (gastoPorCatId.get(c.id) ?? 0) >= b * 0.9;
-  }).length;
+  function avanceArea(key: string): number | null {
+    const objs = objectives.filter((o) => o.area === key);
+    if (objs.length === 0) return null;
+    return Math.round(objs.reduce((s, o) => s + objectiveProgress(o), 0) / objs.length);
+  }
 
   async function saveVision() {
     setVisionErr(null);
@@ -175,11 +169,18 @@ export function Inicio() {
       </div>
 
       {/* Stats reales (Finanzas) */}
-      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">Balance total</div><div className="v tnum">{finReady ? fmtMoney(balanceTotal, accounts[0]?.currency ?? currency) : "…"}</div></div>
-        <div className="card stat"><div className="k">Gastos del mes</div><div className="v tnum" style={{ color: "var(--err)" }}>{finReady ? fmtMoney(gastosMes, accounts[0]?.currency ?? currency) : "…"}</div></div>
-        <div className="card stat"><div className="k">Movimientos del mes</div><div className="v tnum">{finReady ? monthTxs.length : "…"}</div></div>
-        <div className="card stat"><div className="k">Presupuestos al límite</div><div className="v tnum" style={presupuestosAlLimite > 0 ? { color: "var(--warn)" } : undefined}>{finReady ? presupuestosAlLimite : "…"}</div></div>
+      <div className="statrow" style={{ gridTemplateColumns: "auto 1fr 1fr 1fr" }}>
+        <div className="card stat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
+          <div className="ring" style={{ background: `conic-gradient(var(--accent) 0 ${globalPct ?? 0}%, var(--line) ${globalPct ?? 0}% 100%)` }}>
+            <div className="in">
+              <b className="tnum">{globalPct ?? 0}%</b>
+              <span>Mejor versión</span>
+            </div>
+          </div>
+        </div>
+        <div className="card stat"><div className="k">Avances este mes</div><div className="v tnum">{avancesMes}</div></div>
+        <div className="card stat"><div className="k">Metas en camino</div><div className="v tnum">{metasEnCamino}</div></div>
+        <div className="card stat"><div className="k">Hábitos de hoy</div><div className="v tnum">{habReady ? `${hechosHoy} / ${habits.length}` : "…"}</div></div>
       </div>
 
       {/* Próximos pagos — siempre visibles (ADHD-friendly) */}
@@ -242,64 +243,47 @@ export function Inicio() {
                 ? <span className="chip" style={{ marginLeft: "auto", background: "color-mix(in srgb,var(--rel) 20%,var(--paper))", color: "color-mix(in srgb,var(--rel) 75%,var(--ink))" }}>💌 {n} por reconectar</span>
                 : <span className="chip" style={{ marginLeft: "auto" }}>{rels.length === 1 ? "1 vínculo" : `${rels.length} vínculos`}</span>;
             }
+            const pct = avanceArea(a.key);
             return (
-              <Link to={a.path} key={a.key} className="area-row">
-                <span className="adot" style={{ width: 9, height: 9, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
-                <span className="area-name">{a.name}</span>
-                {badge}
+              <Link to={a.path} key={a.key} className="area-row" style={{ display: "block" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="adot" style={{ width: 9, height: 9, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
+                  <span className="area-name">{a.name}</span>
+                  {pct !== null
+                    ? <b className="tnum" style={{ marginLeft: "auto", fontSize: 13 }}>{pct}%</b>
+                    : badge}
+                </div>
+                <div className="track" style={{ marginTop: 7 }}>
+                  <div className="fill" style={{ width: `${pct ?? 0}%`, background: a.color }} />
+                </div>
               </Link>
             );
           })}
         </div>
 
-        {/* Actividad reciente unificada: transacciones + avances de todas las áreas */}
+        {/* Avances recientes: tu camino hacia la mejor versión (las transacciones viven en Finanzas) */}
         <div className="card panel">
-          <h3>Actividad reciente</h3>
-          {(() => {
-            const items: Array<{ key: string; date: string; areaKey: string; areaLabel: string; text: string }> = [];
-            for (const t of txs.slice(0, 10)) {
-              const cat = t.category_id ? catById.get(t.category_id) : undefined;
-              items.push({
-                key: `tx-${t.id}`,
-                date: t.date,
-                areaKey: "finanzas",
-                areaLabel: "Finanzas",
-                text: `${t.type === "transfer" ? "Transferencia" : t.type === "expense" ? "Gasto" : "Ingreso"}${cat ? ` en ${cat.name}` : ""}: ${t.description || "sin descripción"} (${fmtMoney(Number(t.amount), accounts[0]?.currency ?? currency)})`,
-              });
-            }
-            for (const a of activity) {
+          <h3>Avances recientes</h3>
+          {activity.length === 0 ? (
+            <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+              Cada avance que registres en <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Objetivos</Link> o en cualquier área aparecerá aquí: tu historia hacia tu mejor versión.
+            </p>
+          ) : (
+            activity.slice(0, 6).map((a) => {
               const area = AREAS.find((x) => x.key === a.area);
-              items.push({
-                key: `act-${a.id}`,
-                date: a.date,
-                areaKey: a.area,
-                areaLabel: area?.name ?? "Objetivos",
-                text: a.description,
-              });
-            }
-            items.sort((x, y) => y.date.localeCompare(x.date));
-            if (items.length === 0) {
               return (
-                <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                  Tu actividad aparecerá aquí. Empieza registrando algo en <Link to="/finanzas" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Finanzas</Link> o un avance en <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Objetivos</Link>.
-                </p>
-              );
-            }
-            return items.slice(0, 6).map((it) => {
-              const area = AREAS.find((x) => x.key === it.areaKey);
-              return (
-                <div className="tl" key={it.key}>
+                <div className="tl" key={a.id}>
                   <div className="row">
                     <span className="tdot" style={{ background: area?.color ?? "var(--accent)" }} />
                     <div className="tx">
-                      <b>{it.areaLabel}, {it.date}</b>
-                      {it.text}
+                      <b>{area?.name ?? "Objetivos"}, {a.date}</b>
+                      {a.description}
                     </div>
                   </div>
                 </div>
               );
-            });
-          })()}
+            })
+          )}
         </div>
       </div>
 
