@@ -9,6 +9,8 @@ import { TrabajoPage } from "./trabajo/TrabajoPage";
 import { SaludPage } from "./salud/SaludPage";
 import { AprendizajePage } from "./aprendizaje/AprendizajePage";
 import { RelacionesPage } from "./relaciones/RelacionesPage";
+import { MentePage } from "./mente/MentePage";
+import { VisionPage } from "./vision/VisionPage";
 import { Ajustes } from "./pages/Ajustes";
 import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
@@ -41,6 +43,8 @@ export default function App() {
             <Route path="/salud" element={<SaludPage />} />
             <Route path="/aprendizaje" element={<AprendizajePage />} />
             <Route path="/relaciones" element={<RelacionesPage />} />
+            <Route path="/mente" element={<MentePage />} />
+            <Route path="/vision" element={<VisionPage />} />
             <Route path="/ajustes" element={<Ajustes />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

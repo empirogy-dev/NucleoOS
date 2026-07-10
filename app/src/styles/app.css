@@ -270,6 +270,43 @@ button{font-family:inherit}
 .vb-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:4/3;border:1.5px dashed var(--line);border-radius:12px;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;background:var(--surface)}
 .vb-add:hover{border-color:var(--accent);color:var(--accent-ink)}
 
+/* ================= MENTE: sesiones guiadas ================= */
+.resp-wrap{position:relative;width:200px;height:200px;margin:8px auto 10px;display:grid;place-items:center}
+.resp-guia{position:absolute;inset:0;border-radius:50%;border:1.5px dashed var(--line)}
+.resp-circulo{width:170px;height:170px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--accent-wash),var(--accent));opacity:.85;transition-property:transform;transition-timing-function:cubic-bezier(.45,0,.55,1)}
+.resp-info{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:2px;text-align:center;pointer-events:none}
+.resp-fase{font-family:var(--serif);font-size:19px;font-weight:500;color:var(--ink)}
+.resp-cuenta{font-size:15px;font-weight:600;color:var(--ink-soft)}
+.med-pasos{padding-left:20px;display:grid;gap:6px;margin-bottom:16px}
+.med-pasos li{font-size:13.5px;color:var(--ink-soft);line-height:1.5;border-radius:8px;padding:2px 6px;transition:background .3s}
+.med-pasos li.activo{background:var(--accent-wash);color:var(--ink);font-weight:500}
+.amb-on{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-wash)}
+
+/* ================= VISIÓN: collage libre ================= */
+.vb-link{display:flex;gap:12px;align-items:center;margin-bottom:16px;transition:border-color .15s}
+.vb-link:hover{border-color:var(--accent)}
+.vcanvas-scroll{overflow:auto;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--surface);box-shadow:var(--sh-sm)}
+.vcanvas{position:relative;background:
+  radial-gradient(circle,color-mix(in srgb,var(--ink) 8%,transparent) 1px,transparent 1px);
+  background-size:26px 26px}
+.vc-vacio{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);text-align:center;padding:40px}
+.vc-vacio p{max-width:46ch;font-size:13.5px}
+.vc-item{position:absolute;border-radius:10px;box-shadow:0 2px 6px rgba(40,36,24,.12),0 10px 24px rgba(40,36,24,.10);cursor:grab;touch-action:none;user-select:none;background:var(--card);overflow:visible}
+.vc-item:active{cursor:grabbing}
+.vc-item img{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;pointer-events:none}
+.vc-item.sel{outline:2px solid var(--accent);outline-offset:2px}
+.vc-item.nota{padding:12px 14px;display:grid;place-items:center;text-align:center;border-radius:6px}
+.vc-item.nota .vc-texto{font-family:var(--serif);font-size:15px;line-height:1.4;color:#3B342A;white-space:pre-wrap;overflow:hidden;max-height:100%}
+.vc-item.nota textarea{width:100%;height:100%;border:none;background:transparent;resize:none;font-family:var(--serif);font-size:15px;line-height:1.4;color:#3B342A;text-align:center;outline:none}
+.vc-cargando{width:100%;height:100%;display:grid;place-items:center;font-size:24px;color:var(--muted)}
+.vc-handle{position:absolute;right:-9px;bottom:-9px;width:20px;height:20px;border-radius:50%;background:var(--accent);border:2.5px solid var(--card);cursor:nwse-resize;touch-action:none}
+.vc-toolbar{display:flex;gap:6px;align-items:center;margin-bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-full);padding:6px 10px;box-shadow:var(--sh-sm);flex-wrap:wrap}
+.vc-tool{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);display:grid;place-items:center;cursor:pointer}
+.vc-tool:hover{border-color:var(--accent);color:var(--accent-ink)}
+.vc-tool.peligro:hover{border-color:var(--err);color:var(--err)}
+.vc-color{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);cursor:pointer}
+.vc-color:hover{transform:scale(1.12)}
+
 /* ================= NOTIFICACIONES ================= */
 .notif-badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}
 .notif-badge.urgente{background:var(--err)}

@@ -1,7 +1,58 @@
 import { NavLink } from "react-router-dom";
-import { CalendarDays, Home, LogOut, Settings } from "lucide-react";
-import { AREAS } from "../areas";
+import { Brain, CalendarDays, Home, LogOut, Sparkles, type LucideIcon } from "lucide-react";
+import { areaPor } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
+
+interface Item {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+  color?: string;
+  end?: boolean;
+}
+
+// Arquitectura del menú: primero el pulso diario, luego el núcleo
+// (cuerpo, mente, orden), luego el resto de la vida, y al final la inspiración.
+const PANORAMA: Item[] = [
+  { name: "Inicio", path: "/", icon: Home, end: true },
+  { name: "Calendario", path: "/calendario", icon: CalendarDays },
+];
+
+const NUCLEO: Item[] = [
+  areaPor("salud"),
+  { name: "Mente", path: "/mente", icon: Brain, color: "var(--men)" },
+  areaPor("habitos"),
+];
+
+const VIDA: Item[] = ["relaciones", "objetivos", "trabajo", "finanzas", "aprendizaje"].map(areaPor);
+
+const INSPIRACION: Item[] = [
+  { name: "Visión", path: "/vision", icon: Sparkles, color: "var(--obj)" },
+];
+
+function Seccion({ label, items, onNavigate }: { label: string; items: Item[]; onNavigate: () => void }) {
+  return (
+    <>
+      <div className="nav-label">{label}</div>
+      {items.map((it) => {
+        const Icon = it.icon;
+        return (
+          <NavLink
+            key={it.path}
+            to={it.path}
+            end={it.end}
+            className={({ isActive }) => "navitem" + (isActive ? " active" : "")}
+            onClick={onNavigate}
+          >
+            <Icon className="ico" size={18} strokeWidth={1.9} />
+            {it.name}
+            {it.color && <span className="dot" style={{ background: it.color }} />}
+          </NavLink>
+        );
+      })}
+    </>
+  );
+}
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { session, signOut } = useAuth();
@@ -17,37 +68,12 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         </div>
       </div>
       <nav className="nav">
-        <div className="nav-label">Panorama</div>
-        <NavLink to="/" end className={({ isActive }) => "navitem" + (isActive ? " active" : "")} onClick={onNavigate}>
-          <Home className="ico" size={18} strokeWidth={1.9} />
-          Inicio
-        </NavLink>
-        <NavLink to="/calendario" className={({ isActive }) => "navitem" + (isActive ? " active" : "")} onClick={onNavigate}>
-          <CalendarDays className="ico" size={18} strokeWidth={1.9} />
-          Calendario
-        </NavLink>
-        <div className="nav-label">Áreas de vida</div>
-        {AREAS.map((a) => {
-          const Icon = a.icon;
-          return (
-            <NavLink
-              key={a.key}
-              to={a.path}
-              className={({ isActive }) => "navitem" + (isActive ? " active" : "")}
-              onClick={onNavigate}
-            >
-              <Icon className="ico" size={18} strokeWidth={1.9} />
-              {a.name}
-              <span className="dot" style={{ background: a.color }} />
-            </NavLink>
-          );
-        })}
+        <Seccion label="Panorama" items={PANORAMA} onNavigate={onNavigate} />
+        <Seccion label="Núcleo" items={NUCLEO} onNavigate={onNavigate} />
+        <Seccion label="Mi vida" items={VIDA} onNavigate={onNavigate} />
+        <Seccion label="Inspiración" items={INSPIRACION} onNavigate={onNavigate} />
       </nav>
       <div className="spacer" />
-      <NavLink to="/ajustes" className={({ isActive }) => "navitem" + (isActive ? " active" : "")} onClick={onNavigate}>
-        <Settings className="ico" size={18} strokeWidth={1.9} />
-        Ajustes
-      </NavLink>
       <div className="side-acct">
         <div className="ava">{initial}</div>
         <div className="meta" title={email}>{email}</div>

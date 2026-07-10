@@ -204,8 +204,8 @@ export function TrabajoPage() {
 function Head() {
   return (
     <div className="page-head">
-      <div className="eyebrow"><Briefcase size={13} /> Área</div>
-      <h1>Trabajo y Proyectos</h1>
+      <div className="eyebrow"><Briefcase size={13} /> Mi vida</div>
+      <h1>Trabajo</h1>
       <p>Tus proyectos personales, tu empleo, tus horas y cómo te sientes.</p>
     </div>
   );

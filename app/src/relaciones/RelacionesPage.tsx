@@ -151,7 +151,7 @@ export function RelacionesPage() {
 function Head() {
   return (
     <div className="page-head">
-      <div className="eyebrow"><Users size={13} /> Área</div>
+      <div className="eyebrow"><Users size={13} /> Mi vida</div>
       <h1>Relaciones</h1>
       <p>Las personas que quieres, con recordatorios amables para no perder el hilo.</p>
     </div>

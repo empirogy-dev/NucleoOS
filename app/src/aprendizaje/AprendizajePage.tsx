@@ -364,7 +364,7 @@ function MaterialSection({ notebookId, summarizing, onResumir }: {
 function Head() {
   return (
     <div className="page-head">
-      <div className="eyebrow"><BookOpen size={13} /> Área</div>
+      <div className="eyebrow"><BookOpen size={13} /> Mi vida</div>
       <h1>Aprendizaje</h1>
       <p>Tus cuadernos y notas. Lo que aprendes, guardado y buscable.</p>
     </div>

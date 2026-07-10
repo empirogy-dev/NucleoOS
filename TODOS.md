@@ -67,6 +67,14 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Avisos del navegador una vez al día con lo urgente (se activan en Ajustes).
 - [ ] `[Nuevo]` Notificaciones push en el celular (llegan con la app móvil, Fase 3).
 
+## Rediseño de navegación y nuevos módulos (10 jul 2026)
+- [x] `[Nuevo]` Menú por secciones: Panorama (Inicio, Calendario), Núcleo (Energía, Mente, Hábitos), Mi vida (Relaciones, Dirección, Trabajo, Finanzas, Aprendizaje) e Inspiración (Visión). Ajustes pasó al topbar junto a la campana.
+- [x] `[Nuevo]` Renombres: Salud → Energía, Objetivos → Dirección, Trabajo y Proyectos → Trabajo, Hábitos y Rutinas → Hábitos.
+- [x] `[Nuevo]` Módulo Mente: respiración guiada con círculo animado y señal sonora por fase, meditaciones de 5 a 30 minutos con guía paso a paso, campana de inicio y cierre, sonido ambiental opcional, pausar y reanudar, sesiones completadas con historial, y el calendario lunar.
+- [x] `[Nuevo]` Visión como collage libre: mover, redimensionar, rotar, superponer, notas de texto con colores y guardado automático del layout (migración 0017).
+- [ ] `[Nuevo]` Mente: guardar el historial de sesiones en Supabase (hoy vive en el navegador con localStorage).
+- [ ] `[Nuevo]` Energía: pestañas internas (Hoy, Ficha, Citas y medicamentos, Exámenes) si la página crece más.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

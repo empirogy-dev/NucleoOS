@@ -1136,7 +1136,7 @@ function Head() {
   return (
     <div className="page-head">
       <div className="eyebrow">
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fin)", display: "inline-block" }} /> Área
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fin)", display: "inline-block" }} /> Mi vida
       </div>
       <h1>Finanzas</h1>
       <p>Gastos, presupuestos, deudas y metas de ahorro.</p>

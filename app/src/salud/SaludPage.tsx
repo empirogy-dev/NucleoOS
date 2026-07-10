@@ -230,9 +230,9 @@ export function SaludPage() {
 function Head() {
   return (
     <div className="page-head">
-      <div className="eyebrow"><HeartPulse size={13} /> Área</div>
-      <h1>Salud</h1>
-      <p>Tu ficha, medicamentos, citas, exámenes y tu camino de sobriedad.</p>
+      <div className="eyebrow"><HeartPulse size={13} /> Núcleo</div>
+      <h1>Energía</h1>
+      <p>Tu cuerpo: ficha médica, medicamentos, citas, exámenes y tu camino de sobriedad.</p>
     </div>
   );
 }

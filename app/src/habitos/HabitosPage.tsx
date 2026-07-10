@@ -1,6 +1,6 @@
 import { AvancesArea } from "../components/AvancesArea";
 import { IconField } from "../components/IconField";
-import { BienestarTab } from "./BienestarTab";
+import { Link } from "react-router-dom";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { Moon, Plus, Repeat, Trash2 } from "lucide-react";
@@ -41,7 +41,6 @@ export function HabitosPage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [habitModal, setHabitModal] = useState(false);
-  const [tabH, setTabH] = useState<"habitos" | "bienestar">("habitos");
 
   const hoy = hoyLocal();
 
@@ -96,15 +95,12 @@ export function HabitosPage() {
     <div className="page">
       <Head />
 
-      <div className="ftabs">
-        <button className={"ftab" + (tabH === "habitos" ? " active" : "")} onClick={() => setTabH("habitos")}>Hábitos</button>
-        <button className={"ftab" + (tabH === "bienestar" ? " active" : "")} onClick={() => setTabH("bienestar")}>Bienestar</button>
-      </div>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginTop: -12, marginBottom: 16 }}>
+        Las meditaciones, la respiración guiada y el calendario lunar ahora viven en <Link to="/mente" style={{ color: "var(--accent-ink)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>Mente</Link>.
+      </p>
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
-      {tabH === "bienestar" ? (
-        <BienestarTab />
-      ) : loading ? (
+      {loading ? (
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
       ) : (
         <>
@@ -258,9 +254,9 @@ export function HabitosPage() {
 function Head() {
   return (
     <div className="page-head">
-      <div className="eyebrow"><Repeat size={13} /> Área</div>
-      <h1>Hábitos y Rutinas</h1>
-      <p>Sueño, ejercicio y los hábitos que construyen tu día.</p>
+      <div className="eyebrow"><Repeat size={13} /> Núcleo</div>
+      <h1>Hábitos</h1>
+      <p>Sueño, ejercicio y las rutinas que construyen tu día.</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
-import { VisionBoard } from "./VisionBoard";
+import { Link } from "react-router-dom";
 import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Target, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Compass, Plus, Trash2 } from "lucide-react";
 import { AREAS } from "../areas";
 import { TablesMissingError } from "../finanzas/data";
 import {
@@ -108,7 +108,15 @@ export function ObjetivosPage() {
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
       ) : (
         <>
-          <VisionBoard />
+          <Link to="/vision" className="card pad vb-link">
+            <span style={{ fontSize: 22 }}>🖼️</span>
+            <span>
+              <b style={{ display: "block", fontSize: 14 }}>Tu tablero de visión creció</b>
+              <small style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                Ahora es un collage libre: mueve, gira y superpón tus imágenes y frases. Lo encuentras en Visión, al final del menú.
+              </small>
+            </span>
+          </Link>
 
           <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
             <div className="card stat"><div className="k">Progreso promedio</div><div className="v tnum">{promedio}%</div></div>
@@ -172,9 +180,9 @@ function Head() {
   return (
     <div className="page-head">
       <div className="eyebrow">
-        <Target size={13} /> Área
+        <Compass size={13} /> Mi vida
       </div>
-      <h1>Objetivos</h1>
+      <h1>Dirección</h1>
       <p>Tu visión de vida, hecha metas concretas con pasos y avances.</p>
     </div>
   );

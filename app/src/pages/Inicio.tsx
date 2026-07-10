@@ -282,7 +282,7 @@ export function Inicio() {
           <h3>Avances recientes</h3>
           {activity.length === 0 ? (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-              Cada avance que registres en <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Objetivos</Link> o en cualquier área aparecerá aquí: tu historia hacia tu mejor versión.
+              Cada avance que registres en <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Dirección</Link> o en cualquier área aparecerá aquí: tu historia hacia tu mejor versión.
             </p>
           ) : (
             activity.slice(0, 6).map((a) => {
@@ -292,7 +292,7 @@ export function Inicio() {
                   <div className="row">
                     <span className="tdot" style={{ background: area?.color ?? "var(--accent)" }} />
                     <div className="tx">
-                      <b>{area?.name ?? "Objetivos"}, {a.date}</b>
+                      <b>{area?.name ?? "Dirección"}, {a.date}</b>
                       {a.description}
                     </div>
                   </div>

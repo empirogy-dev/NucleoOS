@@ -7,7 +7,7 @@ import { AREAS } from "../areas";
 /**
  * Avances de un área: muestra el registro transversal (activity_log)
  * filtrado por área y permite anotar un avance rápido desde aquí mismo.
- * Así, lo que registras en Objetivos asignado a un área aparece en el área.
+ * Así, lo que registras en Dirección asignado a un área aparece en el área.
  */
 export function AvancesArea({ area }: { area: string }) {
   const [items, setItems] = useState<ActivityEntry[]>([]);
@@ -49,7 +49,7 @@ export function AvancesArea({ area }: { area: string }) {
       </form>
       {items.length === 0 && (
         <p style={{ color: "var(--muted)", fontSize: 13 }}>
-          Todavía no hay avances aquí. También puedes asignarlos desde Objetivos y aparecerán en esta lista.
+          Todavía no hay avances aquí. También puedes asignarlos desde Dirección y aparecerán en esta lista.
         </p>
       )}
       <div className="tl">
