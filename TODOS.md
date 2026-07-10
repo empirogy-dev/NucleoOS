@@ -96,6 +96,15 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Ajustar los pasos de Mi sadhana con las palabras exactas de la usuaria (el video de YouTube no es legible desde la app, se construyó con la estructura pública de la tradición).
 - [ ] `[Nuevo]` Retos: marcar el día automáticamente al completar una sesión de Mente o una rutina de Movimiento vinculada.
 
+## Mente expandida, Revisión y camino a Notion (10 jul 2026, noche)
+- [x] `[Nuevo]` Mente reorganizada: pestañas Prácticas (con vías Regulación, Mindfulness, Corazón y Mentalidad), Sadhana, Diario, Historial e Insights. Seis prácticas nuevas: caminata consciente, pausa consciente, amor propio, afirmaciones, reencuadre cognitivo y tres cosas buenas.
+- [x] `[Nuevo]` Diario con preguntas guía (gratitud, reencuadre, escritura libre), migración 0023.
+- [x] `[Nuevo]` Insights de Mente: minutos por semana, racha, práctica favorita y hacia qué vía se inclina tu práctica.
+- [x] `[Nuevo]` Copy de Sadhana universal y premium, sin referencias personales.
+- [x] `[Nuevo]` Módulo Revisión en Panorama: resúmenes por semana y mes de todos los módulos con navegación de períodos, lectura narrada con IA, Copiar para Notion en Markdown, y Patrones (sueño vs energía, movimiento vs claridad, regulación vs estado) sobre los últimos 30 días.
+- [ ] `[Nuevo]` Notion API directa (Fase 4, requiere Edge Function porque la API de Notion no permite llamadas desde el navegador): exportar reportes automáticos, páginas de journaling y notas de aprendizaje.
+- [ ] `[Nuevo]` Patrones: sumar finanzas vs estado emocional cuando haya más días de energía percibida registrados.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

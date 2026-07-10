@@ -130,6 +130,20 @@ const PROMPT_COACH =
   "3) dos acciones pequeñas y concretas para hoy o mañana. Máximo 120 palabras, párrafos cortos, " +
   "sin listas numeradas ni encabezados.";
 
+const PROMPT_REVISION =
+  "Eres el coach de NucleoOS, un sistema de vida. Con los datos reales del período que te paso, " +
+  "escribe un resumen cálido en español de máximo 130 palabras y tres párrafos cortos: " +
+  "1) qué floreció en el período, 2) qué necesita cariño, 3) un foco concreto y pequeño para el período que viene. " +
+  "Habla directo a la persona, sin guiones largos, sin listas ni encabezados, con comas y puntos.";
+
+/** Narrativa del período para el módulo Revisión. */
+export async function resumenRevision(datos: string): Promise<string> {
+  return generate([{ text: `${PROMPT_REVISION}
+
+Datos del período:
+${datos}` }]);
+}
+
 /** Consejo del coach a partir del resumen real del usuario. */
 export async function consejoCoach(resumen: string): Promise<string> {
   return generate([{ text: `${PROMPT_COACH}

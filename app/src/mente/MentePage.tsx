@@ -2,13 +2,37 @@ import { useState } from "react";
 import { Brain } from "lucide-react";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { faseLunar, proximasLunas } from "./lunar";
-import { MEDITACIONES, RESPIRACIONES, listSesiones, type Practica, type Sesion } from "./practicas";
+import {
+  CATEGORIAS_MENTE,
+  MEDITACIONES,
+  RESPIRACIONES,
+  listSesiones,
+  type CategoriaMente,
+  type Practica,
+  type Sesion,
+} from "./practicas";
 import { SADHANAS, minutosSadhana, type Sadhana } from "./sadhana";
 import { SadhanaPlayer } from "./SadhanaPlayer";
 import { SesionModal } from "./SesionModal";
+import { DiarioTab } from "./DiarioTab";
+import { InsightsTab } from "./InsightsTab";
+
+// Mente: regulación, presencia, corazón y mentalidad.
+// Las prácticas se agrupan por vía; la sadhana es la práctica central.
+
+type Tab = "practicas" | "sadhana" | "diario" | "historial" | "insights";
+
+const TABS: Array<{ key: Tab; label: string }> = [
+  { key: "practicas", label: "Prácticas" },
+  { key: "sadhana", label: "Sadhana 🕉" },
+  { key: "diario", label: "Diario" },
+  { key: "historial", label: "Historial" },
+  { key: "insights", label: "Insights" },
+];
 
 export function MentePage() {
-  const [tab, setTab] = useState<"practicas" | "sadhana">("practicas");
+  const [tab, setTab] = useState<Tab>("practicas");
+  const [categoria, setCategoria] = useState<CategoriaMente | "todas">("todas");
   const [sesion, setSesion] = useState<{ practica: Practica; minutos: number } | null>(null);
   const [sadhana, setSadhana] = useState<Sadhana | null>(null);
   const [historial, setHistorial] = useState<Sesion[]>(listSesiones());
@@ -24,12 +48,15 @@ export function MentePage() {
   const sesionesHoy = historial.filter((s) => s.fecha === hoy).length;
   const minutosSemana = historial.filter((s) => s.fecha >= desde).reduce((sum, s) => sum + s.minutos, 0);
 
+  const respiraciones = RESPIRACIONES.filter((p) => categoria === "todas" || p.categoria === categoria);
+  const meditaciones = MEDITACIONES.filter((p) => categoria === "todas" || p.categoria === categoria);
+
   return (
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><Brain size={13} /> Núcleo</div>
         <h1>Mente</h1>
-        <p>Respiración guiada, meditaciones y tu calma diaria. Elige cuántos minutos tienes y la sesión se adapta.</p>
+        <p>Regulación, presencia, corazón y mentalidad. Elige la vía que necesitas hoy y cuántos minutos tienes.</p>
       </div>
 
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
@@ -40,15 +67,76 @@ export function MentePage() {
       </div>
 
       <div className="ftabs">
-        <button className={"ftab" + (tab === "practicas" ? " active" : "")} onClick={() => setTab("practicas")}>Prácticas</button>
-        <button className={"ftab" + (tab === "sadhana" ? " active" : "")} onClick={() => setTab("sadhana")}>Sadhana 🕉</button>
+        {TABS.map((t) => (
+          <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{t.label}</button>
+        ))}
       </div>
+
+      {tab === "practicas" && (
+        <>
+          <div className="ftabs" style={{ marginBottom: 12 }}>
+            <button className={"ftab" + (categoria === "todas" ? " active" : "")} onClick={() => setCategoria("todas")}>Todas</button>
+            {CATEGORIAS_MENTE.map((c) => (
+              <button key={c.key} className={"ftab" + (categoria === c.key ? " active" : "")} onClick={() => setCategoria(c.key)}>
+                {c.emoji} {c.label}
+              </button>
+            ))}
+          </div>
+          {categoria !== "todas" && (
+            <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+              {CATEGORIAS_MENTE.find((c) => c.key === categoria)?.descripcion}
+            </p>
+          )}
+          <div className="panelgrid">
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              {respiraciones.length > 0 && (
+                <ListaPracticas
+                  titulo="🫁 Respiración guiada"
+                  intro="Con círculo animado y una señal sonora suave en cada cambio: inhalar, sostener, exhalar."
+                  practicas={respiraciones}
+                  onComenzar={(practica, minutos) => setSesion({ practica, minutos })}
+                />
+              )}
+              {meditaciones.length > 0 && (
+                <ListaPracticas
+                  titulo="🧘 Meditación y presencia"
+                  intro="Guiadas paso a paso, con campana al inicio y al final. También en movimiento: la caminata consciente cuenta."
+                  practicas={meditaciones}
+                  onComenzar={(practica, minutos) => setSesion({ practica, minutos })}
+                />
+              )}
+            </div>
+
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              <div className="card panel">
+                <h3>🌙 Calendario lunar</h3>
+                <div style={{ textAlign: "center", padding: "10px 0 14px" }}>
+                  <div style={{ fontSize: 52, lineHeight: 1 }}>{fase.emoji}</div>
+                  <div style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, marginTop: 8 }}>{fase.nombre}</div>
+                  <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>{fase.consejo}</p>
+                </div>
+                <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, display: "grid", gap: 6 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-soft)" }}>
+                    <span>🌕 Próxima luna llena</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.llena)}</b>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-soft)" }}>
+                    <span>🌑 Próxima luna nueva</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.nueva)}</b>
+                  </div>
+                </div>
+              </div>
+              <div className="tip-destacado">
+                💡 ¿No sabes cuál elegir? Si el cuerpo está acelerado, Regulación. Si la mente está lejos, Mindfulness. Si el corazón pesa, Corazón. Si la voz interna castiga, Mentalidad.
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {tab === "sadhana" && (
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", maxWidth: "64ch", marginBottom: 16 }}>
-            La sadhana es una práctica diaria de trabajo interior, una tradición que viene de India. No necesitas experiencia:
-            la secuencia avanza sola, paso a paso, con una campana suave entre cada uno. Tu único trabajo es quedarte.
+            La sadhana es tu práctica interior diaria: una secuencia guiada de respiración, sonido, presencia y silencio
+            que avanza sola, paso a paso, con una campana suave entre cada uno. No necesitas experiencia, tu único trabajo es quedarte.
             {(() => {
               const sadhanasSemana = historial.filter((h) => h.id.startsWith("sadhana") && h.fecha >= desde).length;
               return sadhanasSemana > 0 ? ` Esta semana la has practicado ${sadhanasSemana} ${sadhanasSemana === 1 ? "vez" : "veces"}. 🌱` : "";
@@ -96,61 +184,34 @@ export function MentePage() {
         </>
       )}
 
-      {tab === "practicas" && (
-      <div className="panelgrid">
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          <ListaPracticas
-            titulo="🫁 Respiración guiada"
-            intro="Con círculo animado y una señal sonora suave en cada cambio: inhalar, sostener, exhalar."
-            practicas={RESPIRACIONES}
-            onComenzar={(practica, minutos) => setSesion({ practica, minutos })}
-          />
-          <ListaPracticas
-            titulo="🧘 Meditaciones"
-            intro="Guiadas paso a paso, con campana al inicio y al final. De 5 a 30 minutos."
-            practicas={MEDITACIONES}
-            onComenzar={(practica, minutos) => setSesion({ practica, minutos })}
-          />
-        </div>
+      {tab === "diario" && <DiarioTab />}
 
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          <div className="card panel">
-            <h3>🌙 Calendario lunar</h3>
-            <div style={{ textAlign: "center", padding: "10px 0 14px" }}>
-              <div style={{ fontSize: 52, lineHeight: 1 }}>{fase.emoji}</div>
-              <div style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, marginTop: 8 }}>{fase.nombre}</div>
-              <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>{fase.consejo}</p>
-            </div>
-            <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, display: "grid", gap: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-soft)" }}>
-                <span>🌕 Próxima luna llena</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.llena)}</b>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-soft)" }}>
-                <span>🌑 Próxima luna nueva</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.nueva)}</b>
+      {tab === "historial" && (
+        <div className="card panel" style={{ maxWidth: 640 }}>
+          <h3>📖 Tus sesiones</h3>
+          {historial.length === 0 && (
+            <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+              Aún no hay sesiones. La primera puede ser de dos minutos, eso ya cuenta.
+            </p>
+          )}
+          {historial.slice(0, 30).map((s, i) => (
+            <div className="txrow" key={`${s.fecha}-${s.id}-${i}`}>
+              <span className="txicon">{s.id.startsWith("sadhana") ? "🕉" : s.fecha === hoy ? "✨" : "🕊"}</span>
+              <div className="txmeta">
+                <b>{s.nombre}</b>
+                <small>{s.minutos} min, {s.fecha === hoy ? "hoy" : s.fecha}</small>
               </div>
             </div>
-          </div>
-
-          <div className="card panel">
-            <h3>📖 Tus últimas sesiones</h3>
-            {historial.length === 0 && (
-              <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                Aún no hay sesiones. La primera puede ser de dos minutos, eso ya cuenta.
-              </p>
-            )}
-            {historial.slice(0, 7).map((s, i) => (
-              <div className="txrow" key={`${s.fecha}-${s.id}-${i}`}>
-                <span className="txicon">{s.fecha === hoy ? "✨" : "🕊"}</span>
-                <div className="txmeta">
-                  <b>{s.nombre}</b>
-                  <small>{s.minutos} min, {s.fecha === hoy ? "hoy" : s.fecha}</small>
-                </div>
-              </div>
-            ))}
-          </div>
+          ))}
+          {historial.length > 0 && (
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
+              Tu historial vive en este navegador por ahora. Pronto se guardará también en la nube.
+            </p>
+          )}
         </div>
-      </div>
       )}
+
+      {tab === "insights" && <InsightsTab />}
 
       {sesion && (
         <SesionModal

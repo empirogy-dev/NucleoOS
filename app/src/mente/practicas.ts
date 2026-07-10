@@ -6,11 +6,21 @@ export interface FaseRespiracion {
   tipo: "inhala" | "sosten" | "exhala";
 }
 
+export type CategoriaMente = "regulacion" | "mindfulness" | "corazon" | "mentalidad";
+
+export const CATEGORIAS_MENTE: Array<{ key: CategoriaMente; emoji: string; label: string; descripcion: string }> = [
+  { key: "regulacion", emoji: "🌊", label: "Regulación", descripcion: "Para calmar el sistema nervioso cuando aprieta." },
+  { key: "mindfulness", emoji: "🍃", label: "Mindfulness", descripcion: "Para volver al presente, quieta o en movimiento." },
+  { key: "corazon", emoji: "💛", label: "Corazón", descripcion: "Gratitud, ternura y coherencia con lo que amas." },
+  { key: "mentalidad", emoji: "🌞", label: "Mentalidad", descripcion: "Para hablarte mejor y pensar con más amplitud." },
+];
+
 export interface Practica {
   id: string;
   nombre: string;
   emoji: string;
   tipo: "respiracion" | "meditacion";
+  categoria: CategoriaMente;
   descripcion: string;
   duraciones: number[]; // minutos elegibles
   pasos: string[];
@@ -23,6 +33,7 @@ export const RESPIRACIONES: Practica[] = [
     nombre: "Respiración 4 7 8",
     emoji: "🫁",
     tipo: "respiracion",
+    categoria: "regulacion",
     descripcion: "Calma el sistema nervioso en minutos. Ideal antes de dormir o en momentos de ansiedad.",
     duraciones: [2, 3, 5, 8],
     pasos: [
@@ -41,6 +52,7 @@ export const RESPIRACIONES: Practica[] = [
     nombre: "Respiración de caja",
     emoji: "📦",
     tipo: "respiracion",
+    categoria: "regulacion",
     descripcion: "La que se usa para recuperar el foco bajo presión. Cuatro lados iguales, como una caja.",
     duraciones: [2, 4, 6, 10],
     pasos: [
@@ -60,6 +72,7 @@ export const RESPIRACIONES: Practica[] = [
     nombre: "Suspiro fisiológico",
     emoji: "🌬",
     tipo: "respiracion",
+    categoria: "regulacion",
     descripcion: "Doble inhalación y exhalación larga. El botón de calma más rápido que conoce tu sistema nervioso.",
     duraciones: [2, 3, 5],
     pasos: [
@@ -79,6 +92,7 @@ export const RESPIRACIONES: Practica[] = [
     nombre: "Exhalación larga",
     emoji: "🍃",
     tipo: "respiracion",
+    categoria: "regulacion",
     descripcion: "Cuando la exhalación dura el doble que la inhalación, el cuerpo entiende que el peligro pasó.",
     duraciones: [3, 5, 10],
     pasos: [
@@ -96,6 +110,7 @@ export const RESPIRACIONES: Practica[] = [
     nombre: "Conexión con el corazón",
     emoji: "💛",
     tipo: "respiracion",
+    categoria: "corazon",
     descripcion: "Coherencia cardíaca simple: cinco segundos adentro, cinco afuera, la atención en el pecho.",
     duraciones: [3, 5, 10, 15],
     pasos: [
@@ -116,6 +131,7 @@ export const MEDITACIONES: Practica[] = [
     nombre: "Meditación de gratitud",
     emoji: "🙏",
     tipo: "meditacion",
+    categoria: "corazon",
     descripcion: "Entrena a tu mente para notar lo bueno que ya existe en tu vida.",
     duraciones: [5, 10, 15],
     pasos: [
@@ -131,6 +147,7 @@ export const MEDITACIONES: Practica[] = [
     nombre: "Escaneo corporal",
     emoji: "🌊",
     tipo: "meditacion",
+    categoria: "mindfulness",
     descripcion: "Recorre tu cuerpo soltando tensión, parte por parte. Perfecto para reconectar contigo.",
     duraciones: [10, 15, 20, 30],
     pasos: [
@@ -147,6 +164,7 @@ export const MEDITACIONES: Practica[] = [
     nombre: "Grounding 5 4 3 2 1",
     emoji: "🌳",
     tipo: "meditacion",
+    categoria: "regulacion",
     descripcion: "Vuelve al presente por los sentidos. Perfecta cuando la mente se dispara o la ansiedad aprieta.",
     duraciones: [3, 5, 10],
     pasos: [
@@ -163,6 +181,7 @@ export const MEDITACIONES: Practica[] = [
     nombre: "Para la tensión emocional",
     emoji: "🫂",
     tipo: "meditacion",
+    categoria: "regulacion",
     descripcion: "Cuando algo pesa en el pecho o la garganta. No para arreglarlo, para acompañarlo.",
     duraciones: [5, 10, 15],
     pasos: [
@@ -179,6 +198,7 @@ export const MEDITACIONES: Practica[] = [
     nombre: "Meditación en silencio",
     emoji: "🧘",
     tipo: "meditacion",
+    categoria: "mindfulness",
     descripcion: "Solo tú, tu respiración y una campana al inicio y al final. Para cuando ya no necesitas guía.",
     duraciones: [5, 10, 15, 20, 30],
     pasos: [
@@ -186,6 +206,104 @@ export const MEDITACIONES: Practica[] = [
       "Deja que la respiración vaya a su propio ritmo, sin controlarla.",
       "Cuando la mente se vaya (se va a ir), vuelve amable a la respiración.",
       "La campana te avisará cuando termine. Hasta entonces, nada que hacer.",
+    ],
+  },
+  {
+    id: "med-caminata",
+    nombre: "Caminata consciente",
+    emoji: "🚶",
+    tipo: "meditacion",
+    categoria: "mindfulness",
+    descripcion: "Meditación en movimiento: caminar lento con toda la atención puesta en caminar. También regula.",
+    duraciones: [10, 15, 20, 30],
+    pasos: [
+      "Elige un tramo tranquilo, puede ser tu pasillo, la cuadra o un parque.",
+      "Camina más lento de lo normal, sintiendo cómo cada pie toca el suelo.",
+      "Nota el balanceo de los brazos, el aire en la cara, los sonidos alrededor.",
+      "Cuando la mente se vaya a la lista de pendientes, vuelve a las plantas de los pies.",
+      "No hay meta ni destino. El destino es cada paso.",
+    ],
+  },
+  {
+    id: "med-pausa",
+    nombre: "Pausa consciente",
+    emoji: "🍵",
+    tipo: "meditacion",
+    categoria: "mindfulness",
+    descripcion: "Tres minutos para cortar el piloto automático en medio del día. Tu mindfulness diario mínimo.",
+    duraciones: [3, 5],
+    pasos: [
+      "Detén lo que estás haciendo y suelta los hombros.",
+      "Pregúntate: ¿qué está pasando en mí ahora? Pensamientos, emociones, cuerpo.",
+      "Lleva la atención a la respiración, solo unas cuantas rondas.",
+      "Amplía la atención al cuerpo completo, como si respiraras con todo él.",
+      "Vuelve a tu día, pero ya no en automático.",
+    ],
+  },
+  {
+    id: "med-compasion",
+    nombre: "Amor propio",
+    emoji: "💗",
+    tipo: "meditacion",
+    categoria: "corazon",
+    descripcion: "Hablarte como le hablarías a alguien que amas. Autocompasión, no autoexigencia.",
+    duraciones: [5, 10, 15],
+    pasos: [
+      "Pon una mano en el pecho y siente su calor.",
+      "Reconoce lo que estás viviendo: esto es difícil, y está bien que lo sea.",
+      "Recuerda que no estás sola en esto: ser humana incluye días duros.",
+      "Ofrécete en silencio: que me trate con ternura, que me dé lo que necesito, que esté en paz.",
+      "Piensa qué le dirías a tu mejor amiga en tu situación. Ahora dítelo a ti.",
+    ],
+  },
+  {
+    id: "med-afirmaciones",
+    nombre: "Afirmaciones",
+    emoji: "🌞",
+    tipo: "meditacion",
+    categoria: "mentalidad",
+    descripcion: "Frases en presente para entrenar la voz con la que te hablas. Repetición amable, no pensamiento mágico.",
+    duraciones: [3, 5],
+    pasos: [
+      "Siéntate derecha y respira profundo dos veces.",
+      "Repite lento, sintiendo cada frase: estoy construyendo la vida que quiero.",
+      "Merezco calma, orden y cosas buenas.",
+      "Puedo hacer cosas difíciles, ya lo he demostrado.",
+      "Hoy me trato como a alguien que amo.",
+      "Elige la frase que más te costó creer y repítela tres veces más.",
+    ],
+  },
+  {
+    id: "med-reencuadre",
+    nombre: "Reencuadre de un pensamiento",
+    emoji: "🔄",
+    tipo: "meditacion",
+    categoria: "mentalidad",
+    descripcion: "Toma un pensamiento que te aprieta y míralo desde otro ángulo. Inspirado en terapia cognitiva.",
+    duraciones: [5, 10],
+    pasos: [
+      "Identifica el pensamiento que te está pesando y dilo en una frase.",
+      "Pregúntate: ¿qué evidencia real tengo a favor y en contra?",
+      "¿Qué le diría a una amiga que pensara exactamente esto?",
+      "¿Cómo se ve esto desde dentro de un año?",
+      "Reescribe el pensamiento en una versión más justa contigo, ni rosa ni catastrófica.",
+      "Si quieres dejarlo por escrito, el Diario está a un toque de distancia.",
+    ],
+  },
+  {
+    id: "med-tresbuenas",
+    nombre: "Tres cosas buenas",
+    emoji: "✨",
+    tipo: "meditacion",
+    categoria: "mentalidad",
+    descripcion: "La práctica clásica de la psicología positiva: notar lo bueno y entender tu parte en ello.",
+    duraciones: [5],
+    pasos: [
+      "Respira profundo y repasa tu día sin apuro.",
+      "Encuentra tres cosas que salieron bien, por chicas que sean.",
+      "Con cada una, pregúntate: ¿qué hice yo para que pasara?",
+      "Nota cómo se siente el cuerpo al recordarlas.",
+      "Si quieres que queden guardadas, escríbelas en el Diario al terminar.",
     ],
   },
 ];

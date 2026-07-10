@@ -86,6 +86,18 @@ export function Ajustes() {
         </div>
 
         <div className="card pad">
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Conexiones</h3>
+          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>
+            <b style={{ color: "var(--ink)" }}>Notion</b>: llegará como integración directa cuando la app tenga su capa de servidor (Fase 4),
+            para exportar reportes, journaling y notas a tu espacio.
+          </p>
+          <p style={{ fontSize: 13, color: "var(--muted)" }}>
+            Mientras tanto, en <b style={{ color: "var(--ink)" }}>Revisión</b> puedes copiar cualquier reporte semanal o mensual
+            como Markdown y pegarlo en Notion tal cual.
+          </p>
+        </div>
+
+        <div className="card pad">
           <h3 style={{ fontSize: 15, marginBottom: 4 }}>Cuenta</h3>
           <p style={{ fontSize: 13, color: "var(--muted)" }}>
             Sesión iniciada como <b style={{ color: "var(--ink)" }}>{session?.user?.email}</b>

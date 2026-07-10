@@ -11,6 +11,7 @@ import { useSettings } from "../settings/SettingsProvider";
 const NOMBRES: Record<string, string> = {
   "/": "Inicio",
   "/calendario": "Calendario",
+  "/revision": "Revisión",
   "/mente": "Mente",
   "/movimiento": "Movimiento",
   "/vision": "Visión",

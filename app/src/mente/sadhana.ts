@@ -1,7 +1,6 @@
 import type { FaseRespiracion } from "./practicas";
 
-// Sadhana: práctica guiada de trabajo interior, inspirada en lo aprendido
-// en India y presentada con respeto, en secuencias que cualquiera puede seguir.
+// Sadhana: secuencias guiadas de presencia, respiración y silencio.
 // Cada sadhana es una serie de pasos que avanzan solos, con campana entre ellos.
 
 export interface SadhanaPaso {
@@ -34,7 +33,7 @@ export const SADHANAS: Sadhana[] = [
     nombre: "Mi sadhana",
     emoji: "🕉",
     destacada: true,
-    descripcion: "La práctica completa de limpieza y presencia, inspirada en la tradición Swatantra que aprendiste en India: respiración, sonido y silencio.",
+    descripcion: "Tu práctica central de limpieza y presencia: respiración, sonido y silencio en una sola secuencia guiada, paso a paso.",
     intencion: "Me limpio por dentro para empezar libre.",
     intro:
       "Esta es tu práctica central, la que se hace todos los días aunque sea corta. Trabaja en tres capas: la respiración limpia el cuerpo, el sonido limpia la emoción y el silencio limpia la mente. No busques que pase nada especial: la sadhana funciona por repetición, no por intensidad.",

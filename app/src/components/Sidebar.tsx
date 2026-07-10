@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Brain, CalendarDays, Home, LogOut, PersonStanding, Sparkles, type LucideIcon } from "lucide-react";
+import { Brain, CalendarDays, Home, LineChart, LogOut, PersonStanding, Sparkles, type LucideIcon } from "lucide-react";
 import { areaPor } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -16,6 +16,7 @@ interface Item {
 const PANORAMA: Item[] = [
   { name: "Inicio", path: "/", icon: Home, end: true },
   { name: "Calendario", path: "/calendario", icon: CalendarDays },
+  { name: "Revisión", path: "/revision", icon: LineChart },
 ];
 
 const NUCLEO: Item[] = [
