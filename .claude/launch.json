@@ -4,7 +4,7 @@
     {
       "name": "sistema-de-vida",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["run", "dev", "--", "--host", "127.0.0.1"],
       "cwd": "app",
       "port": 5180
     }
