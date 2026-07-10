@@ -1,3 +1,4 @@
+import { AvancesArea } from "../components/AvancesArea";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2, Users } from "lucide-react";
@@ -125,6 +126,8 @@ export function RelacionesPage() {
           </div>
         </>
       )}
+
+      <AvancesArea area="relaciones" />
 
       {relModal && <RelModal onClose={() => setRelModal(false)} onSaved={() => { setRelModal(false); void reload(); }} />}
     </div>

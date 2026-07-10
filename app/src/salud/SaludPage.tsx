@@ -1,3 +1,4 @@
+import { AvancesArea } from "../components/AvancesArea";
 import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
@@ -231,6 +232,8 @@ export function SaludPage() {
           </div>
         </>
       )}
+
+      <AvancesArea area="salud" />
 
       {modal === "sob" && <SobModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
       {modal === "cita" && <CitaModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}

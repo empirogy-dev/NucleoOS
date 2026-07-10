@@ -1,3 +1,4 @@
+import { AvancesArea } from "../components/AvancesArea";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
@@ -191,6 +192,8 @@ export function TrabajoPage() {
           </div>
         </>
       )}
+
+      <AvancesArea area="trabajo" />
 
       {modal === "project" && <ProjectModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
       {modal === "worklog" && <WorkLogModal projects={projects} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}

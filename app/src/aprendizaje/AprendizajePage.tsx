@@ -1,3 +1,4 @@
+import { AvancesArea } from "../components/AvancesArea";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, FileUp, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -246,6 +247,8 @@ export function AprendizajePage() {
           </div>
         </div>
       )}
+
+      <AvancesArea area="aprendizaje" />
 
       {nbModal && <NotebookModal onClose={() => { setNbModal(false); setPendingNote(false); }} onSaved={() => void onNotebookCreated()} />}
       {summary && (
