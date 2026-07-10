@@ -33,6 +33,7 @@ export function AprendizajePage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nbModal, setNbModal] = useState(false);
+  const [pendingNote, setPendingNote] = useState(false);
   const [summary, setSummary] = useState<{ title: string; text: string } | null>(null);
   const [summarizing, setSummarizing] = useState<string | null>(null);
   const [iaError, setIaError] = useState<string | null>(null);
@@ -116,12 +117,27 @@ export function AprendizajePage() {
   async function nuevaNota() {
     const nbId = selectedNb ?? notebooks[0]?.id;
     if (!nbId) {
+      // Sin cuadernos todavía: pedimos crear uno y la nota se crea al terminar.
+      setPendingNote(true);
       setNbModal(true);
       return;
     }
     const id = await addEntry(nbId, "Nueva nota");
     await reload();
     setSelectedEntry(id);
+  }
+
+  async function onNotebookCreated() {
+    setNbModal(false);
+    const nbs = await listNotebooks();
+    const nuevo = nbs[nbs.length - 1];
+    if (nuevo) setSelectedNb(nuevo.id);
+    if (pendingNote && nuevo) {
+      setPendingNote(false);
+      const id = await addEntry(nuevo.id, "Nueva nota");
+      setSelectedEntry(id);
+    }
+    await reload();
   }
 
   if (needsMigration) {
@@ -231,7 +247,7 @@ export function AprendizajePage() {
         </div>
       )}
 
-      {nbModal && <NotebookModal onClose={() => setNbModal(false)} onSaved={() => { setNbModal(false); void reload(); }} />}
+      {nbModal && <NotebookModal onClose={() => { setNbModal(false); setPendingNote(false); }} onSaved={() => void onNotebookCreated()} />}
       {summary && (
         <div className="tp-overlay" onClick={() => setSummary(null)}>
           <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
