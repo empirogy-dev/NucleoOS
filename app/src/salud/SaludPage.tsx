@@ -1,3 +1,4 @@
+import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -39,7 +40,7 @@ export function SaludPage() {
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<"med" | "cita" | "exam" | "sob" | null>(null);
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyLocal();
 
   const reload = useCallback(async () => {
     setLoading(true);

@@ -1,3 +1,4 @@
+import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Target, Trash2 } from "lucide-react";
 import { AREAS } from "../areas";
@@ -295,7 +296,7 @@ function ObjectiveModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 function AvanceModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [description, setDescription] = useState("");
   const [area, setArea] = useState("objetivos");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(hoyLocal());
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {

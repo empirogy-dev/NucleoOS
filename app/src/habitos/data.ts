@@ -1,3 +1,4 @@
+import { fmtFechaLocal } from "../lib/fechas";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
 
@@ -55,7 +56,7 @@ async function uid(): Promise<string> {
 function daysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return fmtFechaLocal(d);
 }
 
 // ---------- Hábitos ----------
@@ -101,9 +102,9 @@ export function streakFor(habitId: string, logs: HabitLog[]): number {
   const dates = new Set(logs.filter((l) => l.habit_id === habitId).map((l) => l.date));
   const today = new Date();
   const d = new Date(today);
-  if (!dates.has(d.toISOString().slice(0, 10))) d.setDate(d.getDate() - 1);
+  if (!dates.has(fmtFechaLocal(d))) d.setDate(d.getDate() - 1);
   let streak = 0;
-  while (dates.has(d.toISOString().slice(0, 10))) {
+  while (dates.has(fmtFechaLocal(d))) {
     streak += 1;
     d.setDate(d.getDate() - 1);
   }

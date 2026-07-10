@@ -1,3 +1,4 @@
+import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -27,7 +28,7 @@ const STATUS_TONES: Record<ProjectStatus, { bg: string; fg: string }> = {
 function isoDaysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return fmtFechaLocal(d);
 }
 
 function moodEmoji(v: number | null): string {
@@ -238,7 +239,7 @@ function WorkLogModal({ projects, onClose, onSaved }: { projects: Project[]; onC
   const [description, setDescription] = useState("");
   const [hours, setHours] = useState("");
   const [mood, setMood] = useState<number | null>(null);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(hoyLocal());
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {

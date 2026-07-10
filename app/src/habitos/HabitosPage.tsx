@@ -1,3 +1,4 @@
+import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Moon, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -24,7 +25,7 @@ import {
 function isoDaysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return fmtFechaLocal(d);
 }
 
 export function HabitosPage() {
@@ -37,7 +38,7 @@ export function HabitosPage() {
   const [error, setError] = useState<string | null>(null);
   const [habitModal, setHabitModal] = useState(false);
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyLocal();
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -218,7 +219,7 @@ function ExerciseForm({ onSaved }: { onSaved: () => void }) {
     e.preventDefault();
     if (!minutes) return;
     setBusy(true);
-    await addExercise(new Date().toISOString().slice(0, 10), kind, Number(minutes));
+    await addExercise(hoyLocal(), kind, Number(minutes));
     setMinutes("");
     setBusy(false);
     onSaved();

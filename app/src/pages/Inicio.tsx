@@ -1,3 +1,4 @@
+import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Sparkles } from "lucide-react";
@@ -107,7 +108,7 @@ export function Inicio() {
   const nombre = displayName || (session?.user?.email ?? "").split("@")[0] || "Hola";
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
-  const month = new Date().toISOString().slice(0, 7);
+  const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
   const gastosMes = monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
   const balanceTotal = accounts.reduce((s, a) => s + Number(a.balance), 0);
@@ -223,14 +224,14 @@ export function Inicio() {
               const n = objectives.length;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 meta" : `${n} metas`}</span>;
             } else if (a.key === "habitos" && habReady) {
-              const hoyStr = new Date().toISOString().slice(0, 10);
+              const hoyStr = hoyLocal();
               const hechos = new Set(habitLogs.filter((l) => l.date === hoyStr).map((l) => l.habit_id)).size;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{hechos} / {habits.length} hoy</span>;
             } else if (a.key === "trabajo" && traReady) {
               const n = projects.filter((p) => p.status === "activo").length;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 proyecto activo" : `${n} proyectos activos`}</span>;
             } else if (a.key === "salud" && salReady) {
-              const hoyStr = new Date().toISOString().slice(0, 10);
+              const hoyStr = hoyLocal();
               const prox = citas.filter((c) => c.date >= hoyStr).length;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{prox === 1 ? "1 cita próxima" : `${prox} citas próximas`}</span>;
             } else if (a.key === "aprendizaje" && aprReady) {

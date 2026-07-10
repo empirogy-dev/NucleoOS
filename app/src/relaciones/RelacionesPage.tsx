@@ -1,3 +1,4 @@
+import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2, Users } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -46,7 +47,7 @@ export function RelacionesPage() {
   }, [reload]);
 
   const porReconectar = rels.filter((r) => needsReconnect(r, logs));
-  const mes = new Date().toISOString().slice(0, 7);
+  const mes = mesActualLocal();
   const interaccionesMes = logs.filter((l) => l.date.startsWith(mes)).length;
   const cumples = rels
     .map((r) => ({ r, dias: daysToBirthday(r.birthday) }))
@@ -151,7 +152,7 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
   async function registrar(e: React.FormEvent) {
     e.preventDefault();
     if (!nuevo.trim()) return;
-    await addRelLog(r.id, new Date().toISOString().slice(0, 10), nuevo.trim());
+    await addRelLog(r.id, hoyLocal(), nuevo.trim());
     setNuevo("");
     onChanged();
   }

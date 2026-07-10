@@ -1,3 +1,4 @@
+import { hoyLocal } from "../lib/fechas";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
 
@@ -114,7 +115,7 @@ export function daysSinceContact(relId: string, logs: RelLog[]): number | null {
   const last = logs.find((l) => l.relationship_id === relId);
   if (!last) return null;
   const d = new Date(last.date + "T00:00:00");
-  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+  const today = new Date(hoyLocal() + "T00:00:00");
   return Math.round((today.getTime() - d.getTime()) / 86400000);
 }
 
@@ -128,7 +129,7 @@ export function needsReconnect(r: Relationship, logs: RelLog[]): boolean {
 /** Días hasta el próximo cumpleaños, o null. */
 export function daysToBirthday(birthday: string | null): number | null {
   if (!birthday) return null;
-  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+  const today = new Date(hoyLocal() + "T00:00:00");
   const [, m, d] = birthday.split("-").map(Number);
   let next = new Date(today.getFullYear(), m - 1, d);
   if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);

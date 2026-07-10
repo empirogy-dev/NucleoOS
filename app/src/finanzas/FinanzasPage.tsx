@@ -1,3 +1,4 @@
+import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import {
@@ -93,7 +94,7 @@ export function FinanzasPage() {
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
-  const month = new Date().toISOString().slice(0, 7);
+  const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
   const ingresos = monthTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
   const gastos = monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
@@ -489,11 +490,11 @@ export function FinanzasPage() {
 function monthAdd(ym: string, delta: number): string {
   const d = new Date(ym + "-01T00:00:00");
   d.setMonth(d.getMonth() + delta);
-  return d.toISOString().slice(0, 7);
+  return fmtFechaLocal(d).slice(0, 7);
 }
 
 function ReporteTab({ txs, categories, currency }: { txs: Tx[]; categories: Category[]; currency: string }) {
-  const [ym, setYm] = useState(new Date().toISOString().slice(0, 7));
+  const [ym, setYm] = useState(mesActualLocal());
   const prev = monthAdd(ym, -1);
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
@@ -768,7 +769,7 @@ function CardModal({ currency, onClose, onSaved }: { currency: string; onClose: 
 function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(hoyLocal());
   const [recurrence, setRecurrence] = useState<"oneTime" | "monthly" | "biweekly">("monthly");
   const [busy, setBusy] = useState(false);
 
@@ -945,7 +946,7 @@ function TxModal({ categories, accounts, onClose, onSaved }: {
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(hoyLocal());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

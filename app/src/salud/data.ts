@@ -1,3 +1,4 @@
+import { hoyLocal } from "../lib/fechas";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
 
@@ -52,7 +53,7 @@ export const SOBRIETY_MILESTONES = [
 
 export function daysSince(dateStr: string): number {
   const start = new Date(dateStr + "T00:00:00");
-  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+  const today = new Date(hoyLocal() + "T00:00:00");
   return Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000));
 }
 

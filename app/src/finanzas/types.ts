@@ -1,3 +1,5 @@
+import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
+
 export type TxType = "income" | "expense";
 export type TxSource = "manual" | "voz" | "recibo" | "cartola" | "banco";
 
@@ -67,7 +69,7 @@ export interface Reminder {
 
 /** Próxima ocurrencia de un recordatorio (>= hoy) según su recurrencia. */
 export function nextOccurrence(r: Reminder): string {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hoyLocal();
   if (r.recurrence === "oneTime" || r.date >= today) return r.date;
   const d = new Date(r.date + "T00:00:00");
   const now = new Date(today + "T00:00:00");
@@ -76,12 +78,12 @@ export function nextOccurrence(r: Reminder): string {
   } else {
     while (d < now) d.setDate(d.getDate() + 14);
   }
-  return d.toISOString().slice(0, 10);
+  return fmtFechaLocal(d);
 }
 
 /** Días desde hoy hasta la fecha (negativo = vencido). */
 export function daysUntil(dateStr: string): number {
-  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+  const today = new Date(hoyLocal() + "T00:00:00");
   const d = new Date(dateStr + "T00:00:00");
   return Math.round((d.getTime() - today.getTime()) / 86400000);
 }

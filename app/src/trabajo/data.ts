@@ -1,3 +1,4 @@
+import { fmtFechaLocal } from "../lib/fechas";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
 
@@ -91,7 +92,7 @@ export async function listWorkLogs(days = 60): Promise<WorkLog[]> {
   const { data, error } = await sb()
     .from("work_logs")
     .select("id,date,kind,project_id,description,hours,mood")
-    .gte("date", d.toISOString().slice(0, 10))
+    .gte("date", fmtFechaLocal(d))
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
   check(error);

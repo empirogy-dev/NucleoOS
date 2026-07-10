@@ -1,3 +1,4 @@
+import { fmtFechaLocal } from "../lib/fechas";
 import type { Category } from "./types";
 type TransactionType = "income" | "expense" | "transfer";
 
@@ -321,7 +322,7 @@ function parseDateValue(rawValue?: string) {
     return null;
   }
 
-  return nativeDate.toISOString().slice(0, 10);
+  return fmtFechaLocal(nativeDate);
 }
 
 function matchCategoryByName(value: string, categories: Category[], type: ImportableTransactionType) {
