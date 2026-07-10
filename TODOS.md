@@ -59,11 +59,13 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 
 ## Coach y proyección (pedidos del 9 jul 2026, tarde)
 - [x] `[Nuevo]` Coach v1 en el Inicio: con Gemini, lee tu estado real (visión, metas, hábitos, avances, proyectos, citas, sobriedad, vínculos) y entrega qué va bien, qué necesita atención y dos acciones para hoy.
-- [ ] `[Nuevo]` Visual board: tablero con lo que quieres proyectar a futuro (imágenes mas la visión de vida).
-- [ ] `[Nuevo]` Hábitos y Rutinas: pestaña Bienestar con meditaciones y calendario lunar.
+- [x] `[Nuevo]` Visual board en Objetivos: imágenes de lo que proyectas, en bucket privado (migración 0016).
+- [x] `[Nuevo]` Hábitos: pestaña Bienestar con 5 prácticas guiadas con temporizador y calendario lunar. Además deportes ampliados y hábitos de paz sugeridos con un clic.
 
-## Bloque F, Notificaciones
-- [ ] `[Nuevo]` Recordatorios en todo (persona con ADHD: son parte central, no opcionales). Centro de notificaciones mas avisos del navegador.
+## Bloque F, Notificaciones (completado el 9 jul 2026)
+- [x] `[Nuevo]` Centro de notificaciones en la campana: pagos, citas, cumpleaños, vínculos y hábitos pendientes, con urgencia destacada.
+- [x] `[Nuevo]` Avisos del navegador una vez al día con lo urgente (se activan en Ajustes).
+- [ ] `[Nuevo]` Notificaciones push en el celular (llegan con la app móvil, Fase 3).
 
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
