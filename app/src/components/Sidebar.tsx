@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, LogOut, Settings } from "lucide-react";
+import { CalendarDays, Home, LogOut, Settings } from "lucide-react";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -20,6 +20,10 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         <NavLink to="/" end className={({ isActive }) => "navitem" + (isActive ? " active" : "")} onClick={onNavigate}>
           <Home className="ico" size={18} strokeWidth={1.9} />
           Inicio
+        </NavLink>
+        <NavLink to="/calendario" className={({ isActive }) => "navitem" + (isActive ? " active" : "")} onClick={onNavigate}>
+          <CalendarDays className="ico" size={18} strokeWidth={1.9} />
+          Calendario
         </NavLink>
         {AREAS.map((a) => {
           const Icon = a.icon;

@@ -36,11 +36,12 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Avance por área con barras de color desde las metas de Objetivos, y anillo global hacia tu mejor versión.
 - [x] `[Nuevo]` Avances recientes en vez de transacciones; las stats financieras viven en Finanzas.
 
-## Bloque C, Calendario v1 (módulo transversal)
-- [ ] `[Nuevo]` Vista mensual que centraliza: pagos (Finanzas), citas y exámenes (Salud), cumpleaños (Relaciones), jornadas (Trabajo) y estudio (Aprendizaje).
-- [ ] `[Nuevo]` Trabajo: que la jornada registrada quede como tracker diario y en el calendario.
-- [ ] `[Nuevo]` Aprendizaje: trackear lo estudiado cada día y verlo en el calendario.
+## Bloque C, Calendario v1 (completado el 9 jul 2026)
+- [x] `[Nuevo]` Vista mensual que centraliza pagos con recurrencia, citas, exámenes pendientes, cumpleaños anuales, jornadas de trabajo y avances de todas las áreas (incluido el estudio).
+- [x] `[Nuevo]` Trabajo: cada jornada registrada aparece en su día del calendario con sus horas.
+- [x] `[Nuevo]` Aprendizaje: lo estudiado se registra en "Avances en esta área" y cae al calendario.
 - [ ] `[Nuevo]` Conectar con Google Calendar (Fase 4, integraciones).
+- [ ] `[Nuevo]` Crear eventos propios desde el calendario (hoy solo agrega lo de las áreas).
 
 ## Bloque D, Relaciones accionables
 - [ ] `[Nuevo]` Tips segmentados por tipo de relación (pareja, mamá, amistad...), no genéricos.

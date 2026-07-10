@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { Inicio } from "./pages/Inicio";
 import { FinanzasPage } from "./finanzas/FinanzasPage";
 import { ObjetivosPage } from "./objetivos/ObjetivosPage";
+import { CalendarioPage } from "./calendario/CalendarioPage";
 import { HabitosPage } from "./habitos/HabitosPage";
 import { TrabajoPage } from "./trabajo/TrabajoPage";
 import { SaludPage } from "./salud/SaludPage";
@@ -34,6 +35,7 @@ export default function App() {
             <Route index element={<Inicio />} />
             <Route path="/finanzas" element={<FinanzasPage />} />
             <Route path="/objetivos" element={<ObjetivosPage />} />
+            <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/habitos" element={<HabitosPage />} />
             <Route path="/trabajo" element={<TrabajoPage />} />
             <Route path="/salud" element={<SaludPage />} />

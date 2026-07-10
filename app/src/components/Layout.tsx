@@ -15,7 +15,7 @@ export function Layout() {
   const { displayName } = useSettings();
   const inicial = (displayName || session?.user?.email || "?").trim().charAt(0).toUpperCase();
   const current =
-    loc.pathname === "/" ? "Inicio" : AREAS.find((a) => a.path === loc.pathname)?.name ?? "";
+    loc.pathname === "/" ? "Inicio" : loc.pathname === "/calendario" ? "Calendario" : loc.pathname === "/ajustes" ? "Ajustes" : AREAS.find((a) => a.path === loc.pathname)?.name ?? "";
 
   return (
     <div className="app">
