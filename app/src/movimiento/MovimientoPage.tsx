@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { FileText, PersonStanding, Upload } from "lucide-react";
 import { AvancesArea } from "../components/AvancesArea";
 import { TablesMissingError } from "../finanzas/data";
@@ -45,7 +46,7 @@ export function MovimientoPage() {
       <div className="ftabs">
         <button className={"ftab" + (tab === "suave" ? " active" : "")} onClick={() => setTab("suave")}>Práctica suave</button>
         <button className={"ftab" + (tab === "entrenamiento" ? " active" : "")} onClick={() => setTab("entrenamiento")}>Entrenamiento</button>
-        <button className={"ftab" + (tab === "programas" ? " active" : "")} onClick={() => setTab("programas")}>Retos</button>
+        <button className={"ftab" + (tab === "programas" ? " active" : "")} onClick={() => setTab("programas")}>Programas</button>
         <button className={"ftab" + (tab === "material" ? " active" : "")} onClick={() => setTab("material")}>Mi material</button>
       </div>
 
@@ -215,6 +216,9 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
   return (
     <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        Estos son programas guiados de movimiento, con su rutina de cada día. Para retos personales (agua, meditar, dormir temprano) está <Link to="/habitos" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Hábitos, pestaña Retos</Link>.
+      </p>
       <div style={{ display: "grid", gap: 14, maxWidth: 780 }}>
         {PROGRAMAS.map((p) => (
           <ProgramaCard key={p.key} programa={p} hechos={hechos} onChanged={() => void reload()} onAbrirRutina={onAbrirRutina} />

@@ -136,6 +136,29 @@ export function SadhanaPlayer({ sadhana, onClose, onCompleta }: {
               {minutosSadhana(sadhana)} minutos contigo. Quedó guardada en tus sesiones.
             </p>
           </div>
+        ) : !iniciado && (sadhana.intro || sadhana.preparacion) ? (
+          <div style={{ padding: "4px 2px 10px" }}>
+            {sadhana.intro && (
+              <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.65, marginBottom: 12 }}>
+                {sadhana.intro}
+              </p>
+            )}
+            {sadhana.preparacion && (
+              <>
+                <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
+                  Antes de comenzar
+                </div>
+                <ul style={{ paddingLeft: 18, display: "grid", gap: 5, marginBottom: 12 }}>
+                  {sadhana.preparacion.map((p) => (
+                    <li key={p} style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>{p}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p style={{ fontSize: 12.5, color: "var(--muted)" }}>
+              {pasos.length} pasos, {minutosSadhana(sadhana)} minutos. La secuencia avanza sola con una campana suave entre pasos.
+            </p>
+          </div>
         ) : (
           <>
             <div style={{ textAlign: "center", margin: "4px 0 10px" }}>

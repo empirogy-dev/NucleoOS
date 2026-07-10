@@ -90,6 +90,12 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Sadhana: audio narrado de las guías (hoy es texto más campana y tonos).
 - [ ] `[Nuevo]` Nutrición: editar los macros estimados antes de guardar el plato.
 
+## Retos flexibles y sadhana de referencia (10 jul 2026, noche)
+- [x] `[Nuevo]` Retos como compromisos vivos en Hábitos → Retos (migración 0022): sugeridos personalizables o propios, editables después, frecuencia por días de la semana, marcar día a día, racha, avance, pausar, retomar y terminar. Los Retos de Movimiento pasaron a llamarse Programas.
+- [x] `[Nuevo]` Mente → Sadhana: "Mi sadhana" destacada (20 min, inspirada en la tradición Swatantra del video de referencia): introducción y preparación antes de comenzar, 6 pasos (llegar, respiración de limpieza, sonido, presencia, silencio, cierre) con círculo, campanas y registro.
+- [ ] `[Nuevo]` Ajustar los pasos de Mi sadhana con las palabras exactas de la usuaria (el video de YouTube no es legible desde la app, se construyó con la estructura pública de la tradición).
+- [ ] `[Nuevo]` Retos: marcar el día automáticamente al completar una sesión de Mente o una rutina de Movimiento vinculada.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

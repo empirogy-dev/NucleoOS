@@ -18,6 +18,9 @@ export interface Sadhana {
   emoji: string;
   descripcion: string;
   intencion: string;
+  destacada?: boolean;
+  intro?: string;
+  preparacion?: string[];
   pasos: SadhanaPaso[];
 }
 
@@ -26,6 +29,68 @@ export function minutosSadhana(s: Sadhana): number {
 }
 
 export const SADHANAS: Sadhana[] = [
+  {
+    id: "sadhana-swatantra",
+    nombre: "Mi sadhana",
+    emoji: "🕉",
+    destacada: true,
+    descripcion: "La práctica completa de limpieza y presencia, inspirada en la tradición Swatantra que aprendiste en India: respiración, sonido y silencio.",
+    intencion: "Me limpio por dentro para empezar libre.",
+    intro:
+      "Esta es tu práctica central, la que se hace todos los días aunque sea corta. Trabaja en tres capas: la respiración limpia el cuerpo, el sonido limpia la emoción y el silencio limpia la mente. No busques que pase nada especial: la sadhana funciona por repetición, no por intensidad.",
+    preparacion: [
+      "Busca un lugar donde nadie te interrumpa estos minutos.",
+      "Siéntate con la columna erguida pero sin rigidez, en el suelo o en una silla.",
+      "Las manos descansan sobre las piernas, palmas hacia arriba.",
+      "Los ojos cerrados o entreabiertos, la cara suave.",
+    ],
+    pasos: [
+      {
+        titulo: "Llegar al cuerpo",
+        emoji: "🪷",
+        minutos: 2,
+        guia: "Siente el peso del cuerpo sobre el asiento y el contacto de las manos con las piernas. Con cada exhalación, deja que el cuerpo se acomode un poco más. No hay apuro: llegar ya es práctica.",
+      },
+      {
+        titulo: "Respiración de limpieza",
+        emoji: "🌬",
+        minutos: 5,
+        guia: "Inhala profundo por la nariz llenando el abdomen, y exhala completo por la boca, soltando todo. Imagina que con cada exhalación sale lo que ya no te sirve: cansancio, tensión, ruido.",
+        fases: [
+          { etiqueta: "Inhala profundo", segundos: 4, tipo: "inhala" },
+          { etiqueta: "Exhala y suelta", segundos: 6, tipo: "exhala" },
+        ],
+      },
+      {
+        titulo: "Sonido",
+        emoji: "🔔",
+        minutos: 4,
+        guia: "Inhala profundo, y al exhalar deja salir un sonido largo y suave, como un zumbido o un aaah, sintiendo la vibración en el pecho y la cabeza. Repite con cada respiración. El sonido no tiene que ser bonito, tiene que ser tuyo.",
+        fases: [
+          { etiqueta: "Inhala", segundos: 4, tipo: "inhala" },
+          { etiqueta: "Exhala con sonido", segundos: 8, tipo: "exhala" },
+        ],
+      },
+      {
+        titulo: "Presencia",
+        emoji: "👁",
+        minutos: 3,
+        guia: "Deja que la respiración vuelva a su ritmo natural y solo obsérvala, sin controlarla. Eres la que mira, no lo que pasa. Cada vez que un pensamiento te lleve, volver es el ejercicio.",
+      },
+      {
+        titulo: "Silencio",
+        emoji: "🤍",
+        minutos: 5,
+        guia: "Suelta también la observación. Quédate en el silencio que quedó después del sonido, sin hacer absolutamente nada. Si aparece paz, disfrútala; si no aparece, también está perfecto.",
+      },
+      {
+        titulo: "Cierre",
+        emoji: "🙏",
+        minutos: 1,
+        guia: "Junta las manos frente al pecho. Agradece este rato contigo, inclina suave la cabeza, y abre los ojos lento, trayendo contigo algo de este silencio al resto del día.",
+      },
+    ],
+  },
   {
     id: "sadhana-amanecer",
     nombre: "Sadhana del amanecer",

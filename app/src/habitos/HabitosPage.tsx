@@ -5,6 +5,7 @@ import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
+import { RetosTab } from "./RetosTab";
 import {
   addHabit,
   deleteHabit,
@@ -30,6 +31,7 @@ export function HabitosPage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [habitModal, setHabitModal] = useState(false);
+  const [tabH, setTabH] = useState<"habitos" | "retos">("habitos");
 
   const hoy = hoyLocal();
 
@@ -56,10 +58,18 @@ export function HabitosPage() {
   const doneToday = new Set(logs.filter((l) => l.date === hoy).map((l) => l.habit_id));
   const mejorRacha = habits.reduce((max, h) => Math.max(max, streakFor(h.id, logs)), 0);
 
-  if (needsMigration) {
-    return (
-      <div className="page">
-        <Head />
+  return (
+    <div className="page">
+      <Head />
+
+      <div className="ftabs">
+        <button className={"ftab" + (tabH === "habitos" ? " active" : "")} onClick={() => setTabH("habitos")}>Hábitos</button>
+        <button className={"ftab" + (tabH === "retos" ? " active" : "")} onClick={() => setTabH("retos")}>Retos</button>
+      </div>
+
+      {tabH === "retos" ? (
+        <RetosTab />
+      ) : needsMigration ? (
         <div className="card pad" style={{ maxWidth: 640 }}>
           <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
@@ -68,14 +78,8 @@ export function HabitosPage() {
           </p>
           <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page">
-      <Head />
-
+      ) : (
+        <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
@@ -188,6 +192,8 @@ export function HabitosPage() {
             </div>
           </div>
         </>
+      )}
+      </>
       )}
 
       <AvancesArea area="habitos" />

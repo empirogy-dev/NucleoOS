@@ -49,9 +49,32 @@ export function MentePage() {
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", maxWidth: "64ch", marginBottom: 16 }}>
             La sadhana es una práctica diaria de trabajo interior, una tradición que viene de India. No necesitas experiencia:
             la secuencia avanza sola, paso a paso, con una campana suave entre cada uno. Tu único trabajo es quedarte.
+            {(() => {
+              const sadhanasSemana = historial.filter((h) => h.id.startsWith("sadhana") && h.fecha >= desde).length;
+              return sadhanasSemana > 0 ? ` Esta semana la has practicado ${sadhanasSemana} ${sadhanasSemana === 1 ? "vez" : "veces"}. 🌱` : "";
+            })()}
           </p>
-          <div className="dream-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))" }}>
-            {SADHANAS.map((s) => (
+
+          {SADHANAS.filter((s) => s.destacada).map((s) => (
+            <div className="card panel sadhana-hero" key={s.id}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 34 }}>{s.emoji}</span>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <b style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 500 }}>{s.nombre}</b>
+                  <p style={{ fontSize: 12.5, color: "var(--muted)", fontStyle: "italic" }}>“{s.intencion}”</p>
+                </div>
+                <span className="chip">{minutosSadhana(s)} min</span>
+                <button className="btn primary" onClick={() => setSadhana(s)}>Comenzar</button>
+              </div>
+              <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "10px 0 6px", lineHeight: 1.55 }}>{s.descripcion}</p>
+              <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>
+                {s.pasos.map((p) => `${p.emoji} ${p.titulo}`).join(", ")}
+              </div>
+            </div>
+          ))}
+
+          <div className="dream-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", marginTop: 14 }}>
+            {SADHANAS.filter((s) => !s.destacada).map((s) => (
               <div className="card dream-card" key={s.id}>
                 <div className="dc-top">
                   <span className="dc-emoji">{s.emoji}</span>

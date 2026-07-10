@@ -337,6 +337,7 @@ button{font-family:inherit}
 .guia-card.open{border-color:var(--accent)}
 
 /* ================= SADHANA ================= */
+.sadhana-hero{border-color:color-mix(in srgb,var(--men) 45%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--men) 8%,var(--card)),var(--card))}
 .sd-dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
 .sd-dot{width:9px;height:9px;border-radius:50%;background:var(--line);transition:background .3s,transform .3s}
 .sd-dot.activo{background:var(--men);transform:scale(1.3)}
