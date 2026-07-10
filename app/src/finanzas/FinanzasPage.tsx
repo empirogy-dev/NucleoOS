@@ -247,7 +247,7 @@ export function FinanzasPage() {
               {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
               {txs.map((t) => (
                 <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency}
-                  onDelete={async () => { await deleteTransaction(t); void reload(); }} />
+                  onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
               ))}
             </div>
           )}
@@ -270,7 +270,7 @@ export function FinanzasPage() {
                             {g.deadline ? `para el ${g.deadline}` : "sin fecha límite"}
                           </div>
                         </div>
-                        <button className="xdel" aria-label="Eliminar meta" onClick={async () => { await deleteGoal(g.id); void reload(); }}><Trash2 size={14} /></button>
+                        <button className="xdel" aria-label="Eliminar meta" onClick={async () => { if (!window.confirm(`¿Eliminar la meta ${g.name}?`)) return; await deleteGoal(g.id); void reload(); }}><Trash2 size={14} /></button>
                       </div>
                       <div className="bar" style={{ marginBottom: 10 }}>
                         <div className="top">
@@ -328,7 +328,7 @@ export function FinanzasPage() {
                           background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
                           color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
                         }}>{lbl.text}</span>
-                        <button className="xdel" aria-label="Eliminar recordatorio" onClick={async () => { await deleteReminder(r.id); void reload(); }}><Trash2 size={14} /></button>
+                        <button className="xdel" aria-label="Eliminar recordatorio" onClick={async () => { if (!window.confirm(`¿Eliminar el recordatorio "${r.title}"?`)) return; await deleteReminder(r.id); void reload(); }}><Trash2 size={14} /></button>
                       </div>
                     );
                   })}
@@ -352,7 +352,7 @@ export function FinanzasPage() {
                           <b style={{ fontSize: 14 }}>{c.name}</b>
                           <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{c.bank ?? ""}{c.last_four ? ` •••• ${c.last_four}` : ""}</div>
                         </div>
-                        <button className="xdel" aria-label="Eliminar tarjeta" onClick={async () => { await deleteCard(c.id); void reload(); }}><Trash2 size={14} /></button>
+                        <button className="xdel" aria-label="Eliminar tarjeta" onClick={async () => { if (!window.confirm(`¿Eliminar la tarjeta ${c.name}? También se borra su recordatorio de pago.`)) return; await deleteCard(c.id); void reload(); }}><Trash2 size={14} /></button>
                       </div>
                       <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(usado, c.currency)}</div>
                       {limite > 0 && (
@@ -381,7 +381,7 @@ export function FinanzasPage() {
                         <b style={{ fontSize: 14 }}>{d.name}</b>
                         <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d.institution ?? ""}{d.interest_rate ? `, ${d.interest_rate}% de interés` : ""}</div>
                       </div>
-                      <button className="xdel" aria-label="Eliminar deuda" onClick={async () => { await deleteDebt(d.id); void reload(); }}><Trash2 size={14} /></button>
+                      <button className="xdel" aria-label="Eliminar deuda" onClick={async () => { if (!window.confirm(`¿Eliminar la deuda ${d.name}? También se borra su recordatorio de pago.`)) return; await deleteDebt(d.id); void reload(); }}><Trash2 size={14} /></button>
                     </div>
                     <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(Number(d.balance), d.currency)}</div>
                     {d.min_payment != null && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>pago mínimo {fmtMoney(Number(d.min_payment), d.currency)}</div>}
@@ -409,7 +409,7 @@ export function FinanzasPage() {
                         <b style={{ fontSize: 14 }}>{a.name}</b>
                         <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{a.bank_name ?? a.account_type}</div>
                       </div>
-                      <button className="xdel" aria-label="Eliminar cuenta" onClick={async () => { await deleteAccount(a.id); void reload(); }}><Trash2 size={14} /></button>
+                      <button className="xdel" aria-label="Eliminar cuenta" onClick={async () => { if (!window.confirm(`¿Eliminar la cuenta ${a.name}? Sus transacciones quedarán sin cuenta asociada.`)) return; await deleteAccount(a.id); void reload(); }}><Trash2 size={14} /></button>
                     </div>
                     <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 21, fontWeight: 500 }}>{fmtMoney(Number(a.balance), a.currency)}</div>
                   </div>
@@ -437,7 +437,7 @@ export function FinanzasPage() {
                     {c.type === "expense" && (
                       <button className="xdel" aria-label="Editar presupuesto" title="Presupuesto mensual" onClick={() => setBudgetCat(c)}><Pencil size={14} /></button>
                     )}
-                    <button className="xdel" aria-label="Eliminar categoría" onClick={async () => { await deleteCategory(c.id); void reload(); }}><Trash2 size={14} /></button>
+                    <button className="xdel" aria-label="Eliminar categoría" onClick={async () => { if (!window.confirm(`¿Eliminar la categoría ${c.name}?`)) return; await deleteCategory(c.id); void reload(); }}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>

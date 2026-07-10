@@ -178,7 +178,7 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
             💌 tiempo de reconectar
           </span>
         )}
-        <button className="xdel" aria-label="Eliminar vínculo" onClick={async () => { await deleteRelationship(r.id); onChanged(); }}>
+        <button className="xdel" aria-label="Eliminar vínculo" onClick={async () => { if (!window.confirm(`¿Eliminar a ${r.name}? Se borra su historial de interacciones.`)) return; await deleteRelationship(r.id); onChanged(); }}>
           <Trash2 size={14} />
         </button>
       </div>

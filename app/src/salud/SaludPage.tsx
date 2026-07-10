@@ -129,7 +129,7 @@ export function SaludPage() {
                         {proximo && <span className="hito next">Próximo: {proximo.label}</span>}
                         {!proximo && <span className="hito">🎉 Más de 2 años</span>}
                       </div>
-                      <button className="xdel" aria-label="Eliminar tracker" onClick={async () => { await deleteSobriety(s.id); void reload(); }}>
+                      <button className="xdel" aria-label="Eliminar tracker" onClick={async () => { if (!window.confirm(`¿Eliminar el tracker de ${s.substance}? Se pierde el conteo de días.`)) return; await deleteSobriety(s.id); void reload(); }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -157,7 +157,7 @@ export function SaludPage() {
                         background: lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
                         color: lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
                       }}>{lbl.text}</span>
-                      <button className="xdel" aria-label="Eliminar cita" onClick={async () => { await deleteAppointment(c.id); void reload(); }}>
+                      <button className="xdel" aria-label="Eliminar cita" onClick={async () => { if (!window.confirm(`¿Eliminar la cita ${c.title}?`)) return; await deleteAppointment(c.id); void reload(); }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -192,7 +192,7 @@ export function SaludPage() {
                         color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
                       }}>{lbl.text}</span>;
                     })()}
-                    <button className="xdel" aria-label="Eliminar examen" onClick={async () => { await deleteExam(e.id); void reload(); }}>
+                    <button className="xdel" aria-label="Eliminar examen" onClick={async () => { if (!window.confirm(`¿Eliminar el examen ${e.name}?`)) return; await deleteExam(e.id); void reload(); }}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -218,7 +218,7 @@ export function SaludPage() {
                       <b>{m.name}</b>
                       <small>{[m.dose, m.schedule].filter(Boolean).join(", ") || "sin horario"}</small>
                     </div>
-                    <button className="xdel" aria-label="Eliminar medicamento" onClick={async () => { await deleteMedication(m.id); void reload(); }}>
+                    <button className="xdel" aria-label="Eliminar medicamento" onClick={async () => { if (!window.confirm(`¿Eliminar ${m.name}?`)) return; await deleteMedication(m.id); void reload(); }}>
                       <Trash2 size={14} />
                     </button>
                   </div>

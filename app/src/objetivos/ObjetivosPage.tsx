@@ -216,7 +216,7 @@ function ObjectiveCard({ o, onChanged }: { o: Objective; onChanged: () => void }
           title="Cambiar estado" onClick={() => void cycleStatus()}>
           {STATUS_LABELS[o.status]}
         </button>
-        <button className="xdel" aria-label="Eliminar meta" onClick={async () => { await deleteObjective(o.id); onChanged(); }}>
+        <button className="xdel" aria-label="Eliminar meta" onClick={async () => { if (!window.confirm(`¿Eliminar la meta ${o.title}? También se borran sus pasos.`)) return; await deleteObjective(o.id); onChanged(); }}>
           <Trash2 size={14} />
         </button>
       </div>

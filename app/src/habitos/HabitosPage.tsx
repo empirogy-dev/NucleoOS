@@ -130,7 +130,7 @@ export function HabitosPage() {
                       <small>{racha > 0 ? `racha de ${racha} día${racha === 1 ? "" : "s"} 🔥` : "sin racha todavía"}</small>
                     </div>
                     <WeekDots habitId={h.id} logs={logs} />
-                    <button className="xdel" aria-label="Eliminar hábito" onClick={async () => { await deleteHabit(h.id); void reload(); }}>
+                    <button className="xdel" aria-label="Eliminar hábito" onClick={async () => { if (!window.confirm(`¿Eliminar el hábito ${h.name}? Se pierde su racha.`)) return; await deleteHabit(h.id); void reload(); }}>
                       <Trash2 size={14} />
                     </button>
                   </div>

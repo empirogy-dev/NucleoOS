@@ -195,7 +195,7 @@ export function AprendizajePage() {
                     <small>{n}</small>
                   </button>
                   <button className="xdel" aria-label="Eliminar cuaderno"
-                    onClick={async () => { await deleteNotebook(nb.id); if (selectedNb === nb.id) setSelectedNb(null); void reload(); }}>
+                    onClick={async () => { if (!window.confirm(`¿Eliminar el cuaderno ${nb.name}? Se borran todas sus notas.`)) return; await deleteNotebook(nb.id); if (selectedNb === nb.id) setSelectedNb(null); void reload(); }}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -222,7 +222,7 @@ export function AprendizajePage() {
                   <small>{e.updated_at.slice(0, 10)}</small>
                 </button>
                 <button className="xdel" aria-label="Eliminar nota"
-                  onClick={async () => { await deleteEntry(e.id); if (selectedEntry === e.id) setSelectedEntry(null); void reload(); }}>
+                  onClick={async () => { if (!window.confirm(`¿Eliminar la nota ${e.title || "sin título"}?`)) return; await deleteEntry(e.id); if (selectedEntry === e.id) setSelectedEntry(null); void reload(); }}>
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -337,7 +337,7 @@ function MaterialSection({ notebookId, summarizing, onResumir }: {
                   {summarizing === `file-${f.path}` ? "…" : "✨ Resumir"}
                 </button>
               )}
-              <button className="xdel" aria-label="Eliminar archivo" onClick={async () => { await deleteFile(f.path); void reload(); }}>
+              <button className="xdel" aria-label="Eliminar archivo" onClick={async () => { if (!window.confirm(`¿Eliminar el archivo ${f.name}?`)) return; await deleteFile(f.path); void reload(); }}>
                 <Trash2 size={12} />
               </button>
             </div>
