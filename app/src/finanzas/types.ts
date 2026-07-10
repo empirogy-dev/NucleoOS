@@ -52,6 +52,7 @@ export interface CreditCard {
   balance: number;
   min_payment: number | null;
   due_date: string | null;
+  apr: number | null;
   currency: string;
 }
 
@@ -105,6 +106,9 @@ export function dueLabel(days: number): { text: string; tone: "err" | "warn" | "
   return { text: `en ${days} días`, tone: "ok" };
 }
 
+/** Destino de una transferencia: cuenta, tarjeta, deuda o meta de ahorro. */
+export type DestKind = "account" | "card" | "debt" | "goal";
+
 export interface Tx {
   id: string;
   date: string;
@@ -114,6 +118,8 @@ export interface Tx {
   category_id: string | null;
   account_id: string | null;
   destination_account_id: string | null;
+  destination_kind: DestKind | null;
+  destination_ref: string | null;
   source: TxSource;
 }
 

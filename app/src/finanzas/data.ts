@@ -207,7 +207,7 @@ export async function deleteDebt(id: string): Promise<void> {
 export async function listCards(): Promise<CreditCard[]> {
   const { data, error } = await sb()
     .from("credit_cards")
-    .select("id,name,bank,last_four,credit_limit,balance,min_payment,due_date,currency")
+    .select("id,name,bank,last_four,credit_limit,balance,min_payment,due_date,apr,currency")
     .order("created_at");
   check(error);
   return (data ?? []) as CreditCard[];
@@ -216,7 +216,7 @@ export async function listCards(): Promise<CreditCard[]> {
 export async function addCard(c: {
   name: string; bank: string | null; last_four: string | null;
   credit_limit: number | null; balance: number; min_payment: number | null;
-  due_date: string | null; currency: string;
+  due_date: string | null; apr: number | null; currency: string;
 }): Promise<void> {
   const user_id = await uid();
   const { data, error } = await sb().from("credit_cards").insert({ ...c, user_id }).select("id").single();
@@ -236,7 +236,7 @@ export async function addCard(c: {
 export async function updateCard(id: string, c: {
   name: string; bank: string | null; last_four: string | null;
   credit_limit: number | null; balance: number; min_payment: number | null;
-  due_date: string | null; currency: string;
+  due_date: string | null; apr: number | null; currency: string;
 }): Promise<void> {
   const { error } = await sb().from("credit_cards").update(c).eq("id", id);
   check(error);
@@ -280,29 +280,88 @@ export interface TxInput {
   description: string;
   category_id: string | null;
   account_id: string | null;
-  destination_account_id: string | null;
+  destination_kind: Tx["destination_kind"];
+  destination_ref: string | null;
 }
 
-/** Efecto de una transacción sobre los saldos: lista de (cuenta, delta).
- *  Ingreso suma en la cuenta, gasto resta, y una transferencia resta en el
- *  origen y suma en el destino (si el destino está registrado en la app). */
-function efectosSaldo(t: { type: Tx["type"]; amount: number; account_id: string | null; destination_account_id: string | null }): Array<[string, number]> {
+interface Efecto {
+  tabla: "accounts" | "credit_cards" | "debts" | "goals";
+  campo: "balance" | "current_amount";
+  id: string;
+  delta: number;
+}
+
+/** Efectos de un movimiento sobre los saldos, estilo contable:
+ *  ingreso suma en la cuenta, gasto resta, y una transferencia resta en el
+ *  origen y según el destino: suma en otra cuenta, baja lo usado de una
+ *  tarjeta, abona a una deuda o aporta a una meta de ahorro. */
+function efectosMovimiento(t: {
+  type: Tx["type"];
+  amount: number;
+  account_id: string | null;
+  destination_kind: Tx["destination_kind"];
+  destination_ref: string | null;
+}): Efecto[] {
   const monto = Number(t.amount);
-  if (t.type === "income") return t.account_id ? [[t.account_id, monto]] : [];
-  if (t.type === "expense") return t.account_id ? [[t.account_id, -monto]] : [];
-  const efectos: Array<[string, number]> = [];
-  if (t.account_id) efectos.push([t.account_id, -monto]);
-  if (t.destination_account_id) efectos.push([t.destination_account_id, monto]);
-  return efectos;
+  const ef: Efecto[] = [];
+  if (t.type === "income") {
+    if (t.account_id) ef.push({ tabla: "accounts", campo: "balance", id: t.account_id, delta: monto });
+    return ef;
+  }
+  if (t.type === "expense") {
+    if (t.account_id) ef.push({ tabla: "accounts", campo: "balance", id: t.account_id, delta: -monto });
+    return ef;
+  }
+  if (t.account_id) ef.push({ tabla: "accounts", campo: "balance", id: t.account_id, delta: -monto });
+  if (t.destination_ref) {
+    if (t.destination_kind === "account") ef.push({ tabla: "accounts", campo: "balance", id: t.destination_ref, delta: monto });
+    if (t.destination_kind === "card") ef.push({ tabla: "credit_cards", campo: "balance", id: t.destination_ref, delta: -monto });
+    if (t.destination_kind === "debt") ef.push({ tabla: "debts", campo: "balance", id: t.destination_ref, delta: -monto });
+    if (t.destination_kind === "goal") ef.push({ tabla: "goals", campo: "current_amount", id: t.destination_ref, delta: monto });
+  }
+  return ef;
+}
+
+async function aplicarEfectos(efectos: Efecto[], signo: 1 | -1): Promise<void> {
+  for (const e of efectos) {
+    const { data } = await sb().from(e.tabla).select(e.campo).eq("id", e.id).single();
+    if (data) {
+      const actual = Number((data as Record<string, unknown>)[e.campo] ?? 0);
+      await sb().from(e.tabla).update({ [e.campo]: actual + signo * e.delta }).eq("id", e.id);
+    }
+  }
+}
+
+/** Columnas que se escriben en la tabla (mantiene destination_account_id por compatibilidad). */
+function columnasTx(t: TxInput) {
+  return {
+    ...t,
+    destination_account_id: t.destination_kind === "account" ? t.destination_ref : null,
+  };
 }
 
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()
     .from("transactions")
-    .select("id,date,amount,type,description,category_id,account_id,destination_account_id,source")
+    .select("id,date,amount,type,description,category_id,account_id,destination_account_id,destination_kind,destination_ref,source")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (error && /destination_kind|destination_ref/.test(error.message)) {
+    // La migración 0011 aún no se corre: leemos el formato antiguo.
+    const legado = await sb()
+      .from("transactions")
+      .select("id,date,amount,type,description,category_id,account_id,destination_account_id,source")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    check(legado.error);
+    return (legado.data ?? []).map((t) => ({
+      ...t,
+      destination_kind: t.destination_account_id ? ("account" as const) : null,
+      destination_ref: t.destination_account_id,
+    })) as Tx[];
+  }
   check(error);
   return (data ?? []) as Tx[];
 }
@@ -310,11 +369,9 @@ export async function listTransactions(limit = 200): Promise<Tx[]> {
 export async function addTransaction(t: TxInput): Promise<void> {
   const { error } = await sb()
     .from("transactions")
-    .insert({ ...t, source: "manual", user_id: await uid() });
+    .insert({ ...columnasTx(t), source: "manual", user_id: await uid() });
   check(error);
-  for (const [cuenta, delta] of efectosSaldo(t)) {
-    await ajustarSaldo(cuenta, delta);
-  }
+  await aplicarEfectos(efectosMovimiento(t), 1);
 }
 
 /** Importa filas de una cartola como transacciones (source: cartola), omitiendo duplicados. */
@@ -359,10 +416,7 @@ export async function importStatementRows(
         (s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)),
         0
       );
-      const { data } = await sb().from("accounts").select("balance").eq("id", accountId).single();
-      if (data) {
-        await sb().from("accounts").update({ balance: Number(data.balance) + delta }).eq("id", accountId);
-      }
+      await ajustarSaldo(accountId, delta);
     }
   }
   return { imported: toInsert.length, skipped };
@@ -377,17 +431,25 @@ async function ajustarSaldo(accountId: string | null, delta: number): Promise<vo
   }
 }
 
+/** Compatibilidad: las transferencias guardadas antes de la migración 0011
+ *  solo tienen destination_account_id; se normalizan al formato nuevo. */
+function normalizarDestino(t: Tx): Tx {
+  if (t.type === "transfer" && !t.destination_kind && t.destination_account_id) {
+    return { ...t, destination_kind: "account", destination_ref: t.destination_account_id };
+  }
+  return t;
+}
+
 /** Edita una transacción (también las importadas de cartola) y corrige los saldos. */
 export async function updateTransaction(oldTx: Tx, t: TxInput): Promise<void> {
-  const { error } = await sb().from("transactions").update(t).eq("id", oldTx.id);
+  const { error } = await sb().from("transactions").update(columnasTx(t)).eq("id", oldTx.id);
   check(error);
-  // revertir el efecto anterior y aplicar el nuevo
-  for (const [cuenta, delta] of efectosSaldo(oldTx)) await ajustarSaldo(cuenta, -delta);
-  for (const [cuenta, delta] of efectosSaldo(t)) await ajustarSaldo(cuenta, delta);
+  await aplicarEfectos(efectosMovimiento(normalizarDestino(oldTx)), -1);
+  await aplicarEfectos(efectosMovimiento(t), 1);
 }
 
 export async function deleteTransaction(t: Tx): Promise<void> {
   const { error } = await sb().from("transactions").delete().eq("id", t.id);
   check(error);
-  for (const [cuenta, delta] of efectosSaldo(t)) await ajustarSaldo(cuenta, -delta);
+  await aplicarEfectos(efectosMovimiento(normalizarDestino(t)), -1);
 }
