@@ -43,6 +43,11 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Conectar con Google Calendar (Fase 4, integraciones).
 - [ ] `[Nuevo]` Crear eventos propios desde el calendario (hoy solo agrega lo de las áreas).
 
+## Pedidos del 9 jul 2026 (tarde)
+- [x] `[Nuevo]` Hábitos: tracker día a día con cuadrícula por hábito, desafío de 7 a 90 días (por defecto 28) y marcado retroactivo (migración 0014).
+- [x] `[Nuevo]` Panel de íconos en hábitos, categorías, metas y cuadernos.
+- [x] `[Nuevo]` Finanzas: transacciones agrupadas por mes con encabezados colapsables y totales.
+
 ## Bloque D, Relaciones accionables
 - [ ] `[Nuevo]` Tips segmentados por tipo de relación (pareja, mamá, amistad...), no genéricos.
 - [ ] `[Nuevo]` Al abrir una persona, acciones concretas según el vínculo (invitar a salir, llevar a tomar café, regalo sorpresa).
