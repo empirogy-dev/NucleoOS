@@ -226,10 +226,33 @@ export async function deleteReminder(id: string): Promise<void> {
 }
 
 // ---------- Transacciones ----------
+export interface TxInput {
+  date: string;
+  amount: number;
+  type: Tx["type"];
+  description: string;
+  category_id: string | null;
+  account_id: string | null;
+  destination_account_id: string | null;
+}
+
+/** Efecto de una transacción sobre los saldos: lista de (cuenta, delta).
+ *  Ingreso suma en la cuenta, gasto resta, y una transferencia resta en el
+ *  origen y suma en el destino (si el destino está registrado en la app). */
+function efectosSaldo(t: { type: Tx["type"]; amount: number; account_id: string | null; destination_account_id: string | null }): Array<[string, number]> {
+  const monto = Number(t.amount);
+  if (t.type === "income") return t.account_id ? [[t.account_id, monto]] : [];
+  if (t.type === "expense") return t.account_id ? [[t.account_id, -monto]] : [];
+  const efectos: Array<[string, number]> = [];
+  if (t.account_id) efectos.push([t.account_id, -monto]);
+  if (t.destination_account_id) efectos.push([t.destination_account_id, monto]);
+  return efectos;
+}
+
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()
     .from("transactions")
-    .select("id,date,amount,type,description,category_id,account_id,source")
+    .select("id,date,amount,type,description,category_id,account_id,destination_account_id,source")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -237,25 +260,13 @@ export async function listTransactions(limit = 200): Promise<Tx[]> {
   return (data ?? []) as Tx[];
 }
 
-export async function addTransaction(t: {
-  date: string;
-  amount: number;
-  type: Tx["type"];
-  description: string;
-  category_id: string | null;
-  account_id: string | null;
-}): Promise<void> {
+export async function addTransaction(t: TxInput): Promise<void> {
   const { error } = await sb()
     .from("transactions")
     .insert({ ...t, source: "manual", user_id: await uid() });
   check(error);
-  // actualizar saldo de la cuenta (simple, v1)
-  if (t.account_id) {
-    const delta = t.type === "income" ? t.amount : -t.amount;
-    const { data } = await sb().from("accounts").select("balance").eq("id", t.account_id).single();
-    if (data) {
-      await sb().from("accounts").update({ balance: Number(data.balance) + delta }).eq("id", t.account_id);
-    }
+  for (const [cuenta, delta] of efectosSaldo(t)) {
+    await ajustarSaldo(cuenta, delta);
   }
 }
 
@@ -320,35 +331,16 @@ async function ajustarSaldo(accountId: string | null, delta: number): Promise<vo
 }
 
 /** Edita una transacción (también las importadas de cartola) y corrige los saldos. */
-export async function updateTransaction(oldTx: Tx, t: {
-  date: string;
-  amount: number;
-  type: Tx["type"];
-  description: string;
-  category_id: string | null;
-  account_id: string | null;
-}): Promise<void> {
+export async function updateTransaction(oldTx: Tx, t: TxInput): Promise<void> {
   const { error } = await sb().from("transactions").update(t).eq("id", oldTx.id);
   check(error);
-  const efectoViejo = oldTx.type === "income" ? Number(oldTx.amount) : -Number(oldTx.amount);
-  const efectoNuevo = t.type === "income" ? t.amount : -t.amount;
-  if (oldTx.account_id === t.account_id) {
-    await ajustarSaldo(t.account_id, efectoNuevo - efectoViejo);
-  } else {
-    await ajustarSaldo(oldTx.account_id, -efectoViejo);
-    await ajustarSaldo(t.account_id, efectoNuevo);
-  }
+  // revertir el efecto anterior y aplicar el nuevo
+  for (const [cuenta, delta] of efectosSaldo(oldTx)) await ajustarSaldo(cuenta, -delta);
+  for (const [cuenta, delta] of efectosSaldo(t)) await ajustarSaldo(cuenta, delta);
 }
 
 export async function deleteTransaction(t: Tx): Promise<void> {
   const { error } = await sb().from("transactions").delete().eq("id", t.id);
   check(error);
-  // revertir saldo (v1)
-  if (t.account_id) {
-    const delta = t.type === "income" ? -t.amount : t.amount;
-    const { data } = await sb().from("accounts").select("balance").eq("id", t.account_id).single();
-    if (data) {
-      await sb().from("accounts").update({ balance: Number(data.balance) + delta }).eq("id", t.account_id);
-    }
-  }
+  for (const [cuenta, delta] of efectosSaldo(t)) await ajustarSaldo(cuenta, -delta);
 }

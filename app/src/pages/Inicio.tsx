@@ -264,7 +264,7 @@ export function Inicio() {
                 date: t.date,
                 areaKey: "finanzas",
                 areaLabel: "Finanzas",
-                text: `${t.type === "expense" ? "Gasto" : "Ingreso"}${cat ? ` en ${cat.name}` : ""}: ${t.description || "sin descripción"} (${fmtMoney(Number(t.amount), accounts[0]?.currency ?? currency)})`,
+                text: `${t.type === "transfer" ? "Transferencia" : t.type === "expense" ? "Gasto" : "Ingreso"}${cat ? ` en ${cat.name}` : ""}: ${t.description || "sin descripción"} (${fmtMoney(Number(t.amount), accounts[0]?.currency ?? currency)})`,
               });
             }
             for (const a of activity) {

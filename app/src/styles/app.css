@@ -181,6 +181,7 @@ button{font-family:inherit}
 .txamt{font-size:14px;flex:none}
 .txamt.neg{color:var(--err)}
 .txamt.pos{color:var(--ok)}
+.txamt.neutral{color:var(--ink-soft)}
 .xdel{width:28px;height:28px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none}
 .xdel:hover{color:var(--err);border-color:var(--err)}
 .seg{display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:var(--r-full);margin-bottom:14px}

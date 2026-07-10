@@ -926,15 +926,23 @@ function TxRow({ t, catById, accById, currency, onDelete, onEdit }: {
 }) {
   const cat = t.category_id ? catById.get(t.category_id) : undefined;
   const acc = t.account_id ? accById.get(t.account_id) : undefined;
+  const dest = t.destination_account_id ? accById.get(t.destination_account_id) : undefined;
+  const esTransfer = t.type === "transfer";
   const neg = t.type === "expense";
   return (
     <div className="txrow">
-      <span className="txicon">{cat?.icon ?? (neg ? "💸" : "💰")}</span>
+      <span className="txicon">{esTransfer ? "🔁" : cat?.icon ?? (neg ? "💸" : "💰")}</span>
       <div className="txmeta">
-        <b>{t.description || cat?.name || (neg ? "Gasto" : "Ingreso")}</b>
-        <small>{t.date}, {cat?.name ?? "sin categoría"}{acc ? `, ${acc.name}` : ""}{t.source !== "manual" ? `, ${t.source}` : ""}</small>
+        <b>{t.description || cat?.name || (esTransfer ? "Transferencia" : neg ? "Gasto" : "Ingreso")}</b>
+        <small>
+          {t.date}
+          {esTransfer
+            ? `, transferencia${acc ? ` desde ${acc.name}` : ""}${dest ? ` hacia ${dest.name}` : ""}`
+            : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : ""}`}
+          {t.source !== "manual" ? `, ${t.source}` : ""}
+        </small>
       </div>
-      <b className={"tnum txamt " + (neg ? "neg" : "pos")}>{neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
+      <b className={"tnum txamt " + (esTransfer ? "neutral" : neg ? "neg" : "pos")}>{esTransfer ? "⇄ " : neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
       {onEdit && <button className="xdel" aria-label="Editar" title="Editar" onClick={onEdit}><Pencil size={14} /></button>}
       {onDelete && <button className="xdel" aria-label="Eliminar" onClick={onDelete}><Trash2 size={14} /></button>}
     </div>
@@ -953,6 +961,7 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
   const [description, setDescription] = useState(edit?.description ?? "");
   const [categoryId, setCategoryId] = useState(edit?.category_id ?? "");
   const [accountId, setAccountId] = useState(edit ? (edit.account_id ?? "") : (accounts[0]?.id ?? ""));
+  const [destinationId, setDestinationId] = useState(edit?.destination_account_id ?? "");
   const [date, setDate] = useState(edit?.date ?? hoyLocal());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -961,6 +970,10 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (type === "transfer" && destinationId && destinationId === accountId) {
+      setErr("La cuenta de origen y la de destino no pueden ser la misma.");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -969,8 +982,9 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
         amount: Math.abs(Number(amount)),
         type,
         description,
-        category_id: categoryId || null,
+        category_id: type === "transfer" ? null : (categoryId || null),
         account_id: accountId || null,
+        destination_account_id: type === "transfer" ? (destinationId || null) : null,
       };
       if (edit) await updateTransaction(edit, payload);
       else await addTransaction(payload);
@@ -986,6 +1000,7 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
       <div className="seg">
         <button className={"segbtn" + (type === "expense" ? " active" : "")} onClick={() => setType("expense")} type="button">Gasto</button>
         <button className={"segbtn" + (type === "income" ? " active" : "")} onClick={() => setType("income")} type="button">Ingreso</button>
+        <button className={"segbtn" + (type === "transfer" ? " active" : "")} onClick={() => setType("transfer")} type="button">Transferencia</button>
       </div>
       {err && <div className="msg err" style={{ fontSize: 12.5, padding: "8px 10px", borderRadius: 8, background: "color-mix(in srgb,var(--err) 12%,var(--paper))", borderLeft: "3px solid var(--err)", marginBottom: 10 }}>{err}</div>}
       <form onSubmit={save}>
@@ -994,17 +1009,31 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
         <div className="field"><label>Descripción</label>
           <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Frutillas y frambuesas" /></div>
         <div className="frow">
-          <div className="field"><label>Categoría</label>
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Sin categoría</option>
-              {cats.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-            </select></div>
-          <div className="field"><label>Cuenta</label>
+          {type !== "transfer" && (
+            <div className="field"><label>Categoría</label>
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                <option value="">Sin categoría</option>
+                {cats.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              </select></div>
+          )}
+          <div className="field"><label>{type === "transfer" ? "Desde la cuenta" : "Cuenta"}</label>
             <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
               <option value="">Sin cuenta</option>
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select></div>
+          {type === "transfer" && (
+            <div className="field"><label>Hacia la cuenta</label>
+              <select value={destinationId} onChange={(e) => setDestinationId(e.target.value)}>
+                <option value="">Fuera de la app (tarjeta, otro banco)</option>
+                {accounts.filter((a) => a.id !== accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select></div>
+          )}
         </div>
+        {type === "transfer" && (
+          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+            Una transferencia no cuenta como gasto ni ingreso. Si el destino está fuera de la app (por ejemplo el pago de tu tarjeta), deja "Fuera de la app" y solo se descuenta del origen.
+          </p>
+        )}
         <div className="field"><label>Fecha</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>

@@ -1,6 +1,6 @@
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 
-export type TxType = "income" | "expense";
+export type TxType = "income" | "expense" | "transfer";
 export type TxSource = "manual" | "voz" | "recibo" | "cartola" | "banco";
 
 export interface Account {
@@ -113,6 +113,7 @@ export interface Tx {
   description: string;
   category_id: string | null;
   account_id: string | null;
+  destination_account_id: string | null;
   source: TxSource;
 }
 
