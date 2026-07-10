@@ -74,7 +74,16 @@ export function nextOccurrence(r: Reminder): string {
   const d = new Date(r.date + "T00:00:00");
   const now = new Date(today + "T00:00:00");
   if (r.recurrence === "monthly") {
-    while (d < now) d.setMonth(d.getMonth() + 1);
+    // Conserva el día de pago original: si el mes es más corto (ej. pago el 31
+    // y llega febrero), usa el último día del mes en vez de saltarse al mes
+    // siguiente, que es lo que hace setMonth con el desborde.
+    const diaPago = d.getDate();
+    while (d < now) {
+      d.setDate(1);
+      d.setMonth(d.getMonth() + 1);
+      const ultimoDia = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      d.setDate(Math.min(diaPago, ultimoDia));
+    }
   } else {
     while (d < now) d.setDate(d.getDate() + 14);
   }
