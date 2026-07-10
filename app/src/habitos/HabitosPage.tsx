@@ -1,6 +1,7 @@
 import { AvancesArea } from "../components/AvancesArea";
+import { IconField } from "../components/IconField";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Moon, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import {
@@ -116,24 +117,41 @@ export function HabitosPage() {
               {habits.map((h) => {
                 const done = doneToday.has(h.id);
                 const racha = streakFor(h.id, logs);
+                const objetivo = h.target_days ?? 28;
+                const ventana: string[] = [];
+                for (let i = objetivo - 1; i >= 0; i -= 1) ventana.push(isoDaysAgo(i));
+                const marcados = new Set(logs.filter((l) => l.habit_id === h.id).map((l) => l.date));
+                const hechos = ventana.filter((f) => marcados.has(f)).length;
+                const logrado = hechos >= objetivo;
                 return (
-                  <div className="txrow" key={h.id}>
-                    <button
-                      className={"hcheck" + (done ? " done" : "")}
-                      aria-label={done ? "Desmarcar" : "Marcar como hecho"}
-                      onClick={async () => { await toggleHabit(h.id, hoy, !done); void reload(); }}>
-                      {done ? "✓" : ""}
-                    </button>
-                    <div className="txmeta">
-                      <b style={{ textDecoration: done ? "line-through" : "none", color: done ? "var(--muted)" : "var(--ink)" }}>
-                        {h.icon} {h.name}
-                      </b>
-                      <small>{racha > 0 ? `racha de ${racha} día${racha === 1 ? "" : "s"} 🔥` : "sin racha todavía"}</small>
+                  <div key={h.id} style={{ borderBottom: "1px solid var(--line-soft)", padding: "10px 0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button
+                        className={"hcheck" + (done ? " done" : "")}
+                        aria-label={done ? "Desmarcar hoy" : "Marcar hoy como hecho"}
+                        onClick={async () => { await toggleHabit(h.id, hoy, !done); void reload(); }}>
+                        {done ? "✓" : ""}
+                      </button>
+                      <div className="txmeta">
+                        <b style={{ color: done ? "var(--muted)" : "var(--ink)" }}>{h.icon} {h.name}</b>
+                        <small>{racha > 0 ? `racha de ${racha} día${racha === 1 ? "" : "s"} 🔥, ` : ""}desafío de {objetivo} días</small>
+                      </div>
+                      {logrado
+                        ? <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🎉 {hechos} / {objetivo}</span>
+                        : <span className="chip">{hechos} / {objetivo}</span>}
+                      <button className="xdel" aria-label="Eliminar hábito" onClick={async () => { if (!window.confirm(`¿Eliminar el hábito ${h.name}? Se pierde su historial.`)) return; await deleteHabit(h.id); void reload(); }}>
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    <WeekDots habitId={h.id} logs={logs} />
-                    <button className="xdel" aria-label="Eliminar hábito" onClick={async () => { if (!window.confirm(`¿Eliminar el hábito ${h.name}? Se pierde su racha.`)) return; await deleteHabit(h.id); void reload(); }}>
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="habit-grid" title="Toca un día para marcarlo o desmarcarlo">
+                      {ventana.map((f) => (
+                        <button key={f} type="button"
+                          className={"hg-cell" + (marcados.has(f) ? " on" : "") + (f === hoy ? " today" : "")}
+                          aria-label={`${f}${marcados.has(f) ? ", hecho" : ""}`}
+                          title={f}
+                          onClick={async () => { await toggleHabit(h.id, f, !marcados.has(f)); void reload(); }} />
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -216,17 +234,6 @@ function Head() {
   );
 }
 
-function WeekDots({ habitId, logs }: { habitId: string; logs: HabitLog[] }) {
-  const dates = useMemo(() => new Set(logs.filter((l) => l.habit_id === habitId).map((l) => l.date)), [habitId, logs]);
-  const days: string[] = [];
-  for (let i = 6; i >= 0; i -= 1) days.push(isoDaysAgo(i));
-  return (
-    <span className="weekdots" title="Últimos 7 días">
-      {days.map((d) => <i key={d} className={dates.has(d) ? "on" : ""} />)}
-    </span>
-  );
-}
-
 function ExerciseForm({ onSaved }: { onSaved: () => void }) {
   const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
   const [minutes, setMinutes] = useState("");
@@ -256,27 +263,47 @@ function ExerciseForm({ onSaved }: { onSaved: () => void }) {
 
 function HabitModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState("🌿");
+  const [icon, setIcon] = useState("🌱");
+  const [dias, setDias] = useState("28");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addHabit(name, icon);
-    onSaved();
+    setErr(null);
+    try {
+      await addHabit(name, icon, dias ? Number(dias) : null);
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+    }
   }
 
   return (
     <div className="tp-overlay" onClick={onClose}>
-      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
         <h3 style={{ marginBottom: 14 }}>Nuevo hábito</h3>
+        {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
         <form onSubmit={save}>
           <div className="frow">
             <div className="field" style={{ flex: 1 }}><label>Nombre</label>
               <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Meditar 10 minutos" autoFocus /></div>
-            <div className="field" style={{ width: 84 }}><label>Ícono</label>
-              <input value={icon} onChange={(e) => setIcon(e.target.value)} /></div>
+            <IconField value={icon} onChange={setIcon} />
           </div>
+          <div className="field"><label>¿Por cuánto tiempo?</label>
+            <select value={dias} onChange={(e) => setDias(e.target.value)}>
+              <option value="7">7 días</option>
+              <option value="14">14 días</option>
+              <option value="21">21 días</option>
+              <option value="28">28 días</option>
+              <option value="66">66 días (hábito instalado)</option>
+              <option value="90">90 días</option>
+            </select></div>
+          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+            Verás una cuadrícula con cada día del desafío. Tocas un día y queda marcado: tu avance, visible.
+          </p>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear hábito"}</button>
         </form>
       </div>

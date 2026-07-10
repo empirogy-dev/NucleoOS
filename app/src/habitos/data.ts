@@ -6,6 +6,7 @@ export interface Habit {
   id: string;
   name: string;
   icon: string | null;
+  target_days: number | null;
 }
 
 export interface HabitLog {
@@ -61,13 +62,22 @@ function daysAgo(n: number): string {
 
 // ---------- Hábitos ----------
 export async function listHabits(): Promise<Habit[]> {
-  const { data, error } = await sb().from("habits").select("id,name,icon").order("created_at");
+  const { data, error } = await sb().from("habits").select("id,name,icon,target_days").order("created_at");
+  if (error && /target_days/.test(error.message)) {
+    // La migración 0014 aún no se corre: leemos sin duración.
+    const legado = await sb().from("habits").select("id,name,icon").order("created_at");
+    check(legado.error);
+    return (legado.data ?? []).map((h) => ({ ...h, target_days: null })) as Habit[];
+  }
   check(error);
   return (data ?? []) as Habit[];
 }
 
-export async function addHabit(name: string, icon: string | null): Promise<void> {
-  const { error } = await sb().from("habits").insert({ name, icon, user_id: await uid() });
+export async function addHabit(name: string, icon: string | null, targetDays: number | null): Promise<void> {
+  const { error } = await sb().from("habits").insert({ name, icon, target_days: targetDays, user_id: await uid() });
+  if (error && /target_days/.test(error.message)) {
+    throw new Error("Falta la migración 0014 en Supabase (supabase/migrations/0014_habitos_reto.sql).");
+  }
   check(error);
 }
 
