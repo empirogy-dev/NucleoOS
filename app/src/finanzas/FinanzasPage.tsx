@@ -33,6 +33,7 @@ import {
   updateTransaction,
 } from "./data";
 import { StatementImportError, parseStatementFile, type StatementImportRow } from "./statementImport";
+import { interesMensual, ordenarDeudas, simularPlan, type Estrategia } from "./debtPlan";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import {
   ACCOUNT_TYPES,
@@ -103,6 +104,44 @@ export function FinanzasPage() {
 
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+
+  const resolveDest = useCallback((t: Tx): string | null => {
+    const kind = t.destination_kind ?? (t.destination_account_id ? "account" : null);
+    const ref = t.destination_ref ?? t.destination_account_id;
+    if (!kind || !ref) return null;
+    if (kind === "account") return accById.get(ref)?.name ?? null;
+    if (kind === "card") { const c = cards.find((x) => x.id === ref); return c ? `la tarjeta ${c.name}` : null; }
+    if (kind === "debt") { const d = debts.find((x) => x.id === ref); return d ? `la deuda ${d.name}` : null; }
+    const g = goals.find((x) => x.id === ref);
+    return g ? `la meta ${g.name}` : null;
+  }, [accById, cards, debts, goals]);
+
+  // Filtros de la pestaña Transacciones (como en Fluxney)
+  const [fq, setFq] = useState("");
+  const [fType, setFType] = useState<"all" | Tx["type"]>("all");
+  const [fCat, setFCat] = useState("all");
+  const [fAcc, setFAcc] = useState("all");
+  const filteredTxs = useMemo(() => {
+    const q = fq.trim().toLowerCase();
+    return txs.filter((t) => {
+      if (fType !== "all" && t.type !== fType) return false;
+      if (fCat !== "all" && t.category_id !== (fCat === "none" ? null : fCat)) return false;
+      if (fAcc !== "all") {
+        const enOrigen = t.account_id === fAcc;
+        const enDestino = (t.destination_ref ?? t.destination_account_id) === fAcc;
+        if (!enOrigen && !enDestino) return false;
+      }
+      if (q) {
+        const texto = [
+          t.description,
+          t.category_id ? catById.get(t.category_id)?.name : "",
+          t.account_id ? accById.get(t.account_id)?.name : "",
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!texto.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [txs, fq, fType, fCat, fAcc, catById, accById]);
 
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
@@ -216,7 +255,7 @@ export function FinanzasPage() {
                 <div className="card panel">
                   <h3>Últimos movimientos</h3>
                   {txs.slice(0, 6).map((t) => (
-                    <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} />
+                    <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest} />
                   ))}
                   {txs.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Nada aún por aquí.</p>}
                 </div>
@@ -253,14 +292,43 @@ export function FinanzasPage() {
           )}
 
           {tab === "transacciones" && (
-            <div className="card pad">
-              {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
-              {txs.map((t) => (
-                <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency}
-                  onEdit={() => setEditTx(t)}
-                  onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
-              ))}
-            </div>
+            <>
+              <div className="filterbar">
+                <div className="searchbox" style={{ minWidth: 200 }}>
+                  <input value={fq} onChange={(e) => setFq(e.target.value)} placeholder="Buscar movimientos…" aria-label="Buscar movimientos" />
+                </div>
+                <select className="ms-sel" value={fType} onChange={(e) => setFType(e.target.value as typeof fType)} aria-label="Filtrar por tipo">
+                  <option value="all">Todos los tipos</option>
+                  <option value="expense">Gastos</option>
+                  <option value="income">Ingresos</option>
+                  <option value="transfer">Transferencias</option>
+                </select>
+                <select className="ms-sel" value={fCat} onChange={(e) => setFCat(e.target.value)} aria-label="Filtrar por categoría">
+                  <option value="all">Todas las categorías</option>
+                  <option value="none">Sin categoría</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                </select>
+                <select className="ms-sel" value={fAcc} onChange={(e) => setFAcc(e.target.value)} aria-label="Filtrar por cuenta o tarjeta">
+                  <option value="all">Todas las cuentas y tarjetas</option>
+                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  {cards.map((c) => <option key={c.id} value={c.id}>💳 {c.name}</option>)}
+                </select>
+              </div>
+              <div className="card pad">
+                {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
+                {txs.length > 0 && filteredTxs.length === 0 && <p style={{ color: "var(--muted)" }}>Ningún movimiento calza con los filtros.</p>}
+                {filteredTxs.length > 0 && (
+                  <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+                    {filteredTxs.length === 1 ? "1 movimiento" : `${filteredTxs.length} movimientos`}
+                  </p>
+                )}
+                {filteredTxs.map((t) => (
+                  <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                    onEdit={() => setEditTx(t)}
+                    onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                ))}
+              </div>
+            </>
           )}
 
           {tab === "metas" && (
@@ -314,6 +382,10 @@ export function FinanzasPage() {
 
           {tab === "deudas" && (
             <>
+              {(debts.length > 0 || cards.some((c) => Number(c.balance) > 0)) && (
+                <PlanDeudas debts={debts} cards={cards} currency={currency} />
+              )}
+
               {/* Próximos pagos */}
               <div className="card panel" style={{ marginBottom: 14 }}>
                 <h3>🔔 Próximos pagos</h3>
@@ -464,7 +536,8 @@ export function FinanzasPage() {
       )}
 
       {(modal === "tx" || editTx) && (
-        <TxModal key={editTx?.id ?? "nuevo"} categories={categories} accounts={accounts} edit={editTx}
+        <TxModal key={editTx?.id ?? "nuevo"} categories={categories} accounts={accounts}
+          cards={cards} debts={debts} goals={goals} edit={editTx}
           onClose={() => { setModal(null); setEditTx(null); }}
           onSaved={() => { setModal(null); setEditTx(null); void reload(); }} />
       )}
@@ -746,6 +819,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
   const [balance, setBalance] = useState(edit ? String(edit.balance) : "");
   const [minPay, setMinPay] = useState(edit?.min_payment != null ? String(edit.min_payment) : "");
   const [dueDate, setDueDate] = useState(edit?.due_date ?? "");
+  const [apr, setApr] = useState(edit?.apr != null ? String(edit.apr) : "");
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
@@ -755,6 +829,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
       name, bank: bank || null, last_four: lastFour || null,
       credit_limit: limit ? Number(limit) : null, balance: Number(balance || 0),
       min_payment: minPay ? Number(minPay) : null, due_date: dueDate || null,
+      apr: apr ? Number(apr) : null,
       currency: edit?.currency ?? currency,
     };
     if (edit) await updateCard(edit.id, payload);
@@ -785,7 +860,9 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
           <div className="field"><label>Próximo pago (opcional)</label>
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
         </div>
-        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual.</p>
+        <div className="field"><label>Interés anual % (opcional)</label>
+          <input type="number" min="0" step="any" value={apr} onChange={(e) => setApr(e.target.value)} placeholder="21.99" /></div>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual. El interés alimenta el plan para salir de deudas.</p>
         <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
@@ -938,17 +1015,18 @@ function Head() {
   );
 }
 
-function TxRow({ t, catById, accById, currency, onDelete, onEdit }: {
+function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit }: {
   t: Tx;
   catById: Map<string, Category>;
   accById: Map<string, Account>;
   currency: string;
+  resolveDest?: (t: Tx) => string | null;
   onDelete?: () => void;
   onEdit?: () => void;
 }) {
   const cat = t.category_id ? catById.get(t.category_id) : undefined;
   const acc = t.account_id ? accById.get(t.account_id) : undefined;
-  const dest = t.destination_account_id ? accById.get(t.destination_account_id) : undefined;
+  const dest = resolveDest ? resolveDest(t) : null;
   const esTransfer = t.type === "transfer";
   const neg = t.type === "expense";
   return (
@@ -959,7 +1037,7 @@ function TxRow({ t, catById, accById, currency, onDelete, onEdit }: {
         <small>
           {t.date}
           {esTransfer
-            ? `, transferencia${acc ? ` desde ${acc.name}` : ""}${dest ? ` hacia ${dest.name}` : ""}`
+            ? `, transferencia${acc ? ` desde ${acc.name}` : ""}${dest ? ` hacia ${dest}` : ""}`
             : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : ""}`}
           {t.source !== "manual" ? `, ${t.source}` : ""}
         </small>
@@ -971,28 +1049,39 @@ function TxRow({ t, catById, accById, currency, onDelete, onEdit }: {
   );
 }
 
-function TxModal({ categories, accounts, edit, onClose, onSaved }: {
+function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onSaved }: {
   categories: Category[];
   accounts: Account[];
+  cards: CreditCard[];
+  debts: Debt[];
+  goals: Goal[];
   edit?: Tx | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const destinoInicial = edit
+    ? (edit.destination_kind && edit.destination_ref
+        ? `${edit.destination_kind}:${edit.destination_ref}`
+        : edit.destination_account_id
+          ? `account:${edit.destination_account_id}`
+          : "")
+    : "";
   const [type, setType] = useState<Tx["type"]>(edit?.type ?? "expense");
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const [description, setDescription] = useState(edit?.description ?? "");
   const [categoryId, setCategoryId] = useState(edit?.category_id ?? "");
   const [accountId, setAccountId] = useState(edit ? (edit.account_id ?? "") : (accounts[0]?.id ?? ""));
-  const [destinationId, setDestinationId] = useState(edit?.destination_account_id ?? "");
+  const [destino, setDestino] = useState(destinoInicial);
   const [date, setDate] = useState(edit?.date ?? hoyLocal());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const cats = categories.filter((c) => (type === "income" ? c.type === "income" : c.type !== "income"));
+  const [destKind, destRef] = destino ? (destino.split(":") as [Tx["destination_kind"], string]) : [null, null];
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (type === "transfer" && destinationId && destinationId === accountId) {
+    if (type === "transfer" && destKind === "account" && destRef === accountId) {
       setErr("La cuenta de origen y la de destino no pueden ser la misma.");
       return;
     }
@@ -1006,13 +1095,17 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
         description,
         category_id: type === "transfer" ? null : (categoryId || null),
         account_id: accountId || null,
-        destination_account_id: type === "transfer" ? (destinationId || null) : null,
+        destination_kind: type === "transfer" ? destKind : null,
+        destination_ref: type === "transfer" ? destRef : null,
       };
       if (edit) await updateTransaction(edit, payload);
       else await addTransaction(payload);
       onSaved();
     } catch (ex) {
-      setErr(ex instanceof Error ? ex.message : String(ex));
+      const msg = ex instanceof Error ? ex.message : String(ex);
+      setErr(/destination_kind|destination_ref/.test(msg)
+        ? "Falta la migración 0011 en Supabase (supabase/migrations/0011_transferencias.sql)."
+        : msg);
       setBusy(false);
     }
   }
@@ -1044,16 +1137,40 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select></div>
           {type === "transfer" && (
-            <div className="field"><label>Hacia la cuenta</label>
-              <select value={destinationId} onChange={(e) => setDestinationId(e.target.value)}>
-                <option value="">Fuera de la app (tarjeta, otro banco)</option>
-                {accounts.filter((a) => a.id !== accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            <div className="field"><label>Hacia</label>
+              <select value={destino} onChange={(e) => setDestino(e.target.value)}>
+                <option value="">Fuera de la app (otro banco)</option>
+                {accounts.filter((a) => a.id !== accountId).length > 0 && (
+                  <optgroup label="Cuentas">
+                    {accounts.filter((a) => a.id !== accountId).map((a) => <option key={a.id} value={`account:${a.id}`}>{a.name}</option>)}
+                  </optgroup>
+                )}
+                {cards.length > 0 && (
+                  <optgroup label="Tarjetas de crédito">
+                    {cards.map((c) => <option key={c.id} value={`card:${c.id}`}>{c.name}{c.last_four ? ` •••• ${c.last_four}` : ""}</option>)}
+                  </optgroup>
+                )}
+                {debts.length > 0 && (
+                  <optgroup label="Deudas">
+                    {debts.map((d) => <option key={d.id} value={`debt:${d.id}`}>{d.name}</option>)}
+                  </optgroup>
+                )}
+                {goals.length > 0 && (
+                  <optgroup label="Metas de ahorro">
+                    {goals.map((g) => <option key={g.id} value={`goal:${g.id}`}>{g.icon ?? "🎯"} {g.name}</option>)}
+                  </optgroup>
+                )}
               </select></div>
           )}
         </div>
         {type === "transfer" && (
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-            Una transferencia no cuenta como gasto ni ingreso. Si el destino está fuera de la app (por ejemplo el pago de tu tarjeta), deja "Fuera de la app" y solo se descuenta del origen.
+            {destKind === "card" ? "El pago de la tarjeta baja lo que le debes (su saldo usado)."
+              : destKind === "debt" ? "El abono baja el saldo de la deuda."
+              : destKind === "goal" ? "El aporte suma al avance de la meta."
+              : destKind === "account" ? "Mueve el dinero entre tus cuentas."
+              : "Solo se descuenta de la cuenta de origen."}
+            {" "}Una transferencia no cuenta como gasto ni ingreso.
           </p>
         )}
         <div className="field"><label>Fecha</label>
@@ -1154,5 +1271,100 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
         {children}
       </div>
     </div>
+  );
+}
+
+function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCard[]; currency: string }) {
+  const [estrategia, setEstrategia] = useState<Estrategia>("avalanche");
+  const [extra, setExtra] = useState("");
+
+  // Las tarjetas con saldo usado también son deuda: entran al plan con su interés (APR).
+  const todas: Debt[] = useMemo(() => [
+    ...debts,
+    ...cards
+      .filter((c) => Number(c.balance) > 0)
+      .map((c) => ({
+        id: c.id,
+        name: `Tarjeta ${c.name}`,
+        institution: c.bank,
+        balance: c.balance,
+        interest_rate: c.apr,
+        min_payment: c.min_payment,
+        due_date: c.due_date,
+        currency: c.currency,
+        notes: null,
+      })),
+  ], [debts, cards]);
+
+  const extraNum = Math.max(0, Number(extra) || 0);
+  const totalDeuda = todas.reduce((s, d) => s + Number(d.balance), 0);
+  const minimoMensual = todas.reduce((s, d) => s + Number(d.min_payment ?? 0), 0);
+  const interesMes = todas.reduce((s, d) => s + interesMensual(d), 0);
+  const orden = useMemo(() => ordenarDeudas(todas, estrategia), [todas, estrategia]);
+  const plan = useMemo(() => simularPlan(todas, extraNum, estrategia), [todas, extraNum, estrategia]);
+  const planSinExtra = useMemo(() => simularPlan(todas, 0, estrategia), [todas, estrategia]);
+
+  function meses(n: number): string {
+    if (n < 12) return n === 1 ? "1 mes" : `${n} meses`;
+    const a = Math.floor(n / 12);
+    const m = n % 12;
+    const anios = a === 1 ? "1 año" : `${a} años`;
+    return m > 0 ? `${anios} y ${m === 1 ? "1 mes" : `${m} meses`}` : anios;
+  }
+
+  return (
+    <>
+      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+        <div className="card stat"><div className="k">Deuda total</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(totalDeuda, currency)}</div></div>
+        <div className="card stat"><div className="k">Mínimo mensual</div><div className="v tnum">{fmtMoney(minimoMensual, currency)}</div></div>
+        <div className="card stat"><div className="k">Interés del mes</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes), currency)}</div></div>
+        <div className="card stat"><div className="k">Interés anual estimado</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes * 12), currency)}</div></div>
+      </div>
+
+      <div className="card panel" style={{ marginBottom: 14 }}>
+        <h3>🧭 Plan para salir de deudas</h3>
+        <div className="seg" style={{ maxWidth: 520 }}>
+          <button type="button" className={"segbtn" + (estrategia === "avalanche" ? " active" : "")} onClick={() => setEstrategia("avalanche")}>Avalancha</button>
+          <button type="button" className={"segbtn" + (estrategia === "snowball" ? " active" : "")} onClick={() => setEstrategia("snowball")}>Bola de nieve</button>
+        </div>
+        <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 12px" }}>
+          {estrategia === "avalanche"
+            ? "Avalancha: ataca primero la deuda con mayor interés. Pagas menos intereses en total."
+            : "Bola de nieve: ataca primero la deuda más chica. Ganas motivación con cada deuda saldada."}
+        </p>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+          <label style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 500 }}>Dinero extra al mes:</label>
+          <input className="input-inline" style={{ maxWidth: 140, flex: "none" }} type="number" min="0" step="any"
+            value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="100" aria-label="Dinero extra mensual" />
+        </div>
+        {orden.map((d, i) => (
+          <div className="txrow" key={d.id} style={{ padding: "8px 0" }}>
+            <span className="txicon" style={{ fontWeight: 700, fontSize: 13 }}>{i + 1}</span>
+            <div className="txmeta">
+              <b>{d.name}{i === 0 && extraNum > 0 ? " ← aplica aquí el extra" : ""}</b>
+              <small>
+                {fmtMoney(Number(d.balance), currency)}
+                {d.interest_rate ? `, ${d.interest_rate}% de interés, ${fmtMoney(Math.round(interesMensual(d)), currency)} al mes en intereses` : ", sin interés registrado"}
+              </small>
+            </div>
+          </div>
+        ))}
+        <div style={{ borderTop: "1px solid var(--line-soft)", marginTop: 10, paddingTop: 10, fontSize: 13, color: "var(--ink-soft)", display: "grid", gap: 4 }}>
+          {planSinExtra.inalcanzable ? (
+            <span style={{ color: "var(--err)" }}>Con los pagos mínimos actuales la deuda no baja. Registra los pagos mínimos de cada deuda o agrega dinero extra.</span>
+          ) : (
+            <span>Pagando solo los mínimos: libre de deudas en <b>{meses(planSinExtra.meses)}</b>, pagando {fmtMoney(planSinExtra.interesesTotales, currency)} en intereses.</span>
+          )}
+          {extraNum > 0 && !plan.inalcanzable && (
+            <span style={{ color: "var(--ok)" }}>
+              Con {fmtMoney(extraNum, currency)} extra al mes: libre en <b>{meses(plan.meses)}</b>, pagando {fmtMoney(plan.interesesTotales, currency)} en intereses.
+              {planSinExtra.interesesTotales > plan.interesesTotales && !planSinExtra.inalcanzable
+                ? ` Te ahorras ${fmtMoney(planSinExtra.interesesTotales - plan.interesesTotales, currency)}.`
+                : ""}
+            </span>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
