@@ -117,6 +117,17 @@ export interface Tx {
   source: TxSource;
 }
 
+/** Tipos de cuenta (los valores en inglés vienen del esquema de Fluxney). */
+export const ACCOUNT_TYPES = ["Checking", "Savings", "Credit Card", "Cash", "Investment"] as const;
+
+export const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  Checking: "Corriente",
+  Savings: "Ahorro",
+  "Credit Card": "Tarjeta de crédito",
+  Cash: "Efectivo",
+  Investment: "Inversión",
+};
+
 export const DEFAULT_CATEGORIES: Array<Pick<Category, "name" | "type" | "icon">> = [
   { name: "Comida", type: "expense", icon: "🍎" },
   { name: "Transporte", type: "expense", icon: "🚌" },

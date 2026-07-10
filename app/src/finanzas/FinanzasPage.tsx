@@ -26,12 +26,17 @@ import {
   listReminders,
   listTransactions,
   seedCategoriesIfEmpty,
+  updateAccount,
+  updateCard,
   updateCategoryBudget,
+  updateDebt,
   updateTransaction,
 } from "./data";
 import { StatementImportError, parseStatementFile, type StatementImportRow } from "./statementImport";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import {
+  ACCOUNT_TYPES,
+  ACCOUNT_TYPE_LABELS,
   daysUntil,
   dueLabel,
   fmtMoney,
@@ -63,6 +68,9 @@ export function FinanzasPage() {
   const [budgetCat, setBudgetCat] = useState<Category | null>(null);
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const [editTx, setEditTx] = useState<Tx | null>(null);
+  const [editAccount, setEditAccount] = useState<Account | null>(null);
+  const [editCard, setEditCard] = useState<CreditCard | null>(null);
+  const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const { currency: defaultCurrency } = useSettings();
 
   const reload = useCallback(async () => {
@@ -355,6 +363,7 @@ export function FinanzasPage() {
                           <b style={{ fontSize: 14 }}>{c.name}</b>
                           <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{c.bank ?? ""}{c.last_four ? ` •••• ${c.last_four}` : ""}</div>
                         </div>
+                        <button className="xdel" aria-label="Editar tarjeta" title="Editar" onClick={() => setEditCard(c)}><Pencil size={14} /></button>
                         <button className="xdel" aria-label="Eliminar tarjeta" onClick={async () => { if (!window.confirm(`¿Eliminar la tarjeta ${c.name}? También se borra su recordatorio de pago.`)) return; await deleteCard(c.id); void reload(); }}><Trash2 size={14} /></button>
                       </div>
                       <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(usado, c.currency)}</div>
@@ -384,6 +393,7 @@ export function FinanzasPage() {
                         <b style={{ fontSize: 14 }}>{d.name}</b>
                         <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d.institution ?? ""}{d.interest_rate ? `, ${d.interest_rate}% de interés` : ""}</div>
                       </div>
+                      <button className="xdel" aria-label="Editar deuda" title="Editar" onClick={() => setEditDebt(d)}><Pencil size={14} /></button>
                       <button className="xdel" aria-label="Eliminar deuda" onClick={async () => { if (!window.confirm(`¿Eliminar la deuda ${d.name}? También se borra su recordatorio de pago.`)) return; await deleteDebt(d.id); void reload(); }}><Trash2 size={14} /></button>
                     </div>
                     <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(Number(d.balance), d.currency)}</div>
@@ -410,8 +420,9 @@ export function FinanzasPage() {
                       <span style={{ width: 34, height: 34, borderRadius: 9, background: "var(--accent-wash)", display: "grid", placeItems: "center", color: "var(--accent-ink)" }}><Wallet size={16} /></span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <b style={{ fontSize: 14 }}>{a.name}</b>
-                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{a.bank_name ?? a.account_type}</div>
+                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{[ACCOUNT_TYPE_LABELS[a.account_type] ?? a.account_type, a.bank_name].filter(Boolean).join(", ")}</div>
                       </div>
+                      <button className="xdel" aria-label="Editar cuenta" title="Editar" onClick={() => setEditAccount(a)}><Pencil size={14} /></button>
                       <button className="xdel" aria-label="Eliminar cuenta" onClick={async () => { if (!window.confirm(`¿Eliminar la cuenta ${a.name}? Sus transacciones quedarán sin cuenta asociada.`)) return; await deleteAccount(a.id); void reload(); }}><Trash2 size={14} /></button>
                     </div>
                     <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 21, fontWeight: 500 }}>{fmtMoney(Number(a.balance), a.currency)}</div>
@@ -457,8 +468,10 @@ export function FinanzasPage() {
           onClose={() => { setModal(null); setEditTx(null); }}
           onSaved={() => { setModal(null); setEditTx(null); void reload(); }} />
       )}
-      {modal === "account" && (
-        <AccountModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      {(modal === "account" || editAccount) && (
+        <AccountModal key={editAccount?.id ?? "nueva"} edit={editAccount}
+          onClose={() => { setModal(null); setEditAccount(null); }}
+          onSaved={() => { setModal(null); setEditAccount(null); void reload(); }} />
       )}
       {modal === "category" && (
         <CategoryModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
@@ -474,11 +487,15 @@ export function FinanzasPage() {
         <ContributeModal goal={contributeGoal} currency={currency} onClose={() => setContributeGoal(null)}
           onSaved={() => { setContributeGoal(null); void reload(); }} />
       )}
-      {modal === "debt" && (
-        <DebtModal currency={defaultCurrency} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      {(modal === "debt" || editDebt) && (
+        <DebtModal key={editDebt?.id ?? "nueva"} currency={defaultCurrency} edit={editDebt}
+          onClose={() => { setModal(null); setEditDebt(null); }}
+          onSaved={() => { setModal(null); setEditDebt(null); void reload(); }} />
       )}
-      {modal === "card" && (
-        <CardModal currency={defaultCurrency} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      {(modal === "card" || editCard) && (
+        <CardModal key={editCard?.id ?? "nueva"} currency={defaultCurrency} edit={editCard}
+          onClose={() => { setModal(null); setEditCard(null); }}
+          onSaved={() => { setModal(null); setEditCard(null); void reload(); }} />
       )}
       {modal === "reminder" && (
         <ReminderModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
@@ -673,28 +690,30 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
   );
 }
 
-function DebtModal({ currency, onClose, onSaved }: { currency: string; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [institution, setInstitution] = useState("");
-  const [balance, setBalance] = useState("");
-  const [rate, setRate] = useState("");
-  const [minPay, setMinPay] = useState("");
-  const [dueDate, setDueDate] = useState("");
+function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edit?: Debt | null; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(edit?.name ?? "");
+  const [institution, setInstitution] = useState(edit?.institution ?? "");
+  const [balance, setBalance] = useState(edit ? String(edit.balance) : "");
+  const [rate, setRate] = useState(edit?.interest_rate != null ? String(edit.interest_rate) : "");
+  const [minPay, setMinPay] = useState(edit?.min_payment != null ? String(edit.min_payment) : "");
+  const [dueDate, setDueDate] = useState(edit?.due_date ?? "");
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addDebt({
+    const payload = {
       name, institution: institution || null, balance: Number(balance || 0),
       interest_rate: rate ? Number(rate) : null, min_payment: minPay ? Number(minPay) : null,
-      due_date: dueDate || null, currency,
-    });
+      due_date: dueDate || null, currency: edit?.currency ?? currency,
+    };
+    if (edit) await updateDebt(edit.id, payload);
+    else await addDebt(payload);
     onSaved();
   }
 
   return (
-    <Modal title="Agregar deuda" onClose={onClose}>
+    <Modal title={edit ? "Editar deuda" : "Agregar deuda"} onClose={onClose}>
       <form onSubmit={save}>
         <div className="field"><label>Nombre</label>
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Crédito de consumo" autoFocus /></div>
@@ -719,29 +738,32 @@ function DebtModal({ currency, onClose, onSaved }: { currency: string; onClose: 
   );
 }
 
-function CardModal({ currency, onClose, onSaved }: { currency: string; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState("");
-  const [bank, setBank] = useState("");
-  const [lastFour, setLastFour] = useState("");
-  const [limit, setLimit] = useState("");
-  const [balance, setBalance] = useState("");
-  const [minPay, setMinPay] = useState("");
-  const [dueDate, setDueDate] = useState("");
+function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edit?: CreditCard | null; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(edit?.name ?? "");
+  const [bank, setBank] = useState(edit?.bank ?? "");
+  const [lastFour, setLastFour] = useState(edit?.last_four ?? "");
+  const [limit, setLimit] = useState(edit?.credit_limit != null ? String(edit.credit_limit) : "");
+  const [balance, setBalance] = useState(edit ? String(edit.balance) : "");
+  const [minPay, setMinPay] = useState(edit?.min_payment != null ? String(edit.min_payment) : "");
+  const [dueDate, setDueDate] = useState(edit?.due_date ?? "");
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addCard({
+    const payload = {
       name, bank: bank || null, last_four: lastFour || null,
       credit_limit: limit ? Number(limit) : null, balance: Number(balance || 0),
-      min_payment: minPay ? Number(minPay) : null, due_date: dueDate || null, currency,
-    });
+      min_payment: minPay ? Number(minPay) : null, due_date: dueDate || null,
+      currency: edit?.currency ?? currency,
+    };
+    if (edit) await updateCard(edit.id, payload);
+    else await addCard(payload);
     onSaved();
   }
 
   return (
-    <Modal title="Agregar tarjeta de crédito" onClose={onClose}>
+    <Modal title={edit ? "Editar tarjeta de crédito" : "Agregar tarjeta de crédito"} onClose={onClose}>
       <form onSubmit={save}>
         <div className="field"><label>Nombre</label>
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Visa" autoFocus /></div>
@@ -1042,24 +1064,26 @@ function TxModal({ categories, accounts, edit, onClose, onSaved }: {
   );
 }
 
-function AccountModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClose: () => void; onSaved: () => void }) {
   const { currency: defaultCurrency } = useSettings();
-  const [name, setName] = useState("");
-  const [bank, setBank] = useState("");
-  const [type, setType] = useState("Checking");
-  const [balance, setBalance] = useState("");
-  const [currency, setCurrency] = useState(defaultCurrency);
+  const [name, setName] = useState(edit?.name ?? "");
+  const [bank, setBank] = useState(edit?.bank_name ?? "");
+  const [type, setType] = useState(edit?.account_type ?? "Checking");
+  const [balance, setBalance] = useState(edit ? String(edit.balance) : "");
+  const [currency, setCurrency] = useState(edit?.currency ?? defaultCurrency);
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addAccount({ name, bank_name: bank || null, account_type: type, balance: Number(balance || 0), currency });
+    const payload = { name, bank_name: bank || null, account_type: type, balance: Number(balance || 0), currency };
+    if (edit) await updateAccount(edit.id, payload);
+    else await addAccount(payload);
     onSaved();
   }
 
   return (
-    <Modal title="Agregar cuenta" onClose={onClose}>
+    <Modal title={edit ? "Editar cuenta" : "Agregar cuenta"} onClose={onClose}>
       <form onSubmit={save}>
         <div className="field"><label>Nombre</label>
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Cuenta corriente" autoFocus /></div>
@@ -1068,17 +1092,19 @@ function AccountModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         <div className="frow">
           <div className="field"><label>Tipo</label>
             <select value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="Checking">Corriente</option>
-              <option value="Savings">Ahorro</option>
-              <option value="Cash">Efectivo</option>
-              <option value="Investment">Inversión</option>
+              {ACCOUNT_TYPES.map((t) => <option key={t} value={t}>{ACCOUNT_TYPE_LABELS[t]}</option>)}
             </select></div>
           <div className="field"><label>Moneda</label>
             <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
               {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
             </select></div>
         </div>
-        <div className="field"><label>Saldo inicial</label>
+        {type === "Credit Card" && (
+          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+            Con la tarjeta como cuenta puedes pagar con ella (sus gastos dejan el saldo en negativo) y recibir transferencias cuando la pagas. En Deudas y tarjetas puedes llevar además su cupo y fecha de pago.
+          </p>
+        )}
+        <div className="field"><label>{edit ? "Saldo" : "Saldo inicial"}</label>
           <input type="number" step="any" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0" /></div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>

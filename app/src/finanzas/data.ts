@@ -58,6 +58,11 @@ export async function addAccount(a: Omit<Account, "id">): Promise<void> {
   check(error);
 }
 
+export async function updateAccount(id: string, a: Omit<Account, "id">): Promise<void> {
+  const { error } = await sb().from("accounts").update(a).eq("id", id);
+  check(error);
+}
+
 export async function deleteAccount(id: string): Promise<void> {
   const { error } = await sb().from("accounts").delete().eq("id", id);
   check(error);
@@ -160,6 +165,38 @@ export async function addDebt(d: {
   }
 }
 
+/** Mantiene el recordatorio de pago de una deuda o tarjeta al editarla:
+ *  lo actualiza, lo crea si ahora hay fecha, o lo borra si la fecha se quitó. */
+async function syncReminderPago(
+  sourceId: string,
+  category: "debt" | "creditCard",
+  title: string,
+  amount: number | null,
+  dueDate: string | null,
+): Promise<void> {
+  const { data } = await sb().from("reminders").select("id").eq("source_id", sourceId).limit(1);
+  const existente = data?.[0];
+  if (dueDate) {
+    if (existente) {
+      await sb().from("reminders").update({ title, amount, date: dueDate }).eq("id", existente.id);
+    } else {
+      await addReminder({ title, amount, date: dueDate, recurrence: "monthly", category, source_id: sourceId });
+    }
+  } else if (existente) {
+    await sb().from("reminders").delete().eq("id", existente.id);
+  }
+}
+
+export async function updateDebt(id: string, d: {
+  name: string; institution: string | null; balance: number;
+  interest_rate: number | null; min_payment: number | null;
+  due_date: string | null; currency: string;
+}): Promise<void> {
+  const { error } = await sb().from("debts").update(d).eq("id", id);
+  check(error);
+  await syncReminderPago(id, "debt", `Pago de ${d.name}`, d.min_payment, d.due_date);
+}
+
 export async function deleteDebt(id: string): Promise<void> {
   await sb().from("reminders").delete().eq("source_id", id);
   const { error } = await sb().from("debts").delete().eq("id", id);
@@ -194,6 +231,16 @@ export async function addCard(c: {
       source_id: data.id,
     });
   }
+}
+
+export async function updateCard(id: string, c: {
+  name: string; bank: string | null; last_four: string | null;
+  credit_limit: number | null; balance: number; min_payment: number | null;
+  due_date: string | null; currency: string;
+}): Promise<void> {
+  const { error } = await sb().from("credit_cards").update(c).eq("id", id);
+  check(error);
+  await syncReminderPago(id, "creditCard", `Pago de la tarjeta ${c.name}`, c.min_payment, c.due_date);
 }
 
 export async function deleteCard(id: string): Promise<void> {
