@@ -27,6 +27,7 @@ import {
   listTransactions,
   seedCategoriesIfEmpty,
   updateCategoryBudget,
+  updateTransaction,
 } from "./data";
 import { StatementImportError, parseStatementFile, type StatementImportRow } from "./statementImport";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
@@ -61,6 +62,7 @@ export function FinanzasPage() {
   const [modal, setModal] = useState<"tx" | "account" | "category" | "goal" | "debt" | "card" | "reminder" | "import" | null>(null);
   const [budgetCat, setBudgetCat] = useState<Category | null>(null);
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
+  const [editTx, setEditTx] = useState<Tx | null>(null);
   const { currency: defaultCurrency } = useSettings();
 
   const reload = useCallback(async () => {
@@ -247,6 +249,7 @@ export function FinanzasPage() {
               {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
               {txs.map((t) => (
                 <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency}
+                  onEdit={() => setEditTx(t)}
                   onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
               ))}
             </div>
@@ -449,9 +452,10 @@ export function FinanzasPage() {
         </>
       )}
 
-      {modal === "tx" && (
-        <TxModal categories={categories} accounts={accounts} onClose={() => setModal(null)}
-          onSaved={() => { setModal(null); void reload(); }} />
+      {(modal === "tx" || editTx) && (
+        <TxModal key={editTx?.id ?? "nuevo"} categories={categories} accounts={accounts} edit={editTx}
+          onClose={() => { setModal(null); setEditTx(null); }}
+          onSaved={() => { setModal(null); setEditTx(null); void reload(); }} />
       )}
       {modal === "account" && (
         <AccountModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
@@ -912,12 +916,13 @@ function Head() {
   );
 }
 
-function TxRow({ t, catById, accById, currency, onDelete }: {
+function TxRow({ t, catById, accById, currency, onDelete, onEdit }: {
   t: Tx;
   catById: Map<string, Category>;
   accById: Map<string, Account>;
   currency: string;
   onDelete?: () => void;
+  onEdit?: () => void;
 }) {
   const cat = t.category_id ? catById.get(t.category_id) : undefined;
   const acc = t.account_id ? accById.get(t.account_id) : undefined;
@@ -930,23 +935,25 @@ function TxRow({ t, catById, accById, currency, onDelete }: {
         <small>{t.date}, {cat?.name ?? "sin categoría"}{acc ? `, ${acc.name}` : ""}{t.source !== "manual" ? `, ${t.source}` : ""}</small>
       </div>
       <b className={"tnum txamt " + (neg ? "neg" : "pos")}>{neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
+      {onEdit && <button className="xdel" aria-label="Editar" title="Editar" onClick={onEdit}><Pencil size={14} /></button>}
       {onDelete && <button className="xdel" aria-label="Eliminar" onClick={onDelete}><Trash2 size={14} /></button>}
     </div>
   );
 }
 
-function TxModal({ categories, accounts, onClose, onSaved }: {
+function TxModal({ categories, accounts, edit, onClose, onSaved }: {
   categories: Category[];
   accounts: Account[];
+  edit?: Tx | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [type, setType] = useState<Tx["type"]>("expense");
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
-  const [date, setDate] = useState(hoyLocal());
+  const [type, setType] = useState<Tx["type"]>(edit?.type ?? "expense");
+  const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
+  const [description, setDescription] = useState(edit?.description ?? "");
+  const [categoryId, setCategoryId] = useState(edit?.category_id ?? "");
+  const [accountId, setAccountId] = useState(edit ? (edit.account_id ?? "") : (accounts[0]?.id ?? ""));
+  const [date, setDate] = useState(edit?.date ?? hoyLocal());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -957,14 +964,16 @@ function TxModal({ categories, accounts, onClose, onSaved }: {
     setBusy(true);
     setErr(null);
     try {
-      await addTransaction({
+      const payload = {
         date,
         amount: Math.abs(Number(amount)),
         type,
         description,
         category_id: categoryId || null,
         account_id: accountId || null,
-      });
+      };
+      if (edit) await updateTransaction(edit, payload);
+      else await addTransaction(payload);
       onSaved();
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
@@ -973,7 +982,7 @@ function TxModal({ categories, accounts, onClose, onSaved }: {
   }
 
   return (
-    <Modal title="Registrar movimiento" onClose={onClose}>
+    <Modal title={edit ? "Editar movimiento" : "Registrar movimiento"} onClose={onClose}>
       <div className="seg">
         <button className={"segbtn" + (type === "expense" ? " active" : "")} onClick={() => setType("expense")} type="button">Gasto</button>
         <button className={"segbtn" + (type === "income" ? " active" : "")} onClick={() => setType("income")} type="button">Ingreso</button>

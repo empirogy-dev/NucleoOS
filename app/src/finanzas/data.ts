@@ -310,6 +310,36 @@ export async function importStatementRows(
   return { imported: toInsert.length, skipped };
 }
 
+/** Ajusta el saldo de una cuenta en delta (positivo o negativo). */
+async function ajustarSaldo(accountId: string | null, delta: number): Promise<void> {
+  if (!accountId || delta === 0) return;
+  const { data } = await sb().from("accounts").select("balance").eq("id", accountId).single();
+  if (data) {
+    await sb().from("accounts").update({ balance: Number(data.balance) + delta }).eq("id", accountId);
+  }
+}
+
+/** Edita una transacción (también las importadas de cartola) y corrige los saldos. */
+export async function updateTransaction(oldTx: Tx, t: {
+  date: string;
+  amount: number;
+  type: Tx["type"];
+  description: string;
+  category_id: string | null;
+  account_id: string | null;
+}): Promise<void> {
+  const { error } = await sb().from("transactions").update(t).eq("id", oldTx.id);
+  check(error);
+  const efectoViejo = oldTx.type === "income" ? Number(oldTx.amount) : -Number(oldTx.amount);
+  const efectoNuevo = t.type === "income" ? t.amount : -t.amount;
+  if (oldTx.account_id === t.account_id) {
+    await ajustarSaldo(t.account_id, efectoNuevo - efectoViejo);
+  } else {
+    await ajustarSaldo(oldTx.account_id, -efectoViejo);
+    await ajustarSaldo(t.account_id, efectoNuevo);
+  }
+}
+
 export async function deleteTransaction(t: Tx): Promise<void> {
   const { error } = await sb().from("transactions").delete().eq("id", t.id);
   check(error);
