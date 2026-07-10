@@ -29,7 +29,7 @@ export interface ExerciseLog {
   minutes: number;
 }
 
-export const EXERCISE_KINDS = ["Caminata", "Yoga", "Gimnasio", "Correr", "Bicicleta", "Baile", "Otro"] as const;
+export const EXERCISE_KINDS = ["Caminata", "Yoga", "Gimnasio", "Correr", "Bicicleta", "Baile", "Natación", "Fútbol", "Tenis", "Pilates", "Escalada", "Patinaje", "Boxeo", "Otro"] as const;
 
 function check(error: { code?: string; message: string } | null) {
   if (!error) return;
@@ -170,3 +170,13 @@ export async function deleteExercise(id: string): Promise<void> {
   const { error } = await sb().from("exercise_logs").delete().eq("id", id);
   check(error);
 }
+
+/** Hábitos sugeridos para estar en paz (pedido de la usuaria). */
+export const HABITOS_DE_PAZ: Array<{ name: string; icon: string; dias: number }> = [
+  { name: "Meditar 10 minutos", icon: "🧘", dias: 28 },
+  { name: "Caminata consciente", icon: "🚶", dias: 28 },
+  { name: "Escribir tres gratitudes", icon: "🙏", dias: 21 },
+  { name: "Sin pantallas antes de dormir", icon: "📵", dias: 28 },
+  { name: "Tomar dos litros de agua", icon: "💧", dias: 28 },
+  { name: "Respiración consciente al despertar", icon: "🫁", dias: 21 },
+];

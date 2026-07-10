@@ -1,5 +1,6 @@
 import { AvancesArea } from "../components/AvancesArea";
 import { IconField } from "../components/IconField";
+import { BienestarTab } from "./BienestarTab";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { Moon, Plus, Repeat, Trash2 } from "lucide-react";
@@ -12,6 +13,7 @@ import {
   deleteHabit,
   listExercise,
   listHabitLogs,
+  HABITOS_DE_PAZ,
   listHabits,
   listRoutine,
   saveRoutine,
@@ -39,6 +41,7 @@ export function HabitosPage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [habitModal, setHabitModal] = useState(false);
+  const [tabH, setTabH] = useState<"habitos" | "bienestar">("habitos");
 
   const hoy = hoyLocal();
 
@@ -93,8 +96,15 @@ export function HabitosPage() {
     <div className="page">
       <Head />
 
+      <div className="ftabs">
+        <button className={"ftab" + (tabH === "habitos" ? " active" : "")} onClick={() => setTabH("habitos")}>Hábitos</button>
+        <button className={"ftab" + (tabH === "bienestar" ? " active" : "")} onClick={() => setTabH("bienestar")}>Bienestar</button>
+      </div>
+
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
-      {loading ? (
+      {tabH === "bienestar" ? (
+        <BienestarTab />
+      ) : loading ? (
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
       ) : (
         <>
@@ -158,6 +168,27 @@ export function HabitosPage() {
               <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setHabitModal(true)}>
                 <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo hábito
               </button>
+              {(() => {
+                const existentes = new Set(habits.map((x) => x.name.toLowerCase()));
+                const sugeridos = HABITOS_DE_PAZ.filter((x) => !existentes.has(x.name.toLowerCase()));
+                if (sugeridos.length === 0) return null;
+                return (
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>
+                      Sugeridos para tu paz
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {sugeridos.map((x) => (
+                        <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
+                          title={`Crear el hábito ${x.name} (${x.dias} días)`}
+                          onClick={async () => { await addHabit(x.name, x.icon, x.dias); void reload(); }}>
+                          {x.icon} {x.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
