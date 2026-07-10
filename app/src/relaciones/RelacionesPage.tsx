@@ -14,7 +14,11 @@ import {
   listRelLogs,
   listRelationships,
   needsReconnect,
+  TIPO_LABELS,
+  accionDelDia,
+  accionesPara,
   tipDelDia,
+  tipoDeVinculo,
   type RelLog,
   type Relationship,
 } from "./data";
@@ -116,11 +120,21 @@ export function RelacionesPage() {
                 <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--accent-ink)", fontWeight: 600, marginBottom: 6 }}>Tip de hoy</div>
                 {tipDelDia()}
               </div>
-              {TIPS.filter((t) => t !== tipDelDia()).slice(0, 4).map((t, i) => (
-                <p key={i} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5, padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>{t}</p>
-              ))}
+              {(() => {
+                const tipos = [...new Set(rels.map((r) => tipoDeVinculo(r.relation)))];
+                if (tipos.length === 0) {
+                  return TIPS.filter((t) => t !== tipDelDia()).slice(0, 4).map((t, i) => (
+                    <p key={i} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5, padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>{t}</p>
+                  ));
+                }
+                return tipos.map((tipo) => (
+                  <p key={tipo} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5, padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>
+                    <b style={{ color: "var(--ink)" }}>Para {TIPO_LABELS[tipo]}:</b> {accionDelDia(tipo)}
+                  </p>
+                ));
+              })()}
               <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-                En la fase del coach, estos tips serán personalizados según cada vínculo.
+                Abre a una persona y verás ideas hechas a su medida, con el botón 🔀 para pedir otras.
               </p>
             </div>
           </div>
@@ -147,6 +161,7 @@ function Head() {
 function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
   const [nuevo, setNuevo] = useState("");
+  const [giro, setGiro] = useState(0);
   const dias = daysSinceContact(r.id, logs);
   const reconectar = needsReconnect(r, logs);
   const cumple = daysToBirthday(r.birthday);
@@ -188,6 +203,18 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600 }}>
+                Ideas para {r.name}
+              </span>
+              <button className="xdel" aria-label="Otras ideas" title="Otras ideas" style={{ width: 22, height: 22, fontSize: 12 }}
+                onClick={() => setGiro(giro + 1)}>🔀</button>
+            </div>
+            {accionesPara(r, 3, giro).map((idea) => (
+              <p key={idea} style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, padding: "3px 0" }}>💡 {idea}</p>
+            ))}
+          </div>
           <form onSubmit={registrar} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             <input className="input-inline" value={nuevo} onChange={(e) => setNuevo(e.target.value)}
               placeholder="¿De qué hablaron? Por ejemplo: la llamé, me contó de su viaje." />

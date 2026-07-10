@@ -135,3 +135,79 @@ export function daysToBirthday(birthday: string | null): number | null {
   if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);
   return Math.round((next.getTime() - today.getTime()) / 86400000);
 }
+
+// ---------- Acciones por tipo de vínculo (bloque D del reporte) ----------
+export type TipoVinculo = "pareja" | "familia" | "amistad" | "colega" | "otro";
+
+export const TIPO_LABELS: Record<TipoVinculo, string> = {
+  pareja: "tu pareja",
+  familia: "tu familia",
+  amistad: "tus amistades",
+  colega: "tus colegas",
+  otro: "tus vínculos",
+};
+
+/** Detecta el tipo desde el texto libre de la relación (mamá, amiga, pololo...). */
+export function tipoDeVinculo(relation: string | null): TipoVinculo {
+  const r = (relation ?? "").toLowerCase();
+  if (/(pareja|novi|espos|marido|mujer|polol)/.test(r)) return "pareja";
+  if (/(mam|pap|madre|padre|abuel|herman|hij|ti[oa]|tí[oa]|prim|famil|suegr|cuñad)/.test(r)) return "familia";
+  if (/(amig|amist|mejor)/.test(r)) return "amistad";
+  if (/(coleg|jef[ea]|trabajo|soci[oa]|compañer|mentor)/.test(r)) return "colega";
+  return "otro";
+}
+
+/** Ideas concretas por tipo de vínculo, con el espíritu de los ejemplos de la usuaria. */
+export const ACCIONES: Record<TipoVinculo, string[]> = {
+  pareja: [
+    "Invítale a una cita sorpresa esta semana.",
+    "Un regalo chico sin motivo, solo porque sí.",
+    "Dile una cosa concreta que aprecias de él o ella.",
+    "Planeen una escapada, aunque sea de un día.",
+    "Cocinen algo rico juntos, sin apuro.",
+    "Pregúntale cómo está de verdad, y escucha sin arreglar nada.",
+  ],
+  familia: [
+    "Invítale un café y conversen sin apuro.",
+    "Tiempo de calidad sin celulares de por medio.",
+    "Págale el celular o dale un gustito inesperado.",
+    "Sáquense una foto juntos, de esas que quedan.",
+    "Pídele que te cuente una historia de su juventud.",
+    "Llámale solo para saludar, sin motivo.",
+  ],
+  amistad: [
+    "Propón un panorama concreto, con fecha incluida.",
+    "Mándale un recuerdo o un meme de los suyos.",
+    "Pregúntale cómo salió eso que te contó la última vez.",
+    "Agenden una llamada larga como las de antes.",
+    "Preséntale a alguien que le haga bien conocer.",
+    "Dile por qué valoras su amistad, así tal cual.",
+  ],
+  colega: [
+    "Reconoce su trabajo delante de otras personas.",
+    "Invítale un café fuera del contexto de trabajo.",
+    "Pídele consejo en algo que domina.",
+    "Compártele algo útil que viste y te acordaste de él o ella.",
+  ],
+  otro: [
+    "Manda un mensaje corto: me acordé de ti.",
+    "Propón juntarse pronto, con fecha concreta.",
+    "Pregúntale cómo va eso que te contó.",
+    "Dale las gracias por algo específico.",
+  ],
+};
+
+/** Ideas para una persona: rotan con el día y se pueden barajar. */
+export function accionesPara(r: Relationship, cantidad = 3, giro = 0): string[] {
+  const lista = ACCIONES[tipoDeVinculo(r.relation)];
+  const dia = Math.floor(Date.now() / 86400000);
+  const inicio = (dia + r.name.length + giro * cantidad) % lista.length;
+  const n = Math.min(cantidad, lista.length);
+  return Array.from({ length: n }, (_, i) => lista[(inicio + i) % lista.length]);
+}
+
+/** Acción del día para un tipo de vínculo (panel lateral). */
+export function accionDelDia(tipo: TipoVinculo): string {
+  const dia = Math.floor(Date.now() / 86400000);
+  return ACCIONES[tipo][dia % ACCIONES[tipo].length];
+}
