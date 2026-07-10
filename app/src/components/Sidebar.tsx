@@ -17,6 +17,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         </div>
       </div>
       <nav className="nav">
+        <div className="nav-label">Panorama</div>
         <NavLink to="/" end className={({ isActive }) => "navitem" + (isActive ? " active" : "")} onClick={onNavigate}>
           <Home className="ico" size={18} strokeWidth={1.9} />
           Inicio
@@ -25,6 +26,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
           <CalendarDays className="ico" size={18} strokeWidth={1.9} />
           Calendario
         </NavLink>
+        <div className="nav-label">Áreas de vida</div>
         {AREAS.map((a) => {
           const Icon = a.icon;
           return (
