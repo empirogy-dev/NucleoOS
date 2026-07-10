@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Menu, Palette } from "lucide-react";
 import { Sidebar } from "./Sidebar";
+import { NotifBell } from "./NotifBell";
 import { ThemePicker } from "./ThemePicker";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
@@ -28,6 +29,7 @@ export function Layout() {
           </button>
           <span className="crumb">NucleoOS: {current}</span>
           <span className="sp" />
+          <NotifBell />
           <button className="iconbtn" aria-label="Cambiar tema" title="Cambiar tema" onClick={() => setPickerOpen(true)}>
             <Palette size={18} />
           </button>

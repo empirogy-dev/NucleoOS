@@ -78,6 +78,14 @@ export function Ajustes() {
         </div>
 
         <div className="card pad">
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Avisos del navegador</h3>
+          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+            Una vez al día, si hay algo urgente (un pago que vence, una cita), el navegador te avisa aunque tengas otra pestaña abierta.
+          </p>
+          <NotifPermiso />
+        </div>
+
+        <div className="card pad">
           <h3 style={{ fontSize: 15, marginBottom: 4 }}>Cuenta</h3>
           <p style={{ fontSize: 13, color: "var(--muted)" }}>
             Sesión iniciada como <b style={{ color: "var(--ink)" }}>{session?.user?.email}</b>
@@ -120,5 +128,19 @@ function NameCard() {
       {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
     </div>
+  );
+}
+
+function NotifPermiso() {
+  const soporta = "Notification" in window;
+  const [estado, setEstado] = useState(soporta ? Notification.permission : "unsupported");
+
+  if (!soporta) return <p style={{ fontSize: 12.5, color: "var(--muted)" }}>Este navegador no soporta avisos.</p>;
+  if (estado === "granted") return <span className="chip">✓ Avisos activados</span>;
+  if (estado === "denied") return <p style={{ fontSize: 12.5, color: "var(--muted)" }}>Los bloqueaste en el navegador. Puedes reactivarlos desde el candado de la barra de direcciones.</p>;
+  return (
+    <button className="btn ghost" onClick={async () => setEstado(await Notification.requestPermission())}>
+      Activar avisos
+    </button>
   );
 }
