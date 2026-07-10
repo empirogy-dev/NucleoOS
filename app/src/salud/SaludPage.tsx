@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import { daysUntil, dueLabel } from "../finanzas/types";
+import { deleteExamFile, listExamFiles, openExamFile, uploadExamFile, type ExamFile } from "./files";
 import {
   BLOOD_TYPES,
+  DIETAS,
   SOBRIETY_MILESTONES,
   addAppointment,
   addExam,
@@ -50,7 +52,7 @@ export function SaludPage() {
       const [p, m, c, e, s] = await Promise.all([
         getHealthProfile(), listMedications(), listAppointments(), listExams(), listSobriety(),
       ]);
-      setProfile(p ?? { blood_type: null, allergies: null, conditions: null, surgeries: null });
+      setProfile(p ?? { blood_type: null, allergies: null, conditions: null, surgeries: null, weight_kg: null, height_cm: null, diet: null, eye_color: null });
       setMeds(m);
       setCitas(c);
       setExams(e);
@@ -178,25 +180,7 @@ export function SaludPage() {
                   </p>
                 )}
                 {exams.map((e) => (
-                  <div className="txrow" key={e.id}>
-                    <span className="txicon">🧪</span>
-                    <div className="txmeta">
-                      <b>{e.name}</b>
-                      <small>
-                        {e.result ? `resultado: ${e.result}` : e.due_date ? `pendiente, para el ${e.due_date}` : "pendiente"}
-                      </small>
-                    </div>
-                    {!e.result && e.due_date && (() => {
-                      const lbl = dueLabel(daysUntil(e.due_date));
-                      return <span className="chip" style={{
-                        background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
-                        color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
-                      }}>{lbl.text}</span>;
-                    })()}
-                    <button className="xdel" aria-label="Eliminar examen" onClick={async () => { if (!window.confirm(`¿Eliminar el examen ${e.name}?`)) return; await deleteExam(e.id); void reload(); }}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                  <ExamRow key={e.id} exam={e} onChanged={() => void reload()} />
                 ))}
                 <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setModal("exam")}>
                   <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo examen
@@ -258,18 +242,34 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
   const [allergies, setAllergies] = useState(profile.allergies ?? "");
   const [conditions, setConditions] = useState(profile.conditions ?? "");
   const [surgeries, setSurgeries] = useState(profile.surgeries ?? "");
+  const [peso, setPeso] = useState(profile.weight_kg != null ? String(profile.weight_kg) : "");
+  const [estatura, setEstatura] = useState(profile.height_cm != null ? String(profile.height_cm) : "");
+  const [dieta, setDieta] = useState(profile.diet ?? "");
+  const [ojos, setOjos] = useState(profile.eye_color ?? "");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await saveHealthProfile({
-      blood_type: blood || null,
-      allergies: allergies || null,
-      conditions: conditions || null,
-      surgeries: surgeries || null,
-    });
+    setErr(null);
+    try {
+      await saveHealthProfile({
+        blood_type: blood || null,
+        allergies: allergies || null,
+        conditions: conditions || null,
+        surgeries: surgeries || null,
+        weight_kg: peso ? Number(peso) : null,
+        height_cm: estatura ? Number(estatura) : null,
+        diet: dieta || null,
+        eye_color: ojos || null,
+      });
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+      return;
+    }
     setBusy(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -291,6 +291,22 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
           <input value={conditions} onChange={(e) => setConditions(e.target.value)} placeholder="ADHD, hipotiroidismo…" /></div>
         <div className="field"><label>Operaciones</label>
           <input value={surgeries} onChange={(e) => setSurgeries(e.target.value)} placeholder="Apendicectomía (2019)…" /></div>
+        <div className="frow">
+          <div className="field"><label>Peso (kg)</label>
+            <input type="number" min="0" step="0.1" value={peso} onChange={(e) => setPeso(e.target.value)} placeholder="62" /></div>
+          <div className="field"><label>Estatura (cm)</label>
+            <input type="number" min="0" step="1" value={estatura} onChange={(e) => setEstatura(e.target.value)} placeholder="165" /></div>
+        </div>
+        <div className="frow">
+          <div className="field"><label>Alimentación</label>
+            <select value={dieta} onChange={(e) => setDieta(e.target.value)}>
+              <option value="">Sin definir</option>
+              {DIETAS.map((d) => <option key={d}>{d}</option>)}
+            </select></div>
+          <div className="field"><label>Color de ojos</label>
+            <input value={ojos} onChange={(e) => setOjos(e.target.value)} placeholder="café, verdes…" /></div>
+        </div>
+        {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 8 }}>{err}</p>}
         <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar ficha"}</button>
         {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardada</span>}
       </form>
@@ -422,6 +438,86 @@ function ModalShell({ title, children, onClose }: { title: string; children: Rea
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
         <h3 style={{ marginBottom: 14 }}>{title}</h3>
         {children}
+      </div>
+    </div>
+  );
+}
+
+function ExamRow({ exam, onChanged }: { exam: HealthExam; onChanged: () => void }) {
+  const [archivos, setArchivos] = useState<ExamFile[]>([]);
+  const [bucketFalta, setBucketFalta] = useState(false);
+  const [subiendo, setSubiendo] = useState(false);
+
+  const cargar = useCallback(async () => {
+    try {
+      setArchivos(await listExamFiles(exam.id));
+      setBucketFalta(false);
+    } catch (e) {
+      if (e instanceof Error && e.message === "BUCKET_MISSING") setBucketFalta(true);
+    }
+  }, [exam.id]);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setSubiendo(true);
+    try {
+      await uploadExamFile(exam.id, file);
+      await cargar();
+    } catch (ex) {
+      if (ex instanceof Error && ex.message === "BUCKET_MISSING") setBucketFalta(true);
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  const lbl = !exam.result && exam.due_date ? dueLabel(daysUntil(exam.due_date)) : null;
+
+  return (
+    <div style={{ borderBottom: "1px solid var(--line-soft)", padding: "8px 0" }}>
+      <div className="txrow" style={{ borderBottom: "none", padding: "2px 0" }}>
+        <span className="txicon">🧪</span>
+        <div className="txmeta">
+          <b>{exam.name}</b>
+          <small>{exam.result ? `resultado: ${exam.result}` : exam.due_date ? `pendiente, para el ${exam.due_date}` : "pendiente"}</small>
+        </div>
+        {lbl && (
+          <span className="chip" style={{
+            background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
+            color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
+          }}>{lbl.text}</span>
+        )}
+        <button className="xdel" aria-label="Eliminar examen" onClick={async () => { if (!window.confirm(`¿Eliminar el examen ${exam.name}? También se pierden sus archivos adjuntos.`)) return; await deleteExam(exam.id); onChanged(); }}>
+          <Trash2 size={14} />
+        </button>
+      </div>
+      <div style={{ paddingLeft: 44 }}>
+        {bucketFalta ? (
+          <p style={{ fontSize: 11.5, color: "var(--muted)" }}>
+            Para adjuntar el PDF del laboratorio, corre <code>supabase/migrations/0015_salud_plus.sql</code>.
+          </p>
+        ) : (
+          <>
+            {archivos.map((a) => (
+              <div key={a.path} style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 0" }}>
+                <button className="linklike" style={{ fontSize: 12 }} onClick={() => void openExamFile(a.path)}>📎 {a.name}</button>
+                <button className="xdel" aria-label="Eliminar adjunto" style={{ width: 22, height: 22 }}
+                  onClick={async () => { await deleteExamFile(a.path); void cargar(); }}>
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            ))}
+            <label className="linklike" style={{ fontSize: 11.5, cursor: "pointer", color: "var(--muted)" }}>
+              {subiendo ? "Subiendo…" : "📎 Adjuntar resultado (PDF o foto)"}
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style={{ display: "none" }} onChange={onFile} disabled={subiendo} />
+            </label>
+          </>
+        )}
       </div>
     </div>
   );

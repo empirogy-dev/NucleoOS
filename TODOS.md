@@ -52,10 +52,15 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Tips segmentados por tipo de relación (pareja, mamá, amistad...), no genéricos.
 - [ ] `[Nuevo]` Al abrir una persona, acciones concretas según el vínculo (invitar a salir, llevar a tomar café, regalo sorpresa).
 
-## Bloque E, Salud plus
-- [ ] `[Nuevo]` Ficha: agregar peso, estatura, alimentación (con opciones) y color de ojos.
-- [ ] `[Nuevo]` Exámenes: adjuntar el PDF del laboratorio o una foto, y poder exportarlos.
-- [ ] `[Nuevo]` Tarjetas reordenables por prioridad con arrastrar y soltar.
+## Bloque E, Salud plus (completado el 9 jul 2026)
+- [x] `[Nuevo]` Ficha ampliada: peso, estatura, alimentación con opciones y color de ojos (migración 0015).
+- [x] `[Nuevo]` Exámenes: adjuntar el PDF del laboratorio o una foto, abrirlos y eliminarlos (bucket privado salud).
+- [ ] `[Nuevo]` Tarjetas reordenables con arrastrar y soltar (pendiente, baja prioridad).
+
+## Coach y proyección (pedidos del 9 jul 2026, tarde)
+- [x] `[Nuevo]` Coach v1 en el Inicio: con Gemini, lee tu estado real (visión, metas, hábitos, avances, proyectos, citas, sobriedad, vínculos) y entrega qué va bien, qué necesita atención y dos acciones para hoy.
+- [ ] `[Nuevo]` Visual board: tablero con lo que quieres proyectar a futuro (imágenes mas la visión de vida).
+- [ ] `[Nuevo]` Hábitos y Rutinas: pestaña Bienestar con meditaciones y calendario lunar.
 
 ## Bloque F, Notificaciones
 - [ ] `[Nuevo]` Recordatorios en todo (persona con ADHD: son parte central, no opcionales). Centro de notificaciones mas avisos del navegador.

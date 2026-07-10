@@ -254,3 +254,6 @@ button{font-family:inherit}
 .mes-head b{font-size:13.5px;color:var(--ink)}
 .mes-head small{font-size:11.5px;color:var(--muted)}
 .mes-flecha{color:var(--muted);font-size:11px;width:12px}
+
+/* ================= COACH ================= */
+.coach-msg{font-size:13.5px;line-height:1.6;color:var(--ink-soft);white-space:pre-wrap;background:var(--accent-wash);border-radius:var(--r-md);padding:14px 16px;margin-bottom:12px}

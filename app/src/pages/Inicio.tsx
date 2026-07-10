@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Sparkles } from "lucide-react";
 import { AREAS } from "../areas";
+import { CoachCard } from "../components/CoachCard";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
 import { TablesMissingError, listAccounts, listReminders, listTransactions } from "../finanzas/data";
@@ -122,6 +123,19 @@ export function Inicio() {
     return Math.round(objs.reduce((s, o) => s + objectiveProgress(o), 0) / objs.length);
   }
 
+  const resumenCoach = [
+    lifeVision ? `Visión de vida: "${lifeVision}"` : "Aún no escribe su visión de vida.",
+    objectives.length
+      ? `Metas: ${objectives.length} en total, avance promedio ${globalPct}%, ${metasEnCamino} en camino${objectives.filter((o) => o.status === "en_riesgo").length ? `, en riesgo: ${objectives.filter((o) => o.status === "en_riesgo").map((o) => o.title).slice(0, 2).join(", ")}` : ""}.`
+      : "Todavía no define metas.",
+    `Avances registrados este mes: ${avancesMes}.`,
+    habits.length ? `Hábitos de hoy: ${hechosHoy} de ${habits.length} cumplidos.` : "Sin hábitos creados aún.",
+    projects.filter((p) => p.status === "activo").length ? `Proyectos activos: ${projects.filter((p) => p.status === "activo").map((p) => p.name).slice(0, 3).join(", ")}.` : "",
+    citas.filter((c) => c.date >= hoyLocal()).length ? `Citas de salud próximas: ${citas.filter((c) => c.date >= hoyLocal()).length}.` : "",
+    sobriety[0] ? `Sobriedad: libre de ${sobriety[0].substance} hace ${humanizeDays(daysSince(sobriety[0].start_date))}.` : "",
+    rels.filter((r) => needsReconnect(r, relLogs)).length ? `Vínculos por reconectar: ${rels.filter((r) => needsReconnect(r, relLogs)).map((r) => r.name).slice(0, 3).join(", ")}.` : "",
+  ].filter(Boolean).join("\n");
+
   async function saveVision() {
     setVisionErr(null);
     const err = await updateProfile({ life_vision: visionDraft.trim() });
@@ -182,6 +196,8 @@ export function Inicio() {
         <div className="card stat"><div className="k">Metas en camino</div><div className="v tnum">{metasEnCamino}</div></div>
         <div className="card stat"><div className="k">Hábitos de hoy</div><div className="v tnum">{habReady ? `${hechosHoy} / ${habits.length}` : "…"}</div></div>
       </div>
+
+      <CoachCard resumen={resumenCoach} />
 
       {/* Próximos pagos — siempre visibles (ADHD-friendly) */}
       {reminders.length > 0 && (

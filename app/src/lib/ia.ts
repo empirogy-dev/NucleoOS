@@ -71,3 +71,18 @@ export async function blobToBase64(blob: Blob): Promise<string> {
   }
   return btoa(binary);
 }
+
+const PROMPT_COACH =
+  "Eres el coach personal de NucleoOS, un sistema de vida. Hablas en español cercano, cálido y directo, " +
+  "sin guiones largos, con comas y puntos. Con el estado real que te paso, entrega: " +
+  "1) una observación honesta de lo que va bien, 2) una alerta amable de lo que necesita atención, " +
+  "3) dos acciones pequeñas y concretas para hoy o mañana. Máximo 120 palabras, párrafos cortos, " +
+  "sin listas numeradas ni encabezados.";
+
+/** Consejo del coach a partir del resumen real del usuario. */
+export async function consejoCoach(resumen: string): Promise<string> {
+  return generate([{ text: `${PROMPT_COACH}
+
+Estado actual:
+${resumen}` }]);
+}

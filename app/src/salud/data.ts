@@ -7,7 +7,13 @@ export interface HealthProfile {
   allergies: string | null;
   conditions: string | null;
   surgeries: string | null;
+  weight_kg: number | null;
+  height_cm: number | null;
+  diet: string | null;
+  eye_color: string | null;
 }
+
+export const DIETAS = ["Balanceada", "Vegetariana", "Vegana", "Keto", "Sin gluten", "Sin lactosa", "Otra"] as const;
 
 export interface Medication {
   id: string;
@@ -97,7 +103,7 @@ async function uid(): Promise<string> {
 export async function getHealthProfile(): Promise<HealthProfile | null> {
   const { data, error } = await sb()
     .from("health_profile")
-    .select("blood_type,allergies,conditions,surgeries")
+    .select("*")
     .maybeSingle();
   check(error);
   return data as HealthProfile | null;
@@ -107,6 +113,9 @@ export async function saveHealthProfile(p: HealthProfile): Promise<void> {
   const { error } = await sb()
     .from("health_profile")
     .upsert({ user_id: await uid(), ...p, updated_at: new Date().toISOString() });
+  if (error && /weight_kg|height_cm|diet|eye_color/.test(error.message)) {
+    throw new Error("Falta la migración 0015 en Supabase (supabase/migrations/0015_salud_plus.sql).");
+  }
   check(error);
 }
 
