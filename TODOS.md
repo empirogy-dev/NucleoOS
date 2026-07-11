@@ -132,6 +132,9 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Nutrición por texto: escribir "una lata de atún y un huevo duro" y la IA estima macros igual que la foto, con guardado al día.
 - [x] `[Nuevo]` Movimiento: rutina Espalda feliz y cuadrícula de práctica suave equilibrada (6 tarjetas parejas).
 - [x] `[Nuevo]` Dirección: guía expandible "Cómo se construye una dirección" al estilo Hábitos Atómicos (sueño → decisión → sistema → identidad, más las cuatro leyes), enlazando Visión y las conexiones de hábitos y retos.
+- [x] `[Bug]` Filtros de duración repetitivos en Movimiento eliminados (la duración se elige al abrir cada rutina) y "Todas" eliminado en las prácticas de Mente: se entra directo por vía (Regulación, Mindfulness, Corazón, Mentalidad), sin listas gigantes.
+- [x] `[Nuevo]` Luna plana propia: SVG con colores del tema en vez del emoji 3D del sistema, con orientación del hemisferio norte. Menos emojis en las pestañas de Mente.
+- [x] `[Bug]` Hábitos vuelve a su diseño compacto de dos columnas (el reordenable dejaba espacios muertos con tarjetas de alturas muy distintas).
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 

@@ -1,6 +1,5 @@
 import { AvancesArea } from "../components/AvancesArea";
 import { IconField } from "../components/IconField";
-import { OrdenGrid } from "../components/OrdenGrid";
 import { Link } from "react-router-dom";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
@@ -94,8 +93,7 @@ export function HabitosPage() {
             <div className="card stat"><div className="k">Mejor racha</div><div className="v tnum">{mejorRacha > 0 ? `🔥 ${mejorRacha}` : "0"}</div></div>
           </div>
 
-          <OrdenGrid clave="habitos" bloques={[
-            { id: "checklist", el: (
+          <div className="panelgrid">
             <div className="card panel">
               <h3>Hábitos de hoy</h3>
               {habits.length === 0 && (
@@ -148,25 +146,25 @@ export function HabitosPage() {
                 <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo hábito
               </button>
             </div>
-            ) },
-            ...(sugeridos.length > 0 ? [{ id: "sugeridos", el: (
-              <div className="card panel">
-                <h3>🌿 Sugeridos para tu paz</h3>
-                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-                  Tócalo, elige por cuántos días, y queda listo para trackear.
-                </p>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {sugeridos.map((x) => (
-                    <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
-                      title={`Crear el hábito ${x.name}`}
-                      onClick={() => setHabitModal({ base: x })}>
-                      {x.icon} {x.name}
-                    </button>
-                  ))}
+
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              {sugeridos.length > 0 && (
+                <div className="card panel">
+                  <h3>🌿 Sugeridos para tu paz</h3>
+                  <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+                    Tócalo, elige por cuántos días, y queda listo para trackear.
+                  </p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {sugeridos.map((x) => (
+                      <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
+                        title={`Crear el hábito ${x.name}`}
+                        onClick={() => setHabitModal({ base: x })}>
+                        {x.icon} {x.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) }] : []),
-            { id: "link-energia", el: (
+              )}
               <Link to="/salud" className="card pad vb-link" style={{ marginBottom: 0 }}>
                 <span style={{ fontSize: 22 }}>⚡</span>
                 <span>
@@ -176,8 +174,6 @@ export function HabitosPage() {
                   </small>
                 </span>
               </Link>
-            ) },
-            { id: "link-mente", el: (
               <Link to="/mente" className="card pad vb-link" style={{ marginBottom: 0 }}>
                 <span style={{ fontSize: 22 }}>🧘</span>
                 <span>
@@ -187,8 +183,8 @@ export function HabitosPage() {
                   </small>
                 </span>
               </Link>
-            ) },
-          ]} />
+            </div>
+          </div>
         </>
       )}
       </>

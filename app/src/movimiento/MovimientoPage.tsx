@@ -65,23 +65,15 @@ export function MovimientoPage() {
   );
 }
 
-// ---------- Catálogo con filtro por duración ----------
+// ---------- Catálogo de rutinas ----------
 function Catalogo({ tipo, onAbrir }: { tipo: TipoRutina; onAbrir: (r: Rutina) => void }) {
-  const [maxMin, setMaxMin] = useState(0); // 0 = todas
-  const lista = RUTINAS.filter((r) => r.tipo === tipo && (maxMin === 0 || r.minutos <= maxMin));
+  const lista = RUTINAS.filter((r) => r.tipo === tipo);
 
   return (
     <>
-      <div className="ftabs" style={{ marginBottom: 12 }}>
-        {[0, 10, 15, 20].map((m) => (
-          <button key={m} className={"ftab" + (maxMin === m ? " active" : "")} onClick={() => setMaxMin(m)}>
-            {m === 0 ? "Todas" : `${m} min o menos`}
-          </button>
-        ))}
-      </div>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
         {tipo === "suave"
-          ? "Yoga, movilidad y estiramientos. Nada que exija, todo que suelta."
+          ? "Yoga, movilidad y estiramientos. Nada que exija, todo que suelta. La duración la eliges al abrir cada rutina."
           : "Fuerza, cardio y core con lo que tienes en casa. Al completar una rutina, queda registrada en Energía."}
       </p>
       <div className="dream-grid rut-grid">

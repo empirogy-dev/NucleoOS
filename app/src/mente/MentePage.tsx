@@ -12,6 +12,7 @@ import {
   type Sesion,
 } from "./practicas";
 import { SADHANAS, minutosSadhana, type Sadhana } from "./sadhana";
+import { LunaFase } from "./LunaFase";
 import { SadhanaPlayer } from "./SadhanaPlayer";
 import { SesionModal } from "./SesionModal";
 import { DiarioTab } from "./DiarioTab";
@@ -32,7 +33,7 @@ const TABS: Array<{ key: Tab; label: string }> = [
 
 export function MentePage() {
   const [tab, setTab] = useState<Tab>("practicas");
-  const [categoria, setCategoria] = useState<CategoriaMente | "todas">("todas");
+  const [categoria, setCategoria] = useState<CategoriaMente>("regulacion");
   const [sesion, setSesion] = useState<{ practica: Practica; minutos: number } | null>(null);
   const [sadhana, setSadhana] = useState<Sadhana | null>(null);
   const [historial, setHistorial] = useState<Sesion[]>(listSesiones());
@@ -48,8 +49,8 @@ export function MentePage() {
   const sesionesHoy = historial.filter((s) => s.fecha === hoy).length;
   const minutosSemana = historial.filter((s) => s.fecha >= desde).reduce((sum, s) => sum + s.minutos, 0);
 
-  const respiraciones = RESPIRACIONES.filter((p) => categoria === "todas" || p.categoria === categoria);
-  const meditaciones = MEDITACIONES.filter((p) => categoria === "todas" || p.categoria === categoria);
+  const respiraciones = RESPIRACIONES.filter((p) => p.categoria === categoria);
+  const meditaciones = MEDITACIONES.filter((p) => p.categoria === categoria);
 
   return (
     <div className="page">
@@ -62,7 +63,7 @@ export function MentePage() {
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
         <div className="card stat"><div className="k">Sesiones hoy</div><div className="v tnum">{sesionesHoy}</div></div>
         <div className="card stat"><div className="k">Minutos (7 días)</div><div className="v tnum">{minutosSemana}</div></div>
-        <div className="card stat"><div className="k">Fase lunar</div><div className="v" style={{ fontSize: 20 }}>{fase.emoji} {fase.nombre}</div></div>
+        <div className="card stat"><div className="k">Fase lunar</div><div className="v" style={{ fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><LunaFase nombre={fase.nombre} size={24} /> {fase.nombre}</div></div>
         <div className="card stat"><div className="k">Próxima luna llena</div><div className="v" style={{ fontSize: 17 }}>{lunas.llena.toLocaleDateString("es-CL", { day: "numeric", month: "long" })}</div></div>
       </div>
 
@@ -75,18 +76,15 @@ export function MentePage() {
       {tab === "practicas" && (
         <>
           <div className="ftabs" style={{ marginBottom: 12 }}>
-            <button className={"ftab" + (categoria === "todas" ? " active" : "")} onClick={() => setCategoria("todas")}>Todas</button>
             {CATEGORIAS_MENTE.map((c) => (
               <button key={c.key} className={"ftab" + (categoria === c.key ? " active" : "")} onClick={() => setCategoria(c.key)}>
-                {c.emoji} {c.label}
+                {c.label}
               </button>
             ))}
           </div>
-          {categoria !== "todas" && (
-            <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-              {CATEGORIAS_MENTE.find((c) => c.key === categoria)?.descripcion}
-            </p>
-          )}
+          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+            {CATEGORIAS_MENTE.find((c) => c.key === categoria)?.descripcion}
+          </p>
           <div className="panelgrid">
             <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
               {respiraciones.length > 0 && (
@@ -109,18 +107,18 @@ export function MentePage() {
 
             <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
               <div className="card panel">
-                <h3>🌙 Calendario lunar</h3>
+                <h3>Calendario lunar</h3>
                 <div style={{ textAlign: "center", padding: "10px 0 14px" }}>
-                  <div style={{ fontSize: 52, lineHeight: 1 }}>{fase.emoji}</div>
-                  <div style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, marginTop: 8 }}>{fase.nombre}</div>
+                  <div style={{ display: "flex", justifyContent: "center" }}><LunaFase nombre={fase.nombre} size={56} /></div>
+                  <div style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, marginTop: 10 }}>{fase.nombre}</div>
                   <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>{fase.consejo}</p>
                 </div>
                 <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, display: "grid", gap: 6 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-soft)" }}>
-                    <span>🌕 Próxima luna llena</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.llena)}</b>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink-soft)" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}><LunaFase nombre="Luna llena" size={16} /> Próxima luna llena</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.llena)}</b>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-soft)" }}>
-                    <span>🌑 Próxima luna nueva</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.nueva)}</b>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink-soft)" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}><LunaFase nombre="Luna nueva" size={16} /> Próxima luna nueva</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.nueva)}</b>
                   </div>
                 </div>
               </div>

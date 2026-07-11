@@ -92,7 +92,7 @@ export function InsightsTab() {
           {categorias.map((c) => (
             <div className="bar" key={c.key}>
               <div className="top">
-                <span className="lbl">{c.emoji} {c.label}</span>
+                <span className="lbl">{c.label}</span>
                 <b className="tnum">{c.n}</b>
               </div>
               <div className="track">
