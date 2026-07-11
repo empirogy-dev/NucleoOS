@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, PersonStanding, Plus, Trash2 } from "lucide-react";
-import { AvancesArea } from "../components/AvancesArea";
 import { IconField } from "../components/IconField";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
@@ -58,7 +57,6 @@ export function MovimientoPage() {
       )}
       {tab === "programas" && <ProgramasTab onAbrirRutina={setRutina} />}
 
-      <AvancesArea area="salud" />
 
       {rutina && <RutinaModal rutina={rutina} onClose={() => setRutina(null)} />}
     </div>

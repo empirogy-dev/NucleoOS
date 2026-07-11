@@ -12,7 +12,13 @@ export interface HealthProfile {
   diet: string | null;
   eye_color: string | null;
   activity_level: string | null;
+  sex: string | null;
 }
+
+// Respaldo local para actividad y sexo: si Supabase aún no conoce las
+// columnas nuevas (caché de esquema), la calculadora funciona igual.
+const LS_ACTIVIDAD = "nucleoos-actividad";
+const LS_SEXO = "nucleoos-sexo";
 
 /** Niveles de actividad y su factor de proteína (gramos por kilo). */
 export const NIVELES_ACTIVIDAD = [
@@ -116,18 +122,33 @@ export async function getHealthProfile(): Promise<HealthProfile | null> {
     .select("*")
     .maybeSingle();
   check(error);
-  return data as HealthProfile | null;
+  const p = data as HealthProfile | null;
+  if (p) {
+    if (!p.activity_level) p.activity_level = localStorage.getItem(LS_ACTIVIDAD);
+    if (!p.sex) p.sex = localStorage.getItem(LS_SEXO);
+  }
+  return p;
 }
 
 export async function saveHealthProfile(p: HealthProfile): Promise<void> {
+  // Respaldo local primero: la calculadora de macros y calorías no
+  // depende de que Supabase conozca las columnas nuevas.
+  if (p.activity_level) localStorage.setItem(LS_ACTIVIDAD, p.activity_level);
+  if (p.sex) localStorage.setItem(LS_SEXO, p.sex);
+
+  const user_id = await uid();
   const { error } = await sb()
     .from("health_profile")
-    .upsert({ user_id: await uid(), ...p, updated_at: new Date().toISOString() });
-  if (error && /schema cache/i.test(error.message)) {
-    throw new Error("Supabase aún no refresca su esquema tras la migración. En el SQL Editor corre: NOTIFY pgrst, 'reload schema'; espera unos segundos y reintenta.");
-  }
-  if (error && /activity_level/.test(error.message)) {
-    throw new Error("Para el nivel de actividad falta la migración 0029 (supabase/migrations/0029_actividad.sql).");
+    .upsert({ user_id, ...p, updated_at: new Date().toISOString() });
+  if (error && (/schema cache/i.test(error.message) || /activity_level|\bsex\b/.test(error.message))) {
+    // Las columnas nuevas aún no están visibles: guardamos el resto de la
+    // ficha igual, y actividad y sexo quedan en el respaldo local.
+    const { activity_level: _a, sex: _s, ...resto } = p;
+    const retry = await sb()
+      .from("health_profile")
+      .upsert({ user_id, ...resto, updated_at: new Date().toISOString() });
+    if (!retry.error) return;
+    check(retry.error);
   }
   if (error && /weight_kg|height_cm|diet|eye_color/.test(error.message)) {
     throw new Error("Falta la migración 0015 en Supabase (supabase/migrations/0015_salud_plus.sql).");

@@ -156,6 +156,8 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Bug]` Relaciones: el 🔀 del pie parecía botón sin serlo (texto corregido), el botón real ahora dice "🔀 Otras ideas", y la guía muestra 5 ideas con "Ver las N ideas" para no estirar la columna.
 - [ ] `[Nuevo]` Google Calendar (Fase 4, necesita OAuth con servidor) y Notion API directa (Fase 4); mientras tanto Revisión exporta Markdown listo para pegar.
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
+- [x] `[Nuevo]` "Avances en esta área" retirado de todas las páginas: para eso están el tracker y Revisión (pedido de la usuaria).
+- [x] `[Nuevo]` Balance calórico de hoy en Nutrición (migración 0032 agrega sexo a la ficha): mantención con Mifflin St Jeor (peso, estatura, edad del cumpleaños, sexo y nivel de actividad), objetivo elegible (bajar grasa, mantener, subir masa), meta del día, lo comido, lo que queda y si vas en déficit o superávit. Con respaldo local si el caché de esquema de Supabase se atrasa.
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
 ## Bloque G, al final

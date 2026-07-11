@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
-import { AvancesArea } from "../components/AvancesArea";
 import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
@@ -24,12 +23,18 @@ import { getHealthProfile, type HealthProfile } from "./data";
 import {
   META_AGUA_VASOS,
   NIVELES_ENERGIA,
+  OBJETIVOS_CAL,
   estimarKcal,
+  getObjetivoCal,
   listEnergy,
+  metaCalorias,
   metaProteina,
+  setObjetivoCal,
   upsertEnergy,
   type EnergyLog,
+  type ObjetivoCal,
 } from "./energia";
+import { useSettings } from "../settings/SettingsProvider";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
@@ -48,6 +53,7 @@ const TABS: Array<{ key: Tab; label: string }> = [
 ];
 
 export function SaludPage() {
+  const { birthday } = useSettings();
   const [tab, setTab] = useState<Tab>("hoy");
   const [energy, setEnergy] = useState<EnergyLog[]>([]);
   const [energiaFalta, setEnergiaFalta] = useState(false);
@@ -118,6 +124,9 @@ export function SaludPage() {
   const rutinaHoy = routine.find((r) => r.date === hoy) ?? null;
   const suenoAnoche = rutinaHoy ? sleepHours(rutinaHoy) : null;
   const pesoKg = profile?.weight_kg ?? null;
+  const edad = birthday
+    ? Math.floor((Date.now() - new Date(`${birthday}T00:00:00`).getTime()) / (365.25 * 86400000))
+    : null;
   const ejercicioHoy = exercise.filter((e) => e.date === hoy);
   const movimientoHoy = ejercicioHoy.reduce((s, e) => s + e.minutes, 0);
   const kcalHoy = ejercicioHoy.reduce((s, e) => s + estimarKcal(e.kind, e.minutes, pesoKg), 0);
@@ -227,7 +236,7 @@ export function SaludPage() {
             />
           )}
           {tab === "nutricion" && (
-            <NutricionTab energy={energy} meals={meals} metaProt={metaProt} profile={profile} quemadasHoy={kcalHoy}
+            <NutricionTab energy={energy} meals={meals} metaProt={metaProt} profile={profile} quemadasHoy={kcalHoy} edad={edad}
               irAClinica={() => setTab("clinica")} onChanged={() => void reload()} />
           )}
           {tab === "movimiento" && <MovimientoTab exercise={exercise} pesoKg={pesoKg} onChanged={() => void reload()} />}
@@ -237,7 +246,6 @@ export function SaludPage() {
         </>
       )}
 
-      <AvancesArea area="salud" />
     </div>
   );
 }
@@ -438,12 +446,13 @@ function SuenoRapido({ rutinaHoy, onChanged }: { rutinaHoy: RoutineLog | null; o
 }
 
 // ---------- Nutrición ----------
-function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, irAClinica, onChanged }: {
+function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irAClinica, onChanged }: {
   energy: EnergyLog[];
   meals: Meal[];
   metaProt: number;
   profile: HealthProfile | null;
   quemadasHoy: number;
+  edad: number | null;
   irAClinica: () => void;
   onChanged: () => void;
 }) {
@@ -463,6 +472,9 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, irAClinic
   return (
     <>
     <OrdenGrid clave="energia-nutricion" bloques={[
+      { id: "balance", el: (
+        <BalanceCalorico profile={profile} edad={edad} comido={tot.kcal} quemadas={quemadasHoy} irAClinica={irAClinica} />
+      ) },
       { id: "comidas", el: (
       <div className="card panel">
         <h3>🍽 Tus comidas de hoy</h3>
@@ -581,6 +593,73 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, irAClinic
       </div>
     </div>
     </>
+  );
+}
+
+function BalanceCalorico({ profile, edad, comido, quemadas, irAClinica }: {
+  profile: HealthProfile | null;
+  edad: number | null;
+  comido: number;
+  quemadas: number;
+  irAClinica: () => void;
+}) {
+  const [objetivo, setObjetivo] = useState<ObjetivoCal>(getObjetivoCal());
+  const mantencion = metaCalorias(profile, edad);
+
+  if (mantencion === null) {
+    return (
+      <div className="card panel">
+        <h3>🔥 Balance calórico de hoy</h3>
+        <p style={{ fontSize: 13.5, color: "var(--muted)" }}>
+          Para decirte cuántas calorías comer al día y si vas en déficit, necesito tu peso y tu estatura.
+          Con tu nivel de actividad y tu sexo el cálculo queda aún más fino.
+        </p>
+        <button className="btn ghost" style={{ marginTop: 10 }} onClick={irAClinica}>Completar mi ficha</button>
+      </div>
+    );
+  }
+
+  const obj = OBJETIVOS_CAL.find((o) => o.key === objetivo) ?? OBJETIVOS_CAL[1];
+  const meta = mantencion + obj.ajuste;
+  const restante = meta - comido;
+  const balance = comido - mantencion;
+  const pct = Math.min(100, Math.round((comido / meta) * 100));
+
+  return (
+    <div className="card panel">
+      <h3>🔥 Balance calórico de hoy</h3>
+      <div className="seg" style={{ marginBottom: 12 }}>
+        {OBJETIVOS_CAL.map((o) => (
+          <button key={o.key} className={`segbtn ${objetivo === o.key ? "active" : ""}`}
+            onClick={() => { setObjetivo(o.key); setObjetivoCal(o.key); }}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <p style={{ fontSize: 13.5, marginBottom: 8 }}>
+        Tu meta de hoy: <b className="tnum">{meta} kcal</b>, {obj.nota}.
+        Tu mantención es <b className="tnum">{mantencion}</b> kcal.
+      </p>
+      <div className="track" style={{ height: 8 }}>
+        <div className="fill" style={{ width: `${pct}%`, background: restante >= 0 ? "var(--sal)" : "var(--warn, #d97706)" }} />
+      </div>
+      <div className="macro-fila" style={{ marginTop: 10 }}>
+        <span className="macro">Comido <b className="tnum">{comido}</b></span>
+        <span className="macro">{restante >= 0 ? "Te quedan" : "Te pasaste por"} <b className="tnum">{Math.abs(restante)}</b></span>
+        {quemadas > 0 && <span className="macro">Movimiento <b className="tnum">≈{quemadas}</b></span>}
+      </div>
+      <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 10 }}>
+        {balance < 0
+          ? `Hoy vas ${Math.abs(balance)} kcal por debajo de tu mantención: eso es déficit calórico.`
+          : balance === 0
+            ? "Hoy vas justo en tu mantención."
+            : `Hoy vas ${balance} kcal por sobre tu mantención: superávit.`}
+        {" "}Registra todas tus comidas para que el número sea real.
+      </p>
+      <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+        Tu mantención ya considera tu nivel de actividad, por eso lo quemado en movimiento se muestra aparte, como referencia. Es una estimación para guiarte, no un examen de laboratorio.
+      </p>
+    </div>
   );
 }
 

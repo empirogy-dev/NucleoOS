@@ -1,4 +1,3 @@
-import { AvancesArea } from "../components/AvancesArea";
 import { OrdenGrid } from "../components/OrdenGrid";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
@@ -172,7 +171,6 @@ export function RelacionesPage() {
         </>
       )}
 
-      <AvancesArea area="relaciones" />
 
       {relModal && <RelModal onClose={() => setRelModal(false)} onSaved={() => { setRelModal(false); void reload(); }} />}
     </div>

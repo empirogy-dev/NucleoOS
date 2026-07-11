@@ -1,4 +1,3 @@
-import { AvancesArea } from "../components/AvancesArea";
 import { IconField } from "../components/IconField";
 import { Link } from "react-router-dom";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
@@ -246,7 +245,6 @@ export function HabitosPage() {
       </>
       )}
 
-      <AvancesArea area="habitos" />
 
       {habitModal && (
         <HabitModal base={habitModal.base} habit={habitModal.habit}

@@ -40,6 +40,48 @@ export function estimarKcal(kind: string, minutos: number, pesoKg: number | null
   return Math.round(((met * 3.5 * peso) / 200) * minutos);
 }
 
+// ---------- Calorías del día: mantenimiento, objetivo y balance ----------
+// TDEE con Mifflin St Jeor por nivel de actividad. Es una estimación
+// para ver la tendencia, no una prescripción médica.
+const FACTOR_TDEE: Record<string, number> = {
+  sedentaria: 1.2,
+  ligera: 1.375,
+  activa: 1.55,
+  atleta: 1.725,
+};
+
+/** Calorías de mantenimiento diarias, o null si falta peso o estatura. */
+export function metaCalorias(profile: HealthProfile | null, edadAnios: number | null): number | null {
+  if (!profile?.weight_kg || !profile.height_cm) return null;
+  const edad = edadAnios ?? 30;
+  const base =
+    10 * profile.weight_kg +
+    6.25 * profile.height_cm -
+    5 * edad +
+    (profile.sex === "masculino" ? 5 : -161);
+  const factor = FACTOR_TDEE[profile.activity_level ?? "ligera"] ?? 1.375;
+  return Math.round(base * factor);
+}
+
+export type ObjetivoCal = "deficit" | "mantener" | "volumen";
+
+export const OBJETIVOS_CAL: Array<{ key: ObjetivoCal; label: string; ajuste: number; nota: string }> = [
+  { key: "deficit", label: "Bajar grasa", ajuste: -400, nota: "un déficit suave y sostenible" },
+  { key: "mantener", label: "Mantener", ajuste: 0, nota: "comer lo que gastas" },
+  { key: "volumen", label: "Subir masa", ajuste: 300, nota: "un superávit controlado" },
+];
+
+const LS_OBJETIVO = "nucleoos-objetivo-cal";
+
+export function getObjetivoCal(): ObjetivoCal {
+  const v = localStorage.getItem(LS_OBJETIVO);
+  return v === "deficit" || v === "volumen" ? v : v === "mantener" ? "mantener" : "mantener";
+}
+
+export function setObjetivoCal(o: ObjetivoCal) {
+  localStorage.setItem(LS_OBJETIVO, o);
+}
+
 export const NIVELES_ENERGIA = [
   { nivel: 1, emoji: "😴", label: "Agotada" },
   { nivel: 2, emoji: "😕", label: "Baja" },
