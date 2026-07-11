@@ -1,10 +1,11 @@
 import { AvancesArea } from "../components/AvancesArea";
+import { OrdenGrid } from "../components/OrdenGrid";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2, Users } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import {
-  TIPS,
+  ACCIONES,
   addRelLog,
   addRelationship,
   daysSinceContact,
@@ -14,15 +15,22 @@ import {
   listRelLogs,
   listRelationships,
   needsReconnect,
-  TIPO_LABELS,
-  accionDelDia,
   accionesPara,
   cienciaDelDia,
   tipDelDia,
-  tipoDeVinculo,
   type RelLog,
   type Relationship,
+  type TipoVinculo,
 } from "./data";
+
+/** Guía visible por tipo de vínculo: eliges pareja, hijos, familia... y aparecen todos los consejos. */
+const GUIA_TIPOS: Array<{ key: TipoVinculo; label: string }> = [
+  { key: "pareja", label: "Pareja" },
+  { key: "hijos", label: "Hijos" },
+  { key: "familia", label: "Familia" },
+  { key: "amistad", label: "Amistades" },
+  { key: "colega", label: "Colegas" },
+];
 
 export function RelacionesPage() {
   const [rels, setRels] = useState<Relationship[]>([]);
@@ -31,6 +39,7 @@ export function RelacionesPage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [relModal, setRelModal] = useState(false);
+  const [guiaTipo, setGuiaTipo] = useState<TipoVinculo>("pareja");
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -110,36 +119,46 @@ export function RelacionesPage() {
                   </p>
                 </div>
               )}
-              {rels.map((r) => (
-                <RelCard key={r.id} r={r} logs={logs} onChanged={() => void reload()} />
-              ))}
+              {rels.length > 0 && (
+                <>
+                  <p style={{ fontSize: 12, color: "var(--muted)", margin: "-2px 0 2px" }}>
+                    Arrastra desde el agarre ⋮ para ordenar a tus personas por prioridad.
+                  </p>
+                  <OrdenGrid clave="relaciones" lista bloques={rels.map((r) => ({
+                    id: r.id,
+                    el: <RelCard r={r} logs={logs} onChanged={() => void reload()} />,
+                  }))} />
+                </>
+              )}
             </div>
 
-            <div className="card panel" style={{ alignSelf: "start" }}>
-              <h3>💌 Tips para conectar</h3>
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+            <div className="card panel">
+              <h3>💌 Guía para conectar</h3>
               <div className="tip-destacado">
                 <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--accent-ink)", fontWeight: 600, marginBottom: 6 }}>Tip de hoy</div>
                 {tipDelDia()}
               </div>
-              {(() => {
-                const tipos = [...new Set(rels.map((r) => tipoDeVinculo(r.relation)))];
-                if (tipos.length === 0) {
-                  return TIPS.filter((t) => t !== tipDelDia()).slice(0, 4).map((t, i) => (
-                    <p key={i} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5, padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>{t}</p>
-                  ));
-                }
-                return tipos.map((tipo) => (
-                  <p key={tipo} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5, padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>
-                    <b style={{ color: "var(--ink)" }}>Para {TIPO_LABELS[tipo]}:</b> {accionDelDia(tipo)}
-                  </p>
-                ));
-              })()}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "4px 0 10px" }}>
+                {GUIA_TIPOS.map((t) => (
+                  <button key={t.key} className={"ftab" + (guiaTipo === t.key ? " active" : "")}
+                    style={{ padding: "6px 13px", fontSize: 12.5 }}
+                    onClick={() => setGuiaTipo(t.key)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              {ACCIONES[guiaTipo].map((idea) => (
+                <p key={idea} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>
+                  {idea}
+                </p>
+              ))}
               <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-                Abre a una persona y verás ideas hechas a su medida, con el botón 🔀 para pedir otras.
+                Y al abrir a una persona, sus ideas llegan hechas a su medida, con el 🔀 para pedir otras.
               </p>
             </div>
 
-            <div className="card panel" style={{ alignSelf: "start" }}>
+            <div className="card panel">
               <h3>🔬 Tu red de apoyo, según la ciencia</h3>
               <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
                 {cienciaDelDia()}
@@ -147,6 +166,7 @@ export function RelacionesPage() {
               <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
                 Cada día aparece un hallazgo distinto de la investigación en relaciones: Harvard, Gottman, Hall y más.
               </p>
+            </div>
             </div>
           </div>
         </>
