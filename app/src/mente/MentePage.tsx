@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Brain } from "lucide-react";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
-import { faseLunar, proximasLunas } from "./lunar";
+import { faseLunar, proximasLunas, proximosEventosCielo } from "./lunar";
 import {
   CATEGORIAS_MENTE,
   MEDITACIONES,
@@ -109,7 +109,7 @@ export function MentePage() {
               <div className="card panel">
                 <h3>Calendario lunar</h3>
                 <div style={{ textAlign: "center", padding: "10px 0 14px" }}>
-                  <div style={{ display: "flex", justifyContent: "center" }}><LunaFase nombre={fase.nombre} size={56} /></div>
+                  <div style={{ display: "flex", justifyContent: "center" }}><LunaFase nombre={fase.nombre} size={64} dots /></div>
                   <div style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, marginTop: 10 }}>{fase.nombre}</div>
                   <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>{fase.consejo}</p>
                 </div>
@@ -122,6 +122,28 @@ export function MentePage() {
                   </div>
                 </div>
               </div>
+
+              <div className="card panel">
+                <h3>Cielo próximo</h3>
+                {proximosEventosCielo(hoy).map((e) => {
+                  const [y, m, d] = e.fecha.split("-").map(Number);
+                  const f = new Date(y, m - 1, d).toLocaleDateString("es-CL", { day: "numeric", month: "short" });
+                  return (
+                    <div key={e.fecha + e.nombre} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: "1px solid var(--line-soft)", alignItems: "baseline" }}>
+                      <span style={{ color: "var(--muted)", fontSize: 12 }}>✦</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <b style={{ fontSize: 13 }}>{e.nombre}</b>
+                        <p style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.45 }}>{e.detalle}</p>
+                      </div>
+                      <b className="tnum" style={{ fontSize: 12, color: "var(--ink-soft)", whiteSpace: "nowrap" }}>{f}</b>
+                    </div>
+                  );
+                })}
+                <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
+                  Fechas aproximadas para el hemisferio norte.
+                </p>
+              </div>
+
               <div className="tip-destacado">
                 💡 ¿No sabes cuál elegir? Si el cuerpo está acelerado, Regulación. Si la mente está lejos, Mindfulness. Si el corazón pesa, Corazón. Si la voz interna castiga, Mentalidad.
               </div>

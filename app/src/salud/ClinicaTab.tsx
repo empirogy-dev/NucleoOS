@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
 import { daysUntil, dueLabel } from "../finanzas/types";
 import { deleteExamFile, listExamFiles, openExamFile, uploadExamFile, type ExamFile } from "./files";
@@ -36,7 +35,7 @@ export function ClinicaTab() {
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modal, setModal] = useState<"med" | "cita" | "exam" | null>(null);
+  const [modal, setModal] = useState<"med" | "supl" | "cita" | "exam" | null>(null);
 
   const hoy = hoyLocal();
 
@@ -84,8 +83,8 @@ export function ClinicaTab() {
   return (
     <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
-      <OrdenGrid clave="energia-clinica" bloques={[
-        { id: "citas", el: (
+      <div className="panelgrid">
+        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
           <div className="card panel">
             <h3>🩺 Citas</h3>
             {proximas.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin citas próximas.</p>}
@@ -112,8 +111,7 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nueva cita
             </button>
           </div>
-        ) },
-        { id: "examenes", el: (
+
           <div className="card panel">
             <h3>🧪 Exámenes</h3>
             {exams.length === 0 && (
@@ -128,13 +126,11 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo examen
             </button>
           </div>
-        ) },
-        ...(profile ? [{ id: "ficha", el: <FichaCard profile={profile} onSaved={() => void reload()} /> }] : []),
-        { id: "medicamentos", el: (
+
           <div className="card panel">
             <h3>💊 Medicamentos</h3>
-            {meds.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin medicamentos registrados.</p>}
-            {meds.map((m) => (
+            {meds.filter((m) => m.kind === "medicamento").length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin medicamentos registrados.</p>}
+            {meds.filter((m) => m.kind === "medicamento").map((m) => (
               <div className="txrow" key={m.id}>
                 <span className="txicon">💊</span>
                 <div className="txmeta">
@@ -150,12 +146,43 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo medicamento
             </button>
           </div>
-        ) },
-      ]} />
+        </div>
+
+        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+          {profile && <FichaCard profile={profile} onSaved={() => void reload()} />}
+
+          <div className="card panel">
+            <h3>🌿 Suplementos</h3>
+            {meds.filter((m) => m.kind === "suplemento").length === 0 && (
+              <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+                Magnesio, vitamina D, omega 3, creatina: registra lo que tomas y cuándo.
+              </p>
+            )}
+            {meds.filter((m) => m.kind === "suplemento").map((m) => (
+              <div className="txrow" key={m.id}>
+                <span className="txicon">🌿</span>
+                <div className="txmeta">
+                  <b>{m.name}</b>
+                  <small>{[m.dose, m.schedule].filter(Boolean).join(", ") || "sin horario"}</small>
+                </div>
+                <button className="xdel" aria-label="Eliminar suplemento" onClick={async () => { if (!window.confirm(`¿Eliminar ${m.name}?`)) return; await deleteMedication(m.id); void reload(); }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setModal("supl")}>
+              <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo suplemento
+            </button>
+          </div>
+        </div>
+      </div>
 
       {modal === "cita" && <CitaModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
       {modal === "exam" && <ExamModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
-      {modal === "med" && <MedModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
+      {(modal === "med" || modal === "supl") && (
+        <MedModal kind={modal === "supl" ? "suplemento" : "medicamento"}
+          onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      )}
     </>
   );
 }
@@ -300,24 +327,32 @@ function ExamModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   );
 }
 
-function MedModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function MedModal({ kind, onClose, onSaved }: { kind: "medicamento" | "suplemento"; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState("");
   const [dose, setDose] = useState("");
   const [schedule, setSchedule] = useState("");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await addMedication({ name, dose: dose || null, schedule: schedule || null });
-    onSaved();
+    setErr(null);
+    try {
+      await addMedication({ name, dose: dose || null, schedule: schedule || null, kind });
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+    }
   }
 
   return (
-    <ModalShell title="Nuevo medicamento" onClose={onClose}>
+    <ModalShell title={kind === "suplemento" ? "Nuevo suplemento" : "Nuevo medicamento"} onClose={onClose}>
+      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
       <form onSubmit={save}>
         <div className="field"><label>Nombre</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Levotiroxina" autoFocus /></div>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={kind === "suplemento" ? "Magnesio" : "Levotiroxina"} autoFocus /></div>
         <div className="frow">
           <div className="field"><label>Dosis (opcional)</label>
             <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="50 mg" /></div>

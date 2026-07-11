@@ -21,6 +21,7 @@ export interface Medication {
   dose: string | null;
   schedule: string | null;
   active: boolean;
+  kind: "medicamento" | "suplemento";
 }
 
 export interface Appointment {
@@ -119,18 +120,27 @@ export async function saveHealthProfile(p: HealthProfile): Promise<void> {
   check(error);
 }
 
-// ---------- Medicamentos ----------
+// ---------- Medicamentos y suplementos ----------
 export async function listMedications(): Promise<Medication[]> {
   const { data, error } = await sb()
     .from("medications")
-    .select("id,name,dose,schedule,active")
+    .select("id,name,dose,schedule,active,kind")
     .order("created_at");
+  if (error && /kind/.test(error.message)) {
+    // La migración 0027 aún no se corre: todo se lista como medicamento.
+    const legado = await sb().from("medications").select("id,name,dose,schedule,active").order("created_at");
+    check(legado.error);
+    return (legado.data ?? []).map((m) => ({ ...m, kind: "medicamento" as const })) as Medication[];
+  }
   check(error);
   return (data ?? []) as Medication[];
 }
 
-export async function addMedication(m: { name: string; dose: string | null; schedule: string | null }): Promise<void> {
+export async function addMedication(m: { name: string; dose: string | null; schedule: string | null; kind: "medicamento" | "suplemento" }): Promise<void> {
   const { error } = await sb().from("medications").insert({ ...m, user_id: await uid() });
+  if (error && /kind/.test(error.message)) {
+    throw new Error("Para registrar suplementos falta la migración 0027 (supabase/migrations/0027_suplementos.sql).");
+  }
   check(error);
 }
 

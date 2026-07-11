@@ -27,6 +27,31 @@ export function faseLunar(fecha: Date): FaseLunar {
   return { nombre: "Luna nueva", emoji: "🌑", consejo: "Momento de sembrar intenciones y empezar de a poco." };
 }
 
+// ---------- Cielo próximo: eventos astronómicos curados ----------
+// Fechas aproximadas para el hemisferio norte; la hora exacta varía por ciudad.
+export interface EventoCielo {
+  fecha: string;
+  nombre: string;
+  detalle: string;
+}
+
+export const EVENTOS_CIELO: EventoCielo[] = [
+  { fecha: "2026-07-30", nombre: "Delta Acuáridas", detalle: "Lluvia de meteoros suave, mejor después de medianoche mirando al sur." },
+  { fecha: "2026-08-12", nombre: "Eclipse total de sol", detalle: "Histórico: la totalidad cruza Islandia y España." },
+  { fecha: "2026-08-13", nombre: "Perseidas", detalle: "La gran lluvia del verano, decenas de meteoros por hora en cielo oscuro." },
+  { fecha: "2026-08-28", nombre: "Eclipse parcial de luna", detalle: "Visible desde América al anochecer." },
+  { fecha: "2026-09-22", nombre: "Equinoccio", detalle: "Día y noche casi iguales: empieza el otoño en el norte." },
+  { fecha: "2026-10-21", nombre: "Oriónidas", detalle: "Polvo del cometa Halley, en la madrugada." },
+  { fecha: "2026-11-17", nombre: "Leónidas", detalle: "Meteoros rápidos y brillantes después de medianoche." },
+  { fecha: "2026-12-13", nombre: "Gemínidas", detalle: "La lluvia más generosa del año, si el frío no te detiene." },
+  { fecha: "2026-12-21", nombre: "Solsticio", detalle: "La noche más larga del año en el norte. Buen cierre de ciclo." },
+];
+
+/** Los próximos eventos del cielo desde hoy. */
+export function proximosEventosCielo(desdeIso: string, n = 4): EventoCielo[] {
+  return EVENTOS_CIELO.filter((e) => e.fecha >= desdeIso).slice(0, n);
+}
+
 /** Próximas luna llena y luna nueva desde hoy. */
 export function proximasLunas(desde: Date): { llena: Date; nueva: Date } {
   const d = new Date(desde);

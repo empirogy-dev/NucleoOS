@@ -58,6 +58,7 @@ interface Fuentes {
   sesiones: Sesion[];
   habitLogs: HabitLog[];
   retoLogs: RetoLog[];
+  avances: ActivityEntry[];
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
@@ -68,6 +69,9 @@ function valorAuto(o: Objective, f: Fuentes): number {
   if (o.auto_metric === "mente_sesiones") return f.sesiones.filter((s) => s.fecha >= desde).length;
   if (o.auto_metric === "habito_marcas") return f.habitLogs.filter((l) => l.habit_id === o.auto_ref && l.date >= desde).length;
   if (o.auto_metric === "reto_dias") return f.retoLogs.filter((l) => l.challenge_id === o.auto_ref && l.date >= desde).length;
+  if (o.auto_metric === "area_avances") {
+    return f.avances.filter((a) => a.date >= desde && (o.area === null || a.area === o.area)).length;
+  }
   return 0;
 }
 
@@ -99,7 +103,7 @@ export function ObjetivosPage() {
     setLoading(true);
     setError(null);
     try {
-      const [o, a] = await Promise.all([listObjectives(), listActivity(30)]);
+      const [o, a] = await Promise.all([listObjectives(), listActivity(500)]);
       setObjectives(o);
       setActivity(a);
       setNeedsMigration(false);
@@ -142,7 +146,7 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
-  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs };
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity };
   const promedio = activas.length
     ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
@@ -259,7 +263,7 @@ export function ObjetivosPage() {
                 </p>
               )}
               <div className="tl">
-                {activity.map((a) => (
+                {activity.slice(0, 40).map((a) => (
                   <div className="row" key={a.id}>
                     <span className="tdot" style={{ background: areaColor(a.area) }} />
                     <div className="tx" style={{ flex: 1 }}>
@@ -452,52 +456,63 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, onChanged }: {
   );
 }
 
-/** Guía breve para construir una dirección, inspirada en Hábitos Atómicos. */
+/** Ideas con respaldo de investigación para cumplir lo que te propones.
+ *  Fuentes variadas: Gollwitzer, Oettingen, Milkman, Locke y Latham, Kivetz. */
 function GuiaDireccion() {
   const [abierta, setAbierta] = useState(false);
-  const PASOS = [
-    { emoji: "✨", titulo: "Escribe lo que quieres", texto: "Tu lista de deseos vive en Visión, pestaña Sueños: viajar, aprender piano, vivir cerca del mar. Sin compromiso todavía, solo honestidad." },
-    { emoji: "🧭", titulo: "Elige uno y hazlo decisión", texto: "Cuando un sueño madura, conviértelo en meta con fecha. Ahí deja de ser deseo y pasa a ser dirección." },
-    { emoji: "🔄", titulo: "Baja la meta a un sistema", texto: "No subes al nivel de tus metas, caes al nivel de tus sistemas. Conecta la meta a un hábito, un reto o tu movimiento, y deja que el día a día la empuje sola." },
-    { emoji: "🗳", titulo: "Vota por tu identidad", texto: "Cada registro es un voto por la persona que quieres ser. No es hacer ejercicio, es ser deportista. No es meditar, es ser alguien en calma." },
-  ];
-  const LEYES = [
-    "Hazlo obvio: deja las zapatillas a la vista, la botella de agua en el escritorio.",
-    "Hazlo atractivo: junta el hábito con algo que te gusta, un podcast con la caminata.",
-    "Hazlo fácil: la versión de dos minutos cuenta. Empezar es el hábito.",
-    "Hazlo satisfactorio: márcalo aquí y mira la racha crecer. Lo que se celebra, se repite.",
+  const IDEAS = [
+    {
+      titulo: "Decide el cuándo y el dónde",
+      texto: "\"Martes y jueves a las 7, en el gimnasio\" cumple mucho más que \"voy a entrenar más\". El psicólogo Peter Gollwitzer lo llamó intenciones de implementación: la decisión ya está tomada cuando llega el momento.",
+    },
+    {
+      titulo: "Sueña con obstáculos incluidos",
+      texto: "Visualizar solo el éxito relaja al cerebro como si ya hubieras llegado. Gabriele Oettingen encontró que funciona imaginar el resultado Y el obstáculo real, con su plan: \"si llego cansada, igual me pongo las zapatillas y camino diez minutos\".",
+    },
+    {
+      titulo: "Aprovecha los borrones y cuenta nueva",
+      texto: "Lunes, inicio de mes, la vuelta de un viaje: Katy Milkman mostró que los comienzos con frontera clara le dan al cerebro permiso de reinventarse. Si un reto se cayó, no lo arrastres: reinícialo en el próximo punto de partida.",
+    },
+    {
+      titulo: "Junta lo que debes con lo que amas",
+      texto: "Tu serie favorita solo mientras caminas, el podcast solo en el gimnasio. La tentación empaquetada convierte la fuerza de voluntad en ganas.",
+    },
+    {
+      titulo: "Persigue el proceso, no solo el resultado",
+      texto: "\"Entrenar tres veces por semana\" depende de ti; \"bajar cinco kilos\" no del todo. La investigación en metas (Locke y Latham) favorece lo específico y controlable: por eso las metas de la app se alimentan de acciones, no de deseos.",
+    },
+    {
+      titulo: "Mientras más cerca, más empuja",
+      texto: "La motivación crece al acercarse al final, es el gradiente de meta que se observa hasta en las tarjetas de café. Mirar tu barra de progreso no es vanidad, es combustible.",
+    },
+    {
+      titulo: "Sé alguien, no solo logres algo",
+      texto: "Sostener \"soy una persona que entrena\" pesa menos que \"tengo que entrenar\". Cada registro que haces aquí es evidencia a favor de esa persona.",
+    },
   ];
   return (
     <button className={"card guia-card" + (abierta ? " open" : "")} onClick={() => setAbierta(!abierta)}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 22 }}>🌱</span>
+        <span style={{ fontSize: 22 }}>🧭</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ fontSize: 14, display: "block" }}>Cómo se construye una dirección</b>
-          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>Del sueño a la meta, y de la meta al hábito diario. Al estilo de Hábitos Atómicos.</small>
+          <b style={{ fontSize: 14, display: "block" }}>El arte de cumplir lo que te propones</b>
+          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>Siete ideas con respaldo de investigación, de varias fuentes. Cero frases de taza.</small>
         </div>
         <span style={{ color: "var(--muted)", fontSize: 12 }}>{abierta ? "▴" : "▾"}</span>
       </div>
       {abierta && (
-        <div style={{ marginTop: 12, textAlign: "left", display: "grid", gap: 10 }}>
-          {PASOS.map((p) => (
+        <div style={{ marginTop: 12, textAlign: "left", display: "grid", gap: 11 }}>
+          {IDEAS.map((p, i) => (
             <div key={p.titulo} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <span style={{ fontSize: 18 }}>{p.emoji}</span>
+              <b className="tnum" style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{i + 1}</b>
               <div>
                 <b style={{ fontSize: 13 }}>{p.titulo}</b>
-                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{p.texto}</p>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55 }}>{p.texto}</p>
               </div>
             </div>
           ))}
-          <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-            <b style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>Las cuatro leyes del hábito</b>
-            <ul style={{ paddingLeft: 18, display: "grid", gap: 5, marginTop: 6 }}>
-              {LEYES.map((l) => (
-                <li key={l} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{l}</li>
-              ))}
-            </ul>
-          </div>
-          <p style={{ fontSize: 12, color: "var(--muted)" }}>
-            Tu lista de sueños te espera en Visión, y los hábitos y retos se conectan a estas metas al crearlos. Todo el sistema trabaja para lo mismo: tu dirección.
+          <p style={{ fontSize: 12, color: "var(--muted)", borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
+            En NucleoOS esto ya está cableado: tus deseos se escriben en Visión, maduran a metas con fecha aquí, y se conectan a hábitos, retos y movimiento para que el porcentaje avance con lo que haces de verdad.
           </p>
         </div>
       )}

@@ -135,6 +135,11 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Bug]` Filtros de duración repetitivos en Movimiento eliminados (la duración se elige al abrir cada rutina) y "Todas" eliminado en las prácticas de Mente: se entra directo por vía (Regulación, Mindfulness, Corazón, Mentalidad), sin listas gigantes.
 - [x] `[Nuevo]` Luna plana propia: SVG con colores del tema en vez del emoji 3D del sistema, con orientación del hemisferio norte. Menos emojis en las pestañas de Mente.
 - [x] `[Bug]` Hábitos vuelve a su diseño compacto de dos columnas (el reordenable dejaba espacios muertos con tarjetas de alturas muy distintas).
+- [x] `[Nuevo]` Luna boho de verdad: crecientes de tinta con puntas afiladas y puntitos de compañía, dibujadas con arcos (tercera versión, aprobada la referencia de la usuaria).
+- [x] `[Nuevo]` Cielo próximo: calendario astronómico curado bajo el calendario lunar (Perseidas, eclipses de agosto 2026, equinoccio, Gemínidas, solsticio).
+- [x] `[Nuevo]` Suplementos en Salud clínica con su propia tarjeta (migración 0027 agrega kind a medications), y Salud clínica de vuelta a columnas compactas.
+- [x] `[Nuevo]` Guía de Dirección reescrita sin clichés: siete ideas con respaldo de investigación de varias fuentes (Gollwitzer, Oettingen, Milkman, Locke y Latham, gradiente de meta), cero frases de taza.
+- [x] `[Nuevo]` Métrica "Avances registrados en su área" (migración 0028): una meta de Aprendizaje se alimenta de los avances que registras en Aprendizaje, y lo mismo para cualquier área.
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
