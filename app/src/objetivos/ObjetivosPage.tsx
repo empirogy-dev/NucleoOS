@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronRight, Compass, Plus, Trash2 } from "lucide-
 import { AREAS } from "../areas";
 import { TablesMissingError } from "../finanzas/data";
 import { listDreams, type Dream } from "../vision/suenos";
-import { listExercise, type ExerciseLog } from "../habitos/data";
+import { listExercise, listHabitLogs, listHabits, type ExerciseLog, type Habit, type HabitLog } from "../habitos/data";
 import { listSesiones, type Sesion } from "../mente/practicas";
 import {
   METRICAS_AUTO,
@@ -49,18 +49,26 @@ const STATUS_TONES: Record<ObjectiveStatus, { bg: string; fg: string }> = {
 
 type Tab = "metas" | "pasos" | "avances" | "logradas";
 
+/** Todo lo que puede alimentar una meta automática. */
+interface Fuentes {
+  ejercicio: ExerciseLog[];
+  sesiones: Sesion[];
+  habitLogs: HabitLog[];
+}
+
 /** Valor real de una métrica automática, contado desde que la meta nació. */
-function valorAuto(o: Objective, ejercicio: ExerciseLog[], sesiones: Sesion[]): number {
+function valorAuto(o: Objective, f: Fuentes): number {
   const desde = o.created_at ? o.created_at.slice(0, 10) : "0000-00-00";
-  if (o.auto_metric === "mov_sesiones") return ejercicio.filter((e) => e.date >= desde).length;
-  if (o.auto_metric === "mov_minutos") return ejercicio.filter((e) => e.date >= desde).reduce((s, e) => s + e.minutes, 0);
-  if (o.auto_metric === "mente_sesiones") return sesiones.filter((s) => s.fecha >= desde).length;
+  if (o.auto_metric === "mov_sesiones") return f.ejercicio.filter((e) => e.date >= desde).length;
+  if (o.auto_metric === "mov_minutos") return f.ejercicio.filter((e) => e.date >= desde).reduce((s, e) => s + e.minutes, 0);
+  if (o.auto_metric === "mente_sesiones") return f.sesiones.filter((s) => s.fecha >= desde).length;
+  if (o.auto_metric === "habito_marcas") return f.habitLogs.filter((l) => l.habit_id === o.auto_ref && l.date >= desde).length;
   return 0;
 }
 
-function progresoDe(o: Objective, ejercicio: ExerciseLog[], sesiones: Sesion[]): number {
+function progresoDe(o: Objective, f: Fuentes): number {
   if (o.auto_metric && o.auto_target) {
-    return Math.min(100, Math.round((valorAuto(o, ejercicio, sesiones) / o.auto_target) * 100));
+    return Math.min(100, Math.round((valorAuto(o, f) / o.auto_target) * 100));
   }
   return objectiveProgress(o);
 }
@@ -72,6 +80,8 @@ export function ObjetivosPage() {
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [ejercicio, setEjercicio] = useState<ExerciseLog[]>([]);
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
+  const [habitos, setHabitos] = useState<Habit[]>([]);
+  const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +109,13 @@ export function ObjetivosPage() {
     } catch {
       /* sin tablas de ejercicio, las metas automáticas parten en cero */
     }
+    try {
+      const [h, l] = await Promise.all([listHabits(), listHabitLogs()]);
+      setHabitos(h);
+      setHabitLogs(l);
+    } catch {
+      /* sin tablas de hábitos, la métrica de hábito no está disponible */
+    }
     setSesiones(listSesiones());
     setLoading(false);
   }, []);
@@ -110,8 +127,9 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs };
   const promedio = activas.length
-    ? Math.round(activas.reduce((s, o) => s + progresoDe(o, ejercicio, sesiones), 0) / activas.length)
+    ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
   const suenoDe = new Map(dreams.map((d) => [d.id, d]));
   const pasosPendientes = activas.flatMap((o) =>
@@ -177,7 +195,7 @@ export function ObjetivosPage() {
               )}
               {activas.map((o) => (
                 <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null}
-                  ejercicio={ejercicio} sesiones={sesiones} onChanged={() => void reload()} />
+                  fuentes={fuentes} habitos={habitos} onChanged={() => void reload()} />
               ))}
             </div>
           )}
@@ -299,19 +317,20 @@ function Head() {
   );
 }
 
-function ObjectiveCard({ o, sueno, ejercicio, sesiones, onChanged }: {
+function ObjectiveCard({ o, sueno, fuentes, habitos, onChanged }: {
   o: Objective;
   sueno: Dream | null;
-  ejercicio: ExerciseLog[];
-  sesiones: Sesion[];
+  fuentes: Fuentes;
+  habitos: Habit[];
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [newMs, setNewMs] = useState("");
   const esAuto = Boolean(o.auto_metric && o.auto_target);
   const metrica = METRICAS_AUTO.find((m) => m.key === o.auto_metric) ?? null;
-  const valor = esAuto ? valorAuto(o, ejercicio, sesiones) : 0;
-  const pct = progresoDe(o, ejercicio, sesiones);
+  const habitoDe = o.auto_metric === "habito_marcas" ? habitos.find((h) => h.id === o.auto_ref) ?? null : null;
+  const valor = esAuto ? valorAuto(o, fuentes) : 0;
+  const pct = progresoDe(o, fuentes);
   const tone = STATUS_TONES[o.status];
   const hasMs = o.milestones.length > 0;
 
@@ -357,7 +376,7 @@ function ObjectiveCard({ o, sueno, ejercicio, sesiones, onChanged }: {
         <div className="top">
           <span>
             {esAuto && metrica
-              ? `⚡ se alimenta solo: ${valor} de ${o.auto_target} ${metrica.unidad}`
+              ? `⚡ se alimenta solo${habitoDe ? ` de ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}: ${valor} de ${o.auto_target} ${metrica.unidad}`
               : hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}
           </span>
           <b className="tnum">{pct}%</b>
@@ -373,9 +392,15 @@ function ObjectiveCard({ o, sueno, ejercicio, sesiones, onChanged }: {
           onTouchEnd={async (e) => { await updateObjective(o.id, { progress: Number((e.target as HTMLInputElement).value) }); onChanged(); }} />
       )}
 
+      {!esAuto && !hasMs && !open && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+          💡 Ábrela con la flechita y conéctala a tu movimiento, tu práctica o un hábito: avanzará sola.
+        </p>
+      )}
+
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-          <AutoConfig o={o} onChanged={onChanged} />
+          <AutoConfig o={o} habitos={habitos} onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
               <span style={{ flex: 1, fontSize: 13.5, color: m.progress >= 100 ? "var(--muted)" : "var(--ink-soft)", textDecoration: m.progress >= 100 ? "line-through" : "none" }}>
@@ -401,18 +426,24 @@ function ObjectiveCard({ o, sueno, ejercicio, sesiones, onChanged }: {
 }
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
-function AutoConfig({ o, onChanged }: { o: Objective; onChanged: () => void }) {
+function AutoConfig({ o, habitos, onChanged }: { o: Objective; habitos: Habit[]; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
+  const [ref, setRef] = useState(o.auto_ref ?? "");
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   async function guardar() {
     setErr(null);
+    if (metric === "habito_marcas" && !ref) {
+      setErr("Elige qué hábito alimenta esta meta.");
+      return;
+    }
     try {
       await updateObjective(o.id, {
         auto_metric: metric || null,
         auto_target: metric && target ? Number(target) : null,
+        auto_ref: metric === "habito_marcas" ? ref : null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -433,6 +464,13 @@ function AutoConfig({ o, onChanged }: { o: Objective; onChanged: () => void }) {
           <option value="">Sin conexión automática</option>
           {METRICAS_AUTO.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
         </select>
+        {metric === "habito_marcas" && (
+          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Hábito que alimenta la meta"
+            onChange={(e) => setRef(e.target.value)}>
+            <option value="">¿Qué hábito?</option>
+            {habitos.map((h) => <option key={h.id} value={h.id}>{h.icon} {h.name}</option>)}
+          </select>
+        )}
         {metric && (
           <input className="input-inline" type="number" min={1} max={100000} value={target} placeholder="meta"
             aria-label="Cantidad objetivo" style={{ maxWidth: 100, flex: "none" }}

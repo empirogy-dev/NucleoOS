@@ -21,6 +21,7 @@ export interface Objective {
   dream_id: string | null;
   auto_metric: string | null;
   auto_target: number | null;
+  auto_ref: string | null;
   created_at: string | null;
   milestones: Milestone[];
 }
@@ -30,6 +31,7 @@ export const METRICAS_AUTO = [
   { key: "mov_sesiones", label: "Sesiones de movimiento", unidad: "sesiones", fuente: "Movimiento y Energía" },
   { key: "mov_minutos", label: "Minutos de movimiento", unidad: "min", fuente: "Movimiento y Energía" },
   { key: "mente_sesiones", label: "Sesiones de Mente", unidad: "sesiones", fuente: "Mente" },
+  { key: "habito_marcas", label: "Días de un hábito", unidad: "días", fuente: "Hábitos" },
 ] as const;
 
 export interface ActivityEntry {
@@ -78,9 +80,9 @@ async function uid(): Promise<string> {
 // ---------- Metas ----------
 export async function listObjectives(): Promise<Objective[]> {
   let objs: Array<Omit<Objective, "milestones">>;
-  const SIN_AUTO = { auto_metric: null, auto_target: null };
-  const objRes = await sb().from("objectives").select("id,title,area,status,progress,deadline,dream_id,auto_metric,auto_target,created_at").order("created_at");
-  if (objRes.error && /auto_metric|auto_target/.test(objRes.error.message)) {
+  const SIN_AUTO = { auto_metric: null, auto_target: null, auto_ref: null };
+  const objRes = await sb().from("objectives").select("id,title,area,status,progress,deadline,dream_id,auto_metric,auto_target,auto_ref,created_at").order("created_at");
+  if (objRes.error && /auto_metric|auto_target|auto_ref/.test(objRes.error.message)) {
     // La migración 0024 aún no se corre: leemos sin el progreso automático.
     const medio = await sb().from("objectives").select("id,title,area,status,progress,deadline,dream_id,created_at").order("created_at");
     if (medio.error && /dream_id/.test(medio.error.message)) {
@@ -114,20 +116,20 @@ export async function listObjectives(): Promise<Objective[]> {
   }));
 }
 
-export async function addObjective(o: { title: string; area: string | null; deadline: string | null; dream_id?: string | null; auto_metric?: string | null; auto_target?: number | null }): Promise<void> {
+export async function addObjective(o: { title: string; area: string | null; deadline: string | null; dream_id?: string | null; auto_metric?: string | null; auto_target?: number | null; auto_ref?: string | null }): Promise<void> {
   const { error } = await sb().from("objectives").insert({ ...o, user_id: await uid() });
   if (error && /dream_id/.test(error.message)) {
     throw new Error("Para convertir sueños en metas falta la migración 0019 (supabase/migrations/0019_suenos_vida_ideal.sql).");
   }
-  if (error && /auto_metric|auto_target/.test(error.message)) {
+  if (error && /auto_metric|auto_target|auto_ref/.test(error.message)) {
     throw new Error("Para el progreso automático falta la migración 0024 (supabase/migrations/0024_metas_automaticas.sql).");
   }
   check(error);
 }
 
-export async function updateObjective(id: string, patch: { status?: ObjectiveStatus; progress?: number; auto_metric?: string | null; auto_target?: number | null }): Promise<void> {
+export async function updateObjective(id: string, patch: { status?: ObjectiveStatus; progress?: number; auto_metric?: string | null; auto_target?: number | null; auto_ref?: string | null }): Promise<void> {
   const { error } = await sb().from("objectives").update(patch).eq("id", id);
-  if (error && /auto_metric|auto_target/.test(error.message)) {
+  if (error && /auto_metric|auto_target|auto_ref/.test(error.message)) {
     throw new Error("Para el progreso automático falta la migración 0024 (supabase/migrations/0024_metas_automaticas.sql).");
   }
   check(error);

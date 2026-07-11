@@ -277,6 +277,41 @@ export const PROGRAMAS: Programa[] = [
   },
 ];
 
+// ---------- Programas propios (migración 0025) ----------
+export interface UserProgram {
+  id: string;
+  nombre: string;
+  emoji: string;
+  objetivo: string | null;
+  dias: DiaPrograma[];
+}
+
+export async function listUserPrograms(): Promise<UserProgram[]> {
+  const { data, error } = await sb()
+    .from("user_programs")
+    .select("id,nombre,emoji,objetivo,dias")
+    .order("created_at", { ascending: false });
+  check(error);
+  return (data ?? []) as UserProgram[];
+}
+
+export async function addUserProgram(p: Omit<UserProgram, "id">): Promise<void> {
+  const { error } = await sb().from("user_programs").insert({ ...p, user_id: await uid() });
+  check(error);
+}
+
+export async function updateUserProgram(id: string, patch: Partial<Omit<UserProgram, "id">>): Promise<void> {
+  const { error } = await sb().from("user_programs").update(patch).eq("id", id);
+  check(error);
+}
+
+export async function deleteUserProgram(id: string): Promise<void> {
+  // Se limpia también el progreso marcado de ese programa.
+  await sb().from("program_days").delete().eq("program_key", id);
+  const { error } = await sb().from("user_programs").delete().eq("id", id);
+  check(error);
+}
+
 // ---------- Progreso de programas (migración 0021) ----------
 function check(error: { code?: string; message: string } | null) {
   if (!error) return;

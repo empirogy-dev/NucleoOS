@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Pencil, Sparkles } from "lucide-react";
 import { AREAS } from "../areas";
 import { CoachCard } from "../components/CoachCard";
+import { OrdenGrid } from "../components/OrdenGrid";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
 import { TablesMissingError, listAccounts, listReminders, listTransactions } from "../finanzas/data";
@@ -199,9 +200,9 @@ export function Inicio() {
 
       <CoachCard resumen={resumenCoach} />
 
-      {/* Próximos pagos — siempre visibles (ADHD-friendly) */}
-      {reminders.length > 0 && (
-        <div className="card panel" style={{ marginBottom: 16 }}>
+      <OrdenGrid clave="inicio" bloques={[
+        ...(reminders.length > 0 ? [{ id: "pagos", el: (
+        <div className="card panel">
           <h3>🔔 Próximos pagos</h3>
           {[...reminders]
             .map((r) => ({ r, next: nextOccurrence(r) }))
@@ -227,10 +228,8 @@ export function Inicio() {
             Ver todos en Finanzas, pestaña Deudas y tarjetas
           </Link>
         </div>
-      )}
-
-      <div className="panelgrid">
-        {/* Estado de las áreas */}
+        ) }] : []),
+        { id: "areas", el: (
         <div className="card panel">
           <h3>Tus áreas</h3>
           {AREAS.map((a) => {
@@ -276,8 +275,8 @@ export function Inicio() {
             );
           })}
         </div>
-
-        {/* Avances recientes: tu camino hacia la mejor versión (las transacciones viven en Finanzas) */}
+        ) },
+        { id: "avances", el: (
         <div className="card panel">
           <h3>Avances recientes</h3>
           {activity.length === 0 ? (
@@ -301,7 +300,8 @@ export function Inicio() {
             })
           )}
         </div>
-      </div>
+        ) },
+      ]} />
 
       {/* Sobriedad (datos reales desde Salud) */}
       {sobriety.map((s) => {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
 import { daysUntil, dueLabel } from "../finanzas/types";
 import { deleteExamFile, listExamFiles, openExamFile, uploadExamFile, type ExamFile } from "./files";
@@ -83,9 +84,8 @@ export function ClinicaTab() {
   return (
     <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
-      <div className="panelgrid">
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          {/* Citas */}
+      <OrdenGrid clave="energia-clinica" bloques={[
+        { id: "citas", el: (
           <div className="card panel">
             <h3>🩺 Citas</h3>
             {proximas.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin citas próximas.</p>}
@@ -112,8 +112,8 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nueva cita
             </button>
           </div>
-
-          {/* Exámenes */}
+        ) },
+        { id: "examenes", el: (
           <div className="card panel">
             <h3>🧪 Exámenes</h3>
             {exams.length === 0 && (
@@ -128,13 +128,9 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo examen
             </button>
           </div>
-        </div>
-
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          {/* Ficha */}
-          {profile && <FichaCard profile={profile} onSaved={() => void reload()} />}
-
-          {/* Medicamentos */}
+        ) },
+        ...(profile ? [{ id: "ficha", el: <FichaCard profile={profile} onSaved={() => void reload()} /> }] : []),
+        { id: "medicamentos", el: (
           <div className="card panel">
             <h3>💊 Medicamentos</h3>
             {meds.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin medicamentos registrados.</p>}
@@ -154,8 +150,8 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo medicamento
             </button>
           </div>
-        </div>
-      </div>
+        ) },
+      ]} />
 
       {modal === "cita" && <CitaModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
       {modal === "exam" && <ExamModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}

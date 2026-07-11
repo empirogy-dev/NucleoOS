@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
+import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
 import { listSesiones } from "../mente/practicas";
@@ -56,9 +57,8 @@ export function RecuperacionTab() {
   return (
     <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
-      <div className="panelgrid">
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          {/* Sobriedad */}
+      <OrdenGrid clave="energia-recuperacion" bloques={[
+        { id: "sobriedad", el: (
           <div className="card panel">
             <h3>🌱 Sobriedad</h3>
             {sobriety.length === 0 && (
@@ -93,8 +93,8 @@ export function RecuperacionTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo tracker
             </button>
           </div>
-
-          {/* Pausas de hoy */}
+        ) },
+        { id: "pausas", el: (
           <div className="card panel">
             <h3>🕊 Tus pausas de hoy</h3>
             {sesionesHoy.length === 0 ? (
@@ -113,9 +113,9 @@ export function RecuperacionTab() {
               ))
             )}
           </div>
-        </div>
-
-        <div className="card panel" style={{ alignSelf: "start" }}>
+        ) },
+        { id: "ideas", el: (
+        <div className="card panel">
           <h3>🌙 Ideas para recuperar energía</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
             El descanso también es productivo. Elige una y regálatela hoy.
@@ -129,7 +129,8 @@ export function RecuperacionTab() {
             </div>
           ))}
         </div>
-      </div>
+        ) },
+      ]} />
 
       {modal && <SobModal onClose={() => setModal(false)} onSaved={() => { setModal(false); void reload(); }} />}
     </>

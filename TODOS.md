@@ -112,7 +112,9 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Metas con progreso automático (migración 0024): una meta como Estar en forma se alimenta sola de sesiones o minutos de movimiento, o de sesiones de Mente, contando desde su creación.
 - [x] `[Nuevo]` Regulación: abrazo de mariposa y zumbido del nervio vago.
 - [x] `[Nuevo]` Movimiento sin la pestaña Mi material (se retirará o se moverá a Aprendizaje si la usuaria lo pide).
-- [ ] `[Nuevo]` Tarjetas reordenables en el resto de los módulos (el componente OrdenGrid ya es reutilizable).
+- [x] `[Nuevo]` Tarjetas reordenables extendidas a Inicio, Mente (Prácticas), Hábitos y todas las pestañas de Energía (Hoy, Nutrición, Movimiento, Sueño, Recuperación, Salud clínica).
+- [x] `[Nuevo]` Programas propios en Movimiento (migración 0025): crear, editar y eliminar programas con nombre, ícono, objetivo, días y rutinas que se ciclan; los originales quedan como sugeridos.
+- [x] `[Nuevo]` Metas alimentadas también por hábitos: métrica Días de un hábito con selección del hábito (auto_ref en la 0024), completando la cadena sueño → meta → movimiento, práctica o hábito.
 - [ ] `[Nuevo]` Reordenar con el dedo en el celular (hoy funciona con mouse; el arrastre táctil llega con la app móvil o con pointer events).
 
 ## Bloque G, al final

@@ -440,8 +440,8 @@ function NutricionTab({ energy, meals, metaProt, profile, irAClinica, onChanged 
 
   return (
     <>
-    <div className="panelgrid">
-      <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+    <OrdenGrid clave="energia-nutricion" bloques={[
+      { id: "comidas", el: (
       <div className="card panel">
         <h3>🍽 Tus comidas de hoy</h3>
         {comidasHoy.length === 0 ? (
@@ -474,7 +474,8 @@ function NutricionTab({ energy, meals, metaProt, profile, irAClinica, onChanged 
           </>
         )}
       </div>
-
+      ) },
+      { id: "semana", el: (
       <div className="card panel">
         <h3>📈 Tu semana de nutrición</h3>
         {dias.map((d) => {
@@ -499,9 +500,8 @@ function NutricionTab({ energy, meals, metaProt, profile, irAClinica, onChanged 
           );
         })}
       </div>
-      </div>
-
-      <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+      ) },
+      { id: "metas", el: (
         <div className="card panel">
           <h3>🎯 Tus metas</h3>
           <div className="txrow">
@@ -533,11 +533,13 @@ function NutricionTab({ energy, meals, metaProt, profile, irAClinica, onChanged 
           )}
           <button className="btn ghost" style={{ marginTop: 10 }} onClick={irAClinica}>Editar mi ficha</button>
         </div>
-        <div className="tip-destacado">
+      ) },
+      { id: "tip", el: (
+        <div className="tip-destacado" style={{ marginBottom: 0 }}>
           💡 La proteína reparte mejor su efecto si la distribuyes en las comidas del día en vez de concentrarla en una sola.
         </div>
-      </div>
-    </div>
+      ) },
+    ]} />
 
     {/* Capa educativa: guías breves, humanas y aplicables */}
     <div style={{ marginTop: 18 }}>
@@ -596,8 +598,9 @@ function MovimientoTab({ exercise, onChanged }: { exercise: ExerciseLog[]; onCha
         <div className="card stat"><div className="k">Sesiones (7 días)</div><div className="v tnum">{semana.length}</div></div>
         <div className="card stat"><div className="k">Tu favorito</div><div className="v" style={{ fontSize: 19 }}>{favorito ?? "aún ninguno"}</div></div>
       </div>
-      <div className="panelgrid">
-        <div className="card panel" style={{ alignSelf: "start" }}>
+      <OrdenGrid clave="energia-movimiento" bloques={[
+        { id: "lista", el: (
+        <div className="card panel">
           <h3>🏃 Últimos 30 días</h3>
           {exercise.length === 0 && (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
@@ -614,13 +617,14 @@ function MovimientoTab({ exercise, onChanged }: { exercise: ExerciseLog[]; onCha
             </div>
           ))}
         </div>
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          <RegistrarMovimiento onChanged={onChanged} />
-          <div className="tip-destacado">
+        ) },
+        { id: "registrar", el: <RegistrarMovimiento onChanged={onChanged} /> },
+        { id: "tip", el: (
+          <div className="tip-destacado" style={{ marginBottom: 0 }}>
             💡 La meta amable son 150 minutos a la semana, unos 30 al día. No importa el deporte, importa moverte.
           </div>
-        </div>
-      </div>
+        ) },
+      ]} />
     </>
   );
 }
@@ -679,8 +683,9 @@ function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: ()
         <div className="card stat"><div className="k">Promedio (14 días)</div><div className="v tnum">{promedio !== null ? `${promedio} h` : "sin datos"}</div></div>
         <div className="card stat"><div className="k">Meta amable</div><div className="v tnum">7 a 9 h</div></div>
       </div>
-      <div className="panelgrid">
-        <div className="card panel" style={{ alignSelf: "start" }}>
+      <OrdenGrid clave="energia-sueno" bloques={[
+        { id: "bitacora", el: (
+        <div className="card panel">
           <h3>🌙 Bitácora de sueño</h3>
           {routine.length === 0 && (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
@@ -704,13 +709,14 @@ function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: ()
             );
           })}
         </div>
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} />
-          <div className="tip-destacado">
+        ) },
+        { id: "registrar", el: <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} /> },
+        { id: "tip", el: (
+          <div className="tip-destacado" style={{ marginBottom: 0 }}>
             💡 Acostarte y despertar a la misma hora todos los días le enseña a tu cuerpo cuándo soltar. La regularidad vale más que la cantidad.
           </div>
-        </div>
-      </div>
+        ) },
+      ]} />
     </>
   );
 }

@@ -1,20 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { PersonStanding } from "lucide-react";
+import { Pencil, PersonStanding, Plus, Trash2 } from "lucide-react";
 import { AvancesArea } from "../components/AvancesArea";
+import { IconField } from "../components/IconField";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
 import { addExercise } from "../habitos/data";
 import {
   PROGRAMAS,
   RUTINAS,
+  addUserProgram,
+  deleteUserProgram,
   listProgramDays,
+  listUserPrograms,
   rutinaPor,
   toggleProgramDay,
+  updateUserProgram,
+  type DiaPrograma,
   type ProgramDay,
   type Programa,
   type Rutina,
   type TipoRutina,
+  type UserProgram,
 } from "./data";
 
 // Movimiento: el cuerpo en acción. Práctica suave (yoga, movilidad),
@@ -172,11 +179,14 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
   );
 }
 
-// ---------- Retos ----------
+// ---------- Programas ----------
 function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void }) {
   const [hechos, setHechos] = useState<ProgramDay[]>([]);
+  const [propios, setPropios] = useState<UserProgram[]>([]);
+  const [propiosFaltan, setPropiosFaltan] = useState(false);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modal, setModal] = useState<{ up?: UserProgram } | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -184,6 +194,13 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
       setNeedsMigration(false);
     } catch (e) {
       if (e instanceof TablesMissingError) setNeedsMigration(true);
+      else setError(e instanceof Error ? e.message : String(e));
+    }
+    try {
+      setPropios(await listUserPrograms());
+      setPropiosFaltan(false);
+    } catch (e) {
+      if (e instanceof TablesMissingError) setPropiosFaltan(true);
       else setError(e instanceof Error ? e.message : String(e));
     }
   }, []);
@@ -208,23 +225,136 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
   return (
     <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
-      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-        Estos son programas guiados de movimiento, con su rutina de cada día. Para retos personales (agua, meditar, dormir temprano) está <Link to="/habitos" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Hábitos, pestaña Retos</Link>.
-      </p>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+        <p style={{ fontSize: 13, color: "var(--muted)", flex: 1, minWidth: 240 }}>
+          Programas de movimiento con su rutina de cada día: los sugeridos, y los tuyos propios. Para retos personales (agua, meditar, dormir temprano) está <Link to="/habitos" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Hábitos, pestaña Retos</Link>.
+        </p>
+        <button className="btn primary" onClick={() => setModal({})}>
+          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} /> Crear mi programa
+        </button>
+      </div>
+      {propiosFaltan && (
+        <div className="card pad" style={{ borderLeft: "3px solid var(--warn)", marginBottom: 14, maxWidth: 640 }}>
+          <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+            Para crear y editar tus propios programas, corre <code>supabase/migrations/0025_programas_propios.sql</code> en el SQL Editor.
+          </p>
+        </div>
+      )}
       <div style={{ display: "grid", gap: 14, maxWidth: 780 }}>
+        {propios.map((up) => (
+          <ProgramaCard key={up.id}
+            programa={{ key: up.id, nombre: up.nombre, emoji: up.emoji, objetivo: up.objetivo ?? "", dias: up.dias }}
+            hechos={hechos} onChanged={() => void reload()} onAbrirRutina={onAbrirRutina}
+            onEditar={() => setModal({ up })}
+            onEliminar={async () => {
+              if (!window.confirm(`¿Eliminar el programa ${up.nombre}? Se pierde su progreso.`)) return;
+              await deleteUserProgram(up.id);
+              void reload();
+            }}
+          />
+        ))}
         {PROGRAMAS.map((p) => (
-          <ProgramaCard key={p.key} programa={p} hechos={hechos} onChanged={() => void reload()} onAbrirRutina={onAbrirRutina} />
+          <ProgramaCard key={p.key} programa={p} hechos={hechos} onChanged={() => void reload()} onAbrirRutina={onAbrirRutina} sugerido />
         ))}
       </div>
+      {modal && (
+        <ProgramModal up={modal.up ?? null} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+      )}
     </>
   );
 }
 
-function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina }: {
+/** Crear o editar un programa propio: nombre, días y rutinas que se ciclan. */
+function ProgramModal({ up, onClose, onSaved }: { up: UserProgram | null; onClose: () => void; onSaved: () => void }) {
+  const [nombre, setNombre] = useState(up?.nombre ?? "");
+  const [emoji, setEmoji] = useState(up?.emoji ?? "🌱");
+  const [objetivo, setObjetivo] = useState(up?.objetivo ?? "");
+  const [dias, setDias] = useState(String(up?.dias.length ?? 7));
+  const [elegidas, setElegidas] = useState<string[]>(() =>
+    up ? [...new Set(up.dias.map((d) => d.rutinaId).filter((x): x is string => Boolean(x)))] : [],
+  );
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function armarDias(n: number): DiaPrograma[] {
+    return Array.from({ length: n }, (_, i) => {
+      if (elegidas.length === 0) return { titulo: `Día ${i + 1}, a tu manera` };
+      const r = rutinaPor(elegidas[i % elegidas.length]);
+      return r ? { titulo: r.nombre, rutinaId: r.id } : { titulo: `Día ${i + 1}` };
+    });
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    const n = Math.min(60, Math.max(3, Number(dias) || 7));
+    const datos = { nombre, emoji, objetivo: objetivo || null, dias: armarDias(n) };
+    try {
+      if (up) await updateUserProgram(up.id, datos);
+      else await addUserProgram(datos);
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="tp-overlay" onClick={onClose}>
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+        <h3 style={{ marginBottom: 4 }}>{up ? "Editar programa" : "Mi programa"}</h3>
+        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
+          Elige las rutinas que quieres y se reparten en los días del programa, en orden y ciclando.
+        </p>
+        {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
+        <form onSubmit={save}>
+          <div className="frow">
+            <div className="field" style={{ flex: 1 }}><label>Nombre</label>
+              <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Mi semana de yoga" autoFocus /></div>
+            <IconField value={emoji} onChange={setEmoji} />
+          </div>
+          <div className="frow">
+            <div className="field" style={{ flex: 1 }}><label>Objetivo</label>
+              <input value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder="Para qué es este programa" /></div>
+            <div className="field" style={{ maxWidth: 100 }}><label>Días</label>
+              <input type="number" min={3} max={60} value={dias} onChange={(e) => setDias(e.target.value)} /></div>
+          </div>
+          <div className="field"><label>Rutinas del programa</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {RUTINAS.map((r) => {
+                const on = elegidas.includes(r.id);
+                return (
+                  <button key={r.id} type="button" className="chip"
+                    style={{ border: "none", cursor: "pointer", ...(on ? {} : { background: "var(--surface)", color: "var(--muted)" }) }}
+                    aria-pressed={on}
+                    onClick={() => setElegidas((prev) => (on ? prev.filter((x) => x !== r.id) : [...prev, r.id]))}>
+                    {r.emoji} {r.nombre}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+              Si no eliges ninguna, los días quedan libres para lo que tú quieras hacer.
+            </p>
+          </div>
+          <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>
+            {busy ? "Guardando…" : up ? "Guardar cambios" : "Crear programa"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina, onEditar, onEliminar, sugerido }: {
   programa: Programa;
   hechos: ProgramDay[];
   onChanged: () => void;
   onAbrirRutina: (r: Rutina) => void;
+  onEditar?: () => void;
+  onEliminar?: () => void;
+  sugerido?: boolean;
 }) {
   const marcados = new Set(hechos.filter((h) => h.program_key === programa.key).map((h) => h.day));
   const total = programa.dias.length;
@@ -240,9 +370,20 @@ function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina }: {
           <b style={{ fontSize: 15 }}>{programa.nombre}</b>
           <div style={{ fontSize: 12, color: "var(--muted)" }}>{programa.objetivo}</div>
         </div>
+        {sugerido && <span className="chip" style={{ background: "var(--surface)", color: "var(--muted)" }}>sugerido</span>}
         {done === total
-          ? <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🏆 Reto completo</span>
+          ? <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🏆 Programa completo</span>
           : <span className="chip">{done} / {total} días</span>}
+        {onEditar && (
+          <button className="xdel" title="Editar programa" aria-label="Editar programa" onClick={onEditar}>
+            <Pencil size={13} />
+          </button>
+        )}
+        {onEliminar && (
+          <button className="xdel" title="Eliminar programa" aria-label="Eliminar programa" onClick={() => void onEliminar()}>
+            <Trash2 size={13} />
+          </button>
+        )}
       </div>
       <div className="track" style={{ margin: "8px 0 12px" }}>
         <div className="fill" style={{ width: `${pct}%`, background: done === total ? "var(--ok)" : "var(--mov)" }} />
