@@ -77,6 +77,7 @@ export function FinanzasPage() {
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const [editTx, setEditTx] = useState<Tx | null>(null);
   const [splitTx, setSplitTx] = useState<Tx | null>(null);
+  const [vistaTx, setVistaTx] = useState<"revisar" | "archivo">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
@@ -300,8 +301,21 @@ export function FinanzasPage() {
             </>
           )}
 
-          {tab === "transacciones" && (
+          {tab === "transacciones" && (() => {
+            // Consolidación de gastos: lo sin categoría espera en la bandeja,
+            // y al categorizarlo pasa solo al archivo mensual.
+            const pendientes = filteredTxs.filter((t) => t.type !== "transfer" && !t.category_id);
+            const archivadas = filteredTxs.filter((t) => t.type === "transfer" || Boolean(t.category_id));
+            return (
             <>
+              <div className="seg" style={{ maxWidth: 440 }}>
+                <button className={"segbtn" + (vistaTx === "revisar" ? " active" : "")} onClick={() => setVistaTx("revisar")}>
+                  📥 Por revisar{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
+                </button>
+                <button className={"segbtn" + (vistaTx === "archivo" ? " active" : "")} onClick={() => setVistaTx("archivo")}>
+                  🗂 Archivo
+                </button>
+              </div>
               <div className="filterbar">
                 <div className="searchbox" style={{ minWidth: 200 }}>
                   <input value={fq} onChange={(e) => setFq(e.target.value)} placeholder="Buscar movimientos…" aria-label="Buscar movimientos" />
@@ -323,13 +337,35 @@ export function FinanzasPage() {
                   {cards.map((c) => <option key={c.id} value={c.id}>💳 {c.name}</option>)}
                 </select>
               </div>
+              {vistaTx === "revisar" && (
+                <div className="card pad">
+                  {pendientes.length === 0 ? (
+                    <p style={{ color: "var(--muted)", fontSize: 14 }}>
+                      🎉 Bandeja limpia: todo está categorizado y descansando en el Archivo. Consolidación al día.
+                    </p>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
+                        Ponles categoría con el lápiz (o divídelas con la tijera) y se archivan solas.
+                      </p>
+                      {pendientes.map((t) => (
+                        <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                          onEdit={() => setEditTx(t)}
+                          onSplit={() => setSplitTx(t)}
+                          onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              {vistaTx === "archivo" && (
               <div className="card pad">
                 {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
-                {txs.length > 0 && filteredTxs.length === 0 && <p style={{ color: "var(--muted)" }}>Ningún movimiento calza con los filtros.</p>}
+                {txs.length > 0 && archivadas.length === 0 && <p style={{ color: "var(--muted)" }}>Aún no hay movimientos archivados: categoriza los de la bandeja y llegan solos aquí.</p>}
                 {(() => {
                   // Agrupadas por mes para que la lista no sea gigante (pedido de la usuaria).
                   const grupos = new Map<string, Tx[]>();
-                  for (const t of filteredTxs) {
+                  for (const t of archivadas) {
                     const k = t.date.slice(0, 7);
                     const lista = grupos.get(k) ?? [];
                     lista.push(t);
@@ -368,8 +404,10 @@ export function FinanzasPage() {
                   });
                 })()}
               </div>
+              )}
             </>
-          )}
+            );
+          })()}
 
           {tab === "metas" && (
             <>
