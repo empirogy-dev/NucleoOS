@@ -7,7 +7,9 @@ const key = import.meta.env.VITE_GEMINI_API_KEY;
 
 export const iaConfigured = Boolean(key);
 
-const MODEL = "gemini-2.5-flash";
+// Alias que siempre apunta al flash más nuevo del nivel gratis,
+// así no vuelve a quedar obsoleto cuando Google rote los modelos.
+const MODEL = "gemini-flash-latest";
 
 interface Part {
   text?: string;
