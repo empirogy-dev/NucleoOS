@@ -1,7 +1,7 @@
 import { IconField } from "../components/IconField";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import { Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
 import {
   TablesMissingError,
   addAccount,
@@ -21,6 +21,7 @@ import {
   deleteTransaction,
   importStatementRows,
   saveMerchantRule,
+  splitTransaction,
   listAccounts,
   listCards,
   listDebts,
@@ -75,6 +76,7 @@ export function FinanzasPage() {
   const [budgetCat, setBudgetCat] = useState<Category | null>(null);
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const [editTx, setEditTx] = useState<Tx | null>(null);
+  const [splitTx, setSplitTx] = useState<Tx | null>(null);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
@@ -358,6 +360,7 @@ export function FinanzasPage() {
                         {abierto && lista.map((t) => (
                           <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
                             onEdit={() => setEditTx(t)}
+                            onSplit={t.type !== "transfer" ? () => setSplitTx(t) : undefined}
                             onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                         ))}
                       </div>
@@ -583,6 +586,11 @@ export function FinanzasPage() {
           cards={cards} debts={debts} goals={goals} edit={editTx}
           onClose={() => { setModal(null); setEditTx(null); }}
           onSaved={() => { setModal(null); setEditTx(null); void reload(); }} />
+      )}
+      {splitTx && (
+        <SplitModal tx={splitTx} categories={categories} currency={accById.get(splitTx.account_id ?? "")?.currency ?? currency}
+          onClose={() => setSplitTx(null)}
+          onSaved={() => { setSplitTx(null); void reload(); }} />
       )}
       {(modal === "account" || editAccount) && (
         <AccountModal key={editAccount?.id ?? "nueva"} edit={editAccount}
@@ -1144,7 +1152,7 @@ function Head() {
   );
 }
 
-function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit }: {
+function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit }: {
   t: Tx;
   catById: Map<string, Category>;
   accById: Map<string, Account>;
@@ -1152,6 +1160,7 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit }:
   resolveDest?: (t: Tx) => string | null;
   onDelete?: () => void;
   onEdit?: () => void;
+  onSplit?: () => void;
 }) {
   const cat = t.category_id ? catById.get(t.category_id) : undefined;
   const acc = t.account_id ? accById.get(t.account_id) : undefined;
@@ -1172,9 +1181,95 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit }:
         </small>
       </div>
       <b className={"tnum txamt " + (esTransfer ? "neutral" : neg ? "neg" : "pos")}>{esTransfer ? "⇄ " : neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
+      {onSplit && <button className="xdel" aria-label="Dividir boleta" title="Dividir en categorías" onClick={onSplit}><Scissors size={13} /></button>}
       {onEdit && <button className="xdel" aria-label="Editar" title="Editar" onClick={onEdit}><Pencil size={14} /></button>}
       {onDelete && <button className="xdel" aria-label="Eliminar" onClick={onDelete}><Trash2 size={14} /></button>}
     </div>
+  );
+}
+
+/** Divide una boleta: cada parte con su categoría y monto, sumando el total exacto. */
+function SplitModal({ tx, categories, currency, onClose, onSaved }: {
+  tx: Tx;
+  categories: Category[];
+  currency: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  interface Parte { description: string; category_id: string; amount: string }
+  const [partes, setPartes] = useState<Parte[]>([
+    { description: tx.description || tx.merchant || "", category_id: tx.category_id ?? "", amount: "" },
+    { description: "", category_id: "", amount: "" },
+  ]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const total = Number(tx.amount);
+  const suma = partes.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const restante = Math.round((total - suma) * 100) / 100;
+  const listas = partes.filter((p) => Number(p.amount) > 0);
+  const puedeGuardar = restante === 0 && listas.length >= 2 && listas.every((p) => p.description.trim());
+
+  function cambiar(i: number, patch: Partial<Parte>) {
+    setPartes((prev) => prev.map((p, x) => (x === i ? { ...p, ...patch } : p)));
+  }
+
+  async function guardar() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await splitTransaction(tx, listas.map((p) => ({
+        description: p.description.trim(),
+        category_id: p.category_id || null,
+        amount: Number(p.amount),
+      })));
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  }
+
+  const cats = categories.filter((c) => (tx.type === "expense" ? c.type !== "income" : c.type === "income"));
+
+  return (
+    <Modal title="✂️ Dividir la boleta" onClose={onClose}>
+      <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
+        {tx.merchant || tx.description || "Movimiento"} por <b className="tnum" style={{ color: "var(--ink)" }}>{fmtMoney(total, currency)}</b>.
+        Reparte el total entre categorías y cada parte irá a su presupuesto. El saldo de la cuenta no cambia.
+      </p>
+      {partes.map((p, i) => (
+        <div key={i} style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <input className="input-inline" style={{ flex: "1 1 120px" }} value={p.description} placeholder={i === 0 ? "Calcetines" : "Frutillas"}
+            aria-label={`Descripción de la parte ${i + 1}`} onChange={(e) => cambiar(i, { description: e.target.value })} />
+          <select className="ms-sel" style={{ padding: "9px 8px", maxWidth: 130 }} value={p.category_id}
+            aria-label={`Categoría de la parte ${i + 1}`} onChange={(e) => cambiar(i, { category_id: e.target.value })}>
+            <option value="">Sin categoría</option>
+            {cats.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+          </select>
+          <input className="input-inline tnum" type="number" min="0" step="any" style={{ maxWidth: 95, flex: "none" }} value={p.amount}
+            placeholder="monto" aria-label={`Monto de la parte ${i + 1}`} onChange={(e) => cambiar(i, { amount: e.target.value })} />
+          {restante > 0 && !p.amount && (
+            <button type="button" className="linklike" style={{ fontSize: 11.5 }} onClick={() => cambiar(i, { amount: String(restante) })}>
+              el resto
+            </button>
+          )}
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", margin: "4px 0 12px", flexWrap: "wrap" }}>
+        <button type="button" className="btn ghost" onClick={() => setPartes((prev) => [...prev, { description: "", category_id: "", amount: "" }])}>
+          <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Otra parte
+        </button>
+        <span style={{ flex: 1 }} />
+        <span className="chip" style={restante !== 0 ? { background: "color-mix(in srgb,var(--warn) 16%,var(--paper))", color: "var(--warn)" } : undefined}>
+          {restante === 0 ? "✓ Suma exacta" : restante > 0 ? `Faltan ${fmtMoney(restante, currency)}` : `Sobran ${fmtMoney(-restante, currency)}`}
+        </span>
+      </div>
+      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
+      <button className="btn primary" style={{ width: "100%" }} disabled={!puedeGuardar || busy} onClick={() => void guardar()}>
+        {busy ? "Dividiendo…" : `Dividir en ${listas.length || 2} movimientos`}
+      </button>
+    </Modal>
   );
 }
 

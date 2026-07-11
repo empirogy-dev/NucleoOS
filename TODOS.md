@@ -127,6 +127,8 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Movimiento: workout libre (tipo, minutos y kcal estimadas) en Entrenamiento, y duración elegible en cada rutina antes de comenzar.
 - [x] `[Nuevo]` Calorías estimadas (MET por tipo y tu peso de la ficha): en registros de hoy, semana de movimiento y balance contra lo comido en Nutrición.
 - [x] `[Nuevo]` Regulación: exposición al frío (ducha fría guiada) y retos sugeridos de redes sociales y ducha fría.
+- [x] `[Bug]` El menú lateral no scrolleaba: con muchos módulos, Finanzas y Visión quedaban inalcanzables. Ahora la navegación scrollea con barra fina y la cuenta queda fija abajo.
+- [x] `[Nuevo]` Finanzas: dividir una boleta (tijera ✂️ en cada movimiento): repartes el total en partes con su descripción, categoría y monto, cada una va a su presupuesto, y el saldo no cambia. Con atajo "el resto" y validación de suma exacta.
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 

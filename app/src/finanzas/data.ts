@@ -506,6 +506,32 @@ export async function deleteTransaction(t: Tx): Promise<void> {
   await aplicarEfectos(efectosMovimiento(normalizarDestino(t)), -1);
 }
 
+/** Divide una boleta en varias partes, cada una con su categoría y monto.
+ *  La suma de las partes debe calzar con el total; el saldo queda igual. */
+export async function splitTransaction(
+  original: Tx,
+  partes: Array<{ description: string; category_id: string | null; amount: number }>,
+): Promise<void> {
+  const suma = partes.reduce((s, p) => s + p.amount, 0);
+  if (Math.abs(suma - Number(original.amount)) > 0.01) {
+    throw new Error("Las partes deben sumar exactamente el total de la boleta.");
+  }
+  for (const p of partes) {
+    await addTransaction({
+      date: original.date,
+      amount: p.amount,
+      type: original.type,
+      description: p.description,
+      merchant: original.merchant,
+      category_id: p.category_id,
+      account_id: original.account_id,
+      destination_kind: null,
+      destination_ref: null,
+    });
+  }
+  await deleteTransaction(original);
+}
+
 // ---------- Comercios y reglas de renombrado ----------
 export interface MerchantRule {
   id: string;
