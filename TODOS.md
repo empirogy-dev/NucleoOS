@@ -158,6 +158,8 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [x] `[Nuevo]` "Avances en esta área" retirado de todas las páginas: para eso están el tracker y Revisión (pedido de la usuaria).
 - [x] `[Nuevo]` Balance calórico de hoy en Nutrición (migración 0032 agrega sexo a la ficha): mantención con Mifflin St Jeor (peso, estatura, edad del cumpleaños, sexo y nivel de actividad), objetivo elegible (bajar grasa, mantener, subir masa), meta del día, lo comido, lo que queda y si vas en déficit o superávit. Con respaldo local si el caché de esquema de Supabase se atrasa.
+- [x] `[Nuevo]` Revisión con pestaña Día: la agenda de cada fecha con el detalle completo (cada plato con sus macros, agua, sueño, energía percibida, sesiones de movimiento, prácticas y diario de Mente, hábitos y retos marcados con su nombre, avances y finanzas del día). Cada día empieza limpio y el historial queda guardado por fecha, navegable con las flechas y exportable a Markdown.
+- [x] `[Nuevo]` DESIGN.md y CLAUDE.md puestos al día: navegación por secciones, lema, reglas de layout (sin espacios vacíos, luna boho, colores por hábito) y registro de decisiones al 11 de julio.
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
 ## Bloque G, al final

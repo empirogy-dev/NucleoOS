@@ -1,6 +1,8 @@
 # NucleoOS (Segundo Cerebro)
 
-> App SaaS todo-en-uno para organizar la vida en **7 áreas** (Objetivos, Finanzas, Salud, Trabajo y Proyectos, Aprendizaje, Hábitos y Rutinas, Relaciones), con un **agente de IA por voz** que registra, aconseja y hace seguimiento. Multi-plataforma (web → móvil → escritorio) desde una sola base de código.
+> App SaaS todo-en-uno, "El sistema operativo de tu vida": una agenda viva donde todo se registra por fecha (comidas, agua, sueño, movimiento, prácticas, hábitos, gastos) y Revisión lo convierte en claridad día a día, semana y mes. Con un **agente de IA** (coach conversacional consciente del TDAH) que registra, aconseja y hace seguimiento. Multi-plataforma (web → móvil → escritorio) desde una sola base de código.
+
+**Módulos actuales** (navegación por secciones): Panorama (Inicio, Calendario, Revisión), Núcleo (Energía, Mente, Movimiento, Hábitos), Mi vida (Relaciones, Dirección, Trabajo, Finanzas, Aprendizaje), Inspiración (Visión). Además hay una **agenda física imprimible** en `agenda/` pensada como producto a vender.
 
 **Documentación completa en [`docs/`](docs/00-indice.md)** — visión, requisitos de usuario, requisitos de sistema, arquitectura y roadmap.
 

@@ -2,8 +2,8 @@ import { fmtFechaLocal } from "../lib/fechas";
 import { listSesiones } from "../mente/practicas";
 import { listEnergy } from "../salud/energia";
 import { listMeals, totalesDia } from "../salud/comidas";
-import { listExercise, listHabitLogs, listRoutine, sleepHours } from "../habitos/data";
-import { listRetoLogs } from "../habitos/retos";
+import { listExercise, listHabitLogs, listHabits, listRoutine, sleepHours } from "../habitos/data";
+import { listRetoLogs, listRetos } from "../habitos/retos";
 import { listCategories, listTransactions } from "../finanzas/data";
 import { listActivity } from "../objetivos/data";
 import { listRelLogs } from "../relaciones/data";
@@ -34,6 +34,20 @@ export function semanaDe(offset: number): Periodo {
     desde: iso(lunes),
     hasta: iso(domingo),
     etiqueta: offset === 0 ? `Esta semana (${fmt(lunes)} al ${fmt(domingo)})` : `Semana del ${fmt(lunes)} al ${fmt(domingo)}`,
+  };
+}
+
+/** Un día; offset 0 = hoy, 1 = ayer. */
+export function diaDe(offset: number): Periodo {
+  const d = new Date();
+  d.setDate(d.getDate() - offset);
+  const largo = d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" }).replace(",", "");
+  const bonito = largo.charAt(0).toUpperCase() + largo.slice(1);
+  const fecha = iso(d);
+  return {
+    desde: fecha,
+    hasta: fecha,
+    etiqueta: offset === 0 ? `Hoy, ${largo}` : offset === 1 ? `Ayer, ${largo}` : bonito,
   };
 }
 
@@ -198,6 +212,136 @@ export async function armarResumen(p: Periodo): Promise<{ modulos: ModuloResumen
   const md = [
     `# NucleoOS · Revisión`,
     `**${p.etiqueta}** (${p.desde} al ${p.hasta})`,
+    "",
+    ...modulos.flatMap((m) => [
+      `## ${m.emoji} ${m.titulo}`,
+      ...m.lineas.map((l) => `- ${l.k}: ${l.v}`),
+      "",
+    ]),
+  ].join("\n");
+
+  return { modulos, markdown: md };
+}
+
+// ---------- Día: la página de agenda de una fecha ----------
+// A diferencia del resumen (promedios y totales), aquí se ve el detalle:
+// qué comiste, qué hábitos marcaste, qué practicaste, qué escribiste.
+export async function armarDia(fecha: string): Promise<{ modulos: ModuloResumen[]; markdown: string }> {
+  const modulos: ModuloResumen[] = [];
+  const seguro = async (fn: () => Promise<void>) => {
+    try {
+      await fn();
+    } catch {
+      /* módulo sin migrar o sin datos, se omite sin drama */
+    }
+  };
+
+  // Energía del día: agua, energía percibida, sueño
+  await seguro(async () => {
+    const log = (await listEnergy(70)).find((e) => e.date === fecha);
+    const rutina = (await listRoutine(70)).find((r) => r.date === fecha);
+    const horas = rutina ? sleepHours(rutina) : null;
+    const lineas: LineaResumen[] = [];
+    if (horas !== null) lineas.push({ k: "Sueño", v: `${horas} h` });
+    if (log) {
+      lineas.push({ k: "Agua", v: `${log.water_cups} de 8 vasos` });
+      if (log.energy_level != null) lineas.push({ k: "Energía percibida", v: `${log.energy_level} de 5` });
+      if (log.note) lineas.push({ k: "Nota", v: log.note });
+    }
+    if (lineas.length) modulos.push({ emoji: "⚡", titulo: "Energía", to: "/salud", lineas });
+  });
+
+  // Comidas del día, plato por plato
+  await seguro(async () => {
+    const meals = (await listMeals(70)).filter((m) => m.date === fecha);
+    if (!meals.length) return;
+    const tot = totalesDia(meals, fecha);
+    modulos.push({
+      emoji: "🍽", titulo: "Comidas", to: "/salud",
+      lineas: [
+        ...meals.map((m) => ({ k: m.description, v: `${m.kcal ?? 0} kcal, ${Math.round(m.protein_g ?? 0)} g prot` })),
+        { k: "Total del día", v: `${tot.kcal} kcal, ${tot.proteina} g de proteína` },
+      ],
+    });
+  });
+
+  // Movimiento del día, sesión por sesión
+  await seguro(async () => {
+    const ejercicio = (await listExercise(70)).filter((e) => e.date === fecha);
+    if (!ejercicio.length) return;
+    modulos.push({
+      emoji: "🏃", titulo: "Movimiento", to: "/movimiento",
+      lineas: ejercicio.map((e) => ({ k: e.kind, v: `${e.minutes} min` })),
+    });
+  });
+
+  // Mente: prácticas y diario del día
+  await seguro(async () => {
+    const ses = listSesiones().filter((s) => s.fecha === fecha);
+    let entradas: Array<{ prompt: string | null; content: string }> = [];
+    try {
+      entradas = (await listEntries(120)).filter((e) => e.date === fecha);
+    } catch { /* diario sin migrar */ }
+    if (!ses.length && !entradas.length) return;
+    modulos.push({
+      emoji: "🧠", titulo: "Mente", to: "/mente",
+      lineas: [
+        ...ses.map((s) => ({ k: s.nombre, v: `${s.minutos} min` })),
+        ...entradas.map((e) => ({
+          k: e.prompt ?? "Escritura libre",
+          v: e.content.length > 60 ? e.content.slice(0, 57) + "…" : e.content,
+        })),
+      ],
+    });
+  });
+
+  // Hábitos y retos marcados ese día, con nombre
+  await seguro(async () => {
+    const marcados = (await listHabitLogs()).filter((l) => l.date === fecha);
+    const habits = marcados.length ? await listHabits() : [];
+    const lineas: LineaResumen[] = marcados
+      .map((l) => habits.find((h) => h.id === l.habit_id))
+      .filter((h): h is NonNullable<typeof h> => Boolean(h))
+      .map((h) => ({ k: `${h.icon ?? "✓"} ${h.name}`, v: "cumplido" }));
+    try {
+      const retoLogs = (await listRetoLogs()).filter((l) => l.date === fecha);
+      if (retoLogs.length) {
+        const retos = await listRetos();
+        for (const l of retoLogs) {
+          const r = retos.find((x) => x.id === l.challenge_id);
+          if (r) lineas.push({ k: `${r.icon ?? "🎯"} ${r.title}`, v: "día de reto cumplido" });
+        }
+      }
+    } catch { /* retos sin migrar */ }
+    if (lineas.length) modulos.push({ emoji: "🔄", titulo: "Hábitos y retos", to: "/habitos", lineas });
+  });
+
+  // Avances registrados ese día
+  await seguro(async () => {
+    const avances = (await listActivity(300)).filter((a) => a.date === fecha);
+    if (!avances.length) return;
+    modulos.push({
+      emoji: "🧭", titulo: "Avances", to: "/objetivos",
+      lineas: avances.map((a) => ({ k: a.description, v: a.area })),
+    });
+  });
+
+  // Finanzas del día, resumidas
+  await seguro(async () => {
+    const del = (await listTransactions(800)).filter((t) => t.date === fecha);
+    if (!del.length) return;
+    const gastos = del.filter((t) => t.type === "expense").reduce((a, t) => a + t.amount, 0);
+    const ingresos = del.filter((t) => t.type === "income").reduce((a, t) => a + t.amount, 0);
+    const f = (n: number) => `$${Math.round(n).toLocaleString("es-CL")}`;
+    const lineas: LineaResumen[] = [{ k: "Movimientos", v: String(del.length) }];
+    if (gastos > 0) lineas.push({ k: "Gastos", v: f(gastos) });
+    if (ingresos > 0) lineas.push({ k: "Ingresos", v: f(ingresos) });
+    modulos.push({ emoji: "💰", titulo: "Finanzas", to: "/finanzas", lineas });
+  });
+
+  const md = [
+    `# NucleoOS · Mi día`,
+    `**${fecha}**`,
     "",
     ...modulos.flatMap((m) => [
       `## ${m.emoji} ${m.titulo}`,

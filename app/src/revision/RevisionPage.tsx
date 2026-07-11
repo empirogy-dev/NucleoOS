@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ClipboardCopy, LineChart, Sparkles } from "lucide-react";
 import { iaConfigured, resumenRevision } from "../lib/ia";
 import {
+  armarDia,
   armarResumen,
   buscarPatrones,
+  diaDe,
   mesDe,
   semanaDe,
   type ModuloResumen,
@@ -13,9 +15,9 @@ import {
 } from "./data";
 
 // Revisión: la app no solo guarda, también explica.
-// Resúmenes por semana o mes, y patrones que cruzan los módulos.
+// La agenda día a día, resúmenes por semana o mes, y patrones entre módulos.
 
-type Tab = "semana" | "mes" | "patrones";
+type Tab = "dia" | "semana" | "mes" | "patrones";
 
 export function RevisionPage() {
   const [tab, setTab] = useState<Tab>("semana");
@@ -29,7 +31,7 @@ export function RevisionPage() {
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const periodo: Periodo = tab === "mes" ? mesDe(offset) : semanaDe(offset);
+  const periodo: Periodo = tab === "dia" ? diaDe(offset) : tab === "mes" ? mesDe(offset) : semanaDe(offset);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -38,6 +40,10 @@ export function RevisionPage() {
     try {
       if (tab === "patrones") {
         setPatrones(await buscarPatrones());
+      } else if (tab === "dia") {
+        const { modulos: m, markdown: md } = await armarDia(diaDe(offset).desde);
+        setModulos(m);
+        setMarkdown(md);
       } else {
         const p = tab === "mes" ? mesDe(offset) : semanaDe(offset);
         const { modulos: m, markdown: md } = await armarResumen(p);
@@ -83,10 +89,11 @@ export function RevisionPage() {
       <div className="page-head">
         <div className="eyebrow"><LineChart size={13} /> Panorama</div>
         <h1>Revisión</h1>
-        <p>Lo que registras, convertido en claridad: tu semana, tu mes y los patrones entre módulos.</p>
+        <p>Lo que registras, convertido en claridad: tu día como agenda, tu semana, tu mes y los patrones entre módulos.</p>
       </div>
 
       <div className="ftabs">
+        <button className={"ftab" + (tab === "dia" ? " active" : "")} onClick={() => { setTab("dia"); setOffset(0); }}>Día</button>
         <button className={"ftab" + (tab === "semana" ? " active" : "")} onClick={() => { setTab("semana"); setOffset(0); }}>Semana</button>
         <button className={"ftab" + (tab === "mes" ? " active" : "")} onClick={() => { setTab("mes"); setOffset(0); }}>Mes</button>
         <button className={"ftab" + (tab === "patrones" ? " active" : "")} onClick={() => setTab("patrones")}>Patrones</button>
@@ -133,7 +140,9 @@ export function RevisionPage() {
           ) : modulos.length === 0 ? (
             <div className="card pad" style={{ maxWidth: 640 }}>
               <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                Aún no hay datos en este período. Todo lo que registres en los módulos aparecerá aquí, ordenado.
+                {tab === "dia"
+                  ? "Este día no tiene registros todavía. Cada comida, vaso de agua, práctica o hábito que marques queda guardado en su fecha, y esta página se convierte en tu agenda."
+                  : "Aún no hay datos en este período. Todo lo que registres en los módulos aparecerá aquí, ordenado."}
               </p>
             </div>
           ) : (

@@ -100,6 +100,12 @@ Los textos de la app deben leerse como escritos por una persona, no por una IA.
 ## Accesibilidad
 - Contraste texto/fondo AA. Foco visible (outline teal 2px). Navegación por teclado en web. Objetivos táctiles ≥40px en móvil.
 
+## Reglas de layout ganadas en uso (obligatorias)
+- **Sin espacios vacíos entre tarjetas.** Regla dura de la usuaria: ningún hueco muerto entre cuadrados en ninguna página. Las cuadrículas reordenables usan columnas CSS (masonry, `.orden-grid`) que empacan hacia arriba; donde las tarjetas tienen alturas muy distintas se usa un layout curado (panelgrid) en vez de reordenable. Antes de entregar una página, mirarla: si hay un hueco, cambiar el layout.
+- **Reordenable solo donde las tarjetas son parejas** (Inicio, Energía, Relaciones). En Mente y Hábitos el diseño es curado: el reordenable les dejaba texto apretado y espacios muertos.
+- **Mínimos emojis 3D en pestañas y navegación.** La iconografía de identidad (luna, decoración) se dibuja en SVG plano con líneas y colores del tema, estilo boho line art (ver `mente/LunaFase.tsx`), nunca emoji 3D del sistema.
+- **Los formularios usan `.field`**: inputs, textareas, selects y labels ya están estilados por el sistema; nada de controles sin estilo.
+
 ## Registro de decisiones
 | Fecha | Decisión | Razón |
 |-------|----------|-------|
@@ -107,3 +113,11 @@ Los textos de la app deben leerse como escritos por una persona, no por una IA.
 | 2026-07-09 | Temas elegibles por el usuario (10 paletas, motor color-mix) | Idea de la usuaria: que cada persona ponga sus colores; evita rehacer y da diferenciación. |
 | 2026-07-09 | Default Verde salvia · Títulos Outfit Medium · Cuerpo Inter Regular | Elección de la usuaria. |
 | 2026-07-09 | 7 colores de área fijos (no cambian con el tema) | Reconocer cada área de un vistazo. |
+| 2026-07-10 | Navegación por secciones: Panorama (Inicio, Calendario, Revisión), Núcleo (Energía, Mente, Movimiento, Hábitos), Mi vida (Relaciones, Dirección, Trabajo, Finanzas, Aprendizaje), Inspiración (Visión) | La app creció de 7 áreas a un sistema de vida; el menú scrollea y la cuenta queda fija abajo. |
+| 2026-07-10 | Renombres: Salud → Energía, Objetivos → Dirección; módulos nuevos Mente, Movimiento, Revisión, Visión | Lenguaje de la usuaria: combustible diario, dirección de vida. |
+| 2026-07-11 | Lema oficial: "El sistema operativo de tu vida" | Elección de la usuaria entre opciones propuestas. |
+| 2026-07-11 | Sin espacios vacíos entre tarjetas, en ninguna página (masonry o layout curado) | Pedido firme y repetido de la usuaria: los huecos se ven feos. |
+| 2026-07-11 | Luna boho line art propia (arcos con puntas afiladas y puntitos), no emoji ni geometría 3D | Tercera iteración aprobada por la usuaria con su referencia de tatuaje. |
+| 2026-07-11 | Hábitos con color propio elegido de la paleta de áreas | Todos los cuadrados se veían rosados; cada hábito se reconoce por su color. |
+| 2026-07-11 | Copy del coach y de la app consciente del TDAH: validar primero, pasos diminutos, cero culpa | La app está pensada para personas con TDAH, la usuaria incluida. |
+| 2026-07-11 | Agenda impresa de 90 días como producto físico (prototipo en `agenda/`) | Idea de la usuaria: vender la versión en papel con stickers para el vision board. |
