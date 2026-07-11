@@ -137,11 +137,12 @@ export function daysToBirthday(birthday: string | null): number | null {
 }
 
 // ---------- Acciones por tipo de vínculo (bloque D del reporte) ----------
-export type TipoVinculo = "pareja" | "familia" | "amistad" | "colega" | "otro";
+export type TipoVinculo = "pareja" | "familia" | "hijos" | "amistad" | "colega" | "otro";
 
 export const TIPO_LABELS: Record<TipoVinculo, string> = {
   pareja: "tu pareja",
   familia: "tu familia",
+  hijos: "tus hijos",
   amistad: "tus amistades",
   colega: "tus colegas",
   otro: "tus vínculos",
@@ -151,43 +152,66 @@ export const TIPO_LABELS: Record<TipoVinculo, string> = {
 export function tipoDeVinculo(relation: string | null): TipoVinculo {
   const r = (relation ?? "").toLowerCase();
   if (/(pareja|novi|espos|marido|mujer|polol)/.test(r)) return "pareja";
-  if (/(mam|pap|madre|padre|abuel|herman|hij|ti[oa]|tí[oa]|prim|famil|suegr|cuñad)/.test(r)) return "familia";
+  if (/(hij)/.test(r)) return "hijos";
+  if (/(mam|pap|madre|padre|abuel|herman|ti[oa]|tí[oa]|prim|famil|suegr|cuñad)/.test(r)) return "familia";
   if (/(amig|amist|mejor)/.test(r)) return "amistad";
   if (/(coleg|jef[ea]|trabajo|soci[oa]|compañer|mentor)/.test(r)) return "colega";
   return "otro";
 }
 
-/** Ideas concretas por tipo de vínculo, con el espíritu de los ejemplos de la usuaria. */
+/** Ideas concretas por tipo de vínculo. Mezclan los ejemplos de la usuaria
+ *  con investigación de relaciones: Gottman (parejas), Hall (amistades),
+ *  Duke (historias familiares) y la ciencia del tiempo especial con hijos. */
 export const ACCIONES: Record<TipoVinculo, string[]> = {
   pareja: [
     "Invítale a una cita sorpresa esta semana.",
     "Un regalo chico sin motivo, solo porque sí.",
-    "Dile una cosa concreta que aprecias de él o ella.",
+    "Dile una cosa concreta que aprecias de él o ella. El aprecio dicho en voz alta es el antídoto número uno del desgaste.",
     "Planeen una escapada, aunque sea de un día.",
     "Cocinen algo rico juntos, sin apuro.",
     "Pregúntale cómo está de verdad, y escucha sin arreglar nada.",
+    "Responde a sus intentos de conexión: cuando te muestre algo o comente cualquier cosa, deja el celular y voltea. Esos gestos chicos predicen más que las citas grandes.",
+    "Un abrazo de 20 segundos o un beso de 6 al despedirse. Suena exacto, pero el punto es que dure de verdad.",
+    "20 minutos de conversación anti estrés: cada uno cuenta su día y el otro solo escucha y apoya, sin dar soluciones.",
+    "Pregúntale algo que no sepas de su mundo interno: un sueño, un miedo, algo de su infancia. Los mapas del otro se actualizan.",
   ],
   familia: [
     "Invítale un café y conversen sin apuro.",
     "Tiempo de calidad sin celulares de por medio.",
     "Págale el celular o dale un gustito inesperado.",
     "Sáquense una foto juntos, de esas que quedan.",
-    "Pídele que te cuente una historia de su juventud.",
-    "Llámale solo para saludar, sin motivo.",
+    "Pídele que te cuente una historia de su juventud. Las historias familiares son un tesoro que se pierde si nadie pregunta.",
+    "Llámale solo para saludar, sin motivo. El contacto que no pide nada es el que más se agradece.",
+    "Pregúntale cómo se conocieron tus abuelos, o cómo fue su primer trabajo.",
+    "Arma un ritual fijo: la llamada del domingo, el almuerzo del mes. Lo que tiene fecha, sobrevive.",
+    "Dile en voz alta algo que aprendiste de él o ella.",
+  ],
+  hijos: [
+    "Tiempo especial: 10 o 15 minutos al día donde el niño elige el juego y tú solo sigues. Es la herramienta más potente de la crianza.",
+    "Elogia el esfuerzo y el proceso, no solo el resultado: \"trabajaste mucho en esto\" construye más que \"qué inteligente eres\".",
+    "Ritual de acostarse: mismo orden, misma calma. La previsibilidad es amor en idioma de niños.",
+    "Pregunta por el mejor y el peor momento del día, y cuenta también los tuyos.",
+    "Cuéntale historias de la familia y de cuando tú eras chica: los niños que conocen su historia son más resilientes.",
+    "Cuando se equivoque, primero conexión y después corrección: valida la emoción antes de la lección.",
+    "Déjale una nota chiquita escondida en su mochila o almuerzo.",
   ],
   amistad: [
     "Propón un panorama concreto, con fecha incluida.",
-    "Mándale un recuerdo o un meme de los suyos.",
+    "Mándale un recuerdo o un meme de los suyos. Ese mensaje corto vale más de lo que crees: la gente subestima cuánto se agradece.",
     "Pregúntale cómo salió eso que te contó la última vez.",
     "Agenden una llamada larga como las de antes.",
     "Preséntale a alguien que le haga bien conocer.",
     "Dile por qué valoras su amistad, así tal cual.",
+    "La amistad se construye con horas compartidas: mejor juntarse seguido y simple que esperar el plan perfecto.",
+    "Crea un ritual de dos: el café del primer sábado, la caminata de los jueves. La amistad con calendario no se apaga.",
+    "Cuando te cuente una buena noticia, celébrala en grande: cómo respondes a las alegrías une más que cómo respondes a las penas.",
   ],
   colega: [
     "Reconoce su trabajo delante de otras personas.",
     "Invítale un café fuera del contexto de trabajo.",
-    "Pídele consejo en algo que domina.",
+    "Pídele consejo en algo que domina: pedir ayuda bien pedida acerca.",
     "Compártele algo útil que viste y te acordaste de él o ella.",
+    "Agradécele por escrito algo específico que hizo. Los reconocimientos que quedan, pesan.",
   ],
   otro: [
     "Manda un mensaje corto: me acordé de ti.",
@@ -196,6 +220,23 @@ export const ACCIONES: Record<TipoVinculo, string[]> = {
     "Dale las gracias por algo específico.",
   ],
 };
+
+/** Lo que dice la investigación sobre los vínculos, en corto y sin humo. */
+export const CIENCIA_VINCULOS = [
+  "El estudio más largo de la historia (Harvard, 85 años siguiendo vidas completas) llegó a una sola conclusión central: la calidad de tus relaciones es el mayor predictor de salud y felicidad. Más que el dinero, la fama o el colesterol.",
+  "Las relaciones son un músculo: los investigadores de Harvard lo llaman estar en forma social. Igual que el gimnasio, se entrena con frecuencia, no con intensidad.",
+  "En parejas, el investigador John Gottman puede predecir la estabilidad observando algo mínimo: si respondes o ignoras los pequeños intentos de conexión del otro. Voltear cuando te hablan es el gesto que más pesa.",
+  "Una amistad cercana toma alrededor de 200 horas compartidas, según el investigador Jeffrey Hall. No hay atajo, pero cada café suma.",
+  "Un estudio de 2022 lo midió: la gente subestima sistemáticamente cuánto se agradece un simple mensaje de \"me acordé de ti\". Mandarlo casi siempre vale la pena.",
+  "Los niños que conocen las historias de su familia (cómo se conocieron los abuelos, qué superaron) son más resilientes, según la investigación de Marshall Duke. Preguntar y contar es fortalecer.",
+  "La proporción mágica de Gottman: las parejas estables tienen unas cinco interacciones positivas por cada negativa. No es no pelear, es abonar más de lo que se resta.",
+];
+
+/** Nota de ciencia del día, estable durante el día. */
+export function cienciaDelDia(): string {
+  const day = Math.floor(Date.now() / 86400000);
+  return CIENCIA_VINCULOS[day % CIENCIA_VINCULOS.length];
+}
 
 /** Ideas para una persona: rotan con el día y se pueden barajar. */
 export function accionesPara(r: Relationship, cantidad = 3, giro = 0): string[] {

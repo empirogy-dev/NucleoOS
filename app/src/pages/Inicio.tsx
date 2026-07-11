@@ -9,8 +9,13 @@ import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
 import { TablesMissingError, listAccounts, listReminders, listTransactions } from "../finanzas/data";
 import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Reminder, type Tx } from "../finanzas/types";
-import { listActivity, listObjectives, objectiveProgress, type ActivityEntry, type Objective } from "../objetivos/data";
-import { listHabitLogs, listHabits, type Habit, type HabitLog } from "../habitos/data";
+import { METRICAS_AUTO, listActivity, listObjectives, metaAutoEsperado, objectiveProgress, progresoDe, valorAuto, type ActivityEntry, type Fuentes, type Objective } from "../objetivos/data";
+import { listExercise, listHabitLogs, listHabits, listRoutine, sleepHours, type ExerciseLog, type Habit, type HabitLog, type RoutineLog } from "../habitos/data";
+import { listRetoLogs, type RetoLog } from "../habitos/retos";
+import { listSesiones } from "../mente/practicas";
+import { META_AGUA_VASOS, listEnergy, metaProteina, type EnergyLog } from "../salud/energia";
+import { listMeals, totalesDia, type Meal } from "../salud/comidas";
+import { getHealthProfile, type HealthProfile } from "../salud/data";
 import { listProjects, type Project } from "../trabajo/data";
 import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSobriety, type Appointment, type Sobriety } from "../salud/data";
 import { listEntries, type Entry } from "../aprendizaje/data";
@@ -40,6 +45,12 @@ export function Inicio() {
   const [rels, setRels] = useState<Relationship[]>([]);
   const [relLogs, setRelLogs] = useState<RelLog[]>([]);
   const [relReady, setRelReady] = useState(false);
+  const [routine, setRoutine] = useState<RoutineLog[]>([]);
+  const [exercise, setExercise] = useState<ExerciseLog[]>([]);
+  const [energy, setEnergy] = useState<EnergyLog[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
+  const [perfil, setPerfil] = useState<HealthProfile | null>(null);
 
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
@@ -99,6 +110,24 @@ export function Inicio() {
     } catch {
       setRelReady(false);
     }
+    // Pulso del día y brújula (cada fuente es opcional, sin drama si falta).
+    try {
+      const [ru, ej] = await Promise.all([listRoutine(3), listExercise(7)]);
+      setRoutine(ru);
+      setExercise(ej);
+    } catch { /* sin tablas de rutina */ }
+    try {
+      setEnergy(await listEnergy(2));
+    } catch { /* sin la 0018 */ }
+    try {
+      setMeals(await listMeals(2));
+    } catch { /* sin la 0020 */ }
+    try {
+      setRetoLogs(await listRetoLogs());
+    } catch { /* sin la 0022 */ }
+    try {
+      setPerfil(await getHealthProfile());
+    } catch { /* sin ficha */ }
   }, []);
 
   useEffect(() => {
@@ -117,6 +146,30 @@ export function Inicio() {
     ? Math.round(objectives.reduce((s, o) => s + objectiveProgress(o), 0) / objectives.length)
     : null;
   const hechosHoy = new Set(habitLogs.filter((l) => l.date === hoyLocal()).map((l) => l.habit_id)).size;
+
+  // ---------- Pulso del día ----------
+  const hoyStr = hoyLocal();
+  const rutinaHoy = routine.find((r) => r.date === hoyStr);
+  const suenoAnoche = rutinaHoy ? sleepHours(rutinaHoy) : null;
+  const energiaHoy = energy.find((e) => e.date === hoyStr);
+  const agua = energiaHoy?.water_cups ?? 0;
+  const proteinaHoy = Math.round(Number(energiaHoy?.protein_g ?? 0) + totalesDia(meals, hoyStr).proteina);
+  const metaProt = metaProteina(perfil);
+  const movHoy = exercise.filter((e) => e.date === hoyStr).reduce((s, e) => s + e.minutes, 0);
+  const sesionesMenteHoy = listSesiones().filter((s) => s.fecha === hoyStr).length;
+
+  // ---------- Brújula: una meta que empuja hoy ----------
+  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity };
+  const brujula = objectives
+    .filter((o) => o.status === "en_camino" || o.status === "en_riesgo")
+    .sort((a, b) => (a.deadline ?? "9999").localeCompare(b.deadline ?? "9999"))[0] ?? null;
+  const brujulaPct = brujula ? progresoDe(brujula, fuentes) : 0;
+  const brujulaPaso = brujula?.milestones.find((m) => m.progress < 100) ?? null;
+  const brujulaMetrica = brujula?.auto_metric ? METRICAS_AUTO.find((m) => m.key === brujula.auto_metric) : null;
+  const fechaLarga = (() => {
+    const f = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+    return f.charAt(0).toUpperCase() + f.slice(1);
+  })();
 
   function avanceArea(key: string): number | null {
     const objs = objectives.filter((o) => o.area === key);
@@ -147,9 +200,9 @@ export function Inicio() {
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow"><Sparkles size={13} /> Inicio</div>
+        <div className="eyebrow"><Sparkles size={13} /> {fechaLarga}</div>
         <h1>Hola, {nombre}</h1>
-        <p>Todas tus áreas de vida en un lugar. Esto es lo que está pasando hoy.</p>
+        <p>Tu día de un vistazo: el pulso del cuerpo, tu brújula y tus áreas.</p>
       </div>
 
       {/* Visión de vida (real, editable) */}
@@ -183,31 +236,56 @@ export function Inicio() {
         )}
       </div>
 
-      {/* Stats reales (Finanzas) */}
-      <div className="statrow" style={{ gridTemplateColumns: "auto 1fr 1fr 1fr" }}>
-        <div className="card stat" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
-          <div className="ring" style={{ background: `conic-gradient(var(--accent) 0 ${globalPct ?? 0}%, var(--line) ${globalPct ?? 0}% 100%)` }}>
-            <div className="in">
-              <b className="tnum">{globalPct ?? 0}%</b>
-              <span>Mejor versión</span>
-            </div>
-          </div>
-        </div>
-        <div className="card stat"><div className="k">Avances este mes</div><div className="v tnum">{avancesMes}</div></div>
-        <div className="card stat"><div className="k">Metas en camino</div><div className="v tnum">{metasEnCamino}</div></div>
-        <div className="card stat"><div className="k">Hábitos de hoy</div><div className="v tnum">{habReady ? `${hechosHoy} / ${habits.length}` : "…"}</div></div>
+      {/* Pulso del día: señales vivas, cada una te lleva a su módulo */}
+      <div className="pulso">
+        <Link to="/salud" className="card stat"><div className="k">😴 Sueño</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></Link>
+        <Link to="/salud" className="card stat"><div className="k">💧 Agua</div><div className="v tnum">{agua}<small style={{ fontSize: 12, color: "var(--muted)" }}> de {META_AGUA_VASOS}</small></div></Link>
+        <Link to="/salud" className="card stat"><div className="k">🍗 Proteína</div><div className="v tnum">{proteinaHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> de {metaProt} g</small></div></Link>
+        <Link to="/movimiento" className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> min</small></div></Link>
+        <Link to="/mente" className="card stat"><div className="k">🕊 Mente</div><div className="v tnum">{sesionesMenteHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> {sesionesMenteHoy === 1 ? "sesión" : "sesiones"}</small></div></Link>
+        <Link to="/habitos" className="card stat"><div className="k">✓ Hábitos</div><div className="v tnum">{habReady ? `${hechosHoy}/${habits.length}` : "…"}</div></Link>
       </div>
+
+      {/* Brújula: la meta que empuja hoy */}
+      {brujula && (
+        <div className="card panel" style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <span style={{ fontSize: 20 }}>🧭</span>
+            <h3 style={{ margin: 0, flex: 1 }}>Tu brújula</h3>
+            <Link to="/objetivos" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>ver todas</Link>
+          </div>
+          <b style={{ fontSize: 15 }}>{brujula.title}</b>
+          <div className="bar" style={{ margin: "8px 0 0" }}>
+            <div className="top">
+              <span>
+                {brujulaMetrica && brujula.auto_target
+                  ? `⚡ ${valorAuto(brujula, fuentes)} de ≈${metaAutoEsperado(brujula)} ${brujulaMetrica.unidad}`
+                  : brujula.deadline ? `para el ${brujula.deadline}` : "en camino"}
+              </span>
+              <b className="tnum">{brujulaPct}%</b>
+            </div>
+            <div className="track"><div className="fill" style={{ width: `${brujulaPct}%`, background: "var(--obj)" }} /></div>
+          </div>
+          <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 8 }}>
+            {brujulaPaso
+              ? `Siguiente paso: ${brujulaPaso.title}`
+              : brujulaMetrica
+                ? `Se alimenta de ${brujulaMetrica.fuente}: un registro de hoy ya la empuja.`
+                : "Ábrela en Dirección y ponle pasos o una conexión automática."}
+          </p>
+        </div>
+      )}
 
       <CoachCard resumen={resumenCoach} />
 
       <OrdenGrid clave="inicio" bloques={[
         ...(reminders.length > 0 ? [{ id: "pagos", el: (
         <div className="card panel">
-          <h3>🔔 Próximos pagos</h3>
+          <h3>🔔 Próximo pago</h3>
           {[...reminders]
             .map((r) => ({ r, next: nextOccurrence(r) }))
             .sort((a, b) => a.next.localeCompare(b.next))
-            .slice(0, 3)
+            .slice(0, 1)
             .map(({ r, next }) => {
               const lbl = dueLabel(daysUntil(next));
               return (

@@ -146,7 +146,8 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Sueño y ejercicio de vuelta en Hábitos (también son hábitos), compartiendo datos con Energía y Movimiento.
 - [x] `[Nuevo]` Salud clínica reordenada: suplementos bajo medicamentos y la ficha a lo largo de su columna, sin espacios muertos.
 - [x] `[Nuevo]` Lema nuevo: "El sistema operativo de tu vida" (sidebar y login).
-- [ ] `[Nuevo]` Rediseño del Inicio (la usuaria elegirá entre las opciones propuestas: Hoy, Pulso del día o Brújula).
+- [x] `[Nuevo]` Inicio fusionado (Hoy + Pulso + Brújula, a pedido de la usuaria que quería las tres): saludo con nombre y fecha, Pulso del día con 6 señales tocables (sueño, agua, proteína, movimiento, Mente, hábitos), Brújula con la meta más próxima y su siguiente paso, coach, áreas y avances. Fuera el anillo "mejor versión 0%" y los pagos reducidos a uno discreto.
+- [x] `[Nuevo]` Relaciones con profundidad investigada: tipo "hijos" propio, acciones enriquecidas por vínculo (Gottman para parejas, 200 horas de Hall para amistades, historias familiares de Duke, tiempo especial con hijos) y tarjeta "Tu red de apoyo según la ciencia" con hallazgo rotativo diario (estudio de Harvard incluido).
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 

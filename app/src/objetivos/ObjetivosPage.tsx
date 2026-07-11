@@ -13,6 +13,9 @@ import {
   PLAZO_DEFECTO_DIAS,
   STATUS_LABELS,
   metaAutoEsperado,
+  progresoDe,
+  valorAuto,
+  type Fuentes,
   addActivity,
   addMilestone,
   addObjective,
@@ -21,7 +24,6 @@ import {
   deleteObjective,
   listActivity,
   listObjectives,
-  objectiveProgress,
   updateMilestoneProgress,
   updateObjective,
   type ActivityEntry,
@@ -51,37 +53,6 @@ const STATUS_TONES: Record<ObjectiveStatus, { bg: string; fg: string }> = {
 };
 
 type Tab = "metas" | "pasos" | "avances" | "logradas";
-
-/** Todo lo que puede alimentar una meta automática. */
-interface Fuentes {
-  ejercicio: ExerciseLog[];
-  sesiones: Sesion[];
-  habitLogs: HabitLog[];
-  retoLogs: RetoLog[];
-  avances: ActivityEntry[];
-}
-
-/** Valor real de una métrica automática, contado desde que la meta nació. */
-function valorAuto(o: Objective, f: Fuentes): number {
-  const desde = o.created_at ? o.created_at.slice(0, 10) : "0000-00-00";
-  if (o.auto_metric === "mov_sesiones") return f.ejercicio.filter((e) => e.date >= desde).length;
-  if (o.auto_metric === "mov_minutos") return f.ejercicio.filter((e) => e.date >= desde).reduce((s, e) => s + e.minutes, 0);
-  if (o.auto_metric === "mente_sesiones") return f.sesiones.filter((s) => s.fecha >= desde).length;
-  if (o.auto_metric === "habito_marcas") return f.habitLogs.filter((l) => l.habit_id === o.auto_ref && l.date >= desde).length;
-  if (o.auto_metric === "reto_dias") return f.retoLogs.filter((l) => l.challenge_id === o.auto_ref && l.date >= desde).length;
-  if (o.auto_metric === "area_avances") {
-    return f.avances.filter((a) => a.date >= desde && (o.area === null || a.area === o.area)).length;
-  }
-  return 0;
-}
-
-function progresoDe(o: Objective, f: Fuentes): number {
-  const esperado = metaAutoEsperado(o);
-  if (esperado !== null) {
-    return Math.min(100, Math.round((valorAuto(o, f) / esperado) * 100));
-  }
-  return objectiveProgress(o);
-}
 
 export function ObjetivosPage() {
   const [tab, setTab] = useState<Tab>("metas");

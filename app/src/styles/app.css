@@ -348,6 +348,12 @@ button{font-family:inherit}
 .guia-card:hover{border-color:var(--accent)}
 .guia-card.open{border-color:var(--accent)}
 
+/* ================= PULSO DEL DÍA (Inicio) ================= */
+.pulso{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-bottom:16px}
+.pulso .stat{padding:12px 14px;transition:border-color .15s;display:block}
+.pulso .stat:hover{border-color:var(--accent)}
+.pulso .stat .v{font-size:21px}
+
 /* ================= TARJETAS REORDENABLES ================= */
 .orden-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
 @media (max-width:740px){.orden-grid{grid-template-columns:1fr}}

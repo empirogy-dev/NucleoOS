@@ -17,6 +17,7 @@ import {
   TIPO_LABELS,
   accionDelDia,
   accionesPara,
+  cienciaDelDia,
   tipDelDia,
   tipoDeVinculo,
   type RelLog,
@@ -135,6 +136,16 @@ export function RelacionesPage() {
               })()}
               <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
                 Abre a una persona y verás ideas hechas a su medida, con el botón 🔀 para pedir otras.
+              </p>
+            </div>
+
+            <div className="card panel" style={{ alignSelf: "start" }}>
+              <h3>🔬 Tu red de apoyo, según la ciencia</h3>
+              <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
+                {cienciaDelDia()}
+              </p>
+              <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
+                Cada día aparece un hallazgo distinto de la investigación en relaciones: Harvard, Gottman, Hall y más.
               </p>
             </div>
           </div>

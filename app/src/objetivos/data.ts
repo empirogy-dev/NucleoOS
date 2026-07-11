@@ -1,5 +1,8 @@
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
+import type { ExerciseLog, HabitLog } from "../habitos/data";
+import type { RetoLog } from "../habitos/retos";
+import type { Sesion } from "../mente/practicas";
 
 export type ObjectiveStatus = "en_camino" | "en_riesgo" | "lograda" | "pausada";
 
@@ -38,6 +41,38 @@ export const METRICAS_AUTO = [
 ] as const;
 
 export const PLAZO_DEFECTO_DIAS = 90;
+
+/** Todo lo que puede alimentar una meta automática. */
+export interface Fuentes {
+  ejercicio: ExerciseLog[];
+  sesiones: Sesion[];
+  habitLogs: HabitLog[];
+  retoLogs: RetoLog[];
+  avances: ActivityEntry[];
+}
+
+/** Valor real de una métrica automática, contado desde que la meta nació. */
+export function valorAuto(o: Objective, f: Fuentes): number {
+  const desde = o.created_at ? o.created_at.slice(0, 10) : "0000-00-00";
+  if (o.auto_metric === "mov_sesiones") return f.ejercicio.filter((e) => e.date >= desde).length;
+  if (o.auto_metric === "mov_minutos") return f.ejercicio.filter((e) => e.date >= desde).reduce((s, e) => s + e.minutes, 0);
+  if (o.auto_metric === "mente_sesiones") return f.sesiones.filter((s) => s.fecha >= desde).length;
+  if (o.auto_metric === "habito_marcas") return f.habitLogs.filter((l) => l.habit_id === o.auto_ref && l.date >= desde).length;
+  if (o.auto_metric === "reto_dias") return f.retoLogs.filter((l) => l.challenge_id === o.auto_ref && l.date >= desde).length;
+  if (o.auto_metric === "area_avances") {
+    return f.avances.filter((a) => a.date >= desde && (o.area === null || a.area === o.area)).length;
+  }
+  return 0;
+}
+
+/** Progreso efectivo considerando el automático, los pasos o lo manual. */
+export function progresoDe(o: Objective, f: Fuentes): number {
+  const esperado = metaAutoEsperado(o);
+  if (esperado !== null) {
+    return Math.min(100, Math.round((valorAuto(o, f) / esperado) * 100));
+  }
+  return objectiveProgress(o);
+}
 
 /** Total esperado de la meta automática: ritmo semanal por las semanas del plazo.
  *  El plazo va desde la creación hasta la fecha límite (o 90 días si no hay). */
