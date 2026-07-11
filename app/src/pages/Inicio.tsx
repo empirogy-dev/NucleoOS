@@ -287,7 +287,10 @@ export function Inicio() {
 
       <CoachCard resumen={resumenCoach} />
 
-      <OrdenGrid clave="inicio" bloques={[
+      {/* Orden pensado para que las columnas queden parejas: lo alto primero. */}
+      <OrdenGrid clave="inicio-v2" dosColumnas bloques={(() => {
+        const prio = ["areas", "pagos", "avances", "sobriedad"];
+        const b = [
         ...(reminders.length > 0 ? [{ id: "pagos", el: (
         <div className="card panel">
           <h3>🔔 Próximo pago</h3>
@@ -388,9 +391,8 @@ export function Inicio() {
           )}
         </div>
         ) },
-      ]} />
-
-      {/* Sobriedad (datos reales desde Salud) */}
+        ...(sobriety.length > 0 ? [{ id: "sobriedad", el: (
+          <div style={{ display: "grid", gap: 12 }}>
       {sobriety.map((s) => {
         const dias = daysSince(s.start_date);
         const logrados = SOBRIETY_MILESTONES.filter((m) => dias >= m.days);
@@ -409,6 +411,11 @@ export function Inicio() {
           </div>
         );
       })}
+          </div>
+        ) }] : []),
+        ];
+        return b.sort((x, y) => prio.indexOf(x.id) - prio.indexOf(y.id));
+      })()} />
     </div>
   );
 }

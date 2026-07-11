@@ -110,30 +110,23 @@ export function RelacionesPage() {
             <div className="card stat"><div className="k">Próximo cumpleaños</div><div className="v" style={{ fontSize: 18 }}>{cumples[0] ? `🎂 ${cumples[0].r.name}, en ${cumples[0].dias} día${cumples[0].dias === 1 ? "" : "s"}` : "sin fechas"}</div></div>
           </div>
 
-          <div className="panelgrid" style={{ gridTemplateColumns: "1.5fr 1fr" }}>
-            <div style={{ display: "grid", gap: 12, alignSelf: "start" }}>
-              {rels.length === 0 && (
-                <div className="card pad">
-                  <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                    Agrega a las personas importantes de tu vida: tu mamá, tu mejor amiga, tu pareja.
-                    NucleoOS te ayudará a no dejar que la distancia crezca sin querer.
-                  </p>
-                </div>
-              )}
-              {rels.length > 0 && (
-                <>
-                  <p style={{ fontSize: 12, color: "var(--muted)", margin: "-2px 0 2px" }}>
-                    Arrastra desde el agarre ⋮ para ordenar a tus personas por prioridad.
-                  </p>
-                  <OrdenGrid clave="relaciones" lista bloques={rels.map((r) => ({
-                    id: r.id,
-                    el: <RelCard r={r} logs={logs} onChanged={() => void reload()} />,
-                  }))} />
-                </>
-              )}
+          {rels.length === 0 && (
+            <div className="card pad" style={{ marginBottom: 14 }}>
+              <p style={{ color: "var(--muted)", fontSize: 14 }}>
+                Agrega a las personas importantes de tu vida: tu mamá, tu mejor amiga, tu pareja.
+                NucleoOS te ayudará a no dejar que la distancia crezca sin querer.
+              </p>
             </div>
-
-            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+          )}
+          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+            Arrastra desde el agarre ⋮ para acomodar las tarjetas: tus personas por prioridad, la guía donde te guste.
+          </p>
+          <OrdenGrid clave="relaciones-todo" bloques={[
+            ...rels.map((r) => ({
+              id: r.id,
+              el: <RelCard r={r} logs={logs} onChanged={() => void reload()} />,
+            })),
+            { id: "guia", el: (
             <div className="card panel">
               <h3>💌 Guía para conectar</h3>
               <div className="tip-destacado">
@@ -163,7 +156,8 @@ export function RelacionesPage() {
                 Y al abrir a una persona, sus ideas llegan hechas a su medida.
               </p>
             </div>
-
+            ) },
+            { id: "ciencia", el: (
             <div className="card panel">
               <h3>🔬 Tu red de apoyo, según la ciencia</h3>
               <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
@@ -173,8 +167,8 @@ export function RelacionesPage() {
                 Cada día aparece un hallazgo distinto de la investigación en relaciones: Harvard, Gottman, Hall y más.
               </p>
             </div>
-            </div>
-          </div>
+            ) },
+          ]} />
         </>
       )}
 

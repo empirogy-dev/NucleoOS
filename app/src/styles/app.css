@@ -360,8 +360,10 @@ button{font-family:inherit}
    y no quedan huecos cuando tienen alturas distintas. */
 .orden-grid{columns:340px;column-gap:14px}
 .orden-grid>.orden-item{break-inside:avoid;margin-bottom:14px}
+.orden-grid.orden-2col{columns:2}
 .orden-grid.orden-lista{columns:auto;display:grid;grid-template-columns:1fr;gap:12px}
 .orden-grid.orden-lista>.orden-item{margin-bottom:0}
+@media (max-width:740px){.orden-grid,.orden-grid.orden-2col{columns:1}}
 .orden-item{position:relative}
 .orden-grip{position:absolute;top:12px;right:12px;z-index:5;color:var(--muted);cursor:grab;opacity:0;transition:opacity .15s;padding:4px;border-radius:7px;background:var(--surface)}
 .orden-item:hover .orden-grip{opacity:1}

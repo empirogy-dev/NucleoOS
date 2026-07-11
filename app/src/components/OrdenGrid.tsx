@@ -9,7 +9,7 @@ export interface Bloque {
   el: React.ReactNode;
 }
 
-export function OrdenGrid({ clave, bloques, lista = false }: { clave: string; bloques: Bloque[]; lista?: boolean }) {
+export function OrdenGrid({ clave, bloques, lista = false, dosColumnas = false }: { clave: string; bloques: Bloque[]; lista?: boolean; dosColumnas?: boolean }) {
   const ids = bloques.map((b) => b.id);
   const [guardado, setGuardado] = useState<string[]>(() => {
     try {
@@ -43,7 +43,7 @@ export function OrdenGrid({ clave, bloques, lista = false }: { clave: string; bl
   }
 
   return (
-    <div className={"orden-grid" + (lista ? " orden-lista" : "")}>
+    <div className={"orden-grid" + (lista ? " orden-lista" : "") + (dosColumnas ? " orden-2col" : "")}>
       {orden.map((id) => (
         <div
           key={id}
