@@ -40,6 +40,7 @@ export function RelacionesPage() {
   const [error, setError] = useState<string | null>(null);
   const [relModal, setRelModal] = useState(false);
   const [guiaTipo, setGuiaTipo] = useState<TipoVinculo>("pareja");
+  const [guiaAbierta, setGuiaAbierta] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -148,13 +149,18 @@ export function RelacionesPage() {
                   </button>
                 ))}
               </div>
-              {ACCIONES[guiaTipo].map((idea) => (
+              {(guiaAbierta ? ACCIONES[guiaTipo] : ACCIONES[guiaTipo].slice(0, 5)).map((idea) => (
                 <p key={idea} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>
                   {idea}
                 </p>
               ))}
+              {ACCIONES[guiaTipo].length > 5 && (
+                <button className="linklike" style={{ marginTop: 8 }} onClick={() => setGuiaAbierta(!guiaAbierta)}>
+                  {guiaAbierta ? "Ver menos" : `Ver las ${ACCIONES[guiaTipo].length} ideas`}
+                </button>
+              )}
               <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-                Y al abrir a una persona, sus ideas llegan hechas a su medida, con el 🔀 para pedir otras.
+                Y al abrir a una persona, sus ideas llegan hechas a su medida.
               </p>
             </div>
 
@@ -239,8 +245,10 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
               <span style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600 }}>
                 Ideas para {r.name}
               </span>
-              <button className="xdel" aria-label="Otras ideas" title="Otras ideas" style={{ width: 22, height: 22, fontSize: 12 }}
-                onClick={() => setGiro(giro + 1)}>🔀</button>
+              <button className="chip" style={{ border: "none", cursor: "pointer" }}
+                aria-label="Pedir otras ideas" onClick={() => setGiro(giro + 1)}>
+                🔀 Otras ideas
+              </button>
             </div>
             {accionesPara(r, 3, giro).map((idea) => (
               <p key={idea} style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, padding: "3px 0" }}>💡 {idea}</p>

@@ -1,21 +1,45 @@
 import { useState } from "react";
-import { Compass } from "lucide-react";
-import { consejoCoach, iaConfigured } from "../lib/ia";
+import { Compass, Send } from "lucide-react";
+import { consejoCoach, hablarConCoach, iaConfigured } from "../lib/ia";
 
-// Coach v1: la primera versión del corazón de NucleoOS. Recibe un resumen
-// del estado real de la vida del usuario y pide a la IA una devolución
-// cálida y accionable. En la fase del agente será proactivo y por voz.
+// Coach conversable: mira tu estado real y además puedes contarle cómo
+// te sientes o preguntarle. Pensado para TDAH: pasos chicos, cero culpa.
+
+interface Mensaje {
+  de: "yo" | "coach";
+  texto: string;
+}
 
 export function CoachCard({ resumen }: { resumen: string }) {
-  const [consejo, setConsejo] = useState<string | null>(null);
+  const [charla, setCharla] = useState<Mensaje[]>([]);
+  const [texto, setTexto] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function pedir() {
+  async function pedirConsejo() {
     setBusy(true);
     setErr(null);
     try {
-      setConsejo(await consejoCoach(resumen));
+      const consejo = await consejoCoach(resumen);
+      setCharla((c) => [...c, { de: "coach", texto: consejo }]);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    const mensaje = texto.trim();
+    if (!mensaje) return;
+    setTexto("");
+    setErr(null);
+    setCharla((c) => [...c, { de: "yo", texto: mensaje }]);
+    setBusy(true);
+    try {
+      const respuesta = await hablarConCoach(resumen, charla, mensaje);
+      setCharla((c) => [...c, { de: "coach", texto: respuesta }]);
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
     } finally {
@@ -29,21 +53,41 @@ export function CoachCard({ resumen }: { resumen: string }) {
       {!iaConfigured ? (
         <p style={{ fontSize: 13, color: "var(--muted)" }}>
           Para activar el coach, agrega tu llave gratuita de Gemini como VITE_GEMINI_API_KEY en app/.env
-          (la misma de los resúmenes de Aprendizaje) y reinicia el servidor.
+          y reinicia el servidor.
         </p>
       ) : (
         <>
-          {consejo && <div className="coach-msg">{consejo}</div>}
-          {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
-          {!consejo && !busy && (
+          {charla.length === 0 && !busy && (
             <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-              Tu coach mira tus metas, hábitos, avances y pagos, y te dice qué va bien, qué necesita atención y
-              qué paso pequeño dar hoy.
+              Cuéntale cómo te sientes o pregúntale lo que quieras: conoce tus metas, hábitos, avances y pagos.
+              O pídele un consejo general con el botón.
             </p>
           )}
-          <button className="btn ghost" disabled={busy} onClick={() => void pedir()}>
-            {busy ? "Pensando…" : consejo ? "Pedir otro consejo" : "Pedir un consejo"}
-          </button>
+          {charla.map((m, i) => (
+            m.de === "coach" ? (
+              <div className="coach-msg" key={i}>{m.texto}</div>
+            ) : (
+              <div key={i} className="coach-yo">{m.texto}</div>
+            )
+          ))}
+          {busy && <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>Pensando…</p>}
+          {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
+          <form onSubmit={enviar} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input
+              className="input-inline"
+              style={{ flex: "1 1 220px" }}
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder="Cuéntale cómo te sientes o pregúntale algo…"
+              disabled={busy}
+            />
+            <button className="btn primary" disabled={busy || !texto.trim()} aria-label="Enviar al coach">
+              <Send size={14} style={{ verticalAlign: "-2px" }} />
+            </button>
+            <button type="button" className="btn ghost" disabled={busy} onClick={() => void pedirConsejo()}>
+              {charla.length > 0 ? "Otro consejo" : "Pedir un consejo"}
+            </button>
+          </form>
         </>
       )}
     </div>

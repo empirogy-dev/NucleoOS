@@ -123,6 +123,9 @@ export async function saveHealthProfile(p: HealthProfile): Promise<void> {
   const { error } = await sb()
     .from("health_profile")
     .upsert({ user_id: await uid(), ...p, updated_at: new Date().toISOString() });
+  if (error && /schema cache/i.test(error.message)) {
+    throw new Error("Supabase aún no refresca su esquema tras la migración. En el SQL Editor corre: NOTIFY pgrst, 'reload schema'; espera unos segundos y reintenta.");
+  }
   if (error && /activity_level/.test(error.message)) {
     throw new Error("Para el nivel de actividad falta la migración 0029 (supabase/migrations/0029_actividad.sql).");
   }

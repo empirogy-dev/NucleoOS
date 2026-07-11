@@ -267,6 +267,7 @@ button{font-family:inherit}
 
 /* ================= COACH ================= */
 .coach-msg{font-size:13.5px;line-height:1.6;color:var(--ink-soft);white-space:pre-wrap;background:var(--accent-wash);border-radius:var(--r-md);padding:14px 16px;margin-bottom:12px}
+.coach-yo{font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;margin:0 0 12px auto;max-width:85%;width:fit-content}
 
 /* ================= MENÚ CATEGORIZADO ================= */
 .nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);font-weight:600;padding:12px 11px 5px}
@@ -355,9 +356,12 @@ button{font-family:inherit}
 .pulso .stat .v{font-size:21px}
 
 /* ================= TARJETAS REORDENABLES ================= */
-.orden-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
-.orden-grid.orden-lista{grid-template-columns:1fr;gap:12px}
-@media (max-width:740px){.orden-grid{grid-template-columns:1fr}}
+/* Mosaico con columnas CSS: las tarjetas se empacan hacia arriba
+   y no quedan huecos cuando tienen alturas distintas. */
+.orden-grid{columns:340px;column-gap:14px}
+.orden-grid>.orden-item{break-inside:avoid;margin-bottom:14px}
+.orden-grid.orden-lista{columns:auto;display:grid;grid-template-columns:1fr;gap:12px}
+.orden-grid.orden-lista>.orden-item{margin-bottom:0}
 .orden-item{position:relative}
 .orden-grip{position:absolute;top:12px;right:12px;z-index:5;color:var(--muted);cursor:grab;opacity:0;transition:opacity .15s;padding:4px;border-radius:7px;background:var(--surface)}
 .orden-item:hover .orden-grip{opacity:1}

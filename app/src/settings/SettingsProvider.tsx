@@ -7,8 +7,9 @@ interface SettingsCtx {
   currency: string;
   displayName: string;
   lifeVision: string;
+  birthday: string;
   setCurrency: (c: string) => Promise<void>;
-  updateProfile: (p: { display_name?: string; life_vision?: string }) => Promise<string | null>;
+  updateProfile: (p: { display_name?: string; life_vision?: string; birthday?: string | null }) => Promise<string | null>;
   /** true si la tabla profiles aún no existe (migración 0002 pendiente) */
   profileTableMissing: boolean;
 }
@@ -19,6 +20,7 @@ const Ctx = createContext<SettingsCtx>({
   currency: "CAD",
   displayName: "",
   lifeVision: "",
+  birthday: "",
   setCurrency: async () => {},
   updateProfile: async () => null,
   profileTableMissing: false,
@@ -39,6 +41,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [displayName, setDisplayName] = useState("");
   const [lifeVision, setLifeVision] = useState("");
+  const [birthday, setBirthday] = useState("");
   const [profileTableMissing, setMissing] = useState(false);
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
         setDisplayName(data.display_name ?? "");
         setLifeVision(data.life_vision ?? "");
+        setBirthday(data.birthday ?? "");
       }
     })();
   }, []);
@@ -75,6 +79,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (/life_vision/.test(error.message)) {
         return "Falta la migración 0003 (columna life_vision). Córrela en el SQL Editor.";
       }
+      if (/birthday/.test(error.message)) {
+        return "Para tu cumpleaños falta la migración 0031 (supabase/migrations/0031_perfil_cumple.sql).";
+      }
       return error.message;
     }
     return null;
@@ -86,17 +93,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     await upsert({ default_currency: c });
   }
 
-  async function updateProfile(p: { display_name?: string; life_vision?: string }) {
+  async function updateProfile(p: { display_name?: string; life_vision?: string; birthday?: string | null }) {
     const err = await upsert(p);
     if (!err) {
       if (p.display_name !== undefined) setDisplayName(p.display_name);
       if (p.life_vision !== undefined) setLifeVision(p.life_vision);
+      if (p.birthday !== undefined) setBirthday(p.birthday ?? "");
     }
     return err;
   }
 
   return (
-    <Ctx.Provider value={{ currency, displayName, lifeVision, setCurrency, updateProfile, profileTableMissing }}>
+    <Ctx.Provider value={{ currency, displayName, lifeVision, birthday, setCurrency, updateProfile, profileTableMissing }}>
       {children}
     </Ctx.Provider>
   );

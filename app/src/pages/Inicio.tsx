@@ -23,7 +23,7 @@ import { listRelLogs, listRelationships, needsReconnect, type RelLog, type Relat
 
 export function Inicio() {
   const { session } = useAuth();
-  const { currency, displayName, lifeVision, updateProfile } = useSettings();
+  const { currency, displayName, lifeVision, birthday, updateProfile } = useSettings();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
@@ -201,8 +201,17 @@ export function Inicio() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><Sparkles size={13} /> {fechaLarga}</div>
-        <h1>Hola, {nombre}</h1>
-        <p>Tu día de un vistazo: el pulso del cuerpo, tu brújula y tus áreas.</p>
+        {birthday && birthday.slice(5) === hoyStr.slice(5) ? (
+          <>
+            <h1>¡Feliz cumpleaños, {nombre}! 🎂</h1>
+            <p>Hoy el sistema celebra a su núcleo: tú. Regálate algo lindo y un día a tu ritmo.</p>
+          </>
+        ) : (
+          <>
+            <h1>Hola, {nombre}</h1>
+            <p>Tu día de un vistazo: el pulso del cuerpo, tu brújula y tus áreas.</p>
+          </>
+        )}
       </div>
 
       {/* Visión de vida (real, editable) */}

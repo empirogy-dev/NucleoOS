@@ -149,6 +149,12 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Inicio fusionado (Hoy + Pulso + Brújula, a pedido de la usuaria que quería las tres): saludo con nombre y fecha, Pulso del día con 6 señales tocables (sueño, agua, proteína, movimiento, Mente, hábitos), Brújula con la meta más próxima y su siguiente paso, coach, áreas y avances. Fuera el anillo "mejor versión 0%" y los pagos reducidos a uno discreto.
 - [x] `[Nuevo]` Relaciones con profundidad investigada: tipo "hijos" propio, acciones enriquecidas por vínculo (Gottman para parejas, 200 horas de Hall para amistades, historias familiares de Duke, tiempo especial con hijos) y tarjeta "Tu red de apoyo según la ciencia" con hallazgo rotativo diario (estudio de Harvard incluido).
 - [x] `[Nuevo]` Relaciones visible de verdad (segundo pase tras feedback): las personas se ordenan por prioridad arrastrando, y la Guía para conectar tiene pestañas Pareja, Hijos, Familia, Amistades y Colegas con el listado completo de consejos a la vista.
+- [x] `[Bug]` Ficha con 0029 corrida seguía fallando: era el caché de esquema de PostgREST; el error ahora explica el comando NOTIFY pgrst, 'reload schema'.
+- [x] `[Nuevo]` Mosaico sin huecos: las cuadrículas reordenables usan columnas CSS (masonry), las tarjetas se empacan hacia arriba en todas las páginas que las usan (Inicio, Energía).
+- [x] `[Nuevo]` Coach conversable y consciente del TDAH: puedes contarle cómo te sientes o preguntarle, valida primero y orienta con pasos diminutos, cero culpa y reinicios sin drama.
+- [x] `[Nuevo]` Tu cumpleaños en Ajustes (migración 0031): el día señalado, el Inicio te celebra a ti. Amor propio.
+- [x] `[Bug]` Relaciones: el 🔀 del pie parecía botón sin serlo (texto corregido), el botón real ahora dice "🔀 Otras ideas", y la guía muestra 5 ideas con "Ver las N ideas" para no estirar la columna.
+- [ ] `[Nuevo]` Google Calendar (Fase 4, necesita OAuth con servidor) y Notion API directa (Fase 4); mientras tanto Revisión exporta Markdown listo para pegar.
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 

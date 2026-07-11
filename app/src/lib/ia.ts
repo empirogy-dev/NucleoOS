@@ -162,6 +162,29 @@ Datos del período:
 ${datos}` }]);
 }
 
+const PROMPT_CHARLA =
+  "Eres el coach personal de NucleoOS, un sistema de vida hecho especialmente para personas con TDAH. " +
+  "Hablas en español cercano y cálido, sin guiones largos, con comas y puntos. Principios: pasos diminutos " +
+  "(la versión de dos minutos cuenta), cero culpa (los reinicios son parte del sistema, no fracasos), " +
+  "una cosa a la vez, externalizar en la app en vez de confiar en la memoria, y celebrar lo hecho. " +
+  "Si la persona cuenta cómo se siente, primero valida en una frase, después orienta. " +
+  "Responde en máximo 110 palabras, sin listas ni encabezados. Puedes sugerir dónde registrar algo en la app " +
+  "(Energía, Mente, Hábitos, Dirección, Relaciones) cuando calce natural.";
+
+/** Conversación con el coach: el estado real más lo que la persona escribe. */
+export async function hablarConCoach(resumen: string, historial: Array<{ de: "yo" | "coach"; texto: string }>, mensaje: string): Promise<string> {
+  const charla = historial.slice(-6).map((m) => `${m.de === "yo" ? "Persona" : "Coach"}: ${m.texto}`).join("\n");
+  return generate([{
+    text: `${PROMPT_CHARLA}
+
+Estado actual de su vida (contexto, no lo repitas entero):
+${resumen}
+
+${charla ? `Conversación previa:\n${charla}\n` : ""}Persona: ${mensaje}
+Coach:`,
+  }]);
+}
+
 /** Consejo del coach a partir del resumen real del usuario. */
 export async function consejoCoach(resumen: string): Promise<string> {
   return generate([{ text: `${PROMPT_COACH}

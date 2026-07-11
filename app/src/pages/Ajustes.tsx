@@ -51,6 +51,7 @@ export function Ajustes() {
 
       <div className="grid" style={{ maxWidth: 640 }}>
         <NameCard />
+        <CumpleCard />
         <div className="card pad">
           <h3 style={{ fontSize: 15, marginBottom: 4 }}>Moneda predeterminada</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
@@ -135,6 +136,41 @@ function NameCard() {
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>Cómo quieres que te salude la app.</p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
         <input className="input-inline" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Bárbara" />
+        <button className="btn primary" type="submit">Guardar</button>
+      </form>
+      {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
+      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
+    </div>
+  );
+}
+
+function CumpleCard() {
+  const { birthday, updateProfile } = useSettings();
+  const [value, setValue] = useState(birthday);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => setValue(birthday), [birthday]);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    const res = await updateProfile({ birthday: value || null });
+    if (res) setErr(res);
+    else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  }
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>Tu cumpleaños 🎂</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        Amor propio: la app también te celebra a ti. El día de tu cumpleaños, el Inicio se pone de fiesta.
+      </p>
+      <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
+        <input className="input-inline" type="date" value={value} onChange={(e) => setValue(e.target.value)} aria-label="Tu fecha de cumpleaños" />
         <button className="btn primary" type="submit">Guardar</button>
       </form>
       {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
