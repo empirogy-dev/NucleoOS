@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
-import { Check, ChevronDown, ChevronRight, Compass, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Compass, Pencil, Plus, Trash2 } from "lucide-react";
 import { AREAS } from "../areas";
 import { TablesMissingError } from "../finanzas/data";
 import { listDreams, type Dream } from "../vision/suenos";
@@ -9,7 +9,9 @@ import { listExercise, listHabitLogs, listHabits, type ExerciseLog, type Habit, 
 import { listSesiones, type Sesion } from "../mente/practicas";
 import {
   METRICAS_AUTO,
+  PLAZO_DEFECTO_DIAS,
   STATUS_LABELS,
+  metaAutoEsperado,
   addActivity,
   addMilestone,
   addObjective,
@@ -67,8 +69,9 @@ function valorAuto(o: Objective, f: Fuentes): number {
 }
 
 function progresoDe(o: Objective, f: Fuentes): number {
-  if (o.auto_metric && o.auto_target) {
-    return Math.min(100, Math.round((valorAuto(o, f) / o.auto_target) * 100));
+  const esperado = metaAutoEsperado(o);
+  if (esperado !== null) {
+    return Math.min(100, Math.round((valorAuto(o, f) / esperado) * 100));
   }
   return objectiveProgress(o);
 }
@@ -325,8 +328,10 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, onChanged }: {
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [editando, setEditando] = useState(false);
   const [newMs, setNewMs] = useState("");
-  const esAuto = Boolean(o.auto_metric && o.auto_target);
+  const esperado = metaAutoEsperado(o);
+  const esAuto = esperado !== null;
   const metrica = METRICAS_AUTO.find((m) => m.key === o.auto_metric) ?? null;
   const habitoDe = o.auto_metric === "habito_marcas" ? habitos.find((h) => h.id === o.auto_ref) ?? null : null;
   const valor = esAuto ? valorAuto(o, fuentes) : 0;
@@ -367,16 +372,20 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, onChanged }: {
           title="Cambiar estado" onClick={() => void cycleStatus()}>
           {STATUS_LABELS[o.status]}
         </button>
+        <button className="xdel" title="Editar meta" aria-label="Editar meta" onClick={() => setEditando(true)}>
+          <Pencil size={13} />
+        </button>
         <button className="xdel" aria-label="Eliminar meta" onClick={async () => { if (!window.confirm(`¿Eliminar la meta ${o.title}? También se borran sus pasos.`)) return; await deleteObjective(o.id); onChanged(); }}>
           <Trash2 size={14} />
         </button>
       </div>
+      {editando && <EditObjectiveModal o={o} onClose={() => setEditando(false)} onSaved={() => { setEditando(false); onChanged(); }} />}
 
       <div className="bar" style={{ margin: "12px 0 0" }}>
         <div className="top">
           <span>
             {esAuto && metrica
-              ? `⚡ se alimenta solo${habitoDe ? ` de ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}: ${valor} de ${o.auto_target} ${metrica.unidad}`
+              ? `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` de ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
               : hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}
           </span>
           <b className="tnum">{pct}%</b>
@@ -472,20 +481,71 @@ function AutoConfig({ o, habitos, onChanged }: { o: Objective; habitos: Habit[];
           </select>
         )}
         {metric && (
-          <input className="input-inline" type="number" min={1} max={100000} value={target} placeholder="meta"
-            aria-label="Cantidad objetivo" style={{ maxWidth: 100, flex: "none" }}
-            onChange={(e) => setTarget(e.target.value)} />
+          <>
+            <input className="input-inline" type="number" min={1} max={10000} value={target} placeholder="3"
+              aria-label="Ritmo por semana" style={{ maxWidth: 80, flex: "none" }}
+              onChange={(e) => setTarget(e.target.value)} />
+            <span style={{ fontSize: 12.5, color: "var(--muted)" }}>por semana</span>
+          </>
         )}
         <button className="btn ghost" type="button" onClick={() => void guardar()}>Guardar</button>
         {saved && <span className="chip">✓ Conectada</span>}
       </div>
-      {metric && (
-        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-          La meta avanza sola con cada registro de {METRICAS_AUTO.find((m) => m.key === metric)?.fuente ?? "la app"}, contando desde que la creaste.
-        </p>
-      )}
+      {metric && target && Number(target) > 0 && (() => {
+        const m = METRICAS_AUTO.find((x) => x.key === metric);
+        const esperado = metaAutoEsperado({ ...o, auto_metric: metric, auto_target: Number(target) });
+        if (!m || !esperado) return null;
+        return (
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6, lineHeight: 1.5 }}>
+            Con tu plazo{o.deadline ? ` hasta el ${o.deadline}` : ` (${PLAZO_DEFECTO_DIAS} días por defecto, edita la meta y ponle fecha límite para afinarlo)`},
+            son ≈{esperado} {m.unidad} en total: cada {m.singular} avanza ≈{Math.max(0.1, Math.round((100 / esperado) * 10) / 10)}%. Un día a la vez.
+          </p>
+        );
+      })()}
       {err && <p style={{ fontSize: 12, color: "var(--err)", marginTop: 6 }}>{err}</p>}
     </div>
+  );
+}
+
+/** Editar lo esencial de una meta: título, área y fecha límite. */
+function EditObjectiveModal({ o, onClose, onSaved }: { o: Objective; onClose: () => void; onSaved: () => void }) {
+  const [title, setTitle] = useState(o.title);
+  const [area, setArea] = useState(o.area ?? "");
+  const [deadline, setDeadline] = useState(o.deadline ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      await updateObjective(o.id, { title, area: area || null, deadline: deadline || null });
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ModalShell title="Editar meta" onClose={onClose}>
+      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
+      <form onSubmit={save}>
+        <div className="field"><label>La meta</label>
+          <input required value={title} onChange={(e) => setTitle(e.target.value)} autoFocus /></div>
+        <div className="field"><label>Área de la vida</label>
+          <select value={area} onChange={(e) => setArea(e.target.value)}>
+            {AREA_OPTIONS.map((a) => <option key={a.key} value={a.key}>{a.name}</option>)}
+          </select></div>
+        <div className="field"><label>Fecha límite</label>
+          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+          La fecha límite también define el plazo del progreso automático: con ella la meta sabe cuántas semanas tiene.
+        </p>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar cambios"}</button>
+      </form>
+    </ModalShell>
   );
 }
 
@@ -536,13 +596,14 @@ function ObjectiveModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
               {METRICAS_AUTO.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
             </select></div>
           {metric && (
-            <div className="field" style={{ maxWidth: 110 }}><label>Objetivo</label>
-              <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="50" /></div>
+            <div className="field" style={{ maxWidth: 120 }}><label>Por semana</label>
+              <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="3" /></div>
           )}
         </div>
         {metric && (
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-            Cada registro real (una rutina, una caminata, una sesión) hará avanzar esta meta solo.
+            Con la fecha límite, la meta calcula cuántas {METRICAS_AUTO.find((m) => m.key === metric)?.unidad ?? "veces"} son en total,
+            y cada registro real avanza su porcentaje, un día a la vez.
           </p>
         )}
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear meta"}</button>

@@ -26,13 +26,28 @@ export interface Objective {
   milestones: Milestone[];
 }
 
-/** Métricas con las que una meta puede alimentarse sola (migración 0024). */
+/** Métricas con las que una meta puede alimentarse sola (migración 0024).
+ *  auto_target guarda el ritmo POR SEMANA; el total esperado sale del plazo. */
 export const METRICAS_AUTO = [
-  { key: "mov_sesiones", label: "Sesiones de movimiento", unidad: "sesiones", fuente: "Movimiento y Energía" },
-  { key: "mov_minutos", label: "Minutos de movimiento", unidad: "min", fuente: "Movimiento y Energía" },
-  { key: "mente_sesiones", label: "Sesiones de Mente", unidad: "sesiones", fuente: "Mente" },
-  { key: "habito_marcas", label: "Días de un hábito", unidad: "días", fuente: "Hábitos" },
+  { key: "mov_sesiones", label: "Sesiones de movimiento", unidad: "sesiones", singular: "sesión", fuente: "Movimiento y Energía" },
+  { key: "mov_minutos", label: "Minutos de movimiento", unidad: "min", singular: "minuto", fuente: "Movimiento y Energía" },
+  { key: "mente_sesiones", label: "Sesiones de Mente", unidad: "sesiones", singular: "sesión", fuente: "Mente" },
+  { key: "habito_marcas", label: "Días de un hábito", unidad: "días", singular: "día", fuente: "Hábitos" },
 ] as const;
+
+export const PLAZO_DEFECTO_DIAS = 90;
+
+/** Total esperado de la meta automática: ritmo semanal por las semanas del plazo.
+ *  El plazo va desde la creación hasta la fecha límite (o 90 días si no hay). */
+export function metaAutoEsperado(o: Objective): number | null {
+  if (!o.auto_metric || !o.auto_target) return null;
+  const inicio = o.created_at ? new Date(o.created_at) : new Date();
+  const fin = o.deadline
+    ? new Date(`${o.deadline}T00:00:00`)
+    : new Date(inicio.getTime() + PLAZO_DEFECTO_DIAS * 86400000);
+  const dias = Math.max(7, Math.round((fin.getTime() - inicio.getTime()) / 86400000));
+  return Math.max(1, Math.round((dias / 7) * o.auto_target));
+}
 
 export interface ActivityEntry {
   id: string;
@@ -127,7 +142,7 @@ export async function addObjective(o: { title: string; area: string | null; dead
   check(error);
 }
 
-export async function updateObjective(id: string, patch: { status?: ObjectiveStatus; progress?: number; auto_metric?: string | null; auto_target?: number | null; auto_ref?: string | null }): Promise<void> {
+export async function updateObjective(id: string, patch: { title?: string; area?: string | null; deadline?: string | null; status?: ObjectiveStatus; progress?: number; auto_metric?: string | null; auto_target?: number | null; auto_ref?: string | null }): Promise<void> {
   const { error } = await sb().from("objectives").update(patch).eq("id", id);
   if (error && /auto_metric|auto_target|auto_ref/.test(error.message)) {
     throw new Error("Para el progreso automático falta la migración 0024 (supabase/migrations/0024_metas_automaticas.sql).");

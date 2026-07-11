@@ -115,6 +115,8 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Tarjetas reordenables extendidas a Inicio, Mente (Prácticas), Hábitos y todas las pestañas de Energía (Hoy, Nutrición, Movimiento, Sueño, Recuperación, Salud clínica).
 - [x] `[Nuevo]` Programas propios en Movimiento (migración 0025): crear, editar y eliminar programas con nombre, ícono, objetivo, días y rutinas que se ciclan; los originales quedan como sugeridos.
 - [x] `[Nuevo]` Metas alimentadas también por hábitos: métrica Días de un hábito con selección del hábito (auto_ref en la 0024), completando la cadena sueño → meta → movimiento, práctica o hábito.
+- [x] `[Nuevo]` Metas editables (lápiz): título, área y fecha límite.
+- [x] `[Nuevo]` Progreso automático por ritmo semanal: se define "X por semana" y el total esperado sale del plazo hasta la fecha límite (90 días si no hay), con vista previa del porcentaje que avanza cada registro. Un día a la vez, sin saltos a 100%.
 - [ ] `[Nuevo]` Reordenar con el dedo en el celular (hoy funciona con mouse; el arrastre táctil llega con la app móvil o con pointer events).
 
 ## Bloque G, al final
