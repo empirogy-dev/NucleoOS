@@ -7,7 +7,15 @@ export interface Habit {
   name: string;
   icon: string | null;
   target_days: number | null;
+  color: string | null;
+  daily_minutes: number | null;
 }
+
+/** Paleta de colores para los hábitos, tomada de las áreas de la app. */
+export const COLORES_HABITO = [
+  "var(--hab)", "var(--obj)", "var(--fin)", "var(--sal)", "var(--tra)",
+  "var(--apr)", "var(--rel)", "var(--men)", "var(--mov)",
+] as const;
 
 export interface HabitLog {
   id: string;
@@ -62,28 +70,60 @@ function daysAgo(n: number): string {
 
 // ---------- Hábitos ----------
 export async function listHabits(): Promise<Habit[]> {
-  const { data, error } = await sb().from("habits").select("id,name,icon,target_days").order("created_at");
+  const { data, error } = await sb().from("habits").select("id,name,icon,target_days,color,daily_minutes").order("created_at");
+  if (error && /color|daily_minutes/.test(error.message)) {
+    // La migración 0030 aún no se corre: leemos sin color ni minutos.
+    const medio = await sb().from("habits").select("id,name,icon,target_days").order("created_at");
+    if (medio.error && /target_days/.test(medio.error.message)) {
+      const legado = await sb().from("habits").select("id,name,icon").order("created_at");
+      check(legado.error);
+      return (legado.data ?? []).map((h) => ({ ...h, target_days: null, color: null, daily_minutes: null })) as Habit[];
+    }
+    check(medio.error);
+    return (medio.data ?? []).map((h) => ({ ...h, color: null, daily_minutes: null })) as Habit[];
+  }
   if (error && /target_days/.test(error.message)) {
-    // La migración 0014 aún no se corre: leemos sin duración.
     const legado = await sb().from("habits").select("id,name,icon").order("created_at");
     check(legado.error);
-    return (legado.data ?? []).map((h) => ({ ...h, target_days: null })) as Habit[];
+    return (legado.data ?? []).map((h) => ({ ...h, target_days: null, color: null, daily_minutes: null })) as Habit[];
   }
   check(error);
   return (data ?? []) as Habit[];
 }
 
-export async function addHabit(name: string, icon: string | null, targetDays: number | null): Promise<string> {
-  const { data, error } = await sb()
-    .from("habits")
-    .insert({ name, icon, target_days: targetDays, user_id: await uid() })
-    .select("id")
-    .single();
-  if (error && /target_days/.test(error.message)) {
+export interface HabitInput {
+  name: string;
+  icon: string | null;
+  target_days: number | null;
+  color: string | null;
+  daily_minutes: number | null;
+}
+
+function errorHabito(error: { message: string } | null): void {
+  if (!error) return;
+  if (/color|daily_minutes/.test(error.message)) {
+    throw new Error("Para el color y los minutos del hábito falta la migración 0030 (supabase/migrations/0030_habitos_color.sql).");
+  }
+  if (/target_days/.test(error.message)) {
     throw new Error("Falta la migración 0014 en Supabase (supabase/migrations/0014_habitos_reto.sql).");
   }
+}
+
+export async function addHabit(h: HabitInput): Promise<string> {
+  const { data, error } = await sb()
+    .from("habits")
+    .insert({ ...h, user_id: await uid() })
+    .select("id")
+    .single();
+  errorHabito(error);
   check(error);
   return (data as { id: string }).id;
+}
+
+export async function updateHabit(id: string, patch: Partial<HabitInput>): Promise<void> {
+  const { error } = await sb().from("habits").update(patch).eq("id", id);
+  errorHabito(error);
+  check(error);
 }
 
 export async function deleteHabit(id: string): Promise<void> {

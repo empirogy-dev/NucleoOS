@@ -140,6 +140,8 @@ button{font-family:inherit}
 .ms-sel{font-family:var(--sans);font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 
 /* ================= HÁBITOS ================= */
+.color-swatch{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);cursor:pointer;outline-offset:2px;transition:transform .1s}
+.color-swatch:hover{transform:scale(1.12)}
 .hcheck{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:grid;place-items:center;flex:none;transition:background .15s,border-color .15s}
 .hcheck:hover{border-color:var(--accent)}
 .hcheck.done{background:var(--accent);border-color:var(--accent)}

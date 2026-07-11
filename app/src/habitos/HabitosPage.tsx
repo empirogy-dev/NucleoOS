@@ -3,20 +3,31 @@ import { IconField } from "../components/IconField";
 import { Link } from "react-router-dom";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Repeat, Trash2 } from "lucide-react";
+import { Moon, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 import { RetosTab } from "./RetosTab";
 import {
+  COLORES_HABITO,
+  EXERCISE_KINDS,
+  addExercise,
   addHabit,
+  deleteExercise,
   deleteHabit,
+  listExercise,
   listHabitLogs,
   HABITOS_DE_PAZ,
   listHabits,
+  listRoutine,
+  saveRoutine,
+  sleepHours,
   streakFor,
   toggleHabit,
+  updateHabit,
+  type ExerciseLog,
   type Habit,
   type HabitLog,
+  type RoutineLog,
 } from "./data";
 
 function isoDaysAgo(n: number): string {
@@ -28,10 +39,12 @@ function isoDaysAgo(n: number): string {
 export function HabitosPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
+  const [routine, setRoutine] = useState<RoutineLog[]>([]);
+  const [exercise, setExercise] = useState<ExerciseLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [habitModal, setHabitModal] = useState<{ base?: { name: string; icon: string; dias: number } } | null>(null);
+  const [habitModal, setHabitModal] = useState<{ base?: { name: string; icon: string; dias: number }; habit?: Habit } | null>(null);
   const [tabH, setTabH] = useState<"habitos" | "retos">("habitos");
 
   const hoy = hoyLocal();
@@ -40,9 +53,11 @@ export function HabitosPage() {
     setLoading(true);
     setError(null);
     try {
-      const [h, l] = await Promise.all([listHabits(), listHabitLogs()]);
+      const [h, l, r, e] = await Promise.all([listHabits(), listHabitLogs(), listRoutine(), listExercise()]);
       setHabits(h);
       setLogs(l);
+      setRoutine(r);
+      setExercise(e);
       setNeedsMigration(false);
     } catch (e) {
       if (e instanceof TablesMissingError) setNeedsMigration(true);
@@ -58,6 +73,11 @@ export function HabitosPage() {
 
   const doneToday = new Set(logs.filter((l) => l.date === hoy).map((l) => l.habit_id));
   const mejorRacha = habits.reduce((max, h) => Math.max(max, streakFor(h.id, logs)), 0);
+  const semana = isoDaysAgo(6);
+  const minutosSemana = exercise.filter((e) => e.date >= semana).reduce((s, e) => s + e.minutes, 0);
+  const suenos = routine.map(sleepHours).filter((h): h is number => h !== null);
+  const promedioSueno = suenos.length ? Math.round((suenos.reduce((a, b) => a + b, 0) / suenos.length) * 10) / 10 : null;
+  const rutinaHoy = routine.find((r) => r.date === hoy);
   const existentes = new Set(habits.map((x) => x.name.toLowerCase()));
   const sugeridos = HABITOS_DE_PAZ.filter((x) => !existentes.has(x.name.toLowerCase()));
 
@@ -88,12 +108,15 @@ export function HabitosPage() {
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
       ) : (
         <>
-          <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
             <div className="card stat"><div className="k">Hábitos de hoy</div><div className="v tnum">{doneToday.size} / {habits.length}</div></div>
             <div className="card stat"><div className="k">Mejor racha</div><div className="v tnum">{mejorRacha > 0 ? `🔥 ${mejorRacha}` : "0"}</div></div>
+            <div className="card stat"><div className="k">Ejercicio (7 días)</div><div className="v tnum">{minutosSemana} min</div></div>
+            <div className="card stat"><div className="k">Sueño promedio</div><div className="v tnum">{promedioSueno !== null ? `${promedioSueno} h` : "sin datos"}</div></div>
           </div>
 
           <div className="panelgrid">
+            {/* Checklist de hábitos */}
             <div className="card panel">
               <h3>Hábitos de hoy</h3>
               {habits.length === 0 && (
@@ -105,6 +128,7 @@ export function HabitosPage() {
                 const done = doneToday.has(h.id);
                 const racha = streakFor(h.id, logs);
                 const objetivo = h.target_days ?? 28;
+                const color = h.color ?? "var(--hab)";
                 const ventana: string[] = [];
                 for (let i = objetivo - 1; i >= 0; i -= 1) ventana.push(isoDaysAgo(i));
                 const marcados = new Set(logs.filter((l) => l.habit_id === h.id).map((l) => l.date));
@@ -115,29 +139,40 @@ export function HabitosPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <button
                         className={"hcheck" + (done ? " done" : "")}
+                        style={done ? { background: color, borderColor: color } : undefined}
                         aria-label={done ? "Desmarcar hoy" : "Marcar hoy como hecho"}
                         onClick={async () => { await toggleHabit(h.id, hoy, !done); void reload(); }}>
                         {done ? "✓" : ""}
                       </button>
                       <div className="txmeta">
                         <b style={{ color: done ? "var(--muted)" : "var(--ink)" }}>{h.icon} {h.name}</b>
-                        <small>{racha > 0 ? `racha de ${racha} día${racha === 1 ? "" : "s"} 🔥, ` : ""}desafío de {objetivo} días</small>
+                        <small>
+                          {racha > 0 ? `racha de ${racha} día${racha === 1 ? "" : "s"} 🔥, ` : ""}
+                          desafío de {objetivo} días{h.daily_minutes ? `, ${h.daily_minutes} min al día` : ""}
+                        </small>
                       </div>
                       {logrado
                         ? <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🎉 {hechos} / {objetivo}</span>
                         : <span className="chip">{hechos} / {objetivo}</span>}
+                      <button className="xdel" title="Editar hábito" aria-label="Editar hábito" onClick={() => setHabitModal({ habit: h })}>
+                        <Pencil size={13} />
+                      </button>
                       <button className="xdel" aria-label="Eliminar hábito" onClick={async () => { if (!window.confirm(`¿Eliminar el hábito ${h.name}? Se pierde su historial.`)) return; await deleteHabit(h.id); void reload(); }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
                     <div className="habit-grid" title="Toca un día para marcarlo o desmarcarlo">
-                      {ventana.map((f) => (
-                        <button key={f} type="button"
-                          className={"hg-cell" + (marcados.has(f) ? " on" : "") + (f === hoy ? " today" : "")}
-                          aria-label={`${f}${marcados.has(f) ? ", hecho" : ""}`}
-                          title={f}
-                          onClick={async () => { await toggleHabit(h.id, f, !marcados.has(f)); void reload(); }} />
-                      ))}
+                      {ventana.map((f) => {
+                        const on = marcados.has(f);
+                        return (
+                          <button key={f} type="button"
+                            className={"hg-cell" + (on ? " on" : "") + (f === hoy ? " today" : "")}
+                            style={on ? { background: color, borderColor: color } : undefined}
+                            aria-label={`${f}${on ? ", hecho" : ""}`}
+                            title={f}
+                            onClick={async () => { await toggleHabit(h.id, f, !on); void reload(); }} />
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -145,15 +180,11 @@ export function HabitosPage() {
               <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setHabitModal({})}>
                 <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo hábito
               </button>
-            </div>
-
-            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
               {sugeridos.length > 0 && (
-                <div className="card panel">
-                  <h3>🌿 Sugeridos para tu paz</h3>
-                  <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-                    Tócalo, elige por cuántos días, y queda listo para trackear.
-                  </p>
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>
+                    Sugeridos para tu paz
+                  </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {sugeridos.map((x) => (
                       <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
@@ -165,24 +196,49 @@ export function HabitosPage() {
                   </div>
                 </div>
               )}
-              <Link to="/salud" className="card pad vb-link" style={{ marginBottom: 0 }}>
-                <span style={{ fontSize: 22 }}>⚡</span>
-                <span>
-                  <b style={{ display: "block", fontSize: 14 }}>El sueño y el ejercicio se mudaron a Energía</b>
-                  <small style={{ fontSize: 12.5, color: "var(--muted)" }}>
-                    Ahí registras agua, proteína, movimiento y descanso, todo el combustible de tu cuerpo.
-                  </small>
-                </span>
-              </Link>
-              <Link to="/mente" className="card pad vb-link" style={{ marginBottom: 0 }}>
-                <span style={{ fontSize: 22 }}>🧘</span>
-                <span>
-                  <b style={{ display: "block", fontSize: 14 }}>Meditaciones y respiración en Mente</b>
-                  <small style={{ fontSize: 12.5, color: "var(--muted)" }}>
-                    Sesiones guiadas de 2 a 30 minutos y el calendario lunar.
-                  </small>
-                </span>
-              </Link>
+            </div>
+
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              {/* Sueño: también es un hábito */}
+              <div className="card panel">
+                <h3><Moon size={14} style={{ verticalAlign: "-2px" }} /> Sueño</h3>
+                <div className="frow">
+                  <div className="field">
+                    <label>Anoche me acosté</label>
+                    <input type="time" defaultValue={rutinaHoy?.bed_time ?? ""} key={`bed-${rutinaHoy?.id ?? "new"}`}
+                      onBlur={async (e) => { if (e.target.value) { await saveRoutine(hoy, { bed_time: e.target.value }); void reload(); } }} />
+                  </div>
+                  <div className="field">
+                    <label>Hoy me levanté</label>
+                    <input type="time" defaultValue={rutinaHoy?.wake_time ?? ""} key={`wake-${rutinaHoy?.id ?? "new"}`}
+                      onBlur={async (e) => { if (e.target.value) { await saveRoutine(hoy, { wake_time: e.target.value }); void reload(); } }} />
+                  </div>
+                </div>
+                {rutinaHoy && sleepHours(rutinaHoy) !== null && (
+                  <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>Anoche dormiste <b className="tnum">{sleepHours(rutinaHoy)} horas</b>.</p>
+                )}
+              </div>
+
+              {/* Ejercicio: también es un hábito */}
+              <div className="card panel">
+                <h3>Ejercicio</h3>
+                <ExerciseForm onSaved={() => void reload()} />
+                {exercise.slice(0, 4).map((e) => (
+                  <div className="txrow" key={e.id} style={{ padding: "7px 0" }}>
+                    <div className="txmeta">
+                      <b style={{ fontSize: 13 }}>{e.kind}</b>
+                      <small>{e.date}</small>
+                    </div>
+                    <b className="tnum" style={{ fontSize: 13 }}>{e.minutes} min</b>
+                    <button className="xdel" aria-label="Eliminar ejercicio" onClick={async () => { await deleteExercise(e.id); void reload(); }}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+                <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>
+                  El detalle completo (calorías, semana, rutinas) vive en <Link to="/salud" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Energía</Link> y <Link to="/movimiento" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Movimiento</Link>. Aquí se registra igual de rápido.
+                </p>
+              </div>
             </div>
           </div>
         </>
@@ -192,7 +248,10 @@ export function HabitosPage() {
 
       <AvancesArea area="habitos" />
 
-      {habitModal && <HabitModal base={habitModal.base} onClose={() => setHabitModal(null)} onSaved={() => { setHabitModal(null); void reload(); }} />}
+      {habitModal && (
+        <HabitModal base={habitModal.base} habit={habitModal.habit}
+          onClose={() => setHabitModal(null)} onSaved={() => { setHabitModal(null); void reload(); }} />
+      )}
     </div>
   );
 }
@@ -202,25 +261,56 @@ function Head() {
     <div className="page-head">
       <div className="eyebrow"><Repeat size={13} /> Núcleo</div>
       <h1>Hábitos</h1>
-      <p>Las rutinas que construyen tu día, un check a la vez.</p>
+      <p>Sueño, ejercicio y las rutinas que construyen tu día, un check a la vez.</p>
     </div>
   );
 }
 
-function HabitModal({ base, onClose, onSaved }: {
+function ExerciseForm({ onSaved }: { onSaved: () => void }) {
+  const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
+  const [minutes, setMinutes] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!minutes) return;
+    setBusy(true);
+    await addExercise(hoyLocal(), kind, Number(minutes));
+    setMinutes("");
+    setBusy(false);
+    onSaved();
+  }
+
+  return (
+    <form onSubmit={save} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+      <select className="ms-sel" style={{ flex: 1 }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Tipo de ejercicio">
+        {EXERCISE_KINDS.map((k) => <option key={k}>{k}</option>)}
+      </select>
+      <input className="input-inline" style={{ width: 90, flex: "none" }} type="number" min="1" placeholder="min"
+        value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label="Minutos" />
+      <button className="btn ghost" type="submit" disabled={busy}>Anotar</button>
+    </form>
+  );
+}
+
+function HabitModal({ base, habit, onClose, onSaved }: {
   base?: { name: string; icon: string; dias: number };
+  habit?: Habit;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [name, setName] = useState(base?.name ?? "");
-  const [icon, setIcon] = useState(base?.icon ?? "🌱");
-  const [dias, setDias] = useState(String(base?.dias ?? 28));
+  const [name, setName] = useState(habit?.name ?? base?.name ?? "");
+  const [icon, setIcon] = useState(habit?.icon ?? base?.icon ?? "🌱");
+  const [dias, setDias] = useState(String(habit?.target_days ?? base?.dias ?? 28));
+  const [color, setColor] = useState(habit?.color ?? "var(--hab)");
+  const [minutos, setMinutos] = useState(habit?.daily_minutes != null ? String(habit.daily_minutes) : "");
   const [metas, setMetas] = useState<Objective[]>([]);
   const [metaId, setMetaId] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    if (habit) return; // la conexión a meta se ofrece al crear
     void (async () => {
       try {
         setMetas((await listObjectives()).filter((o) => o.status !== "lograda"));
@@ -228,53 +318,77 @@ function HabitModal({ base, onClose, onSaved }: {
         /* sin metas disponibles, el select no se muestra */
       }
     })();
-  }, []);
+  }, [habit]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    let habitId: string;
+    const datos = {
+      name,
+      icon,
+      target_days: dias ? Number(dias) : null,
+      color: color === "var(--hab)" ? null : color,
+      daily_minutes: minutos ? Number(minutos) : null,
+    };
     try {
-      habitId = await addHabit(name, icon, dias ? Number(dias) : null);
+      if (habit) {
+        await updateHabit(habit.id, datos);
+        onSaved();
+        return;
+      }
+      const habitId = await addHabit(datos);
+      if (metaId) {
+        try {
+          await updateObjective(metaId, { auto_metric: "habito_marcas", auto_ref: habitId, auto_target: 7 });
+        } catch (ex) {
+          setErr(`El hábito quedó creado, pero no pude conectarlo a la meta: ${ex instanceof Error ? ex.message : String(ex)}`);
+          setBusy(false);
+          return;
+        }
+      }
+      onSaved();
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
       setBusy(false);
-      return;
     }
-    if (metaId) {
-      try {
-        await updateObjective(metaId, { auto_metric: "habito_marcas", auto_ref: habitId, auto_target: 7 });
-      } catch (ex) {
-        setErr(`El hábito quedó creado, pero no pude conectarlo a la meta: ${ex instanceof Error ? ex.message : String(ex)}`);
-        setBusy(false);
-        return;
-      }
-    }
-    onSaved();
   }
 
   return (
     <div className="tp-overlay" onClick={onClose}>
-      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
-        <h3 style={{ marginBottom: 14 }}>Nuevo hábito</h3>
-        {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+        <h3 style={{ marginBottom: 14 }}>{habit ? "Editar hábito" : "Nuevo hábito"}</h3>
+        {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
           <div className="frow">
             <div className="field" style={{ flex: 1 }}><label>Nombre</label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Meditar 10 minutos" autoFocus /></div>
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Proyección de familia" autoFocus /></div>
             <IconField value={icon} onChange={setIcon} />
           </div>
-          <div className="field"><label>¿Por cuánto tiempo?</label>
-            <select value={dias} onChange={(e) => setDias(e.target.value)}>
-              <option value="7">7 días</option>
-              <option value="14">14 días</option>
-              <option value="21">21 días</option>
-              <option value="28">28 días</option>
-              <option value="66">66 días (hábito instalado)</option>
-              <option value="90">90 días</option>
-            </select></div>
-          {metas.length > 0 && (
+          <div className="frow">
+            <div className="field"><label>¿Por cuánto tiempo?</label>
+              <select value={dias} onChange={(e) => setDias(e.target.value)}>
+                <option value="7">7 días</option>
+                <option value="14">14 días</option>
+                <option value="21">21 días</option>
+                <option value="28">28 días</option>
+                <option value="66">66 días (hábito instalado)</option>
+                <option value="90">90 días</option>
+              </select></div>
+            <div className="field" style={{ maxWidth: 130 }}><label>Minutos al día</label>
+              <input type="number" min={1} max={600} value={minutos} onChange={(e) => setMinutos(e.target.value)} placeholder="10" /></div>
+          </div>
+          <div className="field"><label>Color de la cuadrícula</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {["var(--hab)", ...COLORES_HABITO.filter((c) => c !== "var(--hab)")].map((c) => (
+                <button key={c} type="button" className="color-swatch"
+                  style={{ background: c, outline: color === c ? "2px solid var(--ink)" : "none" }}
+                  aria-label={`Color ${c}`} aria-pressed={color === c}
+                  onClick={() => setColor(c)} />
+              ))}
+            </div>
+          </div>
+          {!habit && metas.length > 0 && (
             <div className="field"><label>¿A qué dirección de tu vida apunta? (opcional)</label>
               <select value={metaId} onChange={(e) => setMetaId(e.target.value)}>
                 <option value="">Ninguna meta por ahora</option>
@@ -288,9 +402,11 @@ function HabitModal({ base, onClose, onSaved }: {
             </div>
           )}
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-            Verás una cuadrícula con cada día del desafío. Tocas un día y queda marcado: tu avance, visible.
+            Verás una cuadrícula con cada día del desafío, pintada con tu color. Tocas un día y queda marcado.
           </p>
-          <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear hábito"}</button>
+          <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>
+            {busy ? "Guardando…" : habit ? "Guardar cambios" : "Crear hábito"}
+          </button>
         </form>
       </div>
     </div>

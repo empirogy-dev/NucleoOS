@@ -147,10 +147,6 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo medicamento
             </button>
           </div>
-        </div>
-
-        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          {profile && <FichaCard profile={profile} onSaved={() => void reload()} />}
 
           <div className="card panel">
             <h3>🌿 Suplementos</h3>
@@ -175,6 +171,10 @@ export function ClinicaTab() {
               <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo suplemento
             </button>
           </div>
+        </div>
+
+        <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+          {profile && <FichaCard profile={profile} onSaved={() => void reload()} />}
         </div>
       </div>
 

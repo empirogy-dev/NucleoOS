@@ -142,6 +142,11 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Métrica "Avances registrados en su área" (migración 0028): una meta de Aprendizaje se alimenta de los avances que registras en Aprendizaje, y lo mismo para cualquier área.
 - [x] `[Nuevo]` Consolidación de gastos: la pestaña Transacciones es ahora bandeja Por revisar (sin categoría) y Archivo (consolidado por mes). Al categorizar o dividir un movimiento, sale solo de la bandeja.
 - [x] `[Nuevo]` Nivel de actividad en la ficha (migración 0029): la meta de proteína se calcula sola con peso × actividad, de 1.0 g por kilo (vida tranquila) a 2.0 (entrena casi a diario).
+- [x] `[Nuevo]` Hábitos con color propio y minutos al día (migración 0030): cada hábito elige su color de la paleta de la app para la cuadrícula y el check, y puede definir cuánto tiempo diario ("proyección de familia, 10 min al día"). Con lápiz para editar hábitos existentes.
+- [x] `[Nuevo]` Sueño y ejercicio de vuelta en Hábitos (también son hábitos), compartiendo datos con Energía y Movimiento.
+- [x] `[Nuevo]` Salud clínica reordenada: suplementos bajo medicamentos y la ficha a lo largo de su columna, sin espacios muertos.
+- [x] `[Nuevo]` Lema nuevo: "El sistema operativo de tu vida" (sidebar y login).
+- [ ] `[Nuevo]` Rediseño del Inicio (la usuaria elegirá entre las opciones propuestas: Hoy, Pulso del día o Brújula).
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 

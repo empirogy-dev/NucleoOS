@@ -30,7 +30,7 @@ export function Login() {
           <div className="logo">N</div>
           <div>
             <b>NucleoOS</b>
-            <small>Tu sistema de vida</small>
+            <small>El sistema operativo de tu vida</small>
           </div>
         </div>
 
