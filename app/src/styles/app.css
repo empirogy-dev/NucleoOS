@@ -363,6 +363,8 @@ button{font-family:inherit}
 .orden-grid.orden-2col{columns:2}
 .orden-grid.orden-lista{columns:auto;display:grid;grid-template-columns:1fr;gap:12px}
 .orden-grid.orden-lista>.orden-item{margin-bottom:0}
+/* En filas anchas el basurero vive en la esquina: el agarre se corre a su lado */
+.orden-grid.orden-lista .orden-grip{top:14px;right:46px}
 @media (max-width:740px){.orden-grid,.orden-grid.orden-2col{columns:1}}
 .orden-item{position:relative}
 .orden-grip{position:absolute;top:12px;right:12px;z-index:5;color:var(--muted);cursor:grab;opacity:0;transition:opacity .15s;padding:4px;border-radius:7px;background:var(--surface)}

@@ -109,65 +109,75 @@ export function RelacionesPage() {
             <div className="card stat"><div className="k">Próximo cumpleaños</div><div className="v" style={{ fontSize: 18 }}>{cumples[0] ? `🎂 ${cumples[0].r.name}, en ${cumples[0].dias} día${cumples[0].dias === 1 ? "" : "s"}` : "sin fechas"}</div></div>
           </div>
 
-          {rels.length === 0 && (
-            <div className="card pad" style={{ marginBottom: 14 }}>
-              <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                Agrega a las personas importantes de tu vida: tu mamá, tu mejor amiga, tu pareja.
-                NucleoOS te ayudará a no dejar que la distancia crezca sin querer.
-              </p>
-            </div>
-          )}
-          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
-            Arrastra desde el agarre ⋮ para acomodar las tarjetas: tus personas por prioridad, la guía donde te guste.
-          </p>
-          <OrdenGrid clave="relaciones-todo" bloques={[
-            ...rels.map((r) => ({
-              id: r.id,
-              el: <RelCard r={r} logs={logs} onChanged={() => void reload()} />,
-            })),
-            { id: "guia", el: (
-            <div className="card panel">
-              <h3>💌 Guía para conectar</h3>
-              <div className="tip-destacado">
-                <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--accent-ink)", fontWeight: 600, marginBottom: 6 }}>Tip de hoy</div>
-                {tipDelDia()}
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "4px 0 10px" }}>
-                {GUIA_TIPOS.map((t) => (
-                  <button key={t.key} className={"ftab" + (guiaTipo === t.key ? " active" : "")}
-                    style={{ padding: "6px 13px", fontSize: 12.5 }}
-                    onClick={() => setGuiaTipo(t.key)}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-              {(guiaAbierta ? ACCIONES[guiaTipo] : ACCIONES[guiaTipo].slice(0, 5)).map((idea) => (
-                <p key={idea} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>
-                  {idea}
-                </p>
-              ))}
-              {ACCIONES[guiaTipo].length > 5 && (
-                <button className="linklike" style={{ marginTop: 8 }} onClick={() => setGuiaAbierta(!guiaAbierta)}>
-                  {guiaAbierta ? "Ver menos" : `Ver las ${ACCIONES[guiaTipo].length} ideas`}
-                </button>
+          {/* Franja del tip, a lo ancho */}
+          <div className="tip-destacado" style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--accent-ink)", fontWeight: 600, marginBottom: 6 }}>Tip de hoy</div>
+            {tipDelDia()}
+          </div>
+
+          <div className="panelgrid" style={{ alignItems: "start" }}>
+            {/* Personas como lista ancha, arrastrables por prioridad */}
+            <div>
+              {rels.length === 0 ? (
+                <div className="card pad">
+                  <p style={{ color: "var(--muted)", fontSize: 14 }}>
+                    Agrega a las personas importantes de tu vida: tu mamá, tu mejor amiga, tu pareja.
+                    NucleoOS te ayudará a no dejar que la distancia crezca sin querer.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {rels.length > 1 && (
+                    <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+                      Arrastra desde el agarre ⋮ para ordenar a tus personas por prioridad.
+                    </p>
+                  )}
+                  <OrdenGrid clave="relaciones-personas" lista bloques={rels.map((r) => ({
+                    id: r.id,
+                    el: <RelCard r={r} logs={logs} onChanged={() => void reload()} />,
+                  }))} />
+                </>
               )}
-              <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-                Y al abrir a una persona, sus ideas llegan hechas a su medida.
-              </p>
             </div>
-            ) },
-            { id: "ciencia", el: (
-            <div className="card panel">
-              <h3>🔬 Tu red de apoyo, según la ciencia</h3>
-              <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-                {cienciaDelDia()}
-              </p>
-              <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-                Cada día aparece un hallazgo distinto de la investigación en relaciones: Harvard, Gottman, Hall y más.
-              </p>
+
+            {/* Guía y ciencia en su columna fija */}
+            <div style={{ display: "grid", gap: 14, alignContent: "start" }}>
+              <div className="card panel">
+                <h3>💌 Guía para conectar</h3>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "4px 0 10px" }}>
+                  {GUIA_TIPOS.map((t) => (
+                    <button key={t.key} className={"ftab" + (guiaTipo === t.key ? " active" : "")}
+                      style={{ padding: "6px 13px", fontSize: 12.5 }}
+                      onClick={() => setGuiaTipo(t.key)}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                {(guiaAbierta ? ACCIONES[guiaTipo] : ACCIONES[guiaTipo].slice(0, 5)).map((idea) => (
+                  <p key={idea} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>
+                    {idea}
+                  </p>
+                ))}
+                {ACCIONES[guiaTipo].length > 5 && (
+                  <button className="linklike" style={{ marginTop: 8 }} onClick={() => setGuiaAbierta(!guiaAbierta)}>
+                    {guiaAbierta ? "Ver menos" : `Ver las ${ACCIONES[guiaTipo].length} ideas`}
+                  </button>
+                )}
+                <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
+                  Y al abrir a una persona, sus ideas llegan hechas a su medida.
+                </p>
+              </div>
+              <div className="card panel">
+                <h3>🔬 Tu red de apoyo, según la ciencia</h3>
+                <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
+                  {cienciaDelDia()}
+                </p>
+                <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
+                  Cada día aparece un hallazgo distinto de la investigación en relaciones: Harvard, Gottman, Hall y más.
+                </p>
+              </div>
             </div>
-            ) },
-          ]} />
+          </div>
         </>
       )}
 
