@@ -119,6 +119,17 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Progreso automático por ritmo semanal: se define "X por semana" y el total esperado sale del plazo hasta la fecha límite (90 días si no hay), con vista previa del porcentaje que avanza cada registro. Un día a la vez, sin saltos a 100%.
 - [ ] `[Nuevo]` Reordenar con el dedo en el celular (hoy funciona con mouse; el arrastre táctil llega con la app móvil o con pointer events).
 
+## Afinamiento antes del deployment (11 jul 2026)
+- [x] `[Bug]` Mente se veía apretado con las tarjetas reordenables: vuelve a su diseño curado de dos columnas (el reordenable sigue en Inicio, Energía y Hábitos, donde las tarjetas son parejas).
+- [x] `[Bug]` Foto del plato: la llave era válida pero el modelo gemini-2.5-flash fue retirado para cuentas nuevas; la app usa ahora gemini-flash-latest (verificado con imagen real).
+- [x] `[Nuevo]` Hábitos y retos apuntan a una dirección: al crearlos se elige "¿A qué dirección de tu vida apunta?" y la meta queda conectada sola (hábito a ritmo diario, reto a su ritmo semanal). Métrica reto_dias en la migración 0026.
+- [x] `[Nuevo]` Agua y retos conectados: al llegar a los 8 vasos, el reto de agua activo se marca solo, y la tarjeta lo explica.
+- [x] `[Nuevo]` Movimiento: workout libre (tipo, minutos y kcal estimadas) en Entrenamiento, y duración elegible en cada rutina antes de comenzar.
+- [x] `[Nuevo]` Calorías estimadas (MET por tipo y tu peso de la ficha): en registros de hoy, semana de movimiento y balance contra lo comido en Nutrición.
+- [x] `[Nuevo]` Regulación: exposición al frío (ducha fría guiada) y retos sugeridos de redes sociales y ducha fría.
+- [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
+- [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

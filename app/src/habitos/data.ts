@@ -73,12 +73,17 @@ export async function listHabits(): Promise<Habit[]> {
   return (data ?? []) as Habit[];
 }
 
-export async function addHabit(name: string, icon: string | null, targetDays: number | null): Promise<void> {
-  const { error } = await sb().from("habits").insert({ name, icon, target_days: targetDays, user_id: await uid() });
+export async function addHabit(name: string, icon: string | null, targetDays: number | null): Promise<string> {
+  const { data, error } = await sb()
+    .from("habits")
+    .insert({ name, icon, target_days: targetDays, user_id: await uid() })
+    .select("id")
+    .single();
   if (error && /target_days/.test(error.message)) {
     throw new Error("Falta la migración 0014 en Supabase (supabase/migrations/0014_habitos_reto.sql).");
   }
   check(error);
+  return (data as { id: string }).id;
 }
 
 export async function deleteHabit(id: string): Promise<void> {

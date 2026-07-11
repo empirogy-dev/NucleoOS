@@ -33,6 +33,7 @@ export const METRICAS_AUTO = [
   { key: "mov_minutos", label: "Minutos de movimiento", unidad: "min", singular: "minuto", fuente: "Movimiento y Energía" },
   { key: "mente_sesiones", label: "Sesiones de Mente", unidad: "sesiones", singular: "sesión", fuente: "Mente" },
   { key: "habito_marcas", label: "Días de un hábito", unidad: "días", singular: "día", fuente: "Hábitos" },
+  { key: "reto_dias", label: "Días de un reto", unidad: "días", singular: "día", fuente: "Hábitos, pestaña Retos" },
 ] as const;
 
 export const PLAZO_DEFECTO_DIAS = 90;
@@ -144,6 +145,9 @@ export async function addObjective(o: { title: string; area: string | null; dead
 
 export async function updateObjective(id: string, patch: { title?: string; area?: string | null; deadline?: string | null; status?: ObjectiveStatus; progress?: number; auto_metric?: string | null; auto_target?: number | null; auto_ref?: string | null }): Promise<void> {
   const { error } = await sb().from("objectives").update(patch).eq("id", id);
+  if (error && /auto_metric_check/.test(error.message)) {
+    throw new Error("Para conectar retos a metas falta la migración 0026 (supabase/migrations/0026_meta_reto.sql).");
+  }
   if (error && /auto_metric|auto_target|auto_ref/.test(error.message)) {
     throw new Error("Para el progreso automático falta la migración 0024 (supabase/migrations/0024_metas_automaticas.sql).");
   }

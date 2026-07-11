@@ -5,7 +5,9 @@ import { AvancesArea } from "../components/AvancesArea";
 import { IconField } from "../components/IconField";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
-import { addExercise } from "../habitos/data";
+import { EXERCISE_KINDS, addExercise } from "../habitos/data";
+import { getHealthProfile } from "../salud/data";
+import { estimarKcal } from "../salud/energia";
 import {
   PROGRAMAS,
   RUTINAS,
@@ -50,6 +52,7 @@ export function MovimientoPage() {
         <button className={"ftab" + (tab === "programas" ? " active" : "")} onClick={() => setTab("programas")}>Programas</button>
       </div>
 
+      {tab === "entrenamiento" && <WorkoutLibre />}
       {(tab === "suave" || tab === "entrenamiento") && (
         <Catalogo tipo={tab} onAbrir={setRutina} />
       )}
@@ -100,14 +103,83 @@ function Catalogo({ tipo, onAbrir }: { tipo: TipoRutina; onAbrir: (r: Rutina) =>
   );
 }
 
+// ---------- Registro de workout libre ----------
+function WorkoutLibre() {
+  const [kind, setKind] = useState<string>("Gimnasio");
+  const [min, setMin] = useState("");
+  const [peso, setPeso] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [hecho, setHecho] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setPeso((await getHealthProfile())?.weight_kg ?? null);
+      } catch { /* sin ficha, se estima con 65 kg */ }
+    })();
+  }, []);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!min) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await addExercise(hoyLocal(), kind, Number(min));
+      const kcal = estimarKcal(kind, Number(min), peso);
+      setHecho(`✓ ${kind}, ${min} min, ≈${kcal} kcal. Quedó en Energía y alimenta tus metas conectadas.`);
+      setMin("");
+      setTimeout(() => setHecho(null), 6000);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card panel" style={{ marginBottom: 14 }}>
+      <h3>🏋️ Mi workout libre</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+        ¿Entrenaste por tu cuenta, fuera de un programa? Regístralo aquí y queda logueado con sus calorías estimadas.
+      </p>
+      <form onSubmit={save} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <select className="ms-sel" style={{ padding: "9px 10px" }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Tipo de entrenamiento">
+          {EXERCISE_KINDS.map((k) => <option key={k}>{k}</option>)}
+        </select>
+        <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)}
+          placeholder="minutos" style={{ maxWidth: 110, flex: "none" }} aria-label="Minutos" />
+        {min && <span style={{ fontSize: 12, color: "var(--muted)" }}>≈{estimarKcal(kind, Number(min), peso)} kcal</span>}
+        <button className="btn primary" disabled={busy || !min}>{busy ? "Guardando…" : "Registrar"}</button>
+      </form>
+      {hecho && <span className="chip" style={{ marginTop: 10, background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>{hecho}</span>}
+      {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
+    </div>
+  );
+}
+
 // ---------- Reproductor de rutina ----------
 function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void }) {
-  const total = rutina.minutos * 60;
-  const [restante, setRestante] = useState(total);
+  const [minutos, setMinutos] = useState(rutina.minutos);
+  const total = minutos * 60;
+  const [restante, setRestante] = useState(rutina.minutos * 60);
   const [corriendo, setCorriendo] = useState(false);
   const [completada, setCompletada] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [peso, setPeso] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  const duraciones = [...new Set([rutina.minutos, 5, 10, 15, 20, 30])].sort((a, b) => a - b);
+  const iniciado = restante < total || corriendo;
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setPeso((await getHealthProfile())?.weight_kg ?? null);
+      } catch { /* sin ficha, se estima con 65 kg */ }
+    })();
+  }, []);
 
   useEffect(() => {
     if (!corriendo || restante <= 0) return;
@@ -123,7 +195,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
     setGuardando(true);
     setErr(null);
     try {
-      await addExercise(hoyLocal(), rutina.categoria, rutina.minutos);
+      await addExercise(hoyLocal(), rutina.categoria, minutos);
       setCompletada(true);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -136,9 +208,19 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
         <h3 style={{ marginBottom: 4 }}>{rutina.emoji} {rutina.nombre}</h3>
-        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
-          {rutina.minutos} minutos, {NIVEL_LABEL[rutina.nivel]}. {rutina.descripcion}
+        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>
+          {NIVEL_LABEL[rutina.nivel]}. {rutina.descripcion}
         </p>
+        {!iniciado && !completada && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12.5, color: "var(--muted)" }}>¿Cuánto tiempo tienes?</span>
+            <select className="ms-sel" value={minutos} aria-label="Duración de la rutina"
+              onChange={(e) => { const m = Number(e.target.value); setMinutos(m); setRestante(m * 60); }}>
+              {duraciones.map((d) => <option key={d} value={d}>{d} min{d === rutina.minutos ? " (sugerido)" : ""}</option>)}
+            </select>
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>≈{estimarKcal(rutina.categoria, minutos, peso)} kcal</span>
+          </div>
+        )}
 
         <div style={{ textAlign: "center", marginBottom: 8 }}>
           <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 40, fontWeight: 500, color: restante === 0 ? "var(--ok)" : "var(--ink)" }}>
@@ -164,7 +246,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
           )}
           {completada ? (
             <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>
-              🎉 Registrada en Energía como {rutina.categoria}, {rutina.minutos} min
+              🎉 Registrada: {rutina.categoria}, {minutos} min, ≈{estimarKcal(rutina.categoria, minutos, peso)} kcal
             </span>
           ) : (
             <button className="btn primary" disabled={guardando} onClick={() => void completar()}>

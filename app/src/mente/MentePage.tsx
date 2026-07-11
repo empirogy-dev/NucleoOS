@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Brain } from "lucide-react";
-import { OrdenGrid } from "../components/OrdenGrid";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { faseLunar, proximasLunas } from "./lunar";
 import {
@@ -88,32 +87,27 @@ export function MentePage() {
               {CATEGORIAS_MENTE.find((c) => c.key === categoria)?.descripcion}
             </p>
           )}
-          <OrdenGrid clave="mente-practicas" bloques={[
-            ...(respiraciones.length > 0 ? [{
-              id: "respiracion",
-              el: (
+          <div className="panelgrid">
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
+              {respiraciones.length > 0 && (
                 <ListaPracticas
                   titulo="🫁 Respiración guiada"
                   intro="Con círculo animado y una señal sonora suave en cada cambio: inhalar, sostener, exhalar."
                   practicas={respiraciones}
                   onComenzar={(practica, minutos) => setSesion({ practica, minutos })}
                 />
-              ),
-            }] : []),
-            ...(meditaciones.length > 0 ? [{
-              id: "meditacion",
-              el: (
+              )}
+              {meditaciones.length > 0 && (
                 <ListaPracticas
                   titulo="🧘 Meditación y presencia"
                   intro="Guiadas paso a paso, con campana al inicio y al final. También en movimiento: la caminata consciente cuenta."
                   practicas={meditaciones}
                   onComenzar={(practica, minutos) => setSesion({ practica, minutos })}
                 />
-              ),
-            }] : []),
-            {
-              id: "lunar",
-              el: (
+              )}
+            </div>
+
+            <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
               <div className="card panel">
                 <h3>🌙 Calendario lunar</h3>
                 <div style={{ textAlign: "center", padding: "10px 0 14px" }}>
@@ -130,17 +124,11 @@ export function MentePage() {
                   </div>
                 </div>
               </div>
-              ),
-            },
-            {
-              id: "tip",
-              el: (
-              <div className="tip-destacado" style={{ marginBottom: 0 }}>
+              <div className="tip-destacado">
                 💡 ¿No sabes cuál elegir? Si el cuerpo está acelerado, Regulación. Si la mente está lejos, Mindfulness. Si el corazón pesa, Corazón. Si la voz interna castiga, Mentalidad.
               </div>
-              ),
-            },
-          ]} />
+            </div>
+          </div>
         </>
       )}
 

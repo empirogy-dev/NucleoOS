@@ -99,6 +99,8 @@ export const RETOS_SUGERIDOS: RetoSugerido[] = [
   { title: "Tomar más agua", icon: "💧", why: "Energía y claridad, un vaso a la vez.", duration_days: 14, days_mask: TODOS_LOS_DIAS },
   { title: "Caminar 20 minutos", icon: "🚶", why: "Aire, movimiento y cabeza despejada.", duration_days: 21, days_mask: TODOS_LOS_DIAS },
   { title: "Sin azúcar", icon: "🍬", why: "Una semana para recalibrar el paladar.", duration_days: 7, days_mask: TODOS_LOS_DIAS },
+  { title: "Menos redes sociales", icon: "📵", why: "Recuperar mi atención y mi tiempo.", duration_days: 14, days_mask: TODOS_LOS_DIAS },
+  { title: "Terminar la ducha con agua fría", icon: "🧊", why: "Entrenar mi sistema nervioso para la calma.", duration_days: 14, days_mask: TODOS_LOS_DIAS },
   { title: "Dormir antes de las 11", icon: "🌙", why: "El sueño es la base de toda mi energía.", duration_days: 14, days_mask: TODOS_LOS_DIAS },
 ];
 
@@ -135,9 +137,15 @@ export async function listRetos(): Promise<Reto[]> {
   return (data ?? []) as Reto[];
 }
 
-export async function addReto(r: Omit<Reto, "id" | "status">): Promise<void> {
-  const { error } = await sb().from("challenges").insert({ ...r, user_id: await uid() });
+export async function addReto(r: Omit<Reto, "id" | "status">): Promise<string> {
+  const { data, error } = await sb().from("challenges").insert({ ...r, user_id: await uid() }).select("id").single();
   check(error);
+  return (data as { id: string }).id;
+}
+
+/** Cuántos días a la semana pide este reto (para el ritmo de una meta conectada). */
+export function diasPorSemana(mask: number): number {
+  return DIAS_SEMANA.filter((d) => (mask & d.bit) !== 0).length;
 }
 
 export async function updateReto(id: string, patch: Partial<Omit<Reto, "id">>): Promise<void> {

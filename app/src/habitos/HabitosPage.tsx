@@ -6,6 +6,7 @@ import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
+import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 import { RetosTab } from "./RetosTab";
 import {
   addHabit,
@@ -218,20 +219,43 @@ function HabitModal({ base, onClose, onSaved }: {
   const [name, setName] = useState(base?.name ?? "");
   const [icon, setIcon] = useState(base?.icon ?? "🌱");
   const [dias, setDias] = useState(String(base?.dias ?? 28));
+  const [metas, setMetas] = useState<Objective[]>([]);
+  const [metaId, setMetaId] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setMetas((await listObjectives()).filter((o) => o.status !== "lograda"));
+      } catch {
+        /* sin metas disponibles, el select no se muestra */
+      }
+    })();
+  }, []);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setErr(null);
+    let habitId: string;
     try {
-      await addHabit(name, icon, dias ? Number(dias) : null);
-      onSaved();
+      habitId = await addHabit(name, icon, dias ? Number(dias) : null);
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
       setBusy(false);
+      return;
     }
+    if (metaId) {
+      try {
+        await updateObjective(metaId, { auto_metric: "habito_marcas", auto_ref: habitId, auto_target: 7 });
+      } catch (ex) {
+        setErr(`El hábito quedó creado, pero no pude conectarlo a la meta: ${ex instanceof Error ? ex.message : String(ex)}`);
+        setBusy(false);
+        return;
+      }
+    }
+    onSaved();
   }
 
   return (
@@ -254,6 +278,19 @@ function HabitModal({ base, onClose, onSaved }: {
               <option value="66">66 días (hábito instalado)</option>
               <option value="90">90 días</option>
             </select></div>
+          {metas.length > 0 && (
+            <div className="field"><label>¿A qué dirección de tu vida apunta? (opcional)</label>
+              <select value={metaId} onChange={(e) => setMetaId(e.target.value)}>
+                <option value="">Ninguna meta por ahora</option>
+                {metas.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+              </select>
+              {metaId && (
+                <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
+                  Cada día que marques este hábito hará avanzar esa meta, a ritmo diario.
+                </p>
+              )}
+            </div>
+          )}
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
             Verás una cuadrícula con cada día del desafío. Tocas un día y queda marcado: tu avance, visible.
           </p>

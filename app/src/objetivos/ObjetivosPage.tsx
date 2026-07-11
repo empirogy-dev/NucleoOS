@@ -6,6 +6,7 @@ import { AREAS } from "../areas";
 import { TablesMissingError } from "../finanzas/data";
 import { listDreams, type Dream } from "../vision/suenos";
 import { listExercise, listHabitLogs, listHabits, type ExerciseLog, type Habit, type HabitLog } from "../habitos/data";
+import { listRetoLogs, listRetos, type Reto, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
 import {
   METRICAS_AUTO,
@@ -56,6 +57,7 @@ interface Fuentes {
   ejercicio: ExerciseLog[];
   sesiones: Sesion[];
   habitLogs: HabitLog[];
+  retoLogs: RetoLog[];
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
@@ -65,6 +67,7 @@ function valorAuto(o: Objective, f: Fuentes): number {
   if (o.auto_metric === "mov_minutos") return f.ejercicio.filter((e) => e.date >= desde).reduce((s, e) => s + e.minutes, 0);
   if (o.auto_metric === "mente_sesiones") return f.sesiones.filter((s) => s.fecha >= desde).length;
   if (o.auto_metric === "habito_marcas") return f.habitLogs.filter((l) => l.habit_id === o.auto_ref && l.date >= desde).length;
+  if (o.auto_metric === "reto_dias") return f.retoLogs.filter((l) => l.challenge_id === o.auto_ref && l.date >= desde).length;
   return 0;
 }
 
@@ -85,6 +88,8 @@ export function ObjetivosPage() {
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [habitos, setHabitos] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
+  const [retos, setRetos] = useState<Reto[]>([]);
+  const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +124,13 @@ export function ObjetivosPage() {
     } catch {
       /* sin tablas de hábitos, la métrica de hábito no está disponible */
     }
+    try {
+      const [r, rl] = await Promise.all([listRetos(), listRetoLogs()]);
+      setRetos(r);
+      setRetoLogs(rl);
+    } catch {
+      /* sin tablas de retos, la métrica de reto no está disponible */
+    }
     setSesiones(listSesiones());
     setLoading(false);
   }, []);
@@ -130,7 +142,7 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
-  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs };
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs };
   const promedio = activas.length
     ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
@@ -198,7 +210,7 @@ export function ObjetivosPage() {
               )}
               {activas.map((o) => (
                 <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null}
-                  fuentes={fuentes} habitos={habitos} onChanged={() => void reload()} />
+                  fuentes={fuentes} habitos={habitos} retos={retos} onChanged={() => void reload()} />
               ))}
             </div>
           )}
@@ -320,11 +332,12 @@ function Head() {
   );
 }
 
-function ObjectiveCard({ o, sueno, fuentes, habitos, onChanged }: {
+function ObjectiveCard({ o, sueno, fuentes, habitos, retos, onChanged }: {
   o: Objective;
   sueno: Dream | null;
   fuentes: Fuentes;
   habitos: Habit[];
+  retos: Reto[];
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -333,7 +346,11 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, onChanged }: {
   const esperado = metaAutoEsperado(o);
   const esAuto = esperado !== null;
   const metrica = METRICAS_AUTO.find((m) => m.key === o.auto_metric) ?? null;
-  const habitoDe = o.auto_metric === "habito_marcas" ? habitos.find((h) => h.id === o.auto_ref) ?? null : null;
+  const habitoDe = o.auto_metric === "habito_marcas"
+    ? habitos.find((h) => h.id === o.auto_ref) ?? null
+    : o.auto_metric === "reto_dias"
+      ? (() => { const r = retos.find((x) => x.id === o.auto_ref); return r ? { icon: r.icon, name: r.title } : null; })()
+      : null;
   const valor = esAuto ? valorAuto(o, fuentes) : 0;
   const pct = progresoDe(o, fuentes);
   const tone = STATUS_TONES[o.status];
@@ -409,7 +426,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, onChanged }: {
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-          <AutoConfig o={o} habitos={habitos} onChanged={onChanged} />
+          <AutoConfig o={o} habitos={habitos} retos={retos} onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
               <span style={{ flex: 1, fontSize: 13.5, color: m.progress >= 100 ? "var(--muted)" : "var(--ink-soft)", textDecoration: m.progress >= 100 ? "line-through" : "none" }}>
@@ -435,7 +452,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, onChanged }: {
 }
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
-function AutoConfig({ o, habitos, onChanged }: { o: Objective; habitos: Habit[]; onChanged: () => void }) {
+function AutoConfig({ o, habitos, retos, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
   const [ref, setRef] = useState(o.auto_ref ?? "");
@@ -448,11 +465,15 @@ function AutoConfig({ o, habitos, onChanged }: { o: Objective; habitos: Habit[];
       setErr("Elige qué hábito alimenta esta meta.");
       return;
     }
+    if (metric === "reto_dias" && !ref) {
+      setErr("Elige qué reto alimenta esta meta.");
+      return;
+    }
     try {
       await updateObjective(o.id, {
         auto_metric: metric || null,
         auto_target: metric && target ? Number(target) : null,
-        auto_ref: metric === "habito_marcas" ? ref : null,
+        auto_ref: metric === "habito_marcas" || metric === "reto_dias" ? ref : null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -478,6 +499,13 @@ function AutoConfig({ o, habitos, onChanged }: { o: Objective; habitos: Habit[];
             onChange={(e) => setRef(e.target.value)}>
             <option value="">¿Qué hábito?</option>
             {habitos.map((h) => <option key={h.id} value={h.id}>{h.icon} {h.name}</option>)}
+          </select>
+        )}
+        {metric === "reto_dias" && (
+          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Reto que alimenta la meta"
+            onChange={(e) => setRef(e.target.value)}>
+            <option value="">¿Qué reto?</option>
+            {retos.filter((r) => r.status !== "terminado").map((r) => <option key={r.id} value={r.id}>{r.icon} {r.title}</option>)}
           </select>
         )}
         {metric && (

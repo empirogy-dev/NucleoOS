@@ -244,6 +244,23 @@ export const MEDITACIONES: Practica[] = [
     ],
   },
   {
+    id: "med-frio",
+    nombre: "Exposición al frío",
+    emoji: "🧊",
+    tipo: "meditacion",
+    categoria: "regulacion",
+    descripcion: "Terminar la ducha con agua fría entrena al sistema nervioso a mantenerse en calma bajo estrés.",
+    duraciones: [2, 3, 5],
+    pasos: [
+      "Dúchate normal, y al final gira la llave al frío.",
+      "El primer impulso es tensarte y respirar corto. Ahí está el ejercicio: suelta los hombros.",
+      "Exhala largo y lento, como si le dijeras al cuerpo que no hay peligro.",
+      "Empieza con 15 o 30 segundos y sube de a poco cada semana.",
+      "Sal, sécate y nota la ola de calor y claridad que llega después.",
+      "Si tienes alguna condición cardíaca, consúltalo antes con tu médico.",
+    ],
+  },
+  {
     id: "med-caminata",
     nombre: "Caminata consciente",
     emoji: "🚶",

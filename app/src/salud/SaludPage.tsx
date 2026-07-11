@@ -24,11 +24,13 @@ import { getHealthProfile, type HealthProfile } from "./data";
 import {
   META_AGUA_VASOS,
   NIVELES_ENERGIA,
+  estimarKcal,
   listEnergy,
   metaProteina,
   upsertEnergy,
   type EnergyLog,
 } from "./energia";
+import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
 // rápida de hoy (sueño, agua, proteína, movimiento); lo médico vive
@@ -115,7 +117,10 @@ export function SaludPage() {
 
   const rutinaHoy = routine.find((r) => r.date === hoy) ?? null;
   const suenoAnoche = rutinaHoy ? sleepHours(rutinaHoy) : null;
-  const movimientoHoy = exercise.filter((e) => e.date === hoy).reduce((s, e) => s + e.minutes, 0);
+  const pesoKg = profile?.weight_kg ?? null;
+  const ejercicioHoy = exercise.filter((e) => e.date === hoy);
+  const movimientoHoy = ejercicioHoy.reduce((s, e) => s + e.minutes, 0);
+  const kcalHoy = ejercicioHoy.reduce((s, e) => s + estimarKcal(e.kind, e.minutes, pesoKg), 0);
 
   function mutarHoy(patch: Partial<EnergyLog>) {
     setEnergy((arr) => {
@@ -132,6 +137,17 @@ export function SaludPage() {
     } catch (e) {
       if (e instanceof TablesMissingError) setEnergiaFalta(true);
       else setError(e instanceof Error ? e.message : String(e));
+    }
+    // Al completar la meta de agua, el reto de agua (si existe) se marca solo.
+    if (patch.water_cups === META_AGUA_VASOS) {
+      try {
+        const retosAgua = (await listRetos()).filter(
+          (r) => r.status === "activo" && /agua/i.test(r.title) && esProgramado(hoy, r.days_mask),
+        );
+        for (const r of retosAgua) await toggleRetoDay(r.id, hoy, true);
+      } catch {
+        /* sin retos migrados, el agua sigue funcionando igual */
+      }
     }
   }
 
@@ -165,7 +181,7 @@ export function SaludPage() {
         <div className="card stat"><div className="k">😴 Sueño anoche</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></div>
         <div className="card stat"><div className="k">💧 Agua</div><div className="v tnum">{agua} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {META_AGUA_VASOS}</small></div></div>
         <div className="card stat"><div className="k">🍗 Proteína</div><div className="v tnum">{Math.round(Number(proteina))} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {metaProt} g</small></div></div>
-        <div className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min</small></div></div>
+        <div className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min{kcalHoy > 0 ? `, ≈${kcalHoy} kcal` : ""}</small></div></div>
       </div>
       <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{ESTADOS[señales]}</p>
 
@@ -200,7 +216,8 @@ export function SaludPage() {
           {tab === "hoy" && (
             <HoyTab
               agua={agua} proteina={proteina} protComidas={totHoy.proteina} nivel={nivel} metaProt={metaProt}
-              exercise={exercise.filter((e) => e.date === hoy)}
+              exercise={ejercicioHoy}
+              pesoKg={pesoKg}
               rutinaHoy={rutinaHoy}
               deshabilitado={energiaFalta}
               onAgua={(n) => void guardarHoy({ water_cups: n })}
@@ -210,10 +227,10 @@ export function SaludPage() {
             />
           )}
           {tab === "nutricion" && (
-            <NutricionTab energy={energy} meals={meals} metaProt={metaProt} profile={profile}
+            <NutricionTab energy={energy} meals={meals} metaProt={metaProt} profile={profile} quemadasHoy={kcalHoy}
               irAClinica={() => setTab("clinica")} onChanged={() => void reload()} />
           )}
-          {tab === "movimiento" && <MovimientoTab exercise={exercise} onChanged={() => void reload()} />}
+          {tab === "movimiento" && <MovimientoTab exercise={exercise} pesoKg={pesoKg} onChanged={() => void reload()} />}
           {tab === "sueno" && <SuenoTab routine={routine} onChanged={() => void reload()} />}
           {tab === "recuperacion" && <RecuperacionTab />}
           {tab === "clinica" && <ClinicaTab />}
@@ -226,13 +243,14 @@ export function SaludPage() {
 }
 
 // ---------- Hoy ----------
-function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutinaHoy, deshabilitado, onAgua, onProteina, onNivel, onChanged }: {
+function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg, rutinaHoy, deshabilitado, onAgua, onProteina, onNivel, onChanged }: {
   agua: number;
   proteina: number;
   protComidas: number;
   nivel: number | null;
   metaProt: number;
   exercise: ExerciseLog[];
+  pesoKg: number | null;
   rutinaHoy: RoutineLog | null;
   deshabilitado: boolean;
   onAgua: (n: number) => void;
@@ -262,6 +280,9 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutina
             ))}
           </div>
           {agua >= META_AGUA_VASOS && <span className="chip" style={{ marginTop: 10 }}>✓ Meta de agua cumplida</span>}
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
+            El agua vive aquí, independiente de tus retos. Eso sí, si tienes un reto de agua activo, al llegar a los {META_AGUA_VASOS} vasos se marca solo. 💧
+          </p>
         </div>
   );
 
@@ -326,7 +347,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutina
           { id: "agua", el: bloqueAgua },
           { id: "proteina", el: bloqueProteina },
           { id: "plato", el: <PlatoCard onSaved={onChanged} /> },
-          { id: "movimiento", el: <MovimientoRapido exercise={exercise} onChanged={onChanged} /> },
+          { id: "movimiento", el: <MovimientoRapido exercise={exercise} pesoKg={pesoKg} onChanged={onChanged} /> },
           { id: "nivel", el: bloqueNivel },
           { id: "sueno", el: <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} /> },
         ]}
@@ -335,7 +356,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, rutina
   );
 }
 
-function MovimientoRapido({ exercise, onChanged }: { exercise: ExerciseLog[]; onChanged: () => void }) {
+function MovimientoRapido({ exercise, pesoKg, onChanged }: { exercise: ExerciseLog[]; pesoKg: number | null; onChanged: () => void }) {
   const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
   const [min, setMin] = useState("");
   const [busy, setBusy] = useState(false);
@@ -356,7 +377,7 @@ function MovimientoRapido({ exercise, onChanged }: { exercise: ExerciseLog[]; on
       {exercise.map((e) => (
         <div className="txrow" key={e.id}>
           <span className="txicon">🏃</span>
-          <div className="txmeta"><b>{e.kind}</b><small>{e.minutes} minutos</small></div>
+          <div className="txmeta"><b>{e.kind}</b><small>{e.minutes} minutos, ≈{estimarKcal(e.kind, e.minutes, pesoKg)} kcal</small></div>
           <button className="xdel" aria-label="Eliminar registro" onClick={async () => { await deleteExercise(e.id); onChanged(); }}>
             <Trash2 size={13} />
           </button>
@@ -417,11 +438,12 @@ function SuenoRapido({ rutinaHoy, onChanged }: { rutinaHoy: RoutineLog | null; o
 }
 
 // ---------- Nutrición ----------
-function NutricionTab({ energy, meals, metaProt, profile, irAClinica, onChanged }: {
+function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, irAClinica, onChanged }: {
   energy: EnergyLog[];
   meals: Meal[];
   metaProt: number;
   profile: HealthProfile | null;
+  quemadasHoy: number;
   irAClinica: () => void;
   onChanged: () => void;
 }) {
@@ -471,6 +493,11 @@ function NutricionTab({ energy, meals, metaProt, profile, irAClinica, onChanged 
               <span className="macro">🥑 <b className="tnum">{tot.grasas} g</b></span>
               <span className="macro">🌾 <b className="tnum">{tot.fibra} g</b></span>
             </div>
+            {quemadasHoy > 0 && (
+              <p style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 10 }}>
+                🔥 En movimiento quemaste ≈{quemadasHoy} kcal hoy: balance ≈{tot.kcal - quemadasHoy} kcal. Es una estimación para ver la tendencia, no una balanza.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -579,10 +606,11 @@ function GuiaCard({ guia }: { guia: (typeof GUIAS_NUTRICION)[number] }) {
 }
 
 // ---------- Movimiento ----------
-function MovimientoTab({ exercise, onChanged }: { exercise: ExerciseLog[]; onChanged: () => void }) {
+function MovimientoTab({ exercise, pesoKg, onChanged }: { exercise: ExerciseLog[]; pesoKg: number | null; onChanged: () => void }) {
   const hace7 = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return fmtFechaLocal(d); })();
   const semana = exercise.filter((e) => e.date >= hace7);
   const minSemana = semana.reduce((s, e) => s + e.minutes, 0);
+  const kcalSemana = semana.reduce((s, e) => s + estimarKcal(e.kind, e.minutes, pesoKg), 0);
   const favorito = (() => {
     const cuenta = new Map<string, number>();
     for (const e of exercise) cuenta.set(e.kind, (cuenta.get(e.kind) ?? 0) + e.minutes);
@@ -593,8 +621,9 @@ function MovimientoTab({ exercise, onChanged }: { exercise: ExerciseLog[]; onCha
 
   return (
     <>
-      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
         <div className="card stat"><div className="k">Esta semana</div><div className="v tnum">{minSemana} min</div></div>
+        <div className="card stat"><div className="k">Kcal (7 días)</div><div className="v tnum">≈{kcalSemana}</div></div>
         <div className="card stat"><div className="k">Sesiones (7 días)</div><div className="v tnum">{semana.length}</div></div>
         <div className="card stat"><div className="k">Tu favorito</div><div className="v" style={{ fontSize: 19 }}>{favorito ?? "aún ninguno"}</div></div>
       </div>
@@ -610,7 +639,7 @@ function MovimientoTab({ exercise, onChanged }: { exercise: ExerciseLog[]; onCha
           {exercise.map((e) => (
             <div className="txrow" key={e.id}>
               <span className="txicon">🏃</span>
-              <div className="txmeta"><b>{e.kind}</b><small>{e.date}, {e.minutes} minutos</small></div>
+              <div className="txmeta"><b>{e.kind}</b><small>{e.date}, {e.minutes} minutos, ≈{estimarKcal(e.kind, e.minutes, pesoKg)} kcal</small></div>
               <button className="xdel" aria-label="Eliminar registro" onClick={async () => { await deleteExercise(e.id); onChanged(); }}>
                 <Trash2 size={13} />
               </button>

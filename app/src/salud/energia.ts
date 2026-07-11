@@ -22,6 +22,20 @@ export function metaProteina(profile: HealthProfile | null): number {
   return 90;
 }
 
+// Calorías estimadas por tipo de ejercicio (MET aproximados).
+// Es una estimación amable, como la del reloj: sirve para la tendencia, no para el laboratorio.
+const METS: Record<string, number> = {
+  Caminata: 3.5, Yoga: 3, Gimnasio: 5.5, Correr: 9, Bicicleta: 7, Baile: 5.5,
+  Natación: 7, Fútbol: 8, Tenis: 7, Pilates: 3.5, Escalada: 7.5, Patinaje: 7,
+  Boxeo: 8.5, Movilidad: 2.8, Otro: 4.5,
+};
+
+export function estimarKcal(kind: string, minutos: number, pesoKg: number | null | undefined): number {
+  const met = METS[kind] ?? 4.5;
+  const peso = pesoKg ?? 65;
+  return Math.round(((met * 3.5 * peso) / 200) * minutos);
+}
+
 export const NIVELES_ENERGIA = [
   { nivel: 1, emoji: "😴", label: "Agotada" },
   { nivel: 2, emoji: "😕", label: "Baja" },

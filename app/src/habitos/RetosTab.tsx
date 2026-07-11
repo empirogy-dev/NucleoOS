@@ -4,8 +4,10 @@ import { Flag, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { IconField } from "../components/IconField";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
+import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 import {
   DIAS_SEMANA,
+  diasPorSemana,
   LUNES_A_VIERNES,
   RETOS_SUGERIDOS,
   TODOS_LOS_DIAS,
@@ -260,8 +262,21 @@ function RetoModal({ reto, base, onClose, onSaved }: {
   const [duracion, setDuracion] = useState(String(reto?.duration_days ?? base?.duration_days ?? 21));
   const [mask, setMask] = useState(reto?.days_mask ?? base?.days_mask ?? TODOS_LOS_DIAS);
   const [inicio, setInicio] = useState(reto?.start_date ?? hoyLocal());
+  const [metas, setMetas] = useState<Objective[]>([]);
+  const [metaId, setMetaId] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (reto) return; // la conexión a meta se ofrece al crear
+    void (async () => {
+      try {
+        setMetas((await listObjectives()).filter((o) => o.status !== "lograda"));
+      } catch {
+        /* sin metas disponibles */
+      }
+    })();
+  }, [reto]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -280,8 +295,20 @@ function RetoModal({ reto, base, onClose, onSaved }: {
       start_date: inicio,
     };
     try {
-      if (reto) await updateReto(reto.id, datos);
-      else await addReto(datos);
+      if (reto) {
+        await updateReto(reto.id, datos);
+      } else {
+        const retoId = await addReto(datos);
+        if (metaId) {
+          try {
+            await updateObjective(metaId, { auto_metric: "reto_dias", auto_ref: retoId, auto_target: diasPorSemana(mask) });
+          } catch (ex) {
+            setErr(`El reto quedó creado, pero no pude conectarlo a la meta: ${ex instanceof Error ? ex.message : String(ex)}`);
+            setBusy(false);
+            return;
+          }
+        }
+      }
       onSaved();
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
@@ -328,6 +355,19 @@ function RetoModal({ reto, base, onClose, onSaved }: {
               <button type="button" className="chip" style={{ border: "none", cursor: "pointer" }} onClick={() => setMask(LUNES_A_VIERNES)}>Lunes a viernes</button>
             </div>
           </div>
+          {!reto && metas.length > 0 && (
+            <div className="field"><label>¿A qué dirección de tu vida apunta? (opcional)</label>
+              <select value={metaId} onChange={(e) => setMetaId(e.target.value)}>
+                <option value="">Ninguna meta por ahora</option>
+                {metas.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+              </select>
+              {metaId && (
+                <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
+                  Cada día cumplido del reto hará avanzar esa meta, a tu ritmo de {diasPorSemana(mask)} por semana.
+                </p>
+              )}
+            </div>
+          )}
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 6 }}>
             {busy ? "Guardando…" : reto ? "Guardar cambios" : "Empezar el reto"}
           </button>
