@@ -141,6 +141,7 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Guía de Dirección reescrita sin clichés: siete ideas con respaldo de investigación de varias fuentes (Gollwitzer, Oettingen, Milkman, Locke y Latham, gradiente de meta), cero frases de taza.
 - [x] `[Nuevo]` Métrica "Avances registrados en su área" (migración 0028): una meta de Aprendizaje se alimenta de los avances que registras en Aprendizaje, y lo mismo para cualquier área.
 - [x] `[Nuevo]` Consolidación de gastos: la pestaña Transacciones es ahora bandeja Por revisar (sin categoría) y Archivo (consolidado por mes). Al categorizar o dividir un movimiento, sale solo de la bandeja.
+- [x] `[Nuevo]` Nivel de actividad en la ficha (migración 0029): la meta de proteína se calcula sola con peso × actividad, de 1.0 g por kilo (vida tranquila) a 2.0 (entrena casi a diario).
 - [ ] `[Nuevo]` Registrar la hora del workout (requiere columna nueva en exercise_logs).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 

@@ -1,7 +1,7 @@
 import { fmtFechaLocal } from "../lib/fechas";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
-import type { HealthProfile } from "./data";
+import { NIVELES_ACTIVIDAD, type HealthProfile } from "./data";
 
 // Energía diaria: agua, proteína y nivel de energía (migración 0018).
 
@@ -16,10 +16,14 @@ export interface EnergyLog {
 
 export const META_AGUA_VASOS = 8; // vasos de 250 ml, dos litros al día
 
-/** Meta diaria de proteína: 1.2 g por kilo si conocemos el peso, si no 90 g. */
+/** Meta diaria de proteína calculada con peso y nivel de actividad:
+ *  de 1.0 g por kilo (vida tranquila) a 2.0 (entrena casi a diario).
+ *  Sin peso registrado, 90 g como referencia general. */
 export function metaProteina(profile: HealthProfile | null): number {
-  if (profile?.weight_kg) return Math.round(profile.weight_kg * 1.2);
-  return 90;
+  if (!profile?.weight_kg) return 90;
+  const nivel = NIVELES_ACTIVIDAD.find((n) => n.key === profile.activity_level);
+  const factor = nivel?.factor ?? 1.3;
+  return Math.round(profile.weight_kg * factor);
 }
 
 // Calorías estimadas por tipo de ejercicio (MET aproximados).

@@ -544,8 +544,10 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, irAClinic
               <b>{metaProt} g de proteína</b>
               <small>
                 {profile?.weight_kg
-                  ? `Estimada con tu peso (${profile.weight_kg} kg por 1.2 g).`
-                  : "Meta general. Registra tu peso en Salud clínica y la ajusto a tu cuerpo."}
+                  ? profile.activity_level
+                    ? `Calculada con tu peso y tu nivel de actividad. Si cambias de ritmo, actualízalo en la ficha.`
+                    : `Estimada con tu peso. Dime qué tan activa eres en la ficha y la afino: quien entrena a diario necesita hasta 2 g por kilo.`
+                  : "Meta general. Registra tu peso y tu nivel de actividad en Salud clínica y la calculo a tu medida."}
               </small>
             </div>
           </div>

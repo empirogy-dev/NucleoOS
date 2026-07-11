@@ -6,6 +6,7 @@ import { deleteExamFile, listExamFiles, openExamFile, uploadExamFile, type ExamF
 import {
   BLOOD_TYPES,
   DIETAS,
+  NIVELES_ACTIVIDAD,
   addAppointment,
   addExam,
   addMedication,
@@ -46,7 +47,7 @@ export function ClinicaTab() {
       const [p, m, c, e] = await Promise.all([
         getHealthProfile(), listMedications(), listAppointments(), listExams(),
       ]);
-      setProfile(p ?? { blood_type: null, allergies: null, conditions: null, surgeries: null, weight_kg: null, height_cm: null, diet: null, eye_color: null });
+      setProfile(p ?? { blood_type: null, allergies: null, conditions: null, surgeries: null, weight_kg: null, height_cm: null, diet: null, eye_color: null, activity_level: null });
       setMeds(m);
       setCitas(c);
       setExams(e);
@@ -196,6 +197,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
   const [estatura, setEstatura] = useState(profile.height_cm != null ? String(profile.height_cm) : "");
   const [dieta, setDieta] = useState(profile.diet ?? "");
   const [ojos, setOjos] = useState(profile.eye_color ?? "");
+  const [actividad, setActividad] = useState(profile.activity_level ?? "");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -214,6 +216,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
         height_cm: estatura ? Number(estatura) : null,
         diet: dieta || null,
         eye_color: ojos || null,
+        activity_level: actividad || null,
       });
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
@@ -256,6 +259,14 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
           <div className="field"><label>Color de ojos</label>
             <input value={ojos} onChange={(e) => setOjos(e.target.value)} placeholder="café, verdes…" /></div>
         </div>
+        <div className="field"><label>¿Qué tan activa es tu vida?</label>
+          <select value={actividad} onChange={(e) => setActividad(e.target.value)}>
+            <option value="">Sin definir</option>
+            {NIVELES_ACTIVIDAD.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
+          </select>
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
+            Con tu peso y este nivel, la meta de proteína de Energía se calcula sola.
+          </p></div>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 8 }}>{err}</p>}
         <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar ficha"}</button>
         {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardada</span>}

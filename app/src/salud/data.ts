@@ -11,7 +11,16 @@ export interface HealthProfile {
   height_cm: number | null;
   diet: string | null;
   eye_color: string | null;
+  activity_level: string | null;
 }
+
+/** Niveles de actividad y su factor de proteína (gramos por kilo). */
+export const NIVELES_ACTIVIDAD = [
+  { key: "sedentaria", label: "Tranquila, poco ejercicio", factor: 1.0 },
+  { key: "ligera", label: "Me muevo, 1 a 3 días por semana", factor: 1.3 },
+  { key: "activa", label: "Entreno 3 a 5 días por semana", factor: 1.6 },
+  { key: "atleta", label: "Entreno casi todos los días", factor: 2.0 },
+] as const;
 
 export const DIETAS = ["Balanceada", "Vegetariana", "Vegana", "Keto", "Sin gluten", "Sin lactosa", "Otra"] as const;
 
@@ -114,6 +123,9 @@ export async function saveHealthProfile(p: HealthProfile): Promise<void> {
   const { error } = await sb()
     .from("health_profile")
     .upsert({ user_id: await uid(), ...p, updated_at: new Date().toISOString() });
+  if (error && /activity_level/.test(error.message)) {
+    throw new Error("Para el nivel de actividad falta la migración 0029 (supabase/migrations/0029_actividad.sql).");
+  }
   if (error && /weight_kg|height_cm|diet|eye_color/.test(error.message)) {
     throw new Error("Falta la migración 0015 en Supabase (supabase/migrations/0015_salud_plus.sql).");
   }
