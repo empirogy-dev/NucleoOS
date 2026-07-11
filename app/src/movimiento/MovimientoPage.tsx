@@ -84,7 +84,7 @@ function Catalogo({ tipo, onAbrir }: { tipo: TipoRutina; onAbrir: (r: Rutina) =>
           ? "Yoga, movilidad y estiramientos. Nada que exija, todo que suelta."
           : "Fuerza, cardio y core con lo que tienes en casa. Al completar una rutina, queda registrada en Energía."}
       </p>
-      <div className="dream-grid">
+      <div className="dream-grid rut-grid">
         {lista.map((r) => (
           <button key={r.id} className="card dream-card" style={{ textAlign: "left", cursor: "pointer" }} onClick={() => onAbrir(r)}>
             <div className="dc-top">

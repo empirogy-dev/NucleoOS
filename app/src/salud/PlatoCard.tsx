@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Camera, ImagePlus } from "lucide-react";
-import { analizarPlato, blobToBase64, iaConfigured, type AnalisisPlato } from "../lib/ia";
+import { Camera, ImagePlus, Sparkles } from "lucide-react";
+import { analizarComidaTexto, analizarPlato, blobToBase64, iaConfigured, type AnalisisPlato } from "../lib/ia";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
 import { addMeal } from "./comidas";
@@ -11,9 +11,26 @@ import { addMeal } from "./comidas";
 export function PlatoCard({ onSaved }: { onSaved: () => void }) {
   const [analizando, setAnalizando] = useState(false);
   const [resultado, setResultado] = useState<AnalisisPlato | null>(null);
+  const [texto, setTexto] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [falta0020, setFalta0020] = useState(false);
   const [guardando, setGuardando] = useState(false);
+
+  async function analizarTexto(e: React.FormEvent) {
+    e.preventDefault();
+    if (!texto.trim()) return;
+    setErr(null);
+    setResultado(null);
+    setAnalizando(true);
+    try {
+      setResultado(await analizarComidaTexto(texto.trim()));
+      setTexto("");
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    } finally {
+      setAnalizando(false);
+    }
+  }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -72,7 +89,7 @@ export function PlatoCard({ onSaved }: { onSaved: () => void }) {
       ) : (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Fotografía tu comida y te estimo calorías, proteína, carbohidratos y grasas. Es una guía, no una balanza.
+            Fotografía tu comida o escríbela, y te estimo calorías, proteína, carbohidratos y grasas. Es una guía, no una balanza.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <label className="btn primary" style={{ cursor: "pointer" }}>
@@ -86,6 +103,20 @@ export function PlatoCard({ onSaved }: { onSaved: () => void }) {
               <input type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} disabled={analizando} />
             </label>
           </div>
+          <form onSubmit={analizarTexto} style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <input
+              className="input-inline"
+              style={{ flex: "1 1 180px" }}
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder="O escríbelo: una lata de atún y un huevo duro"
+              disabled={analizando}
+            />
+            <button className="btn ghost" disabled={analizando || !texto.trim()}>
+              <Sparkles size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+              Estimar
+            </button>
+          </form>
           {analizando && (
             <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 12 }}>
               Mirando tu plato con calma… 🍽

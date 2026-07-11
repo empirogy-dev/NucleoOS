@@ -95,12 +95,28 @@ const PROMPT_PLATO =
   '"saciedad": entero de 1 a 5, "impacto": "una frase corta y amable sobre cómo afectará la energía, sin guiones largos"}. ' +
   "Si la imagen no parece comida, usa kcal 0 y explica en descripcion.";
 
+/** Estima macros de una comida descrita con palabras ("una lata de atún y un huevo duro"). */
+export async function analizarComidaTexto(descripcion: string): Promise<AnalisisPlato> {
+  const texto = await generate([
+    {
+      text:
+        `${PROMPT_PLATO}\n\nNo hay foto: la persona describe lo que comió. ` +
+        `Si no indica cantidades, asume porciones típicas.\n\nComida: ${descripcion}`,
+    },
+  ]);
+  return parsearAnalisis(texto);
+}
+
 /** Estima macros de una foto de comida. Devuelve una estimación, no un diagnóstico. */
 export async function analizarPlato(base64: string, mimeType: string): Promise<AnalisisPlato> {
   const texto = await generate([
     { inlineData: { mimeType, data: base64 } },
     { text: PROMPT_PLATO },
   ]);
+  return parsearAnalisis(texto);
+}
+
+function parsearAnalisis(texto: string): AnalisisPlato {
   // El modelo a veces envuelve el JSON en ```json ... ```
   const limpio = texto.replace(/```json|```/g, "").trim();
   const inicio = limpio.indexOf("{");

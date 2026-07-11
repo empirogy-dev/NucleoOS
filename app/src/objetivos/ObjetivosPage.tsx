@@ -212,6 +212,7 @@ export function ObjetivosPage() {
                 <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null}
                   fuentes={fuentes} habitos={habitos} retos={retos} onChanged={() => void reload()} />
               ))}
+              <GuiaDireccion />
             </div>
           )}
 
@@ -448,6 +449,59 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, onChanged }: {
         </div>
       )}
     </div>
+  );
+}
+
+/** Guía breve para construir una dirección, inspirada en Hábitos Atómicos. */
+function GuiaDireccion() {
+  const [abierta, setAbierta] = useState(false);
+  const PASOS = [
+    { emoji: "✨", titulo: "Escribe lo que quieres", texto: "Tu lista de deseos vive en Visión, pestaña Sueños: viajar, aprender piano, vivir cerca del mar. Sin compromiso todavía, solo honestidad." },
+    { emoji: "🧭", titulo: "Elige uno y hazlo decisión", texto: "Cuando un sueño madura, conviértelo en meta con fecha. Ahí deja de ser deseo y pasa a ser dirección." },
+    { emoji: "🔄", titulo: "Baja la meta a un sistema", texto: "No subes al nivel de tus metas, caes al nivel de tus sistemas. Conecta la meta a un hábito, un reto o tu movimiento, y deja que el día a día la empuje sola." },
+    { emoji: "🗳", titulo: "Vota por tu identidad", texto: "Cada registro es un voto por la persona que quieres ser. No es hacer ejercicio, es ser deportista. No es meditar, es ser alguien en calma." },
+  ];
+  const LEYES = [
+    "Hazlo obvio: deja las zapatillas a la vista, la botella de agua en el escritorio.",
+    "Hazlo atractivo: junta el hábito con algo que te gusta, un podcast con la caminata.",
+    "Hazlo fácil: la versión de dos minutos cuenta. Empezar es el hábito.",
+    "Hazlo satisfactorio: márcalo aquí y mira la racha crecer. Lo que se celebra, se repite.",
+  ];
+  return (
+    <button className={"card guia-card" + (abierta ? " open" : "")} onClick={() => setAbierta(!abierta)}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 22 }}>🌱</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <b style={{ fontSize: 14, display: "block" }}>Cómo se construye una dirección</b>
+          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>Del sueño a la meta, y de la meta al hábito diario. Al estilo de Hábitos Atómicos.</small>
+        </div>
+        <span style={{ color: "var(--muted)", fontSize: 12 }}>{abierta ? "▴" : "▾"}</span>
+      </div>
+      {abierta && (
+        <div style={{ marginTop: 12, textAlign: "left", display: "grid", gap: 10 }}>
+          {PASOS.map((p) => (
+            <div key={p.titulo} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 18 }}>{p.emoji}</span>
+              <div>
+                <b style={{ fontSize: 13 }}>{p.titulo}</b>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{p.texto}</p>
+              </div>
+            </div>
+          ))}
+          <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
+            <b style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)" }}>Las cuatro leyes del hábito</b>
+            <ul style={{ paddingLeft: 18, display: "grid", gap: 5, marginTop: 6 }}>
+              {LEYES.map((l) => (
+                <li key={l} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{l}</li>
+              ))}
+            </ul>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--muted)" }}>
+            Tu lista de sueños te espera en Visión, y los hábitos y retos se conectan a estas metas al crearlos. Todo el sistema trabaja para lo mismo: tu dirección.
+          </p>
+        </div>
+      )}
+    </button>
   );
 }
 
