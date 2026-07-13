@@ -161,6 +161,7 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Revisión con pestaña Día: la agenda de cada fecha con el detalle completo (cada plato con sus macros, agua, sueño, energía percibida, sesiones de movimiento, prácticas y diario de Mente, hábitos y retos marcados con su nombre, avances y finanzas del día). Cada día empieza limpio y el historial queda guardado por fecha, navegable con las flechas y exportable a Markdown.
 - [x] `[Nuevo]` DESIGN.md y CLAUDE.md puestos al día: navegación por secciones, lema, reglas de layout (sin espacios vacíos, luna boho, colores por hábito) y registro de decisiones al 11 de julio.
 - [x] `[Nuevo]` Relaciones rediseñada (fusión elegida por la usuaria entre opciones): tip del día como franja a lo ancho, personas como filas anchas arrastrables por prioridad (nada se aprieta) y la guía para conectar con la ciencia en columna fija a la derecha.
+- [x] `[Nuevo]` Tareas de hoy en el Inicio (migración 0033): checklist del día para lo suelto que no es hábito ni meta (hacer la cama, lavar la ropa). Se anota, se marca, se borra, y lo pendiente de otros días aparece con "pasar a hoy", sin culpa. Queda registrado en Revisión: en la pestaña Día tarea por tarea, y en Semana y Mes el total completado.
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
 ## Bloque G, al final

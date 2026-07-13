@@ -8,6 +8,7 @@ import { listCategories, listTransactions } from "../finanzas/data";
 import { listActivity } from "../objetivos/data";
 import { listRelLogs } from "../relaciones/data";
 import { listEntries } from "../mente/diario";
+import { listDayTasks } from "../tareas/data";
 
 // Revisión: convierte lo registrado en claridad.
 // Agrega los datos de todos los módulos por período y busca patrones.
@@ -164,6 +165,19 @@ export async function armarResumen(p: Periodo): Promise<{ modulos: ModuloResumen
     });
   });
 
+  // Tareas del día (checklist del Inicio)
+  await seguro(async () => {
+    const del = (await listDayTasks(70)).filter((t) => dentro(t.date));
+    if (!del.length) return;
+    const listas = del.filter((t) => t.done).length;
+    modulos.push({
+      emoji: "📝", titulo: "Tareas del día", to: "/",
+      lineas: [
+        { k: "Completadas", v: `${listas} de ${del.length}` },
+      ],
+    });
+  });
+
   // Finanzas
   await seguro(async () => {
     const [txs, cats] = await Promise.all([listTransactions(800), listCategories()]);
@@ -314,6 +328,16 @@ export async function armarDia(fecha: string): Promise<{ modulos: ModuloResumen[
       }
     } catch { /* retos sin migrar */ }
     if (lineas.length) modulos.push({ emoji: "🔄", titulo: "Hábitos y retos", to: "/habitos", lineas });
+  });
+
+  // Tareas del checklist de ese día, una por una
+  await seguro(async () => {
+    const del = (await listDayTasks(70)).filter((t) => t.date === fecha);
+    if (!del.length) return;
+    modulos.push({
+      emoji: "📝", titulo: "Tareas del día", to: "/",
+      lineas: del.map((t) => ({ k: t.title, v: t.done ? "lista" : "quedó pendiente" })),
+    });
   });
 
   // Avances registrados ese día

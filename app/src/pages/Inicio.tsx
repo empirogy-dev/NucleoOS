@@ -20,6 +20,7 @@ import { listProjects, type Project } from "../trabajo/data";
 import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSobriety, type Appointment, type Sobriety } from "../salud/data";
 import { listEntries, type Entry } from "../aprendizaje/data";
 import { listRelLogs, listRelationships, needsReconnect, type RelLog, type Relationship } from "../relaciones/data";
+import { TareasHoy } from "../tareas/TareasHoy";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -289,8 +290,9 @@ export function Inicio() {
 
       {/* Orden pensado para que las columnas queden parejas: lo alto primero. */}
       <OrdenGrid clave="inicio-v2" dosColumnas bloques={(() => {
-        const prio = ["areas", "pagos", "avances", "sobriedad"];
+        const prio = ["tareas", "areas", "pagos", "avances", "sobriedad"];
         const b = [
+        { id: "tareas", el: <TareasHoy /> },
         ...(reminders.length > 0 ? [{ id: "pagos", el: (
         <div className="card panel">
           <h3>🔔 Próximo pago</h3>
