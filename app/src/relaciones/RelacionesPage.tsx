@@ -1,7 +1,9 @@
 import { OrdenGrid } from "../components/OrdenGrid";
+import { Link } from "react-router-dom";
+import { librosDe } from "../aprendizaje/biblioteca";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2, Users } from "lucide-react";
+import { ChevronDown, ChevronRight, Mail, Plus, Trash2, Users } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import {
   ACCIONES,
@@ -14,6 +16,7 @@ import {
   listRelLogs,
   listRelationships,
   needsReconnect,
+  updateRelationship,
   accionesPara,
   cienciaDelDia,
   tipDelDia,
@@ -175,6 +178,19 @@ export function RelacionesPage() {
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
                   Cada día aparece un hallazgo distinto de la investigación en relaciones: Harvard, Gottman, Hall y más.
                 </p>
+                <div style={{ borderTop: "1px solid var(--line-soft)", marginTop: 10, paddingTop: 10 }}>
+                  <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 5 }}>
+                    Para profundizar
+                  </p>
+                  {librosDe("relaciones").map((l) => (
+                    <p key={l.id} style={{ fontSize: 12.5, color: "var(--ink-soft)", padding: "3px 0" }}>
+                      {l.emoji} <b>{l.titulo}</b>, {l.autor}
+                    </p>
+                  ))}
+                  <Link to="/aprendizaje" style={{ fontSize: 12, color: "var(--accent-ink)", textDecoration: "underline" }}>
+                    Ver sus ideas en la Biblioteca
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -201,6 +217,38 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
   const [open, setOpen] = useState(false);
   const [nuevo, setNuevo] = useState("");
   const [giro, setGiro] = useState(0);
+  const [correo, setCorreo] = useState(r.email ?? "");
+  const [lazoErr, setLazoErr] = useState<string | null>(null);
+
+  async function cambiarLazo(patch: Partial<Pick<Relationship, "email" | "reminders_status">>) {
+    setLazoErr(null);
+    try {
+      await updateRelationship(r.id, patch);
+      onChanged();
+    } catch (e) {
+      setLazoErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  const invitacion = (() => {
+    const asunto = `¿Te gustaría cuidar nuestro lazo conmigo?`;
+    const cuerpo =
+      `Hola ${r.name}, uso una app que se llama NucleoOS para cuidar a las personas que quiero, y tú eres una de ellas.\n\n` +
+      `La app puede mandarte de vez en cuando recorditos chiquitos para cuidar nuestro lazo (ideas para juntarnos, acordarnos la una de la otra, esas cosas). ` +
+      `La gracia es que el lazo es de a dos, así que primero te pregunto: ¿te gustaría recibirlos?\n\n` +
+      `Respóndeme con un sí o un no, cualquiera de los dos está perfecto. ❤️`;
+    return `mailto:${encodeURIComponent(correo.trim())}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  })();
+
+  const recordito = (() => {
+    const idea = accionesPara(r, 1, giro)[0] ?? "juntarnos pronto";
+    const asunto = `Un recordito de nuestro lazo 💌`;
+    const cuerpo =
+      `Hola ${r.name}, me acordé de ti.\n\n` +
+      `Idea de esta semana para nosotras: ${idea}\n\n` +
+      `Enviado desde NucleoOS. Tú aceptaste recibir estos recorditos, si ya no los quieres solo dímelo.`;
+    return `mailto:${encodeURIComponent(correo.trim())}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  })();
   const dias = daysSinceContact(r.id, logs);
   const reconectar = needsReconnect(r, logs);
   const cumple = daysToBirthday(r.birthday);
@@ -256,6 +304,70 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
               <p key={idea} style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, padding: "3px 0" }}>💡 {idea}</p>
             ))}
           </div>
+          {/* El lazo es de a dos: correo y consentimiento para los recorditos */}
+          <div style={{ background: "var(--surface)", borderRadius: "var(--r-md)", padding: "10px 12px", marginBottom: 12 }}>
+            <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
+              El lazo es de a dos
+            </p>
+            {r.reminders_status === "acepta" ? (
+              <>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 8 }}>
+                  {r.name} aceptó recibir recorditos para cuidar el lazo. 💛 Cuando la app esté en internet le llegarán solos; por ahora se los mandas tú con un clic.
+                </p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <a className="btn primary" style={{ textDecoration: "none" }} href={recordito}>
+                    <Mail size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+                    Mándale un recordito
+                  </a>
+                  <button className="chip" style={{ border: "none", cursor: "pointer" }}
+                    onClick={() => void cambiarLazo({ reminders_status: "declina" })}>
+                    ya no los quiere
+                  </button>
+                </div>
+              </>
+            ) : r.reminders_status === "invitada" ? (
+              <>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 8 }}>
+                  Le preguntaste a {r.name} si quiere recibir recorditos. ¿Qué te respondió?
+                </p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button className="btn ghost" onClick={() => void cambiarLazo({ reminders_status: "acepta" })}>Dijo que sí 💛</button>
+                  <button className="btn ghost" onClick={() => void cambiarLazo({ reminders_status: "declina" })}>Prefirió que no</button>
+                  <a className="chip" style={{ textDecoration: "none" }} href={invitacion}>reenviar invitación</a>
+                </div>
+              </>
+            ) : r.reminders_status === "declina" ? (
+              <p style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
+                {r.name} prefirió no recibir recorditos, y está perfecto: el cariño no se obliga.{" "}
+                <button className="linklike" style={{ display: "inline" }} onClick={() => void cambiarLazo({ reminders_status: "sin_invitar" })}>
+                  ¿Cambió de opinión?
+                </button>
+              </p>
+            ) : (
+              <>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 8 }}>
+                  Cuidar el lazo no es carga de una sola persona. Guarda su correo e invítala: ella decide si quiere recibir recorditos.
+                </p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <input className="input-inline" type="email" style={{ flex: "1 1 160px" }}
+                    value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="su correo" />
+                  <button className="btn ghost" disabled={!correo.trim()}
+                    onClick={() => void cambiarLazo({ email: correo.trim() })}>
+                    Guardar
+                  </button>
+                  {r.email && (
+                    <a className="btn primary" style={{ textDecoration: "none" }} href={invitacion}
+                      onClick={() => void cambiarLazo({ reminders_status: "invitada" })}>
+                      <Mail size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+                      Invitarla
+                    </a>
+                  )}
+                </div>
+              </>
+            )}
+            {lazoErr && <p style={{ fontSize: 12, color: "var(--err)", marginTop: 6 }}>{lazoErr}</p>}
+          </div>
+
           <form onSubmit={registrar} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             <input className="input-inline" value={nuevo} onChange={(e) => setNuevo(e.target.value)}
               placeholder="¿De qué hablaron? Por ejemplo: la llamé, me contó de su viaje." />

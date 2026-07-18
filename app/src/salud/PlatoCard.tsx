@@ -8,7 +8,7 @@ import { addMeal, MOMENTOS, momentoSugerido } from "./comidas";
 // Tu plato: foto → estimación de macros con IA → guardado en el día.
 // Es una estimación amable para acompañar hábitos, no un diagnóstico.
 
-export function PlatoCard({ onSaved }: { onSaved: () => void }) {
+export function PlatoCard({ fecha, esHoy = true, onSaved }: { fecha?: string; esHoy?: boolean; onSaved: () => void }) {
   const [analizando, setAnalizando] = useState(false);
   const [resultado, setResultado] = useState<AnalisisPlato | null>(null);
   const [texto, setTexto] = useState("");
@@ -60,7 +60,7 @@ export function PlatoCard({ onSaved }: { onSaved: () => void }) {
     setErr(null);
     try {
       await addMeal({
-        date: hoyLocal(),
+        date: fecha ?? hoyLocal(),
         description: resultado.descripcion,
         kcal: resultado.kcal,
         protein_g: resultado.proteina_g,
@@ -70,7 +70,9 @@ export function PlatoCard({ onSaved }: { onSaved: () => void }) {
         satiety: resultado.saciedad,
         impact: resultado.impacto || null,
         meal_type: momento,
-        eaten_at: new Date().toISOString(),
+        // En días pasados no sabemos la hora exacta: sin marca, para no
+        // confundir al contador de ayuno.
+        eaten_at: esHoy ? new Date().toISOString() : null,
       });
       setResultado(null);
       setMomento(momentoSugerido());

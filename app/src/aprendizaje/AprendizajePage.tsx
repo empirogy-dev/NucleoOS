@@ -24,6 +24,7 @@ import {
 } from "./files";
 import { blobToBase64, iaConfigured, resumirArchivo, resumirTexto } from "../lib/ia";
 import { abrirPomodoro } from "../foco/data";
+import { BibliotecaTab } from "./BibliotecaTab";
 
 export function AprendizajePage() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -31,6 +32,7 @@ export function AprendizajePage() {
   const [selectedNb, setSelectedNb] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [vista, setVista] = useState<"notas" | "biblioteca">("notas");
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -163,22 +165,32 @@ export function AprendizajePage() {
       <Head />
 
       <div className="ftabs">
-        <div className="searchbox">
-          <Search size={14} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar en todas tus notas…" aria-label="Buscar notas" />
-        </div>
-        <span style={{ flex: 1 }} />
-        <button className="btn ghost" title="Un bloque de foco para estudiar"
-          onClick={() => abrirPomodoro({ area: "aprendizaje" })}>
-          🎯 Foco de estudio
-        </button>
-        <button className="btn ghost" onClick={() => setNbModal(true)}>Nuevo cuaderno</button>
-        <button className="btn primary" onClick={() => void nuevaNota()}>
-          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          Nueva nota
-        </button>
+        <button className={"ftab" + (vista === "notas" ? " active" : "")} onClick={() => setVista("notas")}>Mis notas</button>
+        <button className={"ftab" + (vista === "biblioteca" ? " active" : "")} onClick={() => setVista("biblioteca")}>Biblioteca</button>
+        {vista === "notas" && (
+          <>
+            <div className="searchbox">
+              <Search size={14} />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar en todas tus notas…" aria-label="Buscar notas" />
+            </div>
+            <span style={{ flex: 1 }} />
+            <button className="btn ghost" title="Un bloque de foco para estudiar"
+              onClick={() => abrirPomodoro({ area: "aprendizaje" })}>
+              🎯 Foco de estudio
+            </button>
+            <button className="btn ghost" onClick={() => setNbModal(true)}>Nuevo cuaderno</button>
+            <button className="btn primary" onClick={() => void nuevaNota()}>
+              <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+              Nueva nota
+            </button>
+          </>
+        )}
       </div>
 
+      {vista === "biblioteca" ? (
+        <BibliotecaTab />
+      ) : (
+      <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
         <p style={{ color: "var(--muted)" }}>Cargando…</p>
@@ -252,7 +264,8 @@ export function AprendizajePage() {
           </div>
         </div>
       )}
-
+      </>
+      )}
 
       {nbModal && <NotebookModal onClose={() => { setNbModal(false); setPendingNote(false); }} onSaved={() => void onNotebookCreated()} />}
       {summary && (

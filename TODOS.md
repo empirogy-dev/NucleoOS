@@ -171,7 +171,13 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Divide esta tarea con IA (tijera ✂️ en Tareas de hoy): Gemini la parte en 3 a 5 pasos ridículamente chicos, el primero físico y de menos de dos minutos, que reemplazan a la original.
 - [x] `[Nuevo]` Menú de dopamina en el Inicio: lista personal editable de recompensas sanas y rápidas, muestra 3 al azar, "Muéstrame otras". Vive en el navegador (localStorage).
 - [x] `[Nuevo]` Rutinas guiadas paso a paso en Hábitos → Rutinas: como el reproductor de sadhana pero para la vida diaria (Mañana suave y Cierre del día sugeridas, editables y propias), un paso a la vez en grande con campanita. Viven en el navegador (localStorage).
-- [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
+- [x] `[Nuevo]` Registrar días pasados en Energía → Hoy: selector de fecha (hasta 14 días atrás) con aviso claro; agua, proteína, energía percibida, movimiento, sueño y platos se guardan en ese día y suman a las metas. Desaparecer unos días no borra lo que sí hiciste.
+- [x] `[Nuevo]` Ayuno con entrada manual: botón "Acabo de comer" y hora exacta ("fue ayer a las 21:00") sin registrar un plato completo; convive con la hora automática de los platos.
+- [x] `[Nuevo]` Ciclo menstrual (migración 0036): pestaña Ciclo en Energía (se oculta si la ficha dice masculino) con registro de cada regla, día y fase hormonal (menstrual, folicular, ovulatoria, lútea) con qué necesitas en cada una, línea del ciclo, predicción de la próxima con el historial real, y el correo de la pareja con botón "Avísale cómo acompañarte" (correo prellenado con la fase y cómo apoyar).
+- [x] `[Nuevo]` El lazo es de a dos (migración 0037): cada vínculo puede tener correo e invitación con consentimiento (sin invitar → invitada → acepta o declina); solo si acepta aparece "Mándale un recordito" con una idea a la medida del vínculo. El cariño no se obliga.
+- [x] `[Nuevo]` Biblioteca en Aprendizaje: 12 libros curados por vía (TDAH y foco, Hábitos, Emociones, Relaciones), cada uno con su porqué para un cerebro TDAH y tres ideas aplicadas a la app. Los de relaciones se asoman en la página de Relaciones bajo la ciencia.
+- [ ] `[Nuevo]` Correos automáticos (Fase 4, con servidor): recordatorios del ciclo a la pareja y recorditos del lazo a quienes aceptaron; hoy salen prellenados desde tu propio correo con un clic.
+- [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas, marca manual de ayuno y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
 ## Bloque G, al final

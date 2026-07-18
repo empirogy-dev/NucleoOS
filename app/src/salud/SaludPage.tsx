@@ -36,19 +36,21 @@ import {
 } from "./energia";
 import { useSettings } from "../settings/SettingsProvider";
 import { AyunoCard } from "./AyunoCard";
+import { CicloTab } from "./CicloTab";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
 // rápida de hoy (sueño, agua, proteína, movimiento); lo médico vive
 // en la pestaña Salud clínica.
 
-type Tab = "hoy" | "nutricion" | "movimiento" | "sueno" | "recuperacion" | "clinica";
+type Tab = "hoy" | "nutricion" | "movimiento" | "sueno" | "ciclo" | "recuperacion" | "clinica";
 
 const TABS: Array<{ key: Tab; label: string }> = [
   { key: "hoy", label: "Hoy" },
   { key: "nutricion", label: "Nutrición" },
   { key: "movimiento", label: "Movimiento" },
   { key: "sueno", label: "Sueño" },
+  { key: "ciclo", label: "Ciclo" },
   { key: "recuperacion", label: "Recuperación" },
   { key: "clinica", label: "Salud clínica" },
 ];
@@ -66,7 +68,16 @@ export function SaludPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const hoy = hoyLocal();
+  // La pestaña Hoy puede registrar días pasados: si desapareciste unos días
+  // pero igual entrenaste y tomaste agua, eso también cuenta. Sin culpa.
+  const hoyReal = hoyLocal();
+  const [hoy, setHoy] = useState(hoyReal);
+  const esHoy = hoy === hoyReal;
+  const fechaMin = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 13);
+    return fmtFechaLocal(d);
+  })();
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -196,7 +207,7 @@ export function SaludPage() {
       <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{ESTADOS[señales]}</p>
 
       <div className="ftabs">
-        {TABS.map((t) => (
+        {TABS.filter((t) => t.key !== "ciclo" || profile?.sex !== "masculino").map((t) => (
           <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{t.label}</button>
         ))}
       </div>
@@ -224,17 +235,39 @@ export function SaludPage() {
       ) : (
         <>
           {tab === "hoy" && (
-            <HoyTab
-              agua={agua} proteina={proteina} protComidas={totHoy.proteina} nivel={nivel} metaProt={metaProt}
-              exercise={ejercicioHoy}
-              pesoKg={pesoKg}
-              rutinaHoy={rutinaHoy}
-              deshabilitado={energiaFalta}
-              onAgua={(n) => void guardarHoy({ water_cups: n })}
-              onProteina={(g) => void guardarHoy({ protein_g: Math.max(0, protManual + g) })}
-              onNivel={(n) => void guardarHoy({ energy_level: n })}
-              onChanged={() => void reload()}
-            />
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: esHoy ? 4 : 10 }}>
+                <span style={{ fontSize: 12.5, color: "var(--muted)" }}>¿Se te pasó un día? Regístralo igual:</span>
+                <input type="date" className="input-inline" style={{ width: 150, flex: "none" }}
+                  value={hoy} min={fechaMin} max={hoyReal}
+                  onChange={(e) => { if (e.target.value) setHoy(e.target.value); }}
+                  aria-label="Fecha que estás registrando" />
+                {!esHoy && (
+                  <button className="chip" style={{ border: "none", cursor: "pointer" }} onClick={() => setHoy(hoyReal)}>
+                    volver a hoy
+                  </button>
+                )}
+              </div>
+              {!esHoy && (
+                <div className="tip-destacado" style={{ marginBottom: 12 }}>
+                  Estás registrando el {new Date(`${hoy}T00:00:00`).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}.
+                  Todo lo que marques (agua, proteína, movimiento, sueño, platos) se guarda en ese día y suma a tus metas. Desaparecer unos días no borra lo que sí hiciste.
+                </div>
+              )}
+              <HoyTab
+                agua={agua} proteina={proteina} protComidas={totHoy.proteina} nivel={nivel} metaProt={metaProt}
+                exercise={ejercicioHoy}
+                pesoKg={pesoKg}
+                rutinaHoy={rutinaHoy}
+                fecha={hoy}
+                esHoy={esHoy}
+                deshabilitado={energiaFalta}
+                onAgua={(n) => void guardarHoy({ water_cups: n })}
+                onProteina={(g) => void guardarHoy({ protein_g: Math.max(0, protManual + g) })}
+                onNivel={(n) => void guardarHoy({ energy_level: n })}
+                onChanged={() => void reload()}
+              />
+            </>
           )}
           {tab === "nutricion" && (
             <NutricionTab energy={energy} meals={meals} metaProt={metaProt} profile={profile} quemadasHoy={kcalHoy} edad={edad}
@@ -242,6 +275,7 @@ export function SaludPage() {
           )}
           {tab === "movimiento" && <MovimientoTab exercise={exercise} pesoKg={pesoKg} onChanged={() => void reload()} />}
           {tab === "sueno" && <SuenoTab routine={routine} onChanged={() => void reload()} />}
+          {tab === "ciclo" && <CicloTab />}
           {tab === "recuperacion" && <RecuperacionTab />}
           {tab === "clinica" && <ClinicaTab />}
         </>
@@ -252,7 +286,7 @@ export function SaludPage() {
 }
 
 // ---------- Hoy ----------
-function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg, rutinaHoy, deshabilitado, onAgua, onProteina, onNivel, onChanged }: {
+function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg, rutinaHoy, fecha, esHoy, deshabilitado, onAgua, onProteina, onNivel, onChanged }: {
   agua: number;
   proteina: number;
   protComidas: number;
@@ -261,6 +295,8 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
   exercise: ExerciseLog[];
   pesoKg: number | null;
   rutinaHoy: RoutineLog | null;
+  fecha: string;
+  esHoy: boolean;
   deshabilitado: boolean;
   onAgua: (n: number) => void;
   onProteina: (delta: number) => void;
@@ -355,17 +391,17 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
         bloques={[
           { id: "agua", el: bloqueAgua },
           { id: "proteina", el: bloqueProteina },
-          { id: "plato", el: <PlatoCard onSaved={onChanged} /> },
-          { id: "movimiento", el: <MovimientoRapido exercise={exercise} pesoKg={pesoKg} onChanged={onChanged} /> },
+          { id: "plato", el: <PlatoCard fecha={fecha} esHoy={esHoy} onSaved={onChanged} /> },
+          { id: "movimiento", el: <MovimientoRapido exercise={exercise} pesoKg={pesoKg} fecha={fecha} onChanged={onChanged} /> },
           { id: "nivel", el: bloqueNivel },
-          { id: "sueno", el: <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} /> },
+          { id: "sueno", el: <SuenoRapido rutinaHoy={rutinaHoy} fecha={fecha} onChanged={onChanged} /> },
         ]}
       />
     </>
   );
 }
 
-function MovimientoRapido({ exercise, pesoKg, onChanged }: { exercise: ExerciseLog[]; pesoKg: number | null; onChanged: () => void }) {
+function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: ExerciseLog[]; pesoKg: number | null; fecha: string; onChanged: () => void }) {
   const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
   const [min, setMin] = useState("");
   const [busy, setBusy] = useState(false);
@@ -374,7 +410,7 @@ function MovimientoRapido({ exercise, pesoKg, onChanged }: { exercise: ExerciseL
     e.preventDefault();
     if (!min) return;
     setBusy(true);
-    await addExercise(hoyLocal(), kind, Number(min));
+    await addExercise(fecha, kind, Number(min));
     setMin("");
     setBusy(false);
     onChanged();
@@ -405,7 +441,7 @@ function MovimientoRapido({ exercise, pesoKg, onChanged }: { exercise: ExerciseL
   );
 }
 
-function SuenoRapido({ rutinaHoy, onChanged }: { rutinaHoy: RoutineLog | null; onChanged: () => void }) {
+function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: RoutineLog | null; fecha?: string; onChanged: () => void }) {
   const [bed, setBed] = useState(rutinaHoy?.bed_time?.slice(0, 5) ?? "");
   const [wake, setWake] = useState(rutinaHoy?.wake_time?.slice(0, 5) ?? "");
   const [busy, setBusy] = useState(false);
@@ -418,7 +454,7 @@ function SuenoRapido({ rutinaHoy, onChanged }: { rutinaHoy: RoutineLog | null; o
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    await saveRoutine(hoyLocal(), { bed_time: bed || null, wake_time: wake || null });
+    await saveRoutine(fecha, { bed_time: bed || null, wake_time: wake || null });
     setBusy(false);
     onChanged();
   }

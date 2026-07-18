@@ -9,6 +9,8 @@ export interface Relationship {
   birthday: string | null;
   contact_every_days: number | null;
   notes: string | null;
+  email: string | null;
+  reminders_status: "sin_invitar" | "invitada" | "acepta" | "declina";
 }
 
 export interface RelLog {
@@ -63,12 +65,34 @@ async function uid(): Promise<string> {
 
 // ---------- Vínculos ----------
 export async function listRelationships(): Promise<Relationship[]> {
-  const { data, error } = await sb()
+  let rows: Record<string, unknown>[] | null = null;
+  let error: { code?: string; message: string } | null = null;
+  const full = await sb()
     .from("relationships")
-    .select("id,name,relation,birthday,contact_every_days,notes")
+    .select("id,name,relation,birthday,contact_every_days,notes,email,reminders_status")
     .order("created_at");
+  rows = full.data as Record<string, unknown>[] | null;
+  error = full.error;
+  if (error && /email|reminders_status|schema cache/i.test(error.message)) {
+    // Sin la 0037: leemos sin las columnas del lazo mutuo.
+    const base = await sb()
+      .from("relationships")
+      .select("id,name,relation,birthday,contact_every_days,notes")
+      .order("created_at");
+    rows = base.data as Record<string, unknown>[] | null;
+    error = base.error;
+  }
   check(error);
-  return (data ?? []) as Relationship[];
+  return (rows ?? []).map((r) => ({ email: null, reminders_status: "sin_invitar" as const, ...(r as object) })) as Relationship[];
+}
+
+/** Actualiza el correo o el consentimiento del lazo mutuo (migración 0037). */
+export async function updateRelationship(id: string, patch: Partial<Pick<Relationship, "email" | "reminders_status">>): Promise<void> {
+  const { error } = await sb().from("relationships").update(patch).eq("id", id);
+  if (error && /email|reminders_status|schema cache/i.test(error.message)) {
+    throw new Error("Para el lazo mutuo falta la migración 0037 (supabase/migrations/0037_lazo_mutuo.sql).");
+  }
+  check(error);
 }
 
 export async function addRelationship(r: {
