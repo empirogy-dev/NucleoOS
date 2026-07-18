@@ -21,9 +21,26 @@ interface Aviso {
   urgente: boolean;
 }
 
+// Lo ya visto hoy no vuelve a sumar al numerito: mirar la campana la calma.
+// Los avisos siguen listados adentro mientras estén pendientes, y mañana
+// renacen (los recordatorios diarios son parte del sistema).
+const LS_VISTOS = "nucleoos-avisos-vistos";
+
+function vistosHoy(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_VISTOS);
+    if (raw) {
+      const { date, ids } = JSON.parse(raw) as { date: string; ids: string[] };
+      if (date === hoyLocal()) return new Set(ids);
+    }
+  } catch { /* nada */ }
+  return new Set();
+}
+
 export function NotifBell() {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [open, setOpen] = useState(false);
+  const [vistos, setVistos] = useState<Set<string>>(vistosHoy);
   const ref = useRef<HTMLDivElement>(null);
 
   const cargar = useCallback(async () => {
@@ -133,14 +150,26 @@ export function NotifBell() {
     return () => document.removeEventListener("mousedown", fuera);
   }, []);
 
-  const urgentes = avisos.filter((a) => a.urgente).length;
+  // El numerito cuenta solo lo que aún no has visto hoy.
+  const nuevos = avisos.filter((a) => !vistos.has(a.id));
+  const urgentesNuevos = nuevos.filter((a) => a.urgente).length;
+
+  function abrirYMarcarVistos() {
+    const siguiente = !open;
+    setOpen(siguiente);
+    if (siguiente && avisos.length > 0) {
+      const ids = new Set([...vistos, ...avisos.map((a) => a.id)]);
+      setVistos(ids);
+      localStorage.setItem(LS_VISTOS, JSON.stringify({ date: hoyLocal(), ids: [...ids] }));
+    }
+  }
 
   return (
     <div style={{ position: "relative" }} ref={ref}>
-      <button className="iconbtn" aria-label={`Notificaciones${avisos.length ? `, ${avisos.length} pendientes` : ""}`} onClick={() => setOpen(!open)}>
+      <button className="iconbtn" aria-label={`Notificaciones${nuevos.length ? `, ${nuevos.length} nuevas` : ""}`} onClick={abrirYMarcarVistos}>
         <Bell size={18} />
-        {avisos.length > 0 && (
-          <span className={"notif-badge" + (urgentes > 0 ? " urgente" : "")}>{avisos.length}</span>
+        {nuevos.length > 0 && (
+          <span className={"notif-badge" + (urgentesNuevos > 0 ? " urgente" : "")}>{nuevos.length}</span>
         )}
       </button>
       {open && (
