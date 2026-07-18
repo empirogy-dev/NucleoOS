@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NucleoOS, checklist de deployment</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --paper:#F7F3EA; --ink:#2F3A35; --pri:#8FAF9B; --sec:#C7D7C2; --acc:#D9A38F;
+  --card:#FDFCF9; --line:#DDD8CB; --ink-soft:#4C554F; --muted:#8A8F87;
+  --accent-ink:#5C7767; --wash:#E4E9DC; --ok:#6BA783; --warn:#C69A4D; --err:#C57A68;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.55;padding:28px 16px 80px}
+h1,h2,h3{font-family:'Outfit',sans-serif;font-weight:500;letter-spacing:-.02em;line-height:1.15}
+.wrap{max-width:860px;margin:0 auto}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.logo{width:44px;height:44px;border-radius:12px;background:var(--pri);display:grid;place-items:center;flex:none}
+h1{font-size:26px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+.resumen{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:22px;position:sticky;top:10px;z-index:5;box-shadow:0 6px 24px rgba(40,36,24,.08)}
+.res-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.res-num{font-size:13px;color:var(--ink-soft)}
+.res-num b{font-size:16px}
+.track{height:9px;border-radius:999px;background:var(--wash);overflow:hidden;display:flex}
+.f-ok{background:var(--ok);height:100%}
+.f-err{background:var(--err);height:100%}
+.btn{font-family:inherit;font-weight:600;font-size:13px;border-radius:999px;padding:8px 16px;cursor:pointer;border:1px solid transparent}
+.btn.pri{background:var(--pri);color:#fff}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink-soft)}
+.seccion{margin-bottom:26px}
+.seccion>h2{font-size:17px;margin-bottom:4px}
+.seccion>p{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px}
+.item.ok{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.item.falla{border-color:color-mix(in srgb,var(--err) 55%,var(--line));background:color-mix(in srgb,var(--err) 4%,var(--card))}
+.item-top{display:flex;align-items:flex-start;gap:10px}
+.item-tit{flex:1;min-width:0}
+.item-tit b{font-size:14px}
+.item-tit small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.estados{display:flex;gap:5px;flex:none}
+.est{width:34px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--paper);cursor:pointer;font-size:14px;display:grid;place-items:center;opacity:.45;transition:all .12s}
+.est:hover{opacity:.8}
+.est.on{opacity:1;transform:scale(1.06)}
+.est.e-ok.on{background:color-mix(in srgb,var(--ok) 22%,#fff);border-color:var(--ok)}
+.est.e-falla.on{background:color-mix(in srgb,var(--err) 18%,#fff);border-color:var(--err)}
+.est.e-pend.on{background:var(--wash);border-color:var(--pri)}
+.nota{width:100%;margin-top:10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);padding:8px 10px;font-family:inherit;font-size:13px;color:var(--ink);resize:vertical;min-height:34px}
+.nota::placeholder{color:var(--muted)}
+.nota:focus{outline:2px solid color-mix(in srgb,var(--pri) 55%,transparent);border-color:var(--pri)}
+.aviso{font-size:12px;color:var(--muted);text-align:center;margin-top:26px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;padding:10px 18px;border-radius:999px;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round">
+        <ellipse cx="12" cy="12" rx="8.6" ry="3.9"/>
+        <ellipse cx="12" cy="12" rx="8.6" ry="3.9" transform="rotate(60 12 12)"/>
+        <ellipse cx="12" cy="12" rx="8.6" ry="3.9" transform="rotate(-60 12 12)"/>
+        <circle cx="12" cy="12" r="2.1" fill="#fff" stroke="none"/>
+      </svg>
+    </div>
+    <h1>Checklist de deployment</h1>
+  </div>
+  <p class="sub">Recorre la app con calma, marca cada tarea (✓ funciona, ✗ falla, ◦ pendiente) y anota lo que veas. Todo se guarda solo en este navegador. Al final, "Copiar reporte" y me lo pegas para arreglar lo que falle.</p>
+
+  <div class="resumen">
+    <div class="res-top">
+      <span class="res-num">✅ <b id="n-ok">0</b> bien</span>
+      <span class="res-num">⚠️ <b id="n-falla">0</b> con fallas</span>
+      <span class="res-num">◦ <b id="n-pend">0</b> pendientes</span>
+      <span style="flex:1"></span>
+      <button class="btn pri" onclick="copiarReporte()">📋 Copiar reporte</button>
+      <button class="btn ghost" onclick="reiniciar()">Reiniciar</button>
+    </div>
+    <div class="track"><div class="f-ok" id="bar-ok" style="width:0%"></div><div class="f-err" id="bar-err" style="width:0%"></div></div>
+  </div>
+
+  <div id="contenido"></div>
+
+  <p class="aviso">Hecho con cariño para el lanzamiento de NucleoOS. Un paso a la vez. ⚛️</p>
+</div>
+<div class="toast" id="toast">Copiado ✓</div>
+
+<script>
+const SECCIONES = [
+  {
+    titulo: "La prueba de oro",
+    nota: "Si esto pasa, el corazón de la app late: lo que registras llega a Revisión.",
+    items: [
+      { id: "oro", t: "Registrar y ver en Revisión", d: "Anota una tarea en Inicio y dos vasos de agua en Energía. Ve a Revisión → Día: deben aparecer." },
+    ],
+  },
+  {
+    titulo: "Panorama",
+    nota: "Inicio, Calendario y Revisión.",
+    items: [
+      { id: "inicio-vision", t: "Inicio: visión y saludo", d: "Tu visión de vida se ve y el lápiz la edita y guarda." },
+      { id: "inicio-tareas", t: "Tareas de hoy", d: "Anotar una, dividirla con la tijera ✂️ (la IA la parte en pasos), marcarla, borrarla." },
+      { id: "inicio-unpaso", t: "¿No sabes por dónde empezar?", d: "El botón te da UNA cosa, 'Otra cosa' cambia, 'La hice' marca." },
+      { id: "inicio-pulso", t: "Pulso del día", d: "Sueño, agua, proteína, movimiento, mente, hábitos y foco muestran tus números reales." },
+      { id: "inicio-brujula", t: "Brújula sincronizada", d: "La meta de la brújula muestra el MISMO porcentaje que en Dirección." },
+      { id: "inicio-dopamina", t: "Menú de dopamina", d: "Muestra 3 ideas, 'Muéstrame otras' rota, el lápiz edita tu lista." },
+      { id: "calendario", t: "Calendario", d: "El mes muestra pagos, citas y cumpleaños en sus días." },
+      { id: "rev-dia", t: "Revisión → Día", d: "Las flechas navegan a días pasados con su detalle completo (comidas, foco, hábitos con nombre)." },
+      { id: "rev-semana", t: "Revisión → Semana y Mes", d: "Resúmenes con datos reales, incluido '⚡ tu meta: +N en el período'." },
+      { id: "rev-ia", t: "Lectura con IA y Notion", d: "'Lectura con IA' narra el período y 'Copiar para Notion' copia el Markdown." },
+    ],
+  },
+  {
+    titulo: "Herramientas TDAH (globales)",
+    nota: "Visibles en todas las páginas.",
+    items: [
+      { id: "pomodoro", t: "Pomodoro", d: "Bloque de 15 min ligado a un proyecto, campana suave al terminar, el contador sigue al cambiar de página." },
+      { id: "captura", t: "Captura rápida ⚡", d: "El rayo abre la ventanita, escribes, Enter, y aparece en Tareas de hoy." },
+      { id: "dia-pasado", t: "Registrar un día pasado", d: "En Ajustes eliges la fecha, sale el banner amarillo en toda la app, registras algo y queda en ese día. 'Volver a hoy' funciona." },
+    ],
+  },
+  {
+    titulo: "Energía",
+    nota: "El combustible diario.",
+    items: [
+      { id: "en-agua", t: "Agua y proteína", d: "Vasos tocables, botones de proteína, y la lectura de arriba se actualiza." },
+      { id: "en-plato", t: "Plato por foto y por texto", d: "Foto o 'una lata de atún' estiman macros, eliges desayuno/almuerzo/cena/snack, se guarda." },
+      { id: "en-balance", t: "Balance calórico", d: "Meta del día en kcal, cambia con Bajar grasa / Mantener / Subir masa, dice si vas en déficit." },
+      { id: "en-ayuno", t: "Ayuno", d: "Cuenta horas desde la última comida, 'Acabo de comer' y hora manual funcionan." },
+      { id: "en-sueno", t: "Sueño", d: "Horas de acostarse y despertar se guardan y calculan las horas dormidas." },
+      { id: "en-ciclo", t: "Ciclo", d: "Muestra tu día y fase con su guía, predicción de la próxima regla, y el correo a tu pareja se abre prellenado." },
+      { id: "en-ficha", t: "Salud clínica", d: "La ficha guarda peso, estatura, actividad y sexo sin error. Con sexo masculino, la pestaña Ciclo desaparece." },
+    ],
+  },
+  {
+    titulo: "Hábitos y Movimiento",
+    items: [
+      { id: "ha-marcar", t: "Marcar hábitos", d: "El cuadrado grande marca hoy, los chiquitos marcan cualquier día, cada hábito con su color." },
+      { id: "ha-auto", t: "Automarcado desde ejercicio", d: "Registrar gimnasio marca solo el hábito de gimnasio. Y si desmarcas, se respeta (no vuelve solo)." },
+      { id: "ha-retos", t: "Retos", d: "Marcar un día del reto avanza la racha. El reto de agua se marca solo al llegar a 8 vasos (si existe)." },
+      { id: "ha-rutinas", t: "Rutinas guiadas", d: "'Mañana suave' se reproduce paso a paso con campanita, se puede editar y crear propias." },
+      { id: "mo-rutina", t: "Movimiento: rutinas y workout", d: "Una rutina corre con su temporizador y se registra. El workout libre pregunta antes de duplicar el mismo tipo en el día." },
+    ],
+  },
+  {
+    titulo: "Mi vida",
+    items: [
+      { id: "re-layout", t: "Relaciones: layout", d: "Tip a lo ancho, personas en filas arrastrables por prioridad, guía por vínculo a la derecha con los libros al pie." },
+      { id: "re-lazo", t: "El lazo es de a dos", d: "Guardar correo, 'Invitarla' abre el correo de consentimiento, registrar su respuesta, y si acepta aparece 'Mándale un recordito'." },
+      { id: "di-metas", t: "Dirección: metas automáticas", d: "Cada meta avanza con su fuente (movimiento, hábito, reto, avances u horas de proyecto) y se puede editar y reconectar." },
+      { id: "tr-checklist", t: "Trabajo: checklist del proyecto", d: "Agregar pasos, marcarlos, y el porcentaje del proyecto se recalcula solo." },
+      { id: "tr-jornada", t: "Trabajo: jornada que empuja", d: "Registrar una jornada con horas en un proyecto conectado avanza la meta (por ejemplo Estudiar IA)." },
+      { id: "fi-gasto", t: "Finanzas", d: "Gasto nuevo, categorizar (sale de la bandeja Por revisar), dividir con ✂️, presupuestos al día." },
+      { id: "ap-notas", t: "Aprendizaje", d: "Nota en un cuaderno, y la Biblioteca con 'Lo quiero leer' y 'Lo leí' guardando en Mi lista y Leídos." },
+      { id: "vi-collage", t: "Visión", d: "El collage deja mover y guardar, los sueños se agregan y editan." },
+      { id: "mente", t: "Mente", d: "Una práctica corre con su círculo y campana, la sadhana completa, el diario guarda, la luna se ve dibujada." },
+    ],
+  },
+  {
+    titulo: "Celular y detalles",
+    items: [
+      { id: "cel", t: "Todo en el celular", d: "Foto del plato con la cámara, menú hamburguesa, una columna, pomodoro y captura alcanzables." },
+      { id: "logo", t: "Logo y pestaña", d: "El átomo se ve en el sidebar, el login y la pestaña de Chrome." },
+      { id: "migraciones", t: "Sin avisos de migración", d: "Ninguna página pide correr una migración (deben estar las 38)." },
+    ],
+  },
+  {
+    titulo: "Preparación técnica (con Claude)",
+    nota: "Esto lo hacemos juntas en la sesión de deployment.",
+    items: [
+      { id: "prep-ls", t: "Mover lo local a Supabase", d: "Dopamina, rutinas, sesiones de Mente, estado de libros y ayuno manual, para que viajen entre dispositivos." },
+      { id: "prep-gemini", t: "Decidir la llave de Gemini", d: "Para uso personal se queda como está, para SaaS multi-usuario va a una Edge Function." },
+      { id: "prep-auth", t: "Supabase para el mundo real", d: "Site URL y Redirects con el dominio final, y confirmación de correo activada." },
+      { id: "prep-vercel", t: "Publicar en Vercel", d: "Repo a GitHub privado, importar con root app, variables de entorno, regla SPA, deploy." },
+      { id: "prep-post", t: "Después de publicar", d: "Entrar desde la URL nueva, prueba de oro, probar en el celular." },
+    ],
+  },
+];
+
+const LS = "nucleoos-deploy-checklist";
+let estado = {};
+try { estado = JSON.parse(localStorage.getItem(LS) || "{}"); } catch { estado = {}; }
+
+function guardar() { localStorage.setItem(LS, JSON.stringify(estado)); }
+
+function setEstado(id, val) {
+  estado[id] = estado[id] || {};
+  estado[id].e = estado[id].e === val ? "" : val;
+  guardar();
+  render();
+}
+
+function setNota(id, txt) {
+  estado[id] = estado[id] || {};
+  estado[id].n = txt;
+  guardar();
+  resumen();
+}
+
+function render() {
+  const cont = document.getElementById("contenido");
+  cont.innerHTML = SECCIONES.map((s) => `
+    <div class="seccion">
+      <h2>${s.titulo}</h2>
+      ${s.nota ? `<p>${s.nota}</p>` : ""}
+      ${s.items.map((it) => {
+        const e = estado[it.id]?.e || "";
+        const n = estado[it.id]?.n || "";
+        return `
+        <div class="item ${e === "ok" ? "ok" : e === "falla" ? "falla" : ""}">
+          <div class="item-top">
+            <div class="item-tit"><b>${it.t}</b><small>${it.d}</small></div>
+            <div class="estados">
+              <button class="est e-ok ${e === "ok" ? "on" : ""}" title="Funciona bien" onclick="setEstado('${it.id}','ok')">✅</button>
+              <button class="est e-falla ${e === "falla" ? "on" : ""}" title="Falla o se ve mal" onclick="setEstado('${it.id}','falla')">⚠️</button>
+              <button class="est e-pend ${e === "pend" ? "on" : ""}" title="Lo pruebo después" onclick="setEstado('${it.id}','pend')">◦</button>
+            </div>
+          </div>
+          <textarea class="nota" rows="1" placeholder="Notas: qué viste, qué falló, qué mejorarías…"
+            oninput="setNota('${it.id}', this.value)">${n.replace(/</g, "&lt;")}</textarea>
+        </div>`;
+      }).join("")}
+    </div>`).join("");
+  resumen();
+}
+
+function resumen() {
+  const ids = SECCIONES.flatMap((s) => s.items.map((i) => i.id));
+  const ok = ids.filter((id) => estado[id]?.e === "ok").length;
+  const falla = ids.filter((id) => estado[id]?.e === "falla").length;
+  const pend = ids.length - ok - falla;
+  document.getElementById("n-ok").textContent = ok;
+  document.getElementById("n-falla").textContent = falla;
+  document.getElementById("n-pend").textContent = pend;
+  document.getElementById("bar-ok").style.width = (ok / ids.length) * 100 + "%";
+  document.getElementById("bar-err").style.width = (falla / ids.length) * 100 + "%";
+}
+
+function copiarReporte() {
+  const lineas = ["# Reporte del checklist de deployment de NucleoOS", ""];
+  for (const s of SECCIONES) {
+    const del = s.items.filter((i) => estado[i.id]?.e || estado[i.id]?.n);
+    if (!del.length) continue;
+    lineas.push(`## ${s.titulo}`);
+    for (const i of del) {
+      const e = estado[i.id]?.e;
+      const icono = e === "ok" ? "✅" : e === "falla" ? "⚠️ FALLA" : "◦ pendiente";
+      lineas.push(`- ${icono} ${i.t}${estado[i.id]?.n ? `: ${estado[i.id].n.trim()}` : ""}`);
+    }
+    lineas.push("");
+  }
+  if (lineas.length <= 2) lineas.push("(aún sin nada marcado)");
+  navigator.clipboard.writeText(lineas.join("\n")).then(() => {
+    const t = document.getElementById("toast");
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2000);
+  });
+}
+
+function reiniciar() {
+  if (!confirm("¿Borrar todos los estados y notas del checklist?")) return;
+  estado = {};
+  guardar();
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
