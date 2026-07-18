@@ -9,10 +9,12 @@ import { listExercise, listHabitLogs, listHabits, type ExerciseLog, type Habit, 
 import { listRetoLogs, listRetos, type Reto, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
 import { listProjects, listWorkLogs, type Project, type WorkLog } from "../trabajo/data";
+import { listFocusBlocks, type FocusBlock } from "../foco/data";
 import {
   METRICAS_AUTO,
   PLAZO_DEFECTO_DIAS,
   STATUS_LABELS,
+  focoRefOpciones,
   metaAutoEsperado,
   progresoDe,
   valorAuto,
@@ -67,6 +69,7 @@ export function ObjetivosPage() {
   const [retos, setRetos] = useState<Reto[]>([]);
   const [proyectos, setProyectos] = useState<Project[]>([]);
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
+  const [focusBlocks, setFocusBlocks] = useState<FocusBlock[]>([]);
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -116,6 +119,11 @@ export function ObjetivosPage() {
     } catch {
       /* sin tablas de trabajo, la métrica de horas no está disponible */
     }
+    try {
+      setFocusBlocks(await listFocusBlocks(365));
+    } catch {
+      /* sin la 0035, la métrica de foco no está disponible */
+    }
     setSesiones(listSesiones());
     setLoading(false);
   }, []);
@@ -127,7 +135,7 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
-  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs };
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs, focusBlocks };
   const promedio = activas.length
     ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
@@ -339,7 +347,14 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
       ? (() => { const r = retos.find((x) => x.id === o.auto_ref); return r ? { icon: r.icon, name: r.title } : null; })()
       : o.auto_metric === "trabajo_horas"
         ? (() => { const p = proyectos.find((x) => x.id === o.auto_ref); return p ? { icon: "💼", name: p.name } : null; })()
-        : null;
+        : o.auto_metric === "foco_minutos"
+          ? (() => {
+              const ref = o.auto_ref ?? "";
+              if (ref.startsWith("p:")) { const p = proyectos.find((x) => x.id === ref.slice(2)); return p ? { icon: "🎯💼", name: p.name } : null; }
+              if (ref === "a:aprendizaje") return { icon: "🎯📚", name: "Aprendizaje" };
+              return null;
+            })()
+          : null;
   const valor = esAuto ? valorAuto(o, fuentes) : 0;
   const pct = progresoDe(o, fuentes);
   const tone = STATUS_TONES[o.status];
@@ -415,7 +430,9 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos} onChanged={onChanged} />
+          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos}
+            activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}, a ${o.auto_target} por semana` : null}
+            onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
               <span style={{ flex: 1, fontSize: 13.5, color: m.progress >= 100 ? "var(--muted)" : "var(--ink-soft)", textDecoration: m.progress >= 100 ? "line-through" : "none" }}>
@@ -505,7 +522,7 @@ function GuiaDireccion() {
 }
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
-function AutoConfig({ o, habitos, retos, proyectos, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; onChanged: () => void }) {
+function AutoConfig({ o, habitos, retos, proyectos, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; activaLabel: string | null; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
   const [ref, setRef] = useState(o.auto_ref ?? "");
@@ -526,11 +543,15 @@ function AutoConfig({ o, habitos, retos, proyectos, onChanged }: { o: Objective;
       setErr("Elige qué proyecto de Trabajo alimenta esta meta.");
       return;
     }
+    if (metric === "foco_minutos" && !ref) {
+      setErr("Elige a qué proyecto o área ligas tus bloques de foco.");
+      return;
+    }
     try {
       await updateObjective(o.id, {
         auto_metric: metric || null,
         auto_target: metric && target ? Number(target) : null,
-        auto_ref: metric === "habito_marcas" || metric === "reto_dias" || metric === "trabajo_horas" ? ref : null,
+        auto_ref: metric === "habito_marcas" || metric === "reto_dias" || metric === "trabajo_horas" || metric === "foco_minutos" ? ref : null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -545,6 +566,11 @@ function AutoConfig({ o, habitos, retos, proyectos, onChanged }: { o: Objective;
       <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
         ⚡ Progreso automático
       </div>
+      {activaLabel && (
+        <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>
+          Conectada ahora a: <b>{activaLabel}</b>. Cambia la selección de abajo solo si quieres reconectarla a otra cosa.
+        </p>
+      )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <select className="ms-sel" style={{ padding: "8px 10px" }} value={metric} aria-label="Métrica automática"
           onChange={(e) => setMetric(e.target.value)}>
@@ -570,6 +596,13 @@ function AutoConfig({ o, habitos, retos, proyectos, onChanged }: { o: Objective;
             onChange={(e) => setRef(e.target.value)}>
             <option value="">¿Qué proyecto?</option>
             {proyectos.map((p) => <option key={p.id} value={p.id}>💼 {p.name}</option>)}
+          </select>
+        )}
+        {metric === "foco_minutos" && (
+          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Proyecto o área que alimenta la meta"
+            onChange={(e) => setRef(e.target.value)}>
+            <option value="">¿A qué liga tu foco?</option>
+            {focoRefOpciones(proyectos).map((o2) => <option key={o2.value} value={o2.value}>{o2.label}</option>)}
           </select>
         )}
         {metric && (

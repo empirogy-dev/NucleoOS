@@ -119,9 +119,15 @@ button{font-family:inherit}
   .sidebar{position:fixed;left:0;top:0;z-index:40;transform:translateX(-100%);box-shadow:var(--sh)}
   .sidebar.open{transform:translateX(0)}
   .hamb{display:grid}
-  .statrow{grid-template-columns:1fr 1fr}
-  .panelgrid{grid-template-columns:1fr}
+  /* !important porque varias páginas fijan gridTemplateColumns en línea
+     (más específico que esta clase) para lograr columnas iguales en
+     escritorio; en celular esa regla debe ganar sí o sí. */
+  .statrow{grid-template-columns:1fr 1fr!important}
+  .panelgrid{grid-template-columns:1fr!important}
   .tp-grid{grid-template-columns:1fr}
+}
+@media (max-width:480px){
+  .statrow{grid-template-columns:1fr!important}
 }
 .scrim{display:none}
 @media (max-width:860px){.scrim.show{display:block;position:fixed;inset:0;background:rgba(20,18,12,.3);z-index:39}}
@@ -178,6 +184,7 @@ button{font-family:inherit}
 .ftab:hover{border-color:var(--muted)}
 .ftab.active{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-wash)}
 .txrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line-soft)}
+@media (max-width:480px){.txrow{flex-wrap:wrap}.txrow .txmeta{flex-basis:100%}}
 .txrow:last-child{border-bottom:none}
 .txicon{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font-size:15px;flex:none}
 .txmeta{flex:1;min-width:0}
@@ -197,6 +204,15 @@ button{font-family:inherit}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.03em;color:var(--muted);margin-bottom:5px}
 .field input,.field textarea,.field select{width:100%;font-family:var(--sans);font-size:14px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink);transition:border-color .15s}
+/* Selects: quitamos la flecha del sistema operativo y ponemos una del
+   tema. El listado desplegado en sí lo sigue dibujando el navegador
+   (limitación real de <select>, ningún sitio puede restylearlo). */
+.field select,.ms-sel{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 7l5 5 5-5'/></svg>");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:13px;padding-right:30px;
+}
+.field select{padding-right:32px}
 .field input::placeholder,.field textarea::placeholder{color:var(--muted);opacity:.75}
 .field input:hover,.field textarea:hover,.field select:hover{border-color:var(--muted)}
 .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
@@ -242,7 +258,8 @@ button{font-family:inherit}
 .cal-more{font-size:10px;color:var(--muted);margin-top:3px}
 @media (max-width:720px){.cal-cell{min-height:56px;padding:4px}.cal-ev .t{display:none}.cal-ev{width:fit-content}}
 
-/* ================= HÁBITOS: cuadrícula del desafío ================= */
+/* ================= HÁBITOS: fila y cuadrícula del desafío ================= */
+@media (max-width:480px){.habit-row{flex-wrap:wrap}.habit-row .txmeta{flex-basis:100%;order:1}.habit-row .hcheck{order:0}.habit-row>*:not(.hcheck):not(.txmeta){order:2}}
 .habit-grid{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;padding-left:40px}
 .hg-cell{width:16px;height:16px;border-radius:5px;border:1px solid var(--line);background:var(--line-soft);cursor:pointer;padding:0;transition:transform .1s,background .15s}
 .hg-cell:hover{transform:scale(1.2);border-color:var(--accent)}

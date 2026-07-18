@@ -55,6 +55,7 @@ export function Inicio() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [workLogsF, setWorkLogsF] = useState<Fuentes["workLogs"]>([]);
+  const [focusBlocksF, setFocusBlocksF] = useState<Fuentes["focusBlocks"]>([]);
   const [perfil, setPerfil] = useState<HealthProfile | null>(null);
 
   const [editingVision, setEditingVision] = useState(false);
@@ -85,6 +86,7 @@ export function Inicio() {
       setExercise(f.ejercicio);
       setRetoLogs(f.retoLogs);
       setWorkLogsF(f.workLogs);
+      setFocusBlocksF(f.focusBlocks);
     } catch { /* fuentes opcionales */ }
     try {
       const [h, hl] = await Promise.all([listHabits(), listHabitLogs()]);
@@ -150,7 +152,7 @@ export function Inicio() {
   const avancesMes = activity.filter((a) => a.date.startsWith(month)).length;
   const metasEnCamino = objectives.filter((o) => o.status === "en_camino").length;
   // Las fuentes del progreso automático: las mismas ventanas que Dirección.
-  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF };
+  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF, focusBlocks: focusBlocksF };
   const globalPct = objectives.length
     ? Math.round(objectives.reduce((s, o) => s + progresoDe(o, fuentes), 0) / objectives.length)
     : null;
@@ -168,9 +170,14 @@ export function Inicio() {
   const sesionesMenteHoy = listSesiones().filter((s) => s.fecha === hoyStr).length;
 
   // ---------- Brújula: una meta que empuja hoy ----------
-  const brujula = objectives
+  // A propósito muestra solo UNA (la de fecha más próxima): un cerebro TDAH
+  // con diez metas a la vista no avanza en ninguna. Las demás siguen enteras
+  // en Dirección, esto es solo dónde poner el ojo hoy.
+  const activasOrdenadas = objectives
     .filter((o) => o.status === "en_camino" || o.status === "en_riesgo")
-    .sort((a, b) => (a.deadline ?? "9999").localeCompare(b.deadline ?? "9999"))[0] ?? null;
+    .sort((a, b) => (a.deadline ?? "9999").localeCompare(b.deadline ?? "9999"));
+  const brujula = activasOrdenadas[0] ?? null;
+  const otrasActivas = Math.max(0, activasOrdenadas.length - 1);
   const brujulaPct = brujula ? progresoDe(brujula, fuentes) : 0;
   const brujulaPaso = brujula?.milestones.find((m) => m.progress < 100) ?? null;
   const brujulaMetrica = brujula?.auto_metric ? METRICAS_AUTO.find((m) => m.key === brujula.auto_metric) : null;
@@ -282,6 +289,11 @@ export function Inicio() {
             <Link to="/objetivos" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>ver todas</Link>
           </div>
           <b style={{ fontSize: 15 }}>{brujula.title}</b>
+          {otrasActivas > 0 && (
+            <span style={{ fontSize: 11.5, color: "var(--muted)", marginLeft: 8 }}>
+              y {otrasActivas} {otrasActivas === 1 ? "meta más en camino" : "metas más en camino"}
+            </span>
+          )}
           <div className="bar" style={{ margin: "8px 0 0" }}>
             <div className="top">
               <span>

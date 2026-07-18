@@ -4,6 +4,7 @@ import { listExercise, listHabitLogs, type ExerciseLog, type HabitLog } from "..
 import { listRetoLogs, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
 import { listWorkLogs, type WorkLog } from "../trabajo/data";
+import { listFocusBlocks, type FocusBlock } from "../foco/data";
 
 export type ObjectiveStatus = "en_camino" | "en_riesgo" | "lograda" | "pausada";
 
@@ -40,7 +41,16 @@ export const METRICAS_AUTO = [
   { key: "reto_dias", label: "Días de un reto", unidad: "días", singular: "día", fuente: "Hábitos, pestaña Retos" },
   { key: "area_avances", label: "Avances registrados en su área", unidad: "avances", singular: "avance", fuente: "el botón Registrar avance de su área" },
   { key: "trabajo_horas", label: "Horas de un proyecto", unidad: "horas", singular: "hora", fuente: "las jornadas de ese proyecto en Trabajo" },
+  { key: "foco_minutos", label: "Minutos de foco (pomodoro)", unidad: "min", singular: "minuto", fuente: "tus bloques de foco ligados a ese proyecto o a Aprendizaje" },
 ] as const;
+
+/** Para "foco_minutos", auto_ref guarda a qué se liga: "p:<id de proyecto>" o "a:aprendizaje". */
+export function focoRefOpciones(proyectos: Array<{ id: string; name: string }>): Array<{ value: string; label: string }> {
+  return [
+    ...proyectos.map((p) => ({ value: `p:${p.id}`, label: `💼 ${p.name}` })),
+    { value: "a:aprendizaje", label: "📚 Aprendizaje" },
+  ];
+}
 
 export const PLAZO_DEFECTO_DIAS = 90;
 
@@ -52,6 +62,7 @@ export interface Fuentes {
   retoLogs: RetoLog[];
   avances: ActivityEntry[];
   workLogs: WorkLog[];
+  focusBlocks: FocusBlock[];
 }
 
 /** Las fuentes completas del progreso automático, con las MISMAS ventanas
@@ -65,14 +76,15 @@ export async function cargarFuentes(): Promise<Fuentes> {
       return fallback;
     }
   };
-  const [ejercicio, habitLogs, retoLogs, avances, workLogs] = await Promise.all([
+  const [ejercicio, habitLogs, retoLogs, avances, workLogs, focusBlocks] = await Promise.all([
     seguro(() => listExercise(365), [] as ExerciseLog[]),
     seguro(() => listHabitLogs(), [] as HabitLog[]),
     seguro(() => listRetoLogs(), [] as RetoLog[]),
     seguro(() => listActivity(500), [] as ActivityEntry[]),
     seguro(() => listWorkLogs(365), [] as WorkLog[]),
+    seguro(() => listFocusBlocks(365), [] as FocusBlock[]),
   ]);
-  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs };
+  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs, focusBlocks };
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
@@ -92,6 +104,13 @@ export function valorAuto(o: Objective, f: Fuentes): number {
         .filter((w) => w.project_id === o.auto_ref && w.date >= desde && w.hours)
         .reduce((s, w) => s + Number(w.hours), 0) * 10,
     ) / 10;
+  }
+  if (o.auto_metric === "foco_minutos") {
+    const ref = o.auto_ref ?? "";
+    return f.focusBlocks
+      .filter((b) => b.date >= desde)
+      .filter((b) => (ref.startsWith("p:") ? b.project_id === ref.slice(2) : ref.startsWith("a:") ? b.area === ref.slice(2) : false))
+      .reduce((s, b) => s + b.minutes, 0);
   }
   return 0;
 }

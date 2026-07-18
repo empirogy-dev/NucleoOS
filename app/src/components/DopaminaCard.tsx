@@ -28,22 +28,38 @@ function cargarLista(): string[] {
   return SUGERIDAS;
 }
 
-function sortear(lista: string[], n = 3): string[] {
-  return [...lista].sort(() => Math.random() - 0.5).slice(0, Math.min(n, lista.length));
+function barajar(lista: string[]): string[] {
+  return [...lista].sort(() => Math.random() - 0.5);
 }
 
+/** Saca 3 de la bolsa barajada; si no alcanza, reparte una bolsa nueva sin
+ *  repetir dentro de la misma tanda. Devuelve la muestra y lo que sobró. */
+function sacarDeLaBolsa(bolsa: string[], lista: string[]): { muestra: string[]; bolsa: string[] } {
+  const n = Math.min(3, lista.length);
+  let restante = bolsa.length >= n ? bolsa : barajar(lista);
+  const muestra = restante.slice(0, n);
+  restante = restante.slice(n);
+  return { muestra, bolsa: restante };
+}
+
+/** Bolsa barajada: no repite ninguna hasta mostrar todas, así "Muéstrame otras"
+ *  no se siente en loop tan rápido con listas cortas. */
 export function DopaminaCard() {
   const [lista, setLista] = useState<string[]>(cargarLista);
-  const [muestra, setMuestra] = useState<string[]>(() => sortear(cargarLista()));
+  const [{ muestra, bolsa }, setEstado] = useState(() => sacarDeLaBolsa(barajar(cargarLista()), cargarLista()));
   const [editando, setEditando] = useState(false);
   const [borrador, setBorrador] = useState("");
+
+  function otraMuestra() {
+    setEstado(sacarDeLaBolsa(bolsa, lista));
+  }
 
   function guardarEdicion() {
     const limpia = borrador.split("\n").map((s) => s.trim()).filter(Boolean);
     const final = limpia.length > 0 ? limpia : SUGERIDAS;
     setLista(final);
     localStorage.setItem(LS, JSON.stringify(final));
-    setMuestra(sortear(final));
+    setEstado(sacarDeLaBolsa(barajar(final), final));
     setEditando(false);
   }
 
@@ -75,7 +91,7 @@ export function DopaminaCard() {
           {muestra.map((m) => (
             <p key={m} style={{ fontSize: 13.5, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>{m}</p>
           ))}
-          <button className="linklike" style={{ marginTop: 8 }} onClick={() => setMuestra(sortear(lista))}>
+          <button className="linklike" style={{ marginTop: 8 }} onClick={otraMuestra}>
             Muéstrame otras
           </button>
         </>

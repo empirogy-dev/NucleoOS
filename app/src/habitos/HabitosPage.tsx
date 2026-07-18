@@ -161,7 +161,7 @@ export function HabitosPage() {
                 const logrado = hechos >= objetivo;
                 return (
                   <div key={h.id} style={{ borderBottom: "1px solid var(--line-soft)", padding: "10px 0" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div className="habit-row" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <button
                         className={"hcheck" + (done ? " done" : "")}
                         style={done ? { background: color, borderColor: color } : undefined}

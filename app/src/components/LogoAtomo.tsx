@@ -9,15 +9,15 @@ export function LogoAtomo({ size = 20 }: { size?: number }) {
       height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth="0.9"
       strokeLinecap="round"
       aria-hidden="true"
     >
       <ellipse cx="12" cy="12" rx="8.6" ry="3.9" />
       <ellipse cx="12" cy="12" rx="8.6" ry="3.9" transform="rotate(60 12 12)" />
       <ellipse cx="12" cy="12" rx="8.6" ry="3.9" transform="rotate(-60 12 12)" />
-      <circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none" />
-      <circle cx="18.8" cy="7.4" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" />
+      <circle cx="18.8" cy="7.4" r="0.85" fill="currentColor" stroke="none" />
     </svg>
   );
 }

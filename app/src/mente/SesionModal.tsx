@@ -94,6 +94,19 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
     setCorriendo((c) => !c);
   }
 
+  // Si paras antes de tiempo, lo hecho también cuenta: un minuto de
+  // respiración ya es un paso, no hace falta llegar al final para guardarlo.
+  function guardarYTerminar() {
+    if (guardada.current) { onClose(); return; }
+    guardada.current = true;
+    detenerAmbiente();
+    const minutosReales = Math.max(1, Math.round(elapsed / 60));
+    const s: Sesion = { fecha: fechaRegistro(), id: practica.id, nombre: practica.nombre, minutos: minutosReales };
+    guardarSesion(s);
+    onCompleta(s);
+    onClose();
+  }
+
   function escalaDe(i: number): number {
     if (!fases) return 0.5;
     const tipo = fases[i].tipo;
@@ -188,7 +201,14 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
             </span>
           )}
           <span style={{ flex: 1 }} />
-          <button className="btn ghost" onClick={onClose}>{listo ? "Cerrar" : "Terminar"}</button>
+          {!listo && iniciado ? (
+            <>
+              <button className="btn primary" onClick={guardarYTerminar}>Guardar y terminar</button>
+              <button className="btn ghost" onClick={onClose} title="Sale sin guardar nada de esta sesión">Salir sin guardar</button>
+            </>
+          ) : (
+            <button className="btn ghost" onClick={onClose}>{listo ? "Cerrar" : "Salir"}</button>
+          )}
         </div>
       </div>
     </div>

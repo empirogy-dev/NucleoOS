@@ -274,6 +274,13 @@ function eventosEnPeriodo(o: Objective, f: Fuentes, dentro: (d: string) => boole
   if (o.auto_metric === "trabajo_horas") {
     return Math.round(f.workLogs.filter((w) => w.project_id === o.auto_ref && dentro(w.date) && w.hours).reduce((s, w) => s + Number(w.hours), 0) * 10) / 10;
   }
+  if (o.auto_metric === "foco_minutos") {
+    const ref = o.auto_ref ?? "";
+    return f.focusBlocks
+      .filter((b) => dentro(b.date))
+      .filter((b) => (ref.startsWith("p:") ? b.project_id === ref.slice(2) : ref.startsWith("a:") ? b.area === ref.slice(2) : false))
+      .reduce((s, b) => s + b.minutes, 0);
+  }
   return 0;
 }
 
