@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw, Timer, X } from "lucide-react";
-import { hoyLocal } from "../lib/fechas";
+import { bloquesHoyLocal, saveFocusBlock, sumarBloqueLocal, type PomodoroPreset } from "../foco/data";
+import { listProjects, type Project } from "../trabajo/data";
 
 // Pomodoro global, pensado para el foco con TDAH: vive sobre todas las
 // páginas, externaliza el tiempo (lo ves siempre), parte con un toque,
@@ -19,7 +20,6 @@ interface Estado {
 }
 
 const LS = "nucleoos-pomodoro";
-const LS_HECHOS = "nucleoos-pomodoro-hechos";
 const PRESETS = [15, 25, 45];
 
 function cargar(): Estado {
@@ -36,23 +36,6 @@ function cargar(): Estado {
     }
   } catch { /* estado corrupto, partimos limpio */ }
   return { modo: "focus", corriendo: false, terminaEn: null, restante: 25 * 60, etiqueta: "", focoMin: 25, descansoMin: 5 };
-}
-
-function hechosHoy(): number {
-  try {
-    const raw = localStorage.getItem(LS_HECHOS);
-    if (raw) {
-      const { date, count } = JSON.parse(raw) as { date: string; count: number };
-      if (date === hoyLocal()) return count;
-    }
-  } catch { /* nada */ }
-  return 0;
-}
-
-function sumarHecho(): number {
-  const n = hechosHoy() + 1;
-  localStorage.setItem(LS_HECHOS, JSON.stringify({ date: hoyLocal(), count: n }));
-  return n;
 }
 
 /** Campana suave, un acorde ascendente. Nada de alarmas estridentes. */
@@ -87,23 +70,58 @@ function mmss(seg: number): string {
 export function Pomodoro() {
   const [e, setE] = useState<Estado>(cargar);
   const [abierto, setAbierto] = useState(false);
-  const [hechos, setHechos] = useState(hechosHoy);
+  const [hechos, setHechos] = useState(bloquesHoyLocal);
   const [festejo, setFestejo] = useState(false);
+  const [proyectos, setProyectos] = useState<Project[]>([]);
+  // A qué empuja este bloque: nada, un proyecto de Trabajo, o Aprendizaje.
+  const [destino, setDestino] = useState<string>("libre");
   const eRef = useRef(e);
   eRef.current = e;
+  const destinoRef = useRef(destino);
+  destinoRef.current = destino;
+  const proyectosRef = useRef(proyectos);
+  proyectosRef.current = proyectos;
 
   // Persistimos cada cambio para sobrevivir a recargas.
   useEffect(() => {
     localStorage.setItem(LS, JSON.stringify(e));
   }, [e]);
 
+  // Proyectos activos para ligar el bloque (silencioso si Trabajo no está migrado).
+  useEffect(() => {
+    if (!abierto || proyectos.length > 0) return;
+    listProjects()
+      .then((ps) => setProyectos(ps.filter((p) => p.status === "activo")))
+      .catch(() => { /* sin proyectos, el selector ofrece lo demás */ });
+  }, [abierto, proyectos.length]);
+
+  // Otras páginas pueden abrir el pomodoro ya apuntando a su proyecto o área.
+  useEffect(() => {
+    const escucha = (ev: Event) => {
+      const d = (ev as CustomEvent<PomodoroPreset>).detail ?? {};
+      if (d.projectId) setDestino(`p:${d.projectId}`);
+      else if (d.area) setDestino(`a:${d.area}`);
+      setAbierto(true);
+    };
+    window.addEventListener("nucleoos:pomodoro", escucha);
+    return () => window.removeEventListener("nucleoos:pomodoro", escucha);
+  }, []);
+
   const completar = useCallback(() => {
     campana();
     const prev = eRef.current;
     if (prev.modo === "focus") {
-      setHechos(sumarHecho());
+      setHechos(sumarBloqueLocal());
       setFestejo(true);
       setTimeout(() => setFestejo(false), 6000);
+      // El bloque queda registrado con su destino (proyecto o área).
+      const d = destinoRef.current;
+      void saveFocusBlock({
+        minutes: prev.focoMin,
+        label: prev.etiqueta.trim() || null,
+        project_id: d.startsWith("p:") ? d.slice(2) : null,
+        area: d.startsWith("a:") ? d.slice(2) : null,
+      });
       // Al terminar el foco, el descanso arranca solo para que de verdad pares.
       setE({ ...prev, modo: "break", restante: prev.descansoMin * 60, corriendo: true, terminaEn: Date.now() + prev.descansoMin * 60 * 1000 });
     } else {
@@ -181,6 +199,21 @@ export function Pomodoro() {
             onChange={(ev) => setE((s) => ({ ...s, etiqueta: ev.target.value }))}
             placeholder="¿En qué te enfocas ahora?"
           />
+
+          <select
+            className="pomo-destino"
+            value={destino}
+            onChange={(ev) => setDestino(ev.target.value)}
+            aria-label="A qué empuja este bloque"
+          >
+            <option value="libre">Bloque libre, sin proyecto</option>
+            {proyectos.length > 0 && (
+              <optgroup label="Trabajo">
+                {proyectos.map((p) => <option key={p.id} value={`p:${p.id}`}>💼 {p.name}</option>)}
+              </optgroup>
+            )}
+            <option value="a:aprendizaje">📚 Aprendizaje</option>
+          </select>
 
           <div className="pomo-reloj tnum">{mmss(e.restante)}</div>
           <div className="pomo-track"><div className="pomo-fill" style={{ width: `${pct}%` }} /></div>

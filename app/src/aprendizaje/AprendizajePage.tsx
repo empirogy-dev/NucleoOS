@@ -23,6 +23,7 @@ import {
   type MaterialFile,
 } from "./files";
 import { blobToBase64, iaConfigured, resumirArchivo, resumirTexto } from "../lib/ia";
+import { abrirPomodoro } from "../foco/data";
 
 export function AprendizajePage() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -167,6 +168,10 @@ export function AprendizajePage() {
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar en todas tus notas…" aria-label="Buscar notas" />
         </div>
         <span style={{ flex: 1 }} />
+        <button className="btn ghost" title="Un bloque de foco para estudiar"
+          onClick={() => abrirPomodoro({ area: "aprendizaje" })}>
+          🎯 Foco de estudio
+        </button>
         <button className="btn ghost" onClick={() => setNbModal(true)}>Nuevo cuaderno</button>
         <button className="btn primary" onClick={() => void nuevaNota()}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />

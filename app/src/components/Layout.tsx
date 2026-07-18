@@ -5,6 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { NotifBell } from "./NotifBell";
 import { ThemePicker } from "./ThemePicker";
 import { Pomodoro } from "./Pomodoro";
+import { CapturaRapida } from "./CapturaRapida";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
@@ -53,6 +54,7 @@ export function Layout() {
         </main>
       </div>
       <Pomodoro />
+      <CapturaRapida />
       {pickerOpen && <ThemePicker onClose={() => setPickerOpen(false)} />}
     </div>
   );

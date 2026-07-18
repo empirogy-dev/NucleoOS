@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Scissors, Trash2 } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
 import { TablesMissingError } from "../finanzas/data";
+import { dividirTarea, iaConfigured } from "../lib/ia";
 import {
   addDayTask,
   deleteDayTask,
@@ -111,36 +112,67 @@ export function TareasHoy() {
 }
 
 function TareaFila({ t, deOtroDia = false, onChanged }: { t: DayTask; deOtroDia?: boolean; onChanged: () => void }) {
+  const [dividiendo, setDividiendo] = useState(false);
+  const [errDiv, setErrDiv] = useState<string | null>(null);
+
+  // La iniciación es el muro TDAH: la IA parte la tarea en pasos diminutos
+  // que reemplazan a la original, cada uno con su propia casilla.
+  async function dividir() {
+    if (dividiendo) return;
+    setDividiendo(true);
+    setErrDiv(null);
+    try {
+      const pasos = await dividirTarea(t.title);
+      for (const p of pasos) await addDayTask(p, t.date);
+      await deleteDayTask(t.id);
+      onChanged();
+    } catch (e) {
+      setErrDiv(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDividiendo(false);
+    }
+  }
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0", borderBottom: "1px solid var(--line-soft)" }}>
-      <button
-        aria-label={t.done ? "Desmarcar tarea" : "Marcar tarea lista"}
-        onClick={async () => { await toggleDayTask(t.id, !t.done); onChanged(); }}
-        style={{
-          width: 19, height: 19, borderRadius: 6, cursor: "pointer", flex: "none",
-          border: `1.5px solid ${t.done ? "var(--accent)" : "var(--line)"}`,
-          background: t.done ? "var(--accent)" : "transparent",
-          color: "#fff", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-        {t.done ? "✓" : ""}
-      </button>
-      <span style={{
-        flex: 1, fontSize: 13.5, minWidth: 0,
-        color: t.done ? "var(--muted)" : "var(--ink)",
-        textDecoration: t.done ? "line-through" : "none",
-      }}>
-        {t.title}
-      </span>
-      {deOtroDia && (
-        <button className="chip" style={{ border: "none", cursor: "pointer" }}
-          onClick={async () => { await moveDayTaskToToday(t.id); onChanged(); }}>
-          pasar a hoy
+    <div style={{ padding: "6px 0", borderBottom: "1px solid var(--line-soft)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+        <button
+          aria-label={t.done ? "Desmarcar tarea" : "Marcar tarea lista"}
+          onClick={async () => { await toggleDayTask(t.id, !t.done); onChanged(); }}
+          style={{
+            width: 19, height: 19, borderRadius: 6, cursor: "pointer", flex: "none",
+            border: `1.5px solid ${t.done ? "var(--accent)" : "var(--line)"}`,
+            background: t.done ? "var(--accent)" : "transparent",
+            color: "#fff", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+          {t.done ? "✓" : ""}
         </button>
-      )}
-      <button className="xdel" aria-label="Eliminar tarea" style={{ width: 24, height: 24 }}
-        onClick={async () => { await deleteDayTask(t.id); onChanged(); }}>
-        <Trash2 size={12} />
-      </button>
+        <span style={{
+          flex: 1, fontSize: 13.5, minWidth: 0,
+          color: t.done ? "var(--muted)" : "var(--ink)",
+          textDecoration: t.done ? "line-through" : "none",
+        }}>
+          {t.title}
+        </span>
+        {deOtroDia && (
+          <button className="chip" style={{ border: "none", cursor: "pointer" }}
+            onClick={async () => { await moveDayTaskToToday(t.id); onChanged(); }}>
+            pasar a hoy
+          </button>
+        )}
+        {!t.done && iaConfigured && (
+          <button className="xdel" aria-label="Dividir en pasos chiquitos" title="Divídela en pasos chiquitos"
+            style={{ width: 24, height: 24 }} disabled={dividiendo} onClick={() => void dividir()}>
+            <Scissors size={12} />
+          </button>
+        )}
+        <button className="xdel" aria-label="Eliminar tarea" style={{ width: 24, height: 24 }}
+          onClick={async () => { await deleteDayTask(t.id); onChanged(); }}>
+          <Trash2 size={12} />
+        </button>
+      </div>
+      {dividiendo && <p style={{ fontSize: 11.5, color: "var(--ink-soft)", margin: "4px 0 0 28px" }}>Partiéndola en pasos chiquitos… ✂️</p>}
+      {errDiv && <p style={{ fontSize: 11.5, color: "var(--err)", margin: "4px 0 0 28px" }}>{errDiv}</p>}
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   type ProjectStatus,
   type WorkLog,
 } from "./data";
+import { abrirPomodoro, listFocusBlocks, type FocusBlock } from "../foco/data";
 
 const STATUS_TONES: Record<ProjectStatus, { bg: string; fg: string }> = {
   idea: { bg: "color-mix(in srgb,var(--muted) 18%,var(--paper))", fg: "var(--muted)" },
@@ -42,6 +43,7 @@ export function TrabajoPage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<"project" | "worklog" | null>(null);
+  const [focos, setFocos] = useState<FocusBlock[]>([]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -57,6 +59,9 @@ export function TrabajoPage() {
     } finally {
       setLoading(false);
     }
+    try {
+      setFocos(await listFocusBlocks(7));
+    } catch { /* sin la 0035, los bloques no se muestran y ya */ }
   }, []);
 
   useEffect(() => {
@@ -123,6 +128,8 @@ export function TrabajoPage() {
               )}
               {projects.map((p) => {
                 const horas = horasPorProyecto.get(p.id) ?? 0;
+                const bloques = focos.filter((f) => f.project_id === p.id);
+                const minFoco = bloques.reduce((s, f) => s + f.minutes, 0);
                 const tone = STATUS_TONES[p.status];
                 return (
                   <div className="card pad" key={p.id}>
@@ -131,9 +138,17 @@ export function TrabajoPage() {
                         <b style={{ fontSize: 14.5 }}>{p.name}</b>
                         <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
                           {horas > 0 ? `${Math.round(horas * 10) / 10} horas dedicadas` : "sin horas registradas"}
+                          {bloques.length > 0 ? `, 🎯 ${bloques.length} ${bloques.length === 1 ? "bloque" : "bloques"} de foco (${minFoco} min) esta semana` : ""}
                           {p.description ? `, ${p.description}` : ""}
                         </div>
                       </div>
+                      {p.status === "activo" && (
+                        <button className="chip" style={{ border: "none", cursor: "pointer" }}
+                          title="Arrancar un bloque de foco para este proyecto"
+                          onClick={() => abrirPomodoro({ projectId: p.id, projectName: p.name })}>
+                          🎯 Foco
+                        </button>
+                      )}
                       <button className="chip" style={{ background: tone.bg, color: tone.fg, border: "none", cursor: "pointer" }}
                         title="Cambiar estado"
                         onClick={async () => {

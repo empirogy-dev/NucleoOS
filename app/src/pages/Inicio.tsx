@@ -21,6 +21,9 @@ import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSob
 import { listEntries, type Entry } from "../aprendizaje/data";
 import { listRelLogs, listRelationships, needsReconnect, type RelLog, type Relationship } from "../relaciones/data";
 import { TareasHoy } from "../tareas/TareasHoy";
+import { UnPaso } from "../components/UnPaso";
+import { DopaminaCard } from "../components/DopaminaCard";
+import { abrirPomodoro, bloquesHoyLocal } from "../foco/data";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -254,7 +257,15 @@ export function Inicio() {
         <Link to="/movimiento" className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> min</small></div></Link>
         <Link to="/mente" className="card stat"><div className="k">🕊 Mente</div><div className="v tnum">{sesionesMenteHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> {sesionesMenteHoy === 1 ? "sesión" : "sesiones"}</small></div></Link>
         <Link to="/habitos" className="card stat"><div className="k">✓ Hábitos</div><div className="v tnum">{habReady ? `${hechosHoy}/${habits.length}` : "…"}</div></Link>
+        <button className="card stat" style={{ textAlign: "left", cursor: "pointer", border: "1px solid var(--line)", font: "inherit" }}
+          onClick={() => abrirPomodoro()} title="Abrir el pomodoro">
+          <div className="k">🎯 Foco</div>
+          <div className="v tnum">{bloquesHoyLocal()}<small style={{ fontSize: 12, color: "var(--muted)" }}> {bloquesHoyLocal() === 1 ? "bloque" : "bloques"}</small></div>
+        </button>
       </div>
+
+      {/* Contra la parálisis: una sola cosa a la vez */}
+      <UnPaso />
 
       {/* Brújula: la meta que empuja hoy */}
       {brujula && (
@@ -290,9 +301,10 @@ export function Inicio() {
 
       {/* Orden pensado para que las columnas queden parejas: lo alto primero. */}
       <OrdenGrid clave="inicio-v2" dosColumnas bloques={(() => {
-        const prio = ["tareas", "areas", "pagos", "avances", "sobriedad"];
+        const prio = ["tareas", "areas", "pagos", "avances", "dopamina", "sobriedad"];
         const b = [
         { id: "tareas", el: <TareasHoy /> },
+        { id: "dopamina", el: <DopaminaCard /> },
         ...(reminders.length > 0 ? [{ id: "pagos", el: (
         <div className="card panel">
           <h3>🔔 Próximo pago</h3>

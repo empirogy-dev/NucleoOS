@@ -9,6 +9,8 @@ import { listActivity } from "../objetivos/data";
 import { listRelLogs } from "../relaciones/data";
 import { listEntries } from "../mente/diario";
 import { listDayTasks } from "../tareas/data";
+import { listFocusBlocks } from "../foco/data";
+import { listProjects } from "../trabajo/data";
 
 // Revisión: convierte lo registrado en claridad.
 // Agrega los datos de todos los módulos por período y busca patrones.
@@ -178,6 +180,20 @@ export async function armarResumen(p: Periodo): Promise<{ modulos: ModuloResumen
     });
   });
 
+  // Bloques de foco (pomodoro)
+  await seguro(async () => {
+    const del = (await listFocusBlocks(70)).filter((f) => dentro(f.date));
+    if (!del.length) return;
+    const minutos = del.reduce((s, f) => s + f.minutes, 0);
+    modulos.push({
+      emoji: "🎯", titulo: "Foco", to: "/trabajo",
+      lineas: [
+        { k: "Bloques de foco", v: String(del.length) },
+        { k: "Minutos enfocada", v: String(minutos) },
+      ],
+    });
+  });
+
   // Finanzas
   await seguro(async () => {
     const [txs, cats] = await Promise.all([listTransactions(800), listCategories()]);
@@ -331,6 +347,26 @@ export async function armarDia(fecha: string): Promise<{ modulos: ModuloResumen[
       }
     } catch { /* retos sin migrar */ }
     if (lineas.length) modulos.push({ emoji: "🔄", titulo: "Hábitos y retos", to: "/habitos", lineas });
+  });
+
+  // Bloques de foco de ese día, con su destino
+  await seguro(async () => {
+    const del = (await listFocusBlocks(70)).filter((f) => f.date === fecha);
+    if (!del.length) return;
+    let proyectos: Array<{ id: string; name: string }> = [];
+    try {
+      proyectos = await listProjects();
+    } catch { /* sin Trabajo migrado */ }
+    modulos.push({
+      emoji: "🎯", titulo: "Foco", to: "/trabajo",
+      lineas: del.map((f) => {
+        const destino = f.project_id
+          ? proyectos.find((p) => p.id === f.project_id)?.name ?? "un proyecto"
+          : f.area === "aprendizaje" ? "Aprendizaje" : null;
+        const nombre = f.label || destino || "Bloque de foco";
+        return { k: destino && f.label ? `${f.label} (${destino})` : nombre, v: `${f.minutes} min` };
+      }),
+    });
   });
 
   // Tareas del checklist de ese día, una por una

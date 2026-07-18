@@ -6,6 +6,7 @@ import { Moon, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 import { RetosTab } from "./RetosTab";
+import { RutinasTab } from "./RutinasTab";
 import {
   COLORES_HABITO,
   EXERCISE_KINDS,
@@ -44,7 +45,7 @@ export function HabitosPage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [habitModal, setHabitModal] = useState<{ base?: { name: string; icon: string; dias: number }; habit?: Habit } | null>(null);
-  const [tabH, setTabH] = useState<"habitos" | "retos">("habitos");
+  const [tabH, setTabH] = useState<"habitos" | "retos" | "rutinas">("habitos");
 
   const hoy = hoyLocal();
 
@@ -87,9 +88,12 @@ export function HabitosPage() {
       <div className="ftabs">
         <button className={"ftab" + (tabH === "habitos" ? " active" : "")} onClick={() => setTabH("habitos")}>Hábitos</button>
         <button className={"ftab" + (tabH === "retos" ? " active" : "")} onClick={() => setTabH("retos")}>Retos</button>
+        <button className={"ftab" + (tabH === "rutinas" ? " active" : "")} onClick={() => setTabH("rutinas")}>Rutinas</button>
       </div>
 
-      {tabH === "retos" ? (
+      {tabH === "rutinas" ? (
+        <RutinasTab />
+      ) : tabH === "retos" ? (
         <RetosTab />
       ) : needsMigration ? (
         <div className="card pad" style={{ maxWidth: 640 }}>

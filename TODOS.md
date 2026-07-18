@@ -165,6 +165,13 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Pomodoro global para el foco con TDAH: botón flotante presente en todas las páginas, bloques de 15, 25 o 45 minutos, descanso automático, campana suave al terminar, etiqueta "¿en qué te enfocas?" para anclar la atención, y cuenta los bloques del día sin culpa. Sobrevive al cambiar de página y a recargar.
 - [x] `[Nuevo]` Comidas con momento del día (migración 0034): al guardar un plato eliges desayuno, almuerzo, cena o snack, presugerido según la hora. Se ve en la lista de comidas y en Revisión → Día.
 - [x] `[Nuevo]` Contador de ayuno en Nutrición (migración 0034 agrega eaten_at): horas desde tu última comida con meta elegible (12, 14, 16, 18 h) y barra. Se alimenta solo de tus comidas, con nota amable de que no le sirve a todo el mundo.
+- [x] `[Nuevo]` Suite TDAH (la identidad de la app): pomodoro ligado a proyectos de Trabajo y a Aprendizaje (migración 0035, focus_blocks): cada bloque terminado se guarda con su destino, se ve por proyecto ("🎯 3 bloques esta semana"), tiene botón "🎯 Foco" en cada proyecto activo y "🎯 Foco de estudio" en Aprendizaje, señal "🎯 Foco" en el Pulso del Inicio, y cae a Revisión (Día con detalle, Semana y Mes con totales).
+- [x] `[Nuevo]` Captura rápida global (rayo ⚡ sobre el pomodoro): un toque, escribes el pensamiento, Enter, y quedó en Tareas de hoy. Sin categorías ni decisiones.
+- [x] `[Nuevo]` "¿No sabes por dónde empezar?" en el Inicio: contra la parálisis, la app elige UNA sola cosa (tarea pendiente, hábito sin marcar o microacción) y la muestra sola, con "La hice", "Otra cosa" y "Dale un bloque de foco".
+- [x] `[Nuevo]` Divide esta tarea con IA (tijera ✂️ en Tareas de hoy): Gemini la parte en 3 a 5 pasos ridículamente chicos, el primero físico y de menos de dos minutos, que reemplazan a la original.
+- [x] `[Nuevo]` Menú de dopamina en el Inicio: lista personal editable de recompensas sanas y rápidas, muestra 3 al azar, "Muéstrame otras". Vive en el navegador (localStorage).
+- [x] `[Nuevo]` Rutinas guiadas paso a paso en Hábitos → Rutinas: como el reproductor de sadhana pero para la vida diaria (Mañana suave y Cierre del día sugeridas, editables y propias), un paso a la vez en grande con campanita. Viven en el navegador (localStorage).
+- [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
 ## Bloque G, al final

@@ -185,6 +185,25 @@ Coach:`,
   }]);
 }
 
+const PROMPT_DIVIDIR =
+  "Eres un asistente para personas con TDAH. Te doy una tarea y la divides en pasos ridículamente pequeños " +
+  "y concretos, pensados para vencer la parálisis de iniciar. El primer paso debe tomar menos de dos minutos " +
+  "y ser físico (pararse, abrir, juntar). Entre 3 y 5 pasos, cada uno de máximo 8 palabras, en español, " +
+  "sin numerar, sin guiones. Responde SOLO un JSON válido: {\"pasos\": [\"...\", \"...\"]}";
+
+/** Divide una tarea en pasos diminutos para vencer la parálisis de iniciar. */
+export async function dividirTarea(titulo: string): Promise<string[]> {
+  const texto = await generate([{ text: `${PROMPT_DIVIDIR}\n\nTarea: ${titulo}` }]);
+  const limpio = texto.replace(/```json|```/g, "").trim();
+  const inicio = limpio.indexOf("{");
+  const fin = limpio.lastIndexOf("}");
+  if (inicio === -1 || fin === -1) throw new Error("La IA no devolvió pasos válidos. Prueba de nuevo.");
+  const json = JSON.parse(limpio.slice(inicio, fin + 1)) as { pasos?: unknown };
+  const pasos = Array.isArray(json.pasos) ? json.pasos.filter((p): p is string => typeof p === "string" && p.trim().length > 0) : [];
+  if (pasos.length === 0) throw new Error("La IA no devolvió pasos válidos. Prueba de nuevo.");
+  return pasos.slice(0, 5);
+}
+
 /** Consejo del coach a partir del resumen real del usuario. */
 export async function consejoCoach(resumen: string): Promise<string> {
   return generate([{ text: `${PROMPT_COACH}
