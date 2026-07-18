@@ -1,17 +1,39 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { LIBROS, VIAS_LIBRO, librosDe, type Libro, type ViaLibro } from "./biblioteca";
+import {
+  LIBROS,
+  VIAS_LIBRO,
+  estadosLibros,
+  librosDe,
+  marcarLibro,
+  type EstadoLibro,
+  type Libro,
+  type ViaLibro,
+} from "./biblioteca";
 
-// Biblioteca: libros curados por vía, cada uno con su porqué y sus ideas
-// aplicadas a la app. Leer el resumen ya te deja algo; el libro, más.
+// Biblioteca: libros curados por vía, cada uno con su porqué y sus ideas.
+// Marca los que quieres leer y los que ya leíste: tu estantería personal.
 
 export function BibliotecaTab() {
   const [via, setVia] = useState<ViaLibro>("tdah");
+  const [estados, setEstados] = useState<Record<string, EstadoLibro>>(estadosLibros);
+
+  const leidos = Object.values(estados).filter((e) => e === "leido").length;
+  const quiero = Object.values(estados).filter((e) => e === "quiero").length;
+
+  function marcar(id: string, estado: EstadoLibro | null) {
+    setEstados(marcarLibro(id, estado));
+  }
 
   return (
     <>
-      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, maxWidth: "64ch" }}>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, maxWidth: "70ch" }}>
         {LIBROS.length} libros elegidos por impacto real para un cerebro TDAH, no por moda. Abre uno y llévate sus tres ideas aunque nunca lo compres.
+        {(leidos > 0 || quiero > 0) && (
+          <>
+            {" "}Llevas <b style={{ color: "var(--ink)" }}>{leidos} {leidos === 1 ? "leído" : "leídos"}</b> y <b style={{ color: "var(--ink)" }}>{quiero}</b> en tu lista.
+          </>
+        )}
       </p>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
         {VIAS_LIBRO.map((v) => (
@@ -23,16 +45,22 @@ export function BibliotecaTab() {
         ))}
       </div>
       <div className="rev-grid">
-        {librosDe(via).map((l) => <LibroCard key={l.id} libro={l} />)}
+        {librosDe(via).map((l) => (
+          <LibroCard key={l.id} libro={l} estado={estados[l.id] ?? null} onMarcar={marcar} />
+        ))}
       </div>
     </>
   );
 }
 
-function LibroCard({ libro }: { libro: Libro }) {
+function LibroCard({ libro, estado, onMarcar }: {
+  libro: Libro;
+  estado: EstadoLibro | null;
+  onMarcar: (id: string, estado: EstadoLibro | null) => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="card panel">
+    <div className="card panel" style={estado === "leido" ? { borderColor: "color-mix(in srgb, var(--ok) 45%, var(--line))" } : undefined}>
       <button
         style={{ display: "flex", alignItems: "flex-start", gap: 10, width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0, font: "inherit", color: "inherit" }}
         onClick={() => setOpen(!open)}
@@ -60,6 +88,22 @@ function LibroCard({ libro }: { libro: Libro }) {
           ))}
         </div>
       )}
+      <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+        <button
+          className="pomo-chip"
+          style={estado === "quiero" ? { background: "var(--accent-wash)", borderColor: "transparent", color: "var(--accent-ink)" } : undefined}
+          onClick={() => onMarcar(libro.id, estado === "quiero" ? null : "quiero")}
+        >
+          {estado === "quiero" ? "📖 En tu lista" : "Lo quiero leer"}
+        </button>
+        <button
+          className="pomo-chip"
+          style={estado === "leido" ? { background: "color-mix(in srgb, var(--ok) 20%, var(--paper))", borderColor: "transparent", color: "var(--ok)" } : undefined}
+          onClick={() => onMarcar(libro.id, estado === "leido" ? null : "leido")}
+        >
+          {estado === "leido" ? "✓ Leído" : "Lo leí"}
+        </button>
+      </div>
     </div>
   );
 }

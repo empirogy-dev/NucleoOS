@@ -182,13 +182,13 @@ export function RelacionesPage() {
                   <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 5 }}>
                     Para profundizar
                   </p>
-                  {librosDe("relaciones").map((l) => (
+                  {librosDe("relaciones").slice(0, 3).map((l) => (
                     <p key={l.id} style={{ fontSize: 12.5, color: "var(--ink-soft)", padding: "3px 0" }}>
                       {l.emoji} <b>{l.titulo}</b>, {l.autor}
                     </p>
                   ))}
                   <Link to="/aprendizaje" style={{ fontSize: 12, color: "var(--accent-ink)", textDecoration: "underline" }}>
-                    Ver sus ideas en la Biblioteca
+                    Ver los {librosDe("relaciones").length} libros en la Biblioteca
                   </Link>
                 </div>
               </div>
