@@ -47,7 +47,7 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
       const [p, m, c, e] = await Promise.all([
         getHealthProfile(), listMedications(), listAppointments(), listExams(),
       ]);
-      setProfile(p ?? { blood_type: null, allergies: null, conditions: null, surgeries: null, weight_kg: null, height_cm: null, diet: null, eye_color: null, activity_level: null, sex: null });
+      setProfile(p ?? { blood_type: null, allergies: null, conditions: null, surgeries: null, weight_kg: null, height_cm: null, diet: null, eye_color: null, activity_level: null, sex: null, civil_status: null });
       setMeds(m);
       setCitas(c);
       setExams(e);
@@ -199,6 +199,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
   const [ojos, setOjos] = useState(profile.eye_color ?? "");
   const [actividad, setActividad] = useState(profile.activity_level ?? "");
   const [sexo, setSexo] = useState(profile.sex ?? "");
+  const [civil, setCivil] = useState(profile.civil_status ?? "");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -219,6 +220,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
         eye_color: ojos || null,
         activity_level: actividad || null,
         sex: sexo || null,
+        civil_status: civil || null,
       });
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
@@ -272,6 +274,12 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
               <option value="">Sin definir</option>
               <option value="femenino">Femenino</option>
               <option value="masculino">Masculino</option>
+            </select></div>
+          <div className="field"><label>Estado civil</label>
+            <select value={civil} onChange={(e) => setCivil(e.target.value)}>
+              <option value="">Sin definir</option>
+              <option value="soltera">Soltera o soltero</option>
+              <option value="en_pareja">En pareja</option>
             </select></div>
         </div>
         <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>

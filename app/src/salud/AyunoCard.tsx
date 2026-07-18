@@ -59,9 +59,13 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   const formularioManual = (
     <div style={{ marginTop: 10 }}>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button type="button" className="btn primary" onClick={marcarAhora}>⏳ Empezar mi ayuno ahora</button>
         <button type="button" className="btn ghost" onClick={marcarAhora}>🍴 Acabo de comer</button>
         <button type="button" className="btn ghost" onClick={() => setEditandoHora(!editandoHora)}>Fue a otra hora</button>
       </div>
+      <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
+        Los dos botones hacen lo mismo por dentro: el ayuno siempre parte en tu último bocado. Si comes dentro de tu ventana, el contador se reinicia, así funciona el ayuno de verdad.
+      </p>
       {editandoHora && (
         <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
           <input type="datetime-local" className="input-inline" style={{ flex: "1 1 170px" }}

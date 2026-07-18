@@ -2,6 +2,7 @@ import { IconField } from "../components/IconField";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
+import { MetasDeArea } from "../components/MetasDeArea";
 import {
   TablesMissingError,
   addAccount,
@@ -20,6 +21,7 @@ import {
   deleteReminder,
   deleteTransaction,
   importStatementRows,
+  patronDesde,
   saveMerchantRule,
   splitTransaction,
   listAccounts,
@@ -205,6 +207,8 @@ export function FinanzasPage() {
   return (
     <div className="page">
       <Head />
+
+      <MetasDeArea area="finanzas" />
 
       <div className="ftabs">
         {(
@@ -1367,8 +1371,13 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
       };
       if (edit) await updateTransaction(edit, payload);
       else await addTransaction(payload);
-      if (esDelBanco && recordar && merchant.trim() && merchant.trim() !== (edit?.merchant ?? "")) {
-        await saveMerchantRule(textoOriginal, merchant.trim(), type === "transfer" ? null : (categoryId || null));
+      // La regla se ofrece al renombrar O al categorizar: transacciones
+      // frecuentes (el traspaso a la tarjeta, el súper) se automatizan solas.
+      if (esDelBanco && recordar && (merchant.trim() || categoryId)) {
+        const nombreRegla = merchant.trim() || edit?.merchant || patronDesde(textoOriginal);
+        if (nombreRegla) {
+          await saveMerchantRule(textoOriginal, nombreRegla, type === "transfer" ? null : (categoryId || null));
+        }
       }
       onSaved();
     } catch (ex) {
@@ -1397,10 +1406,13 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
           <input value={merchant} onChange={(e) => setMerchant(e.target.value)} placeholder="Amazon, Spice Sex, Metro…" /></div>
         <div className="field"><label>Descripción (qué fue)</label>
           <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="el internet, frutillas, regalo…" /></div>
-        {esDelBanco && merchant.trim() !== (edit?.merchant ?? "") && merchant.trim() !== "" && (
+        {esDelBanco && (merchant.trim() !== "" || categoryId !== "") && (
           <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer", lineHeight: 1.45 }}>
             <input type="checkbox" checked={recordar} onChange={(e) => setRecordar(e.target.checked)} style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
-            <span>Recordar: cuando llegue una boleta parecida a "{textoOriginal.slice(0, 40)}{textoOriginal.length > 40 ? "…" : ""}", llamarla <b>{merchant.trim()}</b> y usar esta categoría. También se aplica a las que ya tienes.</span>
+            <span>
+              Automatizar: cuando llegue un movimiento parecido a "{textoOriginal.slice(0, 40)}{textoOriginal.length > 40 ? "…" : ""}",
+              {merchant.trim() ? <> llamarlo <b>{merchant.trim()}</b> y</> : ""} usar esta categoría solo. También se aplica a los que ya tienes: solo apruebas, no categorizas de nuevo.
+            </span>
           </label>
         )}
         <div className="frow">

@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { fechaRegistro, fmtFechaLocal } from "../lib/fechas";
 import { useFechaActiva } from "../fecha/FechaActiva";
 import { sincronizarHabitosConEjercicio } from "./data";
+import { CampoHora } from "../components/CampoHora";
+import { MetasDeArea } from "../components/MetasDeArea";
 import { useCallback, useEffect, useState } from "react";
 import { Moon, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -123,6 +125,8 @@ export function HabitosPage() {
             <div className="card stat"><div className="k">Sueño promedio</div><div className="v tnum">{promedioSueno !== null ? `${promedioSueno} h` : "sin datos"}</div></div>
           </div>
 
+          <MetasDeArea area="habitos" />
+
           <div className="panelgrid">
             {/* Checklist de hábitos */}
             <div className="card panel">
@@ -230,13 +234,13 @@ export function HabitosPage() {
                 <div className="frow">
                   <div className="field">
                     <label>Anoche me acosté</label>
-                    <input type="time" defaultValue={rutinaHoy?.bed_time ?? ""} key={`bed-${rutinaHoy?.id ?? "new"}`}
-                      onBlur={async (e) => { if (e.target.value) { await saveRoutine(hoy, { bed_time: e.target.value }); void reload(); } }} />
+                    <CampoHora value={rutinaHoy?.bed_time?.slice(0, 5) ?? ""} ariaLabel="Hora de acostarse"
+                      onChange={async (v) => { if (v) { await saveRoutine(hoy, { bed_time: v }); void reload(); } }} />
                   </div>
                   <div className="field">
                     <label>Hoy me levanté</label>
-                    <input type="time" defaultValue={rutinaHoy?.wake_time ?? ""} key={`wake-${rutinaHoy?.id ?? "new"}`}
-                      onBlur={async (e) => { if (e.target.value) { await saveRoutine(hoy, { wake_time: e.target.value }); void reload(); } }} />
+                    <CampoHora value={rutinaHoy?.wake_time?.slice(0, 5) ?? ""} ariaLabel="Hora de despertar"
+                      onChange={async (v) => { if (v) { await saveRoutine(hoy, { wake_time: v }); void reload(); } }} />
                   </div>
                 </div>
                 {rutinaHoy && sleepHours(rutinaHoy) !== null && (

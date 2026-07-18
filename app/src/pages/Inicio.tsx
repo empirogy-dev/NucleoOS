@@ -58,6 +58,7 @@ export function Inicio() {
   const [focusBlocksF, setFocusBlocksF] = useState<Fuentes["focusBlocks"]>([]);
   const [perfil, setPerfil] = useState<HealthProfile | null>(null);
 
+  const [brujulaSel, setBrujulaSel] = useState(0);
   const [editingVision, setEditingVision] = useState(false);
   const [visionDraft, setVisionDraft] = useState("");
   const [visionErr, setVisionErr] = useState<string | null>(null);
@@ -169,15 +170,14 @@ export function Inicio() {
   const movHoy = exercise.filter((e) => e.date === hoyStr).reduce((s, e) => s + e.minutes, 0);
   const sesionesMenteHoy = listSesiones().filter((s) => s.fecha === hoyStr).length;
 
-  // ---------- Brújula: una meta que empuja hoy ----------
-  // A propósito muestra solo UNA (la de fecha más próxima): un cerebro TDAH
-  // con diez metas a la vista no avanza en ninguna. Las demás siguen enteras
-  // en Dirección, esto es solo dónde poner el ojo hoy.
+  // ---------- Brújula: una meta a la vez, con flechas para recorrerlas ----------
+  // Muestra UNA para no abrumar (parte por la de fecha más próxima),
+  // y las flechitas pasean por las demás sin salir del Inicio.
   const activasOrdenadas = objectives
     .filter((o) => o.status === "en_camino" || o.status === "en_riesgo")
     .sort((a, b) => (a.deadline ?? "9999").localeCompare(b.deadline ?? "9999"));
-  const brujula = activasOrdenadas[0] ?? null;
-  const otrasActivas = Math.max(0, activasOrdenadas.length - 1);
+  const brujulaIdx = activasOrdenadas.length > 0 ? ((brujulaSel % activasOrdenadas.length) + activasOrdenadas.length) % activasOrdenadas.length : 0;
+  const brujula = activasOrdenadas[brujulaIdx] ?? null;
   const brujulaPct = brujula ? progresoDe(brujula, fuentes) : 0;
   const brujulaPaso = brujula?.milestones.find((m) => m.progress < 100) ?? null;
   const brujulaMetrica = brujula?.auto_metric ? METRICAS_AUTO.find((m) => m.key === brujula.auto_metric) : null;
@@ -286,14 +286,20 @@ export function Inicio() {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             <span style={{ fontSize: 20 }}>🧭</span>
             <h3 style={{ margin: 0, flex: 1 }}>Tu brújula</h3>
+            {activasOrdenadas.length > 1 && (
+              <>
+                <button className="xdel" aria-label="Meta anterior" style={{ width: 26, height: 26 }}
+                  onClick={() => setBrujulaSel(brujulaSel - 1)}>‹</button>
+                <span style={{ fontSize: 11.5, color: "var(--muted)" }} className="tnum">
+                  {brujulaIdx + 1} de {activasOrdenadas.length}
+                </span>
+                <button className="xdel" aria-label="Meta siguiente" style={{ width: 26, height: 26 }}
+                  onClick={() => setBrujulaSel(brujulaSel + 1)}>›</button>
+              </>
+            )}
             <Link to="/objetivos" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>ver todas</Link>
           </div>
           <b style={{ fontSize: 15 }}>{brujula.title}</b>
-          {otrasActivas > 0 && (
-            <span style={{ fontSize: 11.5, color: "var(--muted)", marginLeft: 8 }}>
-              y {otrasActivas} {otrasActivas === 1 ? "meta más en camino" : "metas más en camino"}
-            </span>
-          )}
           <div className="bar" style={{ margin: "8px 0 0" }}>
             <div className="top">
               <span>

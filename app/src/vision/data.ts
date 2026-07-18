@@ -16,6 +16,7 @@ export interface VisionItem {
   h: number;
   rotation: number;
   z: number;
+  font?: string | null; // normal, titulo o caligrafia (migración 0039)
   url?: string; // firmada, solo en memoria
 }
 

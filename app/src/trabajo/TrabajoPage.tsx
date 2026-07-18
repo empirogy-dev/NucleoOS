@@ -24,6 +24,7 @@ import {
   type WorkLog,
 } from "./data";
 import { abrirPomodoro, listFocusBlocks, type FocusBlock } from "../foco/data";
+import { MetasDeArea } from "../components/MetasDeArea";
 
 const STATUS_TONES: Record<ProjectStatus, { bg: string; fg: string }> = {
   idea: { bg: "color-mix(in srgb,var(--muted) 18%,var(--paper))", fg: "var(--muted)" },
@@ -126,6 +127,8 @@ export function TrabajoPage() {
             <div className="card stat"><div className="k">Ánimo laboral (14 días)</div><div className="v">{animo !== null ? `${moodEmoji(Math.round(animo))} ${animo}` : "sin datos"}</div></div>
           </div>
 
+          <MetasDeArea area="trabajo" />
+
           <div className="panelgrid" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
             {/* Proyectos */}
             <div style={{ display: "grid", gap: 12, alignSelf: "start" }}>
@@ -173,14 +176,20 @@ export function TrabajoPage() {
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    <div className="bar" style={{ margin: "12px 0 0" }}>
-                      <div className="top">
-                        <span>{ptasks.some((t) => t.project_id === p.id) ? "avance por checklist" : "avance"}</span>
-                        <b className="tnum">{p.progress}%</b>
+                    {ptasks.some((t) => t.project_id === p.id) || p.progress > 0 ? (
+                      <div className="bar" style={{ margin: "12px 0 0" }}>
+                        <div className="top">
+                          <span>{ptasks.some((t) => t.project_id === p.id) ? "avance por checklist" : "avance"}</span>
+                          <b className="tnum">{p.progress}%</b>
+                        </div>
+                        <div className="track"><div className="fill" style={{ width: `${p.progress}%`, background: "var(--tra)" }} /></div>
                       </div>
-                      <div className="track"><div className="fill" style={{ width: `${p.progress}%`, background: "var(--tra)" }} /></div>
-                    </div>
-                    {!ptasks.some((t) => t.project_id === p.id) && (
+                    ) : (
+                      <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>
+                        El porcentaje de un proyecto se mide con su checklist de pasos (créalo abajo). Tus horas y bloques de foco ya quedan contados arriba, y empujan la meta conectada en Dirección.
+                      </p>
+                    )}
+                    {!ptasks.some((t) => t.project_id === p.id) && p.progress > 0 && (
                       <input type="range" min={0} max={100} step={5} defaultValue={p.progress} className="slider"
                         aria-label="Avance del proyecto"
                         onMouseUp={async (e) => { await updateProject(p.id, { progress: Number((e.target as HTMLInputElement).value) }); void reload(); }}

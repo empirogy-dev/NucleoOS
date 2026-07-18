@@ -25,6 +25,7 @@ import {
 import { blobToBase64, iaConfigured, resumirArchivo, resumirTexto } from "../lib/ia";
 import { abrirPomodoro } from "../foco/data";
 import { BibliotecaTab } from "./BibliotecaTab";
+import { MetasDeArea } from "../components/MetasDeArea";
 
 export function AprendizajePage() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -191,6 +192,7 @@ export function AprendizajePage() {
         <BibliotecaTab />
       ) : (
       <>
+      <MetasDeArea area="aprendizaje" />
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
         <p style={{ color: "var(--muted)" }}>Cargando…</p>

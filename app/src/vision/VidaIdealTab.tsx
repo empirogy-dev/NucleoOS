@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TablesMissingError } from "../finanzas/data";
 import { SECCIONES_VIDA, getIdealLife, saveIdealSection } from "./suenos";
 
@@ -11,6 +11,7 @@ export function VidaIdealTab() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardada, setGuardada] = useState<string | null>(null);
+  const cajas = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -31,7 +32,12 @@ export function VidaIdealTab() {
   }, [reload]);
 
   async function guardar(section: string, texto: string) {
-    if ((contenido[section] ?? "") === texto) return;
+    if ((contenido[section] ?? "") === texto) {
+      // Sin cambios: igual confirmamos, para que el botón siempre responda.
+      setGuardada(section);
+      setTimeout(() => setGuardada(null), 1800);
+      return;
+    }
     setContenido((c) => ({ ...c, [section]: texto }));
     try {
       await saveIdealSection(section, texto);
@@ -72,11 +78,17 @@ export function VidaIdealTab() {
             <textarea
               className="vision-edit"
               rows={4}
+              ref={(el) => { cajas.current[s.key] = el; }}
               defaultValue={contenido[s.key] ?? ""}
               placeholder="Escríbelo con calma…"
               onBlur={(e) => void guardar(s.key, e.target.value)}
             />
-            {guardada === s.key && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+              <button className="btn ghost" onClick={() => void guardar(s.key, cajas.current[s.key]?.value ?? "")}>
+                Guardar
+              </button>
+              {guardada === s.key && <span className="chip">✓ Guardado</span>}
+            </div>
           </div>
         ))}
       </div>

@@ -32,13 +32,21 @@ function barajar(lista: string[]): string[] {
   return [...lista].sort(() => Math.random() - 0.5);
 }
 
-/** Saca 3 de la bolsa barajada; si no alcanza, reparte una bolsa nueva sin
- *  repetir dentro de la misma tanda. Devuelve la muestra y lo que sobró. */
+/** Saca 3 de la bolsa barajada, agotándola COMPLETA antes de rebarajar:
+ *  ninguna idea se repite hasta que ya viste todas las de tu lista. */
 function sacarDeLaBolsa(bolsa: string[], lista: string[]): { muestra: string[]; bolsa: string[] } {
   const n = Math.min(3, lista.length);
-  let restante = bolsa.length >= n ? bolsa : barajar(lista);
-  const muestra = restante.slice(0, n);
-  restante = restante.slice(n);
+  let restante = [...bolsa];
+  const muestra: string[] = [];
+  while (muestra.length < n) {
+    if (restante.length === 0) {
+      // Se agotó la bolsa: rebarajamos todo menos lo ya elegido en esta tanda.
+      restante = barajar(lista.filter((x) => !muestra.includes(x)));
+      if (restante.length === 0) break;
+    }
+    muestra.push(restante[0]);
+    restante = restante.slice(1);
+  }
   return { muestra, bolsa: restante };
 }
 

@@ -10,6 +10,17 @@ const ANCHO = 1200;
 const ALTO = 760;
 const COLORES_NOTA = ["#F6E7B2", "#F3D5C8", "#DCE8D5", "#D8E3F0", "#EBDCF0"];
 
+/** Tipos de letra para las notas (migración 0039). */
+const FUENTES: Array<{ key: string; label: string; css: string }> = [
+  { key: "normal", label: "Aa", css: "var(--sans)" },
+  { key: "titulo", label: "Aa", css: "var(--serif)" },
+  { key: "caligrafia", label: "Aa", css: "'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive" },
+];
+
+export function cssDeFuente(key: string | null | undefined): string {
+  return FUENTES.find((f) => f.key === key)?.css ?? FUENTES[0].css;
+}
+
 type Arrastre = {
   modo: "mover" | "tamano";
   id: string;
@@ -29,6 +40,20 @@ export function CollageTab() {
   const [subiendo, setSubiendo] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const drag = useRef<Arrastre | null>(null);
+  // En pantallas angostas el lienzo se escala completo para verse entero
+  // (nada se corta); el arrastre compensa la escala al mover.
+  const marco = useRef<HTMLDivElement>(null);
+  const [escala, setEscala] = useState(1);
+
+  useEffect(() => {
+    function medir() {
+      const w = marco.current?.clientWidth ?? ANCHO;
+      setEscala(Math.min(1, w / ANCHO));
+    }
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, []);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -75,8 +100,8 @@ export function CollageTab() {
   function mover(e: React.PointerEvent) {
     const d = drag.current;
     if (!d) return;
-    const dx = e.clientX - d.x0;
-    const dy = e.clientY - d.y0;
+    const dx = (e.clientX - d.x0) / escala;
+    const dy = (e.clientY - d.y0) / escala;
     if (d.modo === "mover") {
       mutar(d.id, {
         x: Math.min(ANCHO - 80, Math.max(-d.orig.w + 80, d.orig.x + dx)),
@@ -120,6 +145,18 @@ export function CollageTab() {
     if (!seleccionado || seleccionado.kind !== "nota") return;
     mutar(seleccionado.id, { color });
     void persistir(seleccionado.id, { color });
+  }
+
+  async function cambiarFuente(font: string) {
+    if (!seleccionado || seleccionado.kind !== "nota") return;
+    mutar(seleccionado.id, { font });
+    try {
+      await updateItem(seleccionado.id, { font });
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 1500);
+    } catch {
+      setErr("Para guardar el tipo de letra falta la migración 0039 (supabase/migrations/0039_estado_civil_y_fuentes.sql).");
+    }
   }
 
   async function eliminar() {
@@ -238,15 +275,24 @@ export function CollageTab() {
           {seleccionado.kind === "nota" && COLORES_NOTA.map((c) => (
             <button key={c} className="vc-color" style={{ background: c }} title="Color de la nota" onClick={() => pintar(c)} />
           ))}
+          {seleccionado.kind === "nota" && FUENTES.map((f) => (
+            <button key={f.key} className="vc-tool"
+              title={f.key === "normal" ? "Letra normal" : f.key === "titulo" ? "Letra de títulos" : "Letra de caligrafía"}
+              style={{ fontFamily: f.css, fontSize: 14, width: "auto", padding: "0 9px", outline: (seleccionado.font ?? "normal") === f.key ? "2px solid var(--accent)" : "none" }}
+              onClick={() => void cambiarFuente(f.key)}>
+              {f.label}
+            </button>
+          ))}
           <span style={{ flex: 1 }} />
           <button className="vc-tool peligro" title="Eliminar" onClick={() => void eliminar()}><Trash2 size={15} /></button>
         </div>
       )}
 
-      <div className="vcanvas-scroll">
+      <div className="vcanvas-scroll" ref={marco} style={{ overflow: escala < 1 ? "hidden" : "auto" }}>
+        <div style={{ width: ANCHO * escala, height: ALTO * escala }}>
         <div
           className="vcanvas"
-          style={{ width: ANCHO, height: ALTO }}
+          style={{ width: ANCHO, height: ALTO, transform: `scale(${escala})`, transformOrigin: "top left" }}
           onPointerDown={() => { setSel(null); setEditando(null); }}
         >
           {loading && <p style={{ color: "var(--muted)", padding: 20 }}>Cargando tu collage…</p>}
@@ -267,7 +313,10 @@ export function CollageTab() {
                 height: it.h,
                 transform: `rotate(${it.rotation}deg)`,
                 zIndex: it.z + 10,
-                background: it.kind === "nota" ? it.color ?? COLORES_NOTA[0] : undefined,
+                // Las imágenes van sin fondo ni sombra de caja: un PNG
+                // transparente se ve como sticker, no como tarjeta.
+                background: it.kind === "nota" ? it.color ?? COLORES_NOTA[0] : "transparent",
+                boxShadow: it.kind === "imagen" ? "none" : undefined,
               }}
               onPointerDown={(e) => empezar(e, it, "mover")}
               onPointerMove={mover}
@@ -276,12 +325,13 @@ export function CollageTab() {
             >
               {it.kind === "imagen" ? (
                 it.url
-                  ? <img src={it.url} alt="Imagen de tu tablero de visión" draggable={false} loading="lazy" />
+                  ? <img src={it.url} alt="Imagen de tu tablero de visión" draggable={false} loading="lazy" style={{ objectFit: "contain" }} />
                   : <div className="vc-cargando">🖼️</div>
               ) : editando === it.id ? (
                 <textarea
                   autoFocus
                   defaultValue={it.content ?? ""}
+                  style={{ fontFamily: cssDeFuente(it.font) }}
                   onPointerDown={(e) => e.stopPropagation()}
                   onBlur={(e) => {
                     const content = e.target.value;
@@ -291,7 +341,7 @@ export function CollageTab() {
                   }}
                 />
               ) : (
-                <span className="vc-texto">{it.content}</span>
+                <span className="vc-texto" style={{ fontFamily: cssDeFuente(it.font) }}>{it.content}</span>
               )}
               {sel === it.id && (
                 <div
@@ -304,6 +354,7 @@ export function CollageTab() {
               )}
             </div>
           ))}
+        </div>
         </div>
       </div>
       <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Mail, Trash2 } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
 import { TablesMissingError } from "../finanzas/data";
+import { getHealthProfile } from "./data";
 import {
   CONFIG_DEFECTO,
   addCycle,
@@ -30,6 +31,7 @@ export function CicloTab() {
   const [otraFecha, setOtraFecha] = useState(false);
   const [fechaInicio, setFechaInicio] = useState(hoyLocal());
   const [pareja, setPareja] = useState("");
+  const [civil, setCivil] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -40,6 +42,9 @@ export function CicloTab() {
       setCfg(c);
       setPareja(c.partner_email ?? "");
       setNeedsMigration(false);
+      try {
+        setCivil((await getHealthProfile())?.civil_status ?? null);
+      } catch { /* sin ficha, se asume sin definir */ }
     } catch (e) {
       if (e instanceof TablesMissingError) setNeedsMigration(true);
       else setError(e instanceof Error ? e.message : String(e));
@@ -137,7 +142,7 @@ export function CicloTab() {
 
                 <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 8 }}>{fase.descripcion}</p>
                 <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-                  <b>Qué te hace bien ahora:</b> {fase.apoyo}
+                  <b>Qué te hace bien ahora:</b> {fase.paraTi}
                 </p>
                 {proxima && (
                   <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>
@@ -174,7 +179,14 @@ export function CicloTab() {
           </div>
 
           <div style={{ display: "grid", gap: 14, alignContent: "start" }}>
-            {/* Pareja */}
+            {/* Pareja: solo si en tu ficha dice que la hay. Soltera, esta sección no existe. */}
+            {civil === null || civil === "" ? (
+              <div className="card panel">
+                <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+                  💌 ¿Tienes pareja? Márcalo en tu ficha (Salud clínica → Estado civil) y aquí podrás mandarle avisos de tu fase para que te acompañe mejor. Si estás soltera, márcalo también y esta sección desaparece.
+                </p>
+              </div>
+            ) : civil === "en_pareja" && (
             <div className="card panel">
               <h3>💌 Tu pareja, tu equipo</h3>
               <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 10 }}>
@@ -203,6 +215,7 @@ export function CicloTab() {
                 </a>
               )}
             </div>
+            )}
 
             {/* Ajustes del ciclo */}
             <div className="card panel">

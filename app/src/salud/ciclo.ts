@@ -26,7 +26,8 @@ export interface Fase {
   nombre: string;
   emoji: string;
   descripcion: string;
-  apoyo: string;
+  paraTi: string; // el consejo que te habla a ti
+  apoyo: string; // cómo puede acompañarte tu pareja (solo si la hay)
 }
 
 const FASES: Record<Fase["key"], Omit<Fase, "key">> = {
@@ -34,24 +35,28 @@ const FASES: Record<Fase["key"], Omit<Fase, "key">> = {
     nombre: "Menstrual",
     emoji: "🌑",
     descripcion: "Estrógeno y progesterona en el piso: la energía baja y el cuerpo pide descanso de verdad. No es flojera, es fisiología.",
+    paraTi: "Regálate calor (guatero, té), comida rica en hierro, planes suaves y cero exigencia. Bajar el ritmo estos días es cuidarte, no fallar.",
     apoyo: "Calor (guatero, té), comida rica en hierro, planes suaves y cero exigencia. Es el momento de bajar el ritmo sin culpa.",
   },
   folicular: {
     nombre: "Folicular",
     emoji: "🌒",
     descripcion: "El estrógeno sube y con él la energía, el ánimo y la claridad mental. Suele ser la mejor fase para empezar cosas.",
+    paraTi: "Súbete a la ola: es tu mejor fase para empezar proyectos, planificar y darle a los entrenamientos exigentes.",
     apoyo: "Acompañar el impulso: buen momento para planes, proyectos y entrenamientos más exigentes.",
   },
   ovulatoria: {
     nombre: "Ovulatoria",
     emoji: "🌕",
     descripcion: "El punto más alto de energía y sociabilidad del ciclo. El estrógeno llega a su cima.",
+    paraTi: "Aprovecha tu cima: conversaciones importantes, panoramas con gente que quieres, movimiento. Estos días todo te fluye más fácil.",
     apoyo: "Aprovechar la energía juntos: conversaciones importantes, panoramas, movimiento. Todo fluye más fácil.",
   },
   lutea: {
     nombre: "Lútea",
     emoji: "🌗",
     descripcion: "La progesterona domina y hacia el final puede venir el SPM: más sensibilidad, menos paciencia, antojo de calma. Con TDAH esta fase puede sentirse más intensa.",
+    paraTi: "Baja las exigencias sociales, prioriza la comodidad y prepárate algo rico. Sentir más fuerte estos días no es exagerar, es tu química.",
     apoyo: "Paciencia extra, validar sin arreglar, menos planes sociales y más comodidad. Un 'te tengo algo rico' vale oro.",
   },
 };

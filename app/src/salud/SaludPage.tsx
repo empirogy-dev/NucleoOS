@@ -38,6 +38,8 @@ import { useSettings } from "../settings/SettingsProvider";
 import { AyunoCard } from "./AyunoCard";
 import { CicloTab } from "./CicloTab";
 import { useFechaActiva } from "../fecha/FechaActiva";
+import { CampoHora } from "../components/CampoHora";
+import { MetasDeArea } from "../components/MetasDeArea";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
@@ -204,6 +206,8 @@ export function SaludPage() {
         <div className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min{kcalHoy > 0 ? `, ≈${kcalHoy} kcal` : ""}</small></div></div>
       </div>
       <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{ESTADOS[señales]}</p>
+
+      <MetasDeArea area="salud" />
 
       <div className="ftabs">
         {TABS.filter((t) => t.key !== "ciclo" || profile?.sex !== "masculino").map((t) => (
@@ -453,9 +457,9 @@ function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: 
       <form onSubmit={save}>
         <div className="frow">
           <div className="field"><label>Me acosté a las</label>
-            <input type="time" value={bed} onChange={(e) => setBed(e.target.value)} /></div>
+            <CampoHora value={bed} onChange={setBed} ariaLabel="Hora de acostarse" /></div>
           <div className="field"><label>Desperté a las</label>
-            <input type="time" value={wake} onChange={(e) => setWake(e.target.value)} /></div>
+            <CampoHora value={wake} onChange={setWake} ariaLabel="Hora de despertar" /></div>
         </div>
         <button className="btn ghost" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>

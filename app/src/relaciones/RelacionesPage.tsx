@@ -1,6 +1,7 @@
 import { OrdenGrid } from "../components/OrdenGrid";
 import { Link } from "react-router-dom";
 import { librosDe } from "../aprendizaje/biblioteca";
+import { MetasDeArea } from "../components/MetasDeArea";
 import { fechaRegistro, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Mail, Plus, Trash2, Users } from "lucide-react";
@@ -111,6 +112,8 @@ export function RelacionesPage() {
             <div className="card stat"><div className="k">Interacciones del mes</div><div className="v tnum">{interaccionesMes}</div></div>
             <div className="card stat"><div className="k">Próximo cumpleaños</div><div className="v" style={{ fontSize: 18 }}>{cumples[0] ? `🎂 ${cumples[0].r.name}, en ${cumples[0].dias} día${cumples[0].dias === 1 ? "" : "s"}` : "sin fechas"}</div></div>
           </div>
+
+          <MetasDeArea area="relaciones" />
 
           {/* Franja del tip, a lo ancho */}
           <div className="tip-destacado" style={{ marginBottom: 14 }}>
