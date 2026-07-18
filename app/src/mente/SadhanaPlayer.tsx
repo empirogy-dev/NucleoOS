@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { hoyLocal } from "../lib/fechas";
+import { fechaRegistro } from "../lib/fechas";
 import { guardarSesion, type Sesion } from "./practicas";
 import { minutosSadhana, type Sadhana } from "./sadhana";
 import { TONO_FASE, campana, detenerAmbiente, toggleAmbiente, tono } from "./sonido";
@@ -54,7 +54,7 @@ export function SadhanaPlayer({ sadhana, onClose, onCompleta }: {
     campana();
     detenerAmbiente();
     setAmbiente(false);
-    const s: Sesion = { fecha: hoyLocal(), id: sadhana.id, nombre: sadhana.nombre, minutos: minutosSadhana(sadhana) };
+    const s: Sesion = { fecha: fechaRegistro(), id: sadhana.id, nombre: sadhana.nombre, minutos: minutosSadhana(sadhana) };
     guardarSesion(s);
     onCompleta(s);
     // eslint-disable-next-line react-hooks/exhaustive-deps

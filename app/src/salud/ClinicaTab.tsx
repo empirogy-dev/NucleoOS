@@ -28,7 +28,7 @@ import { hoyLocal } from "../lib/fechas";
 // Salud clínica: tu ficha, medicamentos, citas y exámenes.
 // Es el archivo médico; lo diario vive en las otras pestañas de Energía.
 
-export function ClinicaTab() {
+export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } = {}) {
   const [profile, setProfile] = useState<HealthProfile | null>(null);
   const [meds, setMeds] = useState<Medication[]>([]);
   const [citas, setCitas] = useState<Appointment[]>([]);
@@ -174,7 +174,7 @@ export function ClinicaTab() {
         </div>
 
         <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
-          {profile && <FichaCard profile={profile} onSaved={() => void reload()} />}
+          {profile && <FichaCard profile={profile} onSaved={() => { void reload(); onProfileSaved?.(); }} />}
         </div>
       </div>
 

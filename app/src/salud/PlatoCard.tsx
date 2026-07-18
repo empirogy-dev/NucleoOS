@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Camera, ImagePlus, Sparkles } from "lucide-react";
 import { analizarComidaTexto, analizarPlato, blobToBase64, iaConfigured, type AnalisisPlato } from "../lib/ia";
 import { TablesMissingError } from "../finanzas/data";
-import { hoyLocal } from "../lib/fechas";
+import { fechaRegistro } from "../lib/fechas";
 import { addMeal, MOMENTOS, momentoSugerido } from "./comidas";
 
 // Tu plato: foto → estimación de macros con IA → guardado en el día.
@@ -60,7 +60,7 @@ export function PlatoCard({ fecha, esHoy = true, onSaved }: { fecha?: string; es
     setErr(null);
     try {
       await addMeal({
-        date: fecha ?? hoyLocal(),
+        date: fecha ?? fechaRegistro(),
         description: resultado.descripcion,
         kcal: resultado.kcal,
         protein_g: resultado.proteina_g,

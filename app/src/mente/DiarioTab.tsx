@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
-import { hoyLocal } from "../lib/fechas";
+import { fechaRegistro } from "../lib/fechas";
 import { PROMPTS_DIARIO, addEntry, deleteEntry, listEntries, type JournalEntry } from "./diario";
 
 // Diario: escribir para ordenar la cabeza. Con pregunta guía o en libre.
@@ -38,7 +38,7 @@ export function DiarioTab() {
     setBusy(true);
     setError(null);
     try {
-      await addEntry({ date: hoyLocal(), prompt, content: texto.trim() });
+      await addEntry({ date: fechaRegistro(), prompt, content: texto.trim() });
       setTexto("");
       setPrompt(null);
       await reload();

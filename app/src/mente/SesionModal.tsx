@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { hoyLocal } from "../lib/fechas";
+import { fechaRegistro } from "../lib/fechas";
 import { guardarSesion, type Practica, type Sesion } from "./practicas";
 import { TONO_FASE, campana, detenerAmbiente, toggleAmbiente, tono } from "./sonido";
 
@@ -77,7 +77,7 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
     campana();
     detenerAmbiente();
     setAmbiente(false);
-    const s: Sesion = { fecha: hoyLocal(), id: practica.id, nombre: practica.nombre, minutos };
+    const s: Sesion = { fecha: fechaRegistro(), id: practica.id, nombre: practica.nombre, minutos };
     guardarSesion(s);
     onCompleta(s);
     // eslint-disable-next-line react-hooks/exhaustive-deps

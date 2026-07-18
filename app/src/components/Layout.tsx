@@ -6,6 +6,7 @@ import { NotifBell } from "./NotifBell";
 import { ThemePicker } from "./ThemePicker";
 import { Pomodoro } from "./Pomodoro";
 import { CapturaRapida } from "./CapturaRapida";
+import { fechaLarga, useFechaActiva } from "../fecha/FechaActiva";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
@@ -26,6 +27,7 @@ export function Layout() {
   const loc = useLocation();
   const { session } = useAuth();
   const { displayName } = useSettings();
+  const { fecha, esHoy, volverAHoy } = useFechaActiva();
   const inicial = (displayName || session?.user?.email || "?").trim().charAt(0).toUpperCase();
   const current = NOMBRES[loc.pathname] ?? AREAS.find((a) => a.path === loc.pathname)?.name ?? "";
 
@@ -49,6 +51,14 @@ export function Layout() {
           </Link>
           <div className="avatar">{inicial}</div>
         </header>
+        {!esHoy && (
+          <div className="fecha-banner">
+            🕰 Estás registrando el <b>{fechaLarga(fecha)}</b>. Todo lo que marques se guarda en ese día.
+            <button className="chip" style={{ border: "none", cursor: "pointer", marginLeft: 10 }} onClick={volverAHoy}>
+              volver a hoy
+            </button>
+          </div>
+        )}
         <main>
           <Outlet />
         </main>

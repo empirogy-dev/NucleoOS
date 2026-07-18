@@ -37,6 +37,7 @@ import {
 import { useSettings } from "../settings/SettingsProvider";
 import { AyunoCard } from "./AyunoCard";
 import { CicloTab } from "./CicloTab";
+import { useFechaActiva } from "../fecha/FechaActiva";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
@@ -68,11 +69,10 @@ export function SaludPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // La pestaña Hoy puede registrar días pasados: si desapareciste unos días
-  // pero igual entrenaste y tomaste agua, eso también cuenta. Sin culpa.
+  // La pestaña Hoy registra en la fecha activa global: si desapareciste unos
+  // días pero igual entrenaste y tomaste agua, eso también cuenta. Sin culpa.
   const hoyReal = hoyLocal();
-  const [hoy, setHoy] = useState(hoyReal);
-  const esHoy = hoy === hoyReal;
+  const { fecha: hoy, esHoy, setFecha: setHoy } = useFechaActiva();
   const fechaMin = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 13);
@@ -124,6 +124,11 @@ export function SaludPage() {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Si la ficha dice masculino, la pestaña Ciclo desaparece; si estabas en ella, te vas a Hoy.
+  useEffect(() => {
+    if (tab === "ciclo" && profile?.sex === "masculino") setTab("hoy");
+  }, [tab, profile?.sex]);
 
   const hoyLog = energy.find((e) => e.date === hoy) ?? null;
   const agua = hoyLog?.water_cups ?? 0;
@@ -248,12 +253,6 @@ export function SaludPage() {
                   </button>
                 )}
               </div>
-              {!esHoy && (
-                <div className="tip-destacado" style={{ marginBottom: 12 }}>
-                  Estás registrando el {new Date(`${hoy}T00:00:00`).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}.
-                  Todo lo que marques (agua, proteína, movimiento, sueño, platos) se guarda en ese día y suma a tus metas. Desaparecer unos días no borra lo que sí hiciste.
-                </div>
-              )}
               <HoyTab
                 agua={agua} proteina={proteina} protComidas={totHoy.proteina} nivel={nivel} metaProt={metaProt}
                 exercise={ejercicioHoy}
@@ -277,7 +276,7 @@ export function SaludPage() {
           {tab === "sueno" && <SuenoTab routine={routine} onChanged={() => void reload()} />}
           {tab === "ciclo" && <CicloTab />}
           {tab === "recuperacion" && <RecuperacionTab />}
-          {tab === "clinica" && <ClinicaTab />}
+          {tab === "clinica" && <ClinicaTab onProfileSaved={() => { void getHealthProfile().then(setProfile).catch(() => undefined); }} />}
         </>
       )}
 

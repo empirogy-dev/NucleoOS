@@ -1,4 +1,4 @@
-import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
+import { fechaRegistro, fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
 
@@ -53,7 +53,7 @@ export async function listDayTasks(days = 14): Promise<DayTask[]> {
   return (data ?? []) as DayTask[];
 }
 
-export async function addDayTask(title: string, date = hoyLocal()): Promise<void> {
+export async function addDayTask(title: string, date = fechaRegistro()): Promise<void> {
   const { error } = await sb().from("day_tasks").insert({ title, date, user_id: await uid() });
   check(error);
 }

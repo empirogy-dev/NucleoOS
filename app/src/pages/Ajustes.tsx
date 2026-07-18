@@ -5,6 +5,8 @@ import { useAuth } from "../auth/AuthProvider";
 import { ThemePicker } from "../components/ThemePicker";
 import { PALETTES } from "../theme/palettes";
 import { useTheme } from "../theme/ThemeProvider";
+import { fechaLarga, useFechaActiva } from "../fecha/FechaActiva";
+import { diasAtrasLocal, hoyLocal } from "../lib/fechas";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -52,6 +54,7 @@ export function Ajustes() {
       <div className="grid" style={{ maxWidth: 640 }}>
         <NameCard />
         <CumpleCard />
+        <DiaPasadoCard />
         <div className="card pad">
           <h3 style={{ fontSize: 15, marginBottom: 4 }}>Moneda predeterminada</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
@@ -140,6 +143,34 @@ function NameCard() {
       </form>
       {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
+    </div>
+  );
+}
+
+function DiaPasadoCard() {
+  const { fecha, esHoy, setFecha, volverAHoy } = useFechaActiva();
+  const hoy = hoyLocal();
+  const min = diasAtrasLocal(13);
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>🕰 Registrar un día pasado</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        ¿Desapareciste unos días pero igual entrenaste, tomaste agua o marcaste hábitos? Elige el día y toda la app registra ahí: Energía, Hábitos, Movimiento, Mente, Tareas y más. Un aviso te acompaña hasta que vuelvas a hoy.
+      </p>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <input type="date" className="input-inline" style={{ width: 160, flex: "none" }}
+          value={fecha} min={min} max={hoy}
+          onChange={(e) => { if (e.target.value) setFecha(e.target.value); }}
+          aria-label="Día que quieres registrar" />
+        {!esHoy && (
+          <button className="btn ghost" onClick={volverAHoy}>Volver a hoy</button>
+        )}
+        {!esHoy && <span className="chip">registrando el {fechaLarga(fecha)}</span>}
+      </div>
+      <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>
+        Hasta dos semanas atrás. Lo registrado suma a tus metas igual que si lo hubieras anotado ese día.
+      </p>
     </div>
   );
 }

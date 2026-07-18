@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { addActivity, deleteActivity, listActivity, type ActivityEntry } from "../objetivos/data";
-import { hoyLocal } from "../lib/fechas";
+import { fechaRegistro } from "../lib/fechas";
 import { AREAS } from "../areas";
 
 /**
@@ -34,7 +34,7 @@ export function AvancesArea({ area }: { area: string }) {
   async function agregar(e: React.FormEvent) {
     e.preventDefault();
     if (!texto.trim()) return;
-    await addActivity({ area, date: hoyLocal(), description: texto.trim() });
+    await addActivity({ area, date: fechaRegistro(), description: texto.trim() });
     setTexto("");
     void reload();
   }

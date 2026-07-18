@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Pencil, PersonStanding, Plus, Trash2 } from "lucide-react";
 import { IconField } from "../components/IconField";
 import { TablesMissingError } from "../finanzas/data";
-import { hoyLocal } from "../lib/fechas";
+import { fechaRegistro } from "../lib/fechas";
 import { EXERCISE_KINDS, addExercise } from "../habitos/data";
 import { getHealthProfile } from "../salud/data";
 import { estimarKcal } from "../salud/energia";
@@ -116,7 +116,7 @@ function WorkoutLibre() {
     setBusy(true);
     setErr(null);
     try {
-      await addExercise(hoyLocal(), kind, Number(min));
+      await addExercise(fechaRegistro(), kind, Number(min));
       const kcal = estimarKcal(kind, Number(min), peso);
       setHecho(`✓ ${kind}, ${min} min, ≈${kcal} kcal. Quedó en Energía y alimenta tus metas conectadas.`);
       setMin("");
@@ -185,7 +185,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
     setGuardando(true);
     setErr(null);
     try {
-      await addExercise(hoyLocal(), rutina.categoria, minutos);
+      await addExercise(fechaRegistro(), rutina.categoria, minutos);
       setCompletada(true);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));

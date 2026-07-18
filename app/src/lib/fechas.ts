@@ -27,3 +27,19 @@ export function diasAtrasLocal(n: number): string {
 export function mesActualLocal(): string {
   return hoyLocal().slice(0, 7);
 }
+
+// ---------- Modo "día pasado" (global) ----------
+// Si desapareciste unos días pero igual entrenaste y tomaste agua, puedes
+// poner la app en ese día desde Ajustes (o Energía) y todo lo que registres
+// se guarda ahí. Este es el interruptor global que leen los módulos al guardar.
+
+let fechaActiva: string | null = null;
+
+export function setFechaActivaGlobal(fecha: string | null) {
+  fechaActiva = fecha && fecha !== hoyLocal() ? fecha : null;
+}
+
+/** La fecha en la que se registra ahora: hoy, o el día pasado elegido. */
+export function fechaRegistro(): string {
+  return fechaActiva ?? hoyLocal();
+}

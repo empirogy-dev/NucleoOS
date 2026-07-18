@@ -1,6 +1,7 @@
 import { IconField } from "../components/IconField";
 import { Link } from "react-router-dom";
-import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
+import { fechaRegistro, fmtFechaLocal } from "../lib/fechas";
+import { useFechaActiva } from "../fecha/FechaActiva";
 import { useCallback, useEffect, useState } from "react";
 import { Moon, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -47,7 +48,7 @@ export function HabitosPage() {
   const [habitModal, setHabitModal] = useState<{ base?: { name: string; icon: string; dias: number }; habit?: Habit } | null>(null);
   const [tabH, setTabH] = useState<"habitos" | "retos" | "rutinas">("habitos");
 
-  const hoy = hoyLocal();
+  const { fecha: hoy } = useFechaActiva();
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -277,7 +278,7 @@ function ExerciseForm({ onSaved }: { onSaved: () => void }) {
     e.preventDefault();
     if (!minutes) return;
     setBusy(true);
-    await addExercise(hoyLocal(), kind, Number(minutes));
+    await addExercise(fechaRegistro(), kind, Number(minutes));
     setMinutes("");
     setBusy(false);
     onSaved();

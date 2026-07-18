@@ -1,7 +1,7 @@
 import { OrdenGrid } from "../components/OrdenGrid";
 import { Link } from "react-router-dom";
 import { librosDe } from "../aprendizaje/biblioteca";
-import { hoyLocal, mesActualLocal } from "../lib/fechas";
+import { fechaRegistro, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Mail, Plus, Trash2, Users } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -257,7 +257,7 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
   async function registrar(e: React.FormEvent) {
     e.preventDefault();
     if (!nuevo.trim()) return;
-    await addRelLog(r.id, hoyLocal(), nuevo.trim());
+    await addRelLog(r.id, fechaRegistro(), nuevo.trim());
     setNuevo("");
     onChanged();
   }
