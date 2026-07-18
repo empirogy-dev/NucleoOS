@@ -15,7 +15,7 @@ import {
 // Marca los que quieres leer y los que ya leíste: tu estantería personal.
 
 export function BibliotecaTab() {
-  const [via, setVia] = useState<ViaLibro>("tdah");
+  const [via, setVia] = useState<ViaLibro | "milista" | "leidos">("tdah");
   const [estados, setEstados] = useState<Record<string, EstadoLibro>>(estadosLibros);
 
   const leidos = Object.values(estados).filter((e) => e === "leido").length;
@@ -24,6 +24,11 @@ export function BibliotecaTab() {
   function marcar(id: string, estado: EstadoLibro | null) {
     setEstados(marcarLibro(id, estado));
   }
+
+  const visibles =
+    via === "milista" ? LIBROS.filter((l) => estados[l.id] === "quiero")
+    : via === "leidos" ? LIBROS.filter((l) => estados[l.id] === "leido")
+    : librosDe(via);
 
   return (
     <>
@@ -43,12 +48,32 @@ export function BibliotecaTab() {
             {v.label}
           </button>
         ))}
+        <button className={"ftab" + (via === "milista" ? " active" : "")}
+          style={{ padding: "6px 13px", fontSize: 12.5 }}
+          onClick={() => setVia("milista")}>
+          📖 Mi lista{quiero > 0 ? ` (${quiero})` : ""}
+        </button>
+        <button className={"ftab" + (via === "leidos" ? " active" : "")}
+          style={{ padding: "6px 13px", fontSize: 12.5 }}
+          onClick={() => setVia("leidos")}>
+          ✓ Leídos{leidos > 0 ? ` (${leidos})` : ""}
+        </button>
       </div>
-      <div className="rev-grid">
-        {librosDe(via).map((l) => (
-          <LibroCard key={l.id} libro={l} estado={estados[l.id] ?? null} onMarcar={marcar} />
-        ))}
-      </div>
+      {visibles.length === 0 ? (
+        <div className="card pad" style={{ maxWidth: 560 }}>
+          <p style={{ fontSize: 13.5, color: "var(--muted)" }}>
+            {via === "milista"
+              ? "Aún no marcas libros con \"Lo quiero leer\". Recorre las vías y arma tu lista: aquí te esperan."
+              : "Aún no marcas libros como leídos. El primero que termines, márcalo y celebra."}
+          </p>
+        </div>
+      ) : (
+        <div className="rev-grid">
+          {visibles.map((l) => (
+            <LibroCard key={l.id} libro={l} estado={estados[l.id] ?? null} onMarcar={marcar} />
+          ))}
+        </div>
+      )}
     </>
   );
 }

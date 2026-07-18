@@ -4,7 +4,7 @@ import { Pencil, PersonStanding, Plus, Trash2 } from "lucide-react";
 import { IconField } from "../components/IconField";
 import { TablesMissingError } from "../finanzas/data";
 import { fechaRegistro } from "../lib/fechas";
-import { EXERCISE_KINDS, addExercise } from "../habitos/data";
+import { EXERCISE_KINDS, addExercise, sesionPrevia } from "../habitos/data";
 import { getHealthProfile } from "../salud/data";
 import { estimarKcal } from "../salud/energia";
 import {
@@ -116,6 +116,13 @@ function WorkoutLibre() {
     setBusy(true);
     setErr(null);
     try {
+      // Si ese día ya tiene una sesión igual, avisamos antes de duplicar:
+      // puede que ya la hayas anotado desde Energía sin recordarlo.
+      const previo = await sesionPrevia(kind, fechaRegistro());
+      if (previo !== null && !window.confirm(`Este día ya tiene ${kind} registrado (${previo} min), quizás desde Energía. ¿Fue OTRA sesión distinta? Acepta para sumarla igual.`)) {
+        setBusy(false);
+        return;
+      }
       await addExercise(fechaRegistro(), kind, Number(min));
       const kcal = estimarKcal(kind, Number(min), peso);
       setHecho(`✓ ${kind}, ${min} min, ≈${kcal} kcal. Quedó en Energía y alimenta tus metas conectadas.`);
@@ -185,6 +192,11 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
     setGuardando(true);
     setErr(null);
     try {
+      const previo = await sesionPrevia(rutina.categoria, fechaRegistro());
+      if (previo !== null && !window.confirm(`Este día ya tiene ${rutina.categoria} registrado (${previo} min), quizás desde Energía. ¿Fue OTRA sesión distinta? Acepta para sumarla igual.`)) {
+        setGuardando(false);
+        return;
+      }
       await addExercise(fechaRegistro(), rutina.categoria, minutos);
       setCompletada(true);
     } catch (e) {

@@ -69,15 +69,9 @@ export function SaludPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // La pestaña Hoy registra en la fecha activa global: si desapareciste unos
-  // días pero igual entrenaste y tomaste agua, eso también cuenta. Sin culpa.
-  const hoyReal = hoyLocal();
-  const { fecha: hoy, esHoy, setFecha: setHoy } = useFechaActiva();
-  const fechaMin = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 13);
-    return fmtFechaLocal(d);
-  })();
+  // La pestaña Hoy registra en la fecha activa global (se elige en Ajustes):
+  // si desapareciste unos días pero igual entrenaste, eso también cuenta.
+  const { fecha: hoy, esHoy } = useFechaActiva();
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -241,18 +235,6 @@ export function SaludPage() {
         <>
           {tab === "hoy" && (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: esHoy ? 4 : 10 }}>
-                <span style={{ fontSize: 12.5, color: "var(--muted)" }}>¿Se te pasó un día? Regístralo igual:</span>
-                <input type="date" className="input-inline" style={{ width: 150, flex: "none" }}
-                  value={hoy} min={fechaMin} max={hoyReal}
-                  onChange={(e) => { if (e.target.value) setHoy(e.target.value); }}
-                  aria-label="Fecha que estás registrando" />
-                {!esHoy && (
-                  <button className="chip" style={{ border: "none", cursor: "pointer" }} onClick={() => setHoy(hoyReal)}>
-                    volver a hoy
-                  </button>
-                )}
-              </div>
               <HoyTab
                 agua={agua} proteina={proteina} protComidas={totHoy.proteina} nivel={nivel} metaProt={metaProt}
                 exercise={ejercicioHoy}

@@ -133,10 +133,24 @@ export function HabitosPage() {
                 const racha = streakFor(h.id, logs);
                 const objetivo = h.target_days ?? 28;
                 const color = h.color ?? "var(--hab)";
-                const ventana: string[] = [];
-                for (let i = objetivo - 1; i >= 0; i -= 1) ventana.push(isoDaysAgo(i));
                 const marcados = new Set(logs.filter((l) => l.habit_id === h.id).map((l) => l.date));
-                const hechos = ventana.filter((f) => marcados.has(f)).length;
+                // La cuadrícula se ancla a tu primer día marcado: es tu historia
+                // completa, no una ventana que se desliza y "borra" lo antiguo.
+                // Las pausas no restan, solo no suman. Cero culpa.
+                const primera = [...marcados].sort()[0] ?? hoy;
+                const ventana: string[] = [];
+                const cursor = new Date(`${primera}T00:00:00`);
+                while (fmtFechaLocal(cursor) <= hoy && ventana.length < 90) {
+                  ventana.push(fmtFechaLocal(cursor));
+                  cursor.setDate(cursor.getDate() + 1);
+                }
+                // Historial corto: rellenamos hacia atrás para ver el desafío completo.
+                while (ventana.length < objetivo) {
+                  const d = new Date(`${ventana[0]}T00:00:00`);
+                  d.setDate(d.getDate() - 1);
+                  ventana.unshift(fmtFechaLocal(d));
+                }
+                const hechos = marcados.size;
                 const logrado = hechos >= objetivo;
                 return (
                   <div key={h.id} style={{ borderBottom: "1px solid var(--line-soft)", padding: "10px 0" }}>
@@ -152,7 +166,7 @@ export function HabitosPage() {
                         <b style={{ color: done ? "var(--muted)" : "var(--ink)" }}>{h.icon} {h.name}</b>
                         <small>
                           {racha > 0 ? `racha de ${racha} día${racha === 1 ? "" : "s"} 🔥, ` : ""}
-                          desafío de {objetivo} días{h.daily_minutes ? `, ${h.daily_minutes} min al día` : ""}
+                          desafío de {objetivo} días acumulados{h.daily_minutes ? `, ${h.daily_minutes} min al día` : ""}. Las pausas no borran nada.
                         </small>
                       </div>
                       {logrado

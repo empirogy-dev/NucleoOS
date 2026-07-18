@@ -206,6 +206,22 @@ export async function listExercise(days = 30): Promise<ExerciseLog[]> {
   return (data ?? []) as ExerciseLog[];
 }
 
+/** ¿Ya hay una sesión de ese tipo registrada en esa fecha? Para avisar antes de duplicar. */
+export async function sesionPrevia(kind: string, date: string): Promise<number | null> {
+  try {
+    const { data, error } = await sb()
+      .from("exercise_logs")
+      .select("minutes")
+      .eq("date", date)
+      .eq("kind", kind)
+      .limit(1);
+    if (error || !data || data.length === 0) return null;
+    return Number(data[0].minutes);
+  } catch {
+    return null;
+  }
+}
+
 export async function addExercise(date: string, kind: string, minutes: number): Promise<void> {
   const { error } = await sb().from("exercise_logs").insert({ date, kind, minutes, user_id: await uid() });
   check(error);
