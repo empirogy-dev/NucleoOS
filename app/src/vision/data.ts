@@ -17,6 +17,8 @@ export interface VisionItem {
   rotation: number;
   z: number;
   font?: string | null; // normal, titulo o caligrafia (migración 0039)
+  bold?: boolean | null; // negrita (migración 0041)
+  font_size?: number | null; // tamaño de letra en px, null usa el normal (migración 0041)
   url?: string; // firmada, solo en memoria
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDownToLine, ArrowUpToLine, ImagePlus, RotateCcw, RotateCw, Sparkles, StickyNote, Trash2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpToLine, ImagePlus, RotateCcw, RotateCw, Sparkles, StickyNote, Trash2, Type } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import { addItem, deleteItem, listItems, sembrarDesdeBucket, subirImagen, updateItem, type VisionItem } from "./data";
 
@@ -127,6 +127,16 @@ export function CollageTab() {
 
   const seleccionado = items.find((i) => i.id === sel) ?? null;
 
+  // Guardar SIEMPRE al cerrar el editor: si se cierra tocando el lienzo,
+  // el textarea se desmonta antes de que su blur alcance a guardar, y el
+  // texto editado se perdía. Por eso el cierre pasa siempre por aquí.
+  function cerrarEdicion() {
+    if (!editando) return;
+    const it = items.find((i) => i.id === editando);
+    if (it) void persistir(it.id, { content: it.content ?? "" });
+    setEditando(null);
+  }
+
   function rotar(delta: number) {
     if (!seleccionado) return;
     const rotation = seleccionado.rotation + delta;
@@ -156,6 +166,19 @@ export function CollageTab() {
       setTimeout(() => setGuardado(false), 1500);
     } catch {
       setErr("Para guardar el tipo de letra falta la migración 0039 (supabase/migrations/0039_estado_civil_y_fuentes.sql).");
+    }
+  }
+
+  /** Negrita y tamaño de letra (migración 0041). */
+  async function cambiarEstilo(patch: Partial<VisionItem>) {
+    if (!seleccionado || seleccionado.kind !== "nota") return;
+    mutar(seleccionado.id, patch);
+    try {
+      await updateItem(seleccionado.id, patch);
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 1500);
+    } catch {
+      setErr("Para guardar negrita y tamaño de letra falta la migración 0041 (supabase/migrations/0041_vision_texto.sql).");
     }
   }
 
@@ -205,25 +228,29 @@ export function CollageTab() {
     }
   }
 
-  async function nuevaNota() {
+  async function nuevaNota(suelto = false) {
     try {
       const z = items.length > 0 ? Math.max(...items.map((i) => i.z)) + 1 : 1;
+      // El texto suelto es una nota sin fondo (color "none"): puras letras
+      // sobre el lienzo, con letra de títulos, negrita y tamaño grande.
       const nota = await addItem({
         kind: "nota",
-        content: "Escribe aquí tu frase",
-        color: COLORES_NOTA[items.filter((i) => i.kind === "nota").length % COLORES_NOTA.length],
+        content: suelto ? "Tu frase en grande" : "Escribe aquí tu frase",
+        color: suelto ? "none" : COLORES_NOTA[items.filter((i) => i.kind === "nota").length % COLORES_NOTA.length],
         x: 120 + (items.length % 5) * 36,
         y: 120 + (items.length % 4) * 30,
-        w: 210,
-        h: 120,
-        rotation: -2,
+        w: suelto ? 320 : 210,
+        h: suelto ? 90 : 120,
+        rotation: suelto ? 0 : -2,
         z,
+        ...(suelto ? { font: "titulo", bold: true, font_size: 27 } : {}),
       });
       setItems((arr) => [...arr, nota]);
       setSel(nota.id);
       setEditando(nota.id);
     } catch (e) {
       if (e instanceof TablesMissingError) setNeedsMigration(true);
+      else if (e instanceof Error && /bold|font_size/.test(e.message)) setErr("Para el texto suelto falta la migración 0041 (supabase/migrations/0041_vision_texto.sql).");
       else setErr(e instanceof Error ? e.message : String(e));
     }
   }
@@ -252,6 +279,10 @@ export function CollageTab() {
         <button className="btn ghost" onClick={() => void nuevaNota()}>
           <StickyNote size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
           Agregar nota
+        </button>
+        <button className="btn ghost" onClick={() => void nuevaNota(true)}>
+          <Type size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+          Agregar texto
         </button>
         <span style={{ flex: 1 }} />
         {guardado && <span className="chip">✓ Guardado</span>}
@@ -283,6 +314,28 @@ export function CollageTab() {
               {f.label}
             </button>
           ))}
+          {seleccionado.kind === "nota" && (
+            <>
+              <button className="vc-tool" title={seleccionado.bold ? "Quitar negrita" : "Negrita"}
+                style={{ fontWeight: 800, fontSize: 14, outline: seleccionado.bold ? "2px solid var(--accent)" : "none" }}
+                onClick={() => void cambiarEstilo({ bold: !seleccionado.bold })}>
+                B
+              </button>
+              <button className="vc-tool" title="Letra más chica" style={{ fontSize: 11.5, width: "auto", padding: "0 8px" }}
+                onClick={() => void cambiarEstilo({ font_size: Math.max(11, (seleccionado.font_size ?? 15) - 3) })}>
+                A−
+              </button>
+              <button className="vc-tool" title="Letra más grande" style={{ fontSize: 14, width: "auto", padding: "0 8px" }}
+                onClick={() => void cambiarEstilo({ font_size: Math.min(64, (seleccionado.font_size ?? 15) + 3) })}>
+                A+
+              </button>
+              <button className="vc-tool" title={seleccionado.color === "none" ? "Ponerle fondo de nota" : "Dejar el texto suelto, sin fondo"}
+                style={{ fontSize: 11.5, width: "auto", padding: "0 9px", outline: seleccionado.color === "none" ? "2px solid var(--accent)" : "none" }}
+                onClick={() => pintar(seleccionado.color === "none" ? COLORES_NOTA[0] : "none")}>
+                Sin fondo
+              </button>
+            </>
+          )}
           <span style={{ flex: 1 }} />
           <button className="vc-tool peligro" title="Eliminar" onClick={() => void eliminar()}><Trash2 size={15} /></button>
         </div>
@@ -293,7 +346,7 @@ export function CollageTab() {
         <div
           className="vcanvas"
           style={{ width: ANCHO, height: ALTO, transform: `scale(${escala})`, transformOrigin: "top left" }}
-          onPointerDown={() => { setSel(null); setEditando(null); }}
+          onPointerDown={() => { cerrarEdicion(); setSel(null); }}
         >
           {loading && <p style={{ color: "var(--muted)", padding: 20 }}>Cargando tu collage…</p>}
           {!loading && items.length === 0 && (
@@ -314,9 +367,10 @@ export function CollageTab() {
                 transform: `rotate(${it.rotation}deg)`,
                 zIndex: it.z + 10,
                 // Las imágenes van sin fondo ni sombra de caja: un PNG
-                // transparente se ve como sticker, no como tarjeta.
-                background: it.kind === "nota" ? it.color ?? COLORES_NOTA[0] : "transparent",
-                boxShadow: it.kind === "imagen" ? "none" : undefined,
+                // transparente se ve como sticker, no como tarjeta. El texto
+                // suelto (color "none") tampoco lleva fondo: puras letras.
+                background: it.kind === "nota" && it.color !== "none" ? it.color ?? COLORES_NOTA[0] : "transparent",
+                boxShadow: it.kind === "imagen" || it.color === "none" ? "none" : undefined,
               }}
               onPointerDown={(e) => empezar(e, it, "mover")}
               onPointerMove={mover}
@@ -330,18 +384,14 @@ export function CollageTab() {
               ) : editando === it.id ? (
                 <textarea
                   autoFocus
-                  defaultValue={it.content ?? ""}
-                  style={{ fontFamily: cssDeFuente(it.font) }}
+                  value={it.content ?? ""}
+                  style={{ fontFamily: cssDeFuente(it.font), fontWeight: it.bold ? 700 : undefined, fontSize: it.font_size ?? undefined }}
                   onPointerDown={(e) => e.stopPropagation()}
-                  onBlur={(e) => {
-                    const content = e.target.value;
-                    mutar(it.id, { content });
-                    void persistir(it.id, { content });
-                    setEditando(null);
-                  }}
+                  onChange={(e) => mutar(it.id, { content: e.target.value })}
+                  onBlur={() => cerrarEdicion()}
                 />
               ) : (
-                <span className="vc-texto" style={{ fontFamily: cssDeFuente(it.font) }}>{it.content}</span>
+                <span className="vc-texto" style={{ fontFamily: cssDeFuente(it.font), fontWeight: it.bold ? 700 : undefined, fontSize: it.font_size ?? undefined }}>{it.content}</span>
               )}
               {sel === it.id && (
                 <div
