@@ -9,7 +9,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
 import { TablesMissingError, listAccounts, listReminders, listTransactions } from "../finanzas/data";
 import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Reminder, type Tx } from "../finanzas/types";
-import { METRICAS_AUTO, cargarFuentes, listObjectives, metaAutoEsperado, objectiveProgress, progresoDe, valorAuto, type ActivityEntry, type Fuentes, type Objective } from "../objetivos/data";
+import { METRICAS_AUTO, cargarFuentes, listObjectives, metaAutoEsperado, progresoDe, valorAuto, type ActivityEntry, type Fuentes, type Objective } from "../objetivos/data";
 import { listHabitLogs, listHabits, listRoutine, sleepHours, type ExerciseLog, type Habit, type HabitLog, type RoutineLog } from "../habitos/data";
 import { type RetoLog } from "../habitos/retos";
 import { listSesiones } from "../mente/practicas";
@@ -147,8 +147,10 @@ export function Inicio() {
   // El Inicio habla de tu avance de vida, no de plata (bloque B del reporte).
   const avancesMes = activity.filter((a) => a.date.startsWith(month)).length;
   const metasEnCamino = objectives.filter((o) => o.status === "en_camino").length;
+  // Las fuentes del progreso automático: las mismas ventanas que Dirección.
+  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity };
   const globalPct = objectives.length
-    ? Math.round(objectives.reduce((s, o) => s + objectiveProgress(o), 0) / objectives.length)
+    ? Math.round(objectives.reduce((s, o) => s + progresoDe(o, fuentes), 0) / objectives.length)
     : null;
   const hechosHoy = new Set(habitLogs.filter((l) => l.date === hoyLocal()).map((l) => l.habit_id)).size;
 
@@ -164,7 +166,6 @@ export function Inicio() {
   const sesionesMenteHoy = listSesiones().filter((s) => s.fecha === hoyStr).length;
 
   // ---------- Brújula: una meta que empuja hoy ----------
-  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity };
   const brujula = objectives
     .filter((o) => o.status === "en_camino" || o.status === "en_riesgo")
     .sort((a, b) => (a.deadline ?? "9999").localeCompare(b.deadline ?? "9999"))[0] ?? null;
@@ -176,10 +177,12 @@ export function Inicio() {
     return f.charAt(0).toUpperCase() + f.slice(1);
   })();
 
+  // El avance por área usa el progreso REAL de cada meta, incluido el
+  // automático: si tu gimnasio empuja "Estar en forma", la barra lo muestra.
   function avanceArea(key: string): number | null {
     const objs = objectives.filter((o) => o.area === key);
     if (objs.length === 0) return null;
-    return Math.round(objs.reduce((s, o) => s + objectiveProgress(o), 0) / objs.length);
+    return Math.round(objs.reduce((s, o) => s + progresoDe(o, fuentes), 0) / objs.length);
   }
 
   const resumenCoach = [

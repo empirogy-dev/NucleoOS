@@ -206,6 +206,27 @@ export async function listExercise(days = 30): Promise<ExerciseLog[]> {
   return (data ?? []) as ExerciseLog[];
 }
 
+/** Hábitos que se marcan solos cuando registras algo que ya los cumple:
+ *  un gimnasio de 30 min marca tu hábito "Ir al gimnasio" sin doble trabajo.
+ *  Se busca por palabras del nombre del hábito; si ya estaba marcado, no pasa nada. */
+export async function autoMarcarHabitos(date: string, patron: RegExp, extra?: string): Promise<void> {
+  try {
+    const habits = await listHabits();
+    for (const h of habits) {
+      const nombre = h.name.toLowerCase();
+      if (patron.test(nombre) || (extra && nombre.includes(extra.toLowerCase()))) {
+        await toggleHabit(h.id, date, true);
+      }
+    }
+  } catch { /* si no se pudo, el registro original igual quedó */ }
+}
+
+/** Palabras de hábitos de movimiento: se marcan al registrar ejercicio. */
+export const RE_HABITO_MOVIMIENTO = /gimnasio|gym|entren|ejercicio|deporte|workout|yoga|correr|trotar|caminar|nadar|pilates|bailar/i;
+
+/** Palabras de hábitos de mente: se marcan al completar una práctica. */
+export const RE_HABITO_MENTE = /medita|mindful|respira|sadhana|journal|diario|gratitud/i;
+
 /** ¿Ya hay una sesión de ese tipo registrada en esa fecha? Para avisar antes de duplicar. */
 export async function sesionPrevia(kind: string, date: string): Promise<number | null> {
   try {
@@ -225,6 +246,8 @@ export async function sesionPrevia(kind: string, date: string): Promise<number |
 export async function addExercise(date: string, kind: string, minutes: number): Promise<void> {
   const { error } = await sb().from("exercise_logs").insert({ date, kind, minutes, user_id: await uid() });
   check(error);
+  // El ejercicio marca solo los hábitos que hablan de entrenar (o del tipo exacto).
+  await autoMarcarHabitos(date, RE_HABITO_MOVIMIENTO, kind);
 }
 
 export async function deleteExercise(id: string): Promise<void> {

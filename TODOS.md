@@ -184,6 +184,9 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Bug]` Energía mostraba su propio selector "¿Se te pasó un día?" duplicando el de Ajustes: eliminado, queda solo el modo global.
 - [x] `[Nuevo]` Movimiento con guardia antiduplicados: si el día ya tiene una sesión del mismo tipo (quizás anotada desde Energía), pregunta antes de sumar otra.
 - [x] `[Bug]` La Brújula del Inicio y Dirección mostraban porcentajes distintos para la misma meta (3 de 47 contra 4 de 47): el Inicio cargaba solo 7 días de ejercicio y 10 avances. Ahora ambas páginas usan cargarFuentes() con las mismas ventanas (365 días de ejercicio, 500 avances) y dicen exactamente lo mismo, verificado en vivo.
+- [x] `[Nuevo]` Hábitos que se marcan solos: registrar ejercicio marca los hábitos que hablan de entrenar (gimnasio, yoga, caminar...) y completar una práctica de Mente marca los de meditar o respirar. Sin doble trabajo, y Revisión los cuenta.
+- [x] `[Bug]` Las barras de "Tus áreas" del Inicio ignoraban el progreso automático de las metas (usaban solo el manual): con Estar en forma al 9%, Hábitos mostraba 0%. Ahora usan progresoDe con las fuentes completas, verificado en vivo (Hábitos 11%).
+- [x] `[Nuevo]` DEPLOY.md: el checklist completo del deployment (preparación, Supabase, Vercel, post publicación y Fase 4).
 - [ ] `[Nuevo]` Correos automáticos (Fase 4, con servidor): recordatorios del ciclo a la pareja y recorditos del lazo a quienes aceptaron; hoy salen prellenados desde tu propio correo con un clic.
 - [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas, marca manual de ayuno y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).

@@ -1,5 +1,7 @@
 // Mente: respiraciones guiadas y meditaciones con duración a elegir.
 
+import { RE_HABITO_MENTE, autoMarcarHabitos } from "../habitos/data";
+
 export interface FaseRespiracion {
   etiqueta: string;
   segundos: number;
@@ -384,4 +386,6 @@ export function listSesiones(): Sesion[] {
 export function guardarSesion(s: Sesion) {
   const todas = [s, ...listSesiones()].slice(0, 300);
   localStorage.setItem(KEY, JSON.stringify(todas));
+  // La práctica marca sola los hábitos de mente ("Meditar 10 minutos").
+  void autoMarcarHabitos(s.fecha, RE_HABITO_MENTE);
 }
