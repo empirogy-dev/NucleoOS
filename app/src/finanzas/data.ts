@@ -140,9 +140,10 @@ export async function listGoals(): Promise<Goal[]> {
   return (data ?? []) as Goal[];
 }
 
-export async function addGoal(g: { name: string; target_amount: number; deadline: string | null; icon: string | null }): Promise<void> {
-  const { error } = await sb().from("goals").insert({ ...g, user_id: await uid() });
+export async function addGoal(g: { name: string; target_amount: number; deadline: string | null; icon: string | null }): Promise<string> {
+  const { data, error } = await sb().from("goals").insert({ ...g, user_id: await uid() }).select("id").single();
   check(error);
+  return (data as { id: string }).id;
 }
 
 export async function contributeToGoal(id: string, amount: number): Promise<void> {

@@ -37,38 +37,36 @@ export interface Objective {
 /** Métricas con las que una meta puede alimentarse sola (migración 0024).
  *  auto_target guarda el ritmo POR SEMANA; el total esperado sale del plazo. */
 export const METRICAS_AUTO = [
-  { key: "mov_sesiones", label: "Sesiones de movimiento", unidad: "sesiones", singular: "sesión", fuente: "Movimiento y Energía" },
-  { key: "mov_minutos", label: "Minutos de movimiento", unidad: "min", singular: "minuto", fuente: "Movimiento y Energía" },
-  { key: "mente_sesiones", label: "Sesiones de Mente", unidad: "sesiones", singular: "sesión", fuente: "Mente" },
-  { key: "habito_marcas", label: "Días de un hábito", unidad: "días", singular: "día", fuente: "Hábitos" },
-  { key: "reto_dias", label: "Días de un reto", unidad: "días", singular: "día", fuente: "Hábitos, pestaña Retos" },
-  { key: "area_avances", label: "Avances registrados en su área", unidad: "avances", singular: "avance", fuente: "el botón Registrar avance de su área" },
+  { key: "mov_sesiones", label: "Sesiones de movimiento", unidad: "sesiones", singular: "sesión", fuente: "los entrenamientos que registras en Movimiento o Energía" },
+  { key: "mov_minutos", label: "Minutos de movimiento", unidad: "min", singular: "minuto", fuente: "los minutos de los entrenamientos que registras en Movimiento o Energía" },
+  { key: "mente_sesiones", label: "Sesiones de Mente", unidad: "sesiones", singular: "sesión", fuente: "las prácticas que completas en Mente" },
+  { key: "habito_marcas", label: "Días de un hábito", unidad: "días", singular: "día", fuente: "las marcas diarias de ese hábito en Hábitos" },
+  { key: "reto_dias", label: "Días de un reto", unidad: "días", singular: "día", fuente: "los días cumplidos de ese reto en Hábitos → Retos" },
+  { key: "area_avances", label: "Avances registrados en su área", unidad: "avances", singular: "avance", fuente: "lo que anotas con el botón Registrar avance" },
   { key: "trabajo_horas", label: "Horas de un proyecto", unidad: "horas", singular: "hora", fuente: "las jornadas de ese proyecto en Trabajo" },
-  { key: "foco_minutos", label: "Minutos de foco (pomodoro)", unidad: "min", singular: "minuto", fuente: "tus bloques de foco ligados a ese proyecto o a Aprendizaje" },
-  { key: "ahorro_meta", label: "Dinero de una meta de ahorro", unidad: "aportado", singular: "aporte", fuente: "tus aportes en Finanzas → Metas" },
-  { key: "rel_momentos", label: "Momentos con una persona", unidad: "momentos", singular: "momento", fuente: "los momentos que registras en Relaciones" },
-  { key: "libros_leidos", label: "Libros terminados", unidad: "libros", singular: "libro", fuente: "la biblioteca de Aprendizaje" },
+  { key: "foco_minutos", label: "Minutos de foco (pomodoro)", unidad: "min", singular: "minuto", fuente: "tus bloques de pomodoro ligados a ese proyecto o a Aprendizaje" },
+  { key: "ahorro_meta", label: "Dinero de una meta de ahorro", unidad: "aportado", singular: "aporte", fuente: "tus aportes en Finanzas → Metas: el porcentaje es el dinero real sobre el objetivo de esa meta de ahorro" },
+  { key: "rel_momentos", label: "Momentos con una persona", unidad: "momentos", singular: "momento", fuente: "las interacciones que registras en Relaciones (si eliges una persona, solo cuentan las de ella)" },
+  { key: "libros_leidos", label: "Libros terminados", unidad: "libros", singular: "libro", fuente: "los libros que marcas como leídos en Aprendizaje → Biblioteca" },
 ] as const;
 
-/** Qué métricas calzan con cada área: una meta de Relaciones se alimenta de
- *  momentos con tus personas, no de sesiones de gimnasio. Las universales
- *  (hábitos, retos y avances) quedan disponibles al final en todas, porque
- *  cualquier meta puede apoyarse en un hábito. Una meta general ofrece todo. */
+/** Qué métricas calzan con cada área, ESTRICTO: lo de Relaciones va con
+ *  Relaciones y lo de Finanzas con Finanzas. Cada área ofrece solo lo que
+ *  ella misma registra, más sus propios avances (el botón Registrar avance
+ *  guarda el avance EN esa área). Solo una meta general ofrece todo. */
 export function metricasParaArea(area: string | null): Array<(typeof METRICAS_AUTO)[number]> {
-  const UNIVERSALES = ["habito_marcas", "reto_dias", "area_avances"];
   const propias: Record<string, string[]> = {
-    salud: ["mov_sesiones", "mov_minutos", "mente_sesiones"],
-    habitos: ["habito_marcas", "reto_dias", "mov_sesiones", "mov_minutos"],
-    relaciones: ["rel_momentos"],
-    trabajo: ["trabajo_horas", "foco_minutos"],
-    finanzas: ["ahorro_meta"],
-    aprendizaje: ["foco_minutos", "libros_leidos", "mente_sesiones"],
+    salud: ["mov_sesiones", "mov_minutos", "mente_sesiones", "area_avances"],
+    habitos: ["habito_marcas", "reto_dias", "area_avances"],
+    relaciones: ["rel_momentos", "area_avances"],
+    trabajo: ["trabajo_horas", "foco_minutos", "area_avances"],
+    finanzas: ["ahorro_meta", "area_avances"],
+    aprendizaje: ["foco_minutos", "libros_leidos", "area_avances"],
     objetivos: ["area_avances"],
   };
-  const antes = propias[area ?? ""];
-  if (antes === undefined) return [...METRICAS_AUTO]; // meta general: todo disponible
-  const orden = [...new Set([...antes, ...UNIVERSALES])];
-  return orden
+  const claves = propias[area ?? ""];
+  if (claves === undefined) return [...METRICAS_AUTO]; // meta general: todo disponible
+  return claves
     .map((k) => METRICAS_AUTO.find((m) => m.key === k))
     .filter((m): m is (typeof METRICAS_AUTO)[number] => Boolean(m));
 }

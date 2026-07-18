@@ -60,6 +60,7 @@ import {
   type Reminder,
   type Tx,
 } from "./types";
+import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 
 type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "categorias" | "reporte";
 
@@ -86,6 +87,7 @@ export function FinanzasPage() {
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
   const [editCat, setEditCat] = useState<Category | null>(null);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
+  const [metasDireccion, setMetasDireccion] = useState<Objective[]>([]);
   const { currency: defaultCurrency } = useSettings();
 
   const reload = useCallback(async () => {
@@ -110,6 +112,11 @@ export function FinanzasPage() {
     } finally {
       setLoading(false);
     }
+    // Metas de Dirección del área Finanzas: para que una meta de ahorro
+    // nueva pueda empujarlas desde su creación. Opcional, sin drama si falta.
+    try {
+      setMetasDireccion((await listObjectives()).filter((o) => o.status !== "lograda" && o.area === "finanzas"));
+    } catch { /* Dirección sin migrar */ }
   }, []);
 
   useEffect(() => {
@@ -663,7 +670,7 @@ export function FinanzasPage() {
           onSaved={() => { setBudgetCat(null); void reload(); }} />
       )}
       {(modal === "goal" || editGoal) && (
-        <GoalModal key={editGoal?.id ?? "nueva"} edit={editGoal}
+        <GoalModal key={editGoal?.id ?? "nueva"} edit={editGoal} metasDireccion={metasDireccion}
           onClose={() => { setModal(null); setEditGoal(null); }}
           onSaved={() => { setModal(null); setEditGoal(null); void reload(); }} />
       )}
@@ -1058,17 +1065,20 @@ function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   );
 }
 
-function GoalModal({ edit, onClose, onSaved }: { edit?: Goal | null; onClose: () => void; onSaved: () => void }) {
+function GoalModal({ edit, metasDireccion, onClose, onSaved }: { edit?: Goal | null; metasDireccion: Objective[]; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState(edit?.name ?? "");
   const [target, setTarget] = useState(edit ? String(edit.target_amount) : "");
   const [current, setCurrent] = useState(edit ? String(edit.current_amount) : "");
   const [deadline, setDeadline] = useState(edit?.deadline ?? "");
   const [icon, setIcon] = useState(edit?.icon ?? "🎯");
+  // El puente hacia Dirección: qué meta de vida empuja este ahorro.
+  const [objetivoId, setObjetivoId] = useState(edit ? (metasDireccion.find((o) => o.auto_metric === "ahorro_meta" && o.auto_ref === edit.id)?.id ?? "") : "");
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
+    let goalId: string;
     if (edit) {
       await updateGoal(edit.id, {
         name,
@@ -1077,8 +1087,13 @@ function GoalModal({ edit, onClose, onSaved }: { edit?: Goal | null; onClose: ()
         deadline: deadline || null,
         icon,
       });
+      goalId = edit.id;
     } else {
-      await addGoal({ name, target_amount: Number(target), deadline: deadline || null, icon });
+      goalId = await addGoal({ name, target_amount: Number(target), deadline: deadline || null, icon });
+    }
+    if (objetivoId) {
+      // La meta de Dirección elegida pasa a alimentarse de este ahorro.
+      await updateObjective(objetivoId, { auto_metric: "ahorro_meta", auto_target: null, auto_ref: goalId });
     }
     onSaved();
   }
@@ -1101,6 +1116,19 @@ function GoalModal({ edit, onClose, onSaved }: { edit?: Goal | null; onClose: ()
         </div>
         <div className="field"><label>Fecha límite (opcional)</label>
           <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+        {metasDireccion.length > 0 && (
+          <div className="field">
+            <label>Empuja una meta de tu Dirección (opcional)</label>
+            <Selector value={objetivoId} ariaLabel="Meta de Dirección que este ahorro empuja"
+              opciones={[{ value: "", label: "Ninguna, este ahorro va solo" }, ...metasDireccion.map((o) => ({ value: o.id, label: `🧭 ${o.title}` }))]}
+              onChange={setObjetivoId} />
+            {objetivoId && (
+              <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                💡 Cada aporte que hagas aquí hará avanzar esa meta en Dirección: su porcentaje será el dinero real aportado.
+              </p>
+            )}
+          </div>
+        )}
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : edit ? "Guardar" : "Crear meta"}</button>
       </form>
     </Modal>

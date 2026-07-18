@@ -326,7 +326,7 @@ export function ObjetivosPage() {
       )}
 
       {modal === "objective" && (
-        <ObjectiveModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+        <ObjectiveModal cx={{ habitos, retos, proyectos, goals, personas }} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
       )}
       {modal === "avance" && (
         <AvanceModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
@@ -557,6 +557,59 @@ function GuiaDireccion() {
   );
 }
 
+/** Todo lo que los selectores de conexión necesitan para ofrecer sus opciones. */
+interface Conexiones {
+  habitos: Habit[];
+  retos: Reto[];
+  proyectos: Project[];
+  goals: Fuentes["goals"];
+  personas: Relationship[];
+}
+
+/** El segundo selector de una conexión automática: a QUÉ hábito, reto,
+ *  proyecto, meta de ahorro o persona se liga. El mismo en el modal de
+ *  Nueva meta y en el Progreso automático, para que nada quede distinto. */
+function SelectorDeRef({ metric, refVal, onRef, cx, compacto }: { metric: string; refVal: string; onRef: (v: string) => void; cx: Conexiones; compacto?: boolean }) {
+  const props = { compacto, value: refVal, onChange: onRef };
+  if (metric === "habito_marcas") {
+    return <Selector {...props} ariaLabel="Hábito que alimenta la meta" placeholder="¿Qué hábito?"
+      opciones={cx.habitos.map((h) => ({ value: h.id, label: `${h.icon ?? "✓"} ${h.name}` }))} />;
+  }
+  if (metric === "reto_dias") {
+    return <Selector {...props} ariaLabel="Reto que alimenta la meta" placeholder="¿Qué reto?"
+      opciones={cx.retos.filter((r) => r.status !== "terminado").map((r) => ({ value: r.id, label: `${r.icon ?? "🎯"} ${r.title}` }))} />;
+  }
+  if (metric === "trabajo_horas") {
+    return <Selector {...props} ariaLabel="Proyecto que alimenta la meta" placeholder="¿Qué proyecto?"
+      opciones={cx.proyectos.map((p) => ({ value: p.id, label: `💼 ${p.name}` }))} />;
+  }
+  if (metric === "foco_minutos") {
+    return <Selector {...props} ariaLabel="Proyecto o área que alimenta la meta" placeholder="¿A qué liga tu foco?"
+      opciones={focoRefOpciones(cx.proyectos)} />;
+  }
+  if (metric === "ahorro_meta") {
+    return <Selector {...props} ariaLabel="Meta de ahorro que alimenta esta meta" placeholder="¿Qué meta de ahorro?"
+      opciones={cx.goals.map((g) => ({ value: g.id, label: `${g.icon ?? "🎯"} ${g.name}` }))} />;
+  }
+  if (metric === "rel_momentos") {
+    return <Selector {...props} ariaLabel="Persona cuyos momentos alimentan esta meta"
+      opciones={[{ value: "", label: "💞 Con cualquier persona" }, ...cx.personas.map((p) => ({ value: p.id, label: `💞 ${p.name}` }))]} />;
+  }
+  return null;
+}
+
+/** Qué le falta a una conexión para poder guardarse, o null si está completa. */
+function faltaEnConexion(metric: string, ref: string): string | null {
+  if (metric === "habito_marcas" && !ref) return "Elige qué hábito alimenta esta meta.";
+  if (metric === "reto_dias" && !ref) return "Elige qué reto alimenta esta meta.";
+  if (metric === "trabajo_horas" && !ref) return "Elige qué proyecto de Trabajo alimenta esta meta.";
+  if (metric === "foco_minutos" && !ref) return "Elige a qué proyecto o área ligas tus bloques de foco.";
+  if (metric === "ahorro_meta" && !ref) return "Elige qué meta de ahorro de Finanzas alimenta esta meta.";
+  return null;
+}
+
+const METRICAS_CON_REF = ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta", "rel_momentos"];
+
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
 function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; goals: Fuentes["goals"]; personas: Relationship[]; activaLabel: string | null; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
@@ -567,31 +620,16 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
 
   async function guardar() {
     setErr(null);
-    if (metric === "habito_marcas" && !ref) {
-      setErr("Elige qué hábito alimenta esta meta.");
-      return;
-    }
-    if (metric === "reto_dias" && !ref) {
-      setErr("Elige qué reto alimenta esta meta.");
-      return;
-    }
-    if (metric === "trabajo_horas" && !ref) {
-      setErr("Elige qué proyecto de Trabajo alimenta esta meta.");
-      return;
-    }
-    if (metric === "foco_minutos" && !ref) {
-      setErr("Elige a qué proyecto o área ligas tus bloques de foco.");
-      return;
-    }
-    if (metric === "ahorro_meta" && !ref) {
-      setErr("Elige qué meta de ahorro de Finanzas alimenta esta meta.");
+    const falta = faltaEnConexion(metric, ref);
+    if (falta) {
+      setErr(falta);
       return;
     }
     try {
       await updateObjective(o.id, {
         auto_metric: metric || null,
         auto_target: metric && metric !== "ahorro_meta" && target ? Number(target) : null,
-        auto_ref: ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta", "rel_momentos"].includes(metric) ? (ref || null) : null,
+        auto_ref: METRICAS_CON_REF.includes(metric) ? (ref || null) : null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -617,46 +655,10 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
             opciones={[{ value: "", label: "Sin conexión automática" }, ...metricasParaArea(o.area).map((m) => ({ value: m.key, label: m.label }))]}
             onChange={(v) => { setMetric(v); setRef(""); }} />
         </div>
-        {metric === "habito_marcas" && (
+        {METRICAS_CON_REF.includes(metric) && (
           <div style={{ flex: "1 1 170px", minWidth: 150 }}>
-            <Selector compacto value={ref} ariaLabel="Hábito que alimenta la meta" placeholder="¿Qué hábito?"
-              opciones={habitos.map((h) => ({ value: h.id, label: `${h.icon ?? "✓"} ${h.name}` }))}
-              onChange={setRef} />
-          </div>
-        )}
-        {metric === "reto_dias" && (
-          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
-            <Selector compacto value={ref} ariaLabel="Reto que alimenta la meta" placeholder="¿Qué reto?"
-              opciones={retos.filter((r) => r.status !== "terminado").map((r) => ({ value: r.id, label: `${r.icon ?? "🎯"} ${r.title}` }))}
-              onChange={setRef} />
-          </div>
-        )}
-        {metric === "trabajo_horas" && (
-          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
-            <Selector compacto value={ref} ariaLabel="Proyecto que alimenta la meta" placeholder="¿Qué proyecto?"
-              opciones={proyectos.map((p) => ({ value: p.id, label: `💼 ${p.name}` }))}
-              onChange={setRef} />
-          </div>
-        )}
-        {metric === "foco_minutos" && (
-          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
-            <Selector compacto value={ref} ariaLabel="Proyecto o área que alimenta la meta" placeholder="¿A qué liga tu foco?"
-              opciones={focoRefOpciones(proyectos)}
-              onChange={setRef} />
-          </div>
-        )}
-        {metric === "ahorro_meta" && (
-          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
-            <Selector compacto value={ref} ariaLabel="Meta de ahorro que alimenta esta meta" placeholder="¿Qué meta de ahorro?"
-              opciones={goals.map((g) => ({ value: g.id, label: `${g.icon ?? "🎯"} ${g.name}` }))}
-              onChange={setRef} />
-          </div>
-        )}
-        {metric === "rel_momentos" && (
-          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
-            <Selector compacto value={ref} ariaLabel="Persona cuyos momentos alimentan esta meta"
-              opciones={[{ value: "", label: "💞 Con cualquier persona" }, ...personas.map((p) => ({ value: p.id, label: `💞 ${p.name}` }))]}
-              onChange={setRef} />
+            <SelectorDeRef compacto metric={metric} refVal={ref} onRef={setRef}
+              cx={{ habitos, retos, proyectos, goals, personas }} />
           </div>
         )}
         {metric && metric !== "ahorro_meta" && (
@@ -670,21 +672,14 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
         <button className="btn ghost" type="button" onClick={() => void guardar()}>Guardar</button>
         {saved && <span className="chip">✓ Conectada</span>}
       </div>
-      {metric === "ahorro_meta" && (
-        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-          El porcentaje será el dinero aportado sobre el objetivo de esa meta de ahorro. Aportas en Finanzas → Metas y esta meta avanza sola.
-        </p>
-      )}
-      {metric === "rel_momentos" && (
-        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-          Cada interacción que registres en Relaciones (una llamada, una visita, un mensaje) avanza esta meta. Si eliges una persona, solo cuentan los momentos con ella.
-        </p>
-      )}
-      {metric === "libros_leidos" && (
-        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-          Cada libro que marques como leído en Aprendizaje → Biblioteca avanza esta meta.
-        </p>
-      )}
+      {metric && (() => {
+        const m = METRICAS_AUTO.find((x) => x.key === metric);
+        return m ? (
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+            💡 Se alimenta de {m.fuente}.
+          </p>
+        ) : null;
+      })()}
       {metric && target && Number(target) > 0 && (() => {
         const m = METRICAS_AUTO.find((x) => x.key === metric);
         const esperado = metaAutoEsperado({ ...o, auto_metric: metric, auto_target: Number(target) });
@@ -742,26 +737,33 @@ function EditObjectiveModal({ o, onClose, onSaved }: { o: Objective; onClose: ()
   );
 }
 
-function ObjectiveModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () => void; onSaved: () => void }) {
   const [title, setTitle] = useState("");
   const [area, setArea] = useState("");
   const [deadline, setDeadline] = useState("");
   const [metric, setMetric] = useState("");
   const [target, setTarget] = useState("");
+  const [ref, setRef] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setErr(null);
+    const falta = faltaEnConexion(metric, ref);
+    if (falta) {
+      setErr(falta);
+      return;
+    }
+    setBusy(true);
     try {
       await addObjective({
         title,
         area: area || null,
         deadline: deadline || null,
         auto_metric: metric || null,
-        auto_target: metric && target ? Number(target) : null,
+        auto_target: metric && metric !== "ahorro_meta" && target ? Number(target) : null,
+        auto_ref: METRICAS_CON_REF.includes(metric) ? (ref || null) : null,
       });
       onSaved();
     } catch (ex) {
@@ -777,29 +779,30 @@ function ObjectiveModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         <div className="field"><label>¿Qué quieres lograr?</label>
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ahorrar para el viaje a Japón" autoFocus /></div>
         <div className="field"><label>Área de la vida</label>
-          <Selector value={area} ariaLabel="Área de la vida" onChange={setArea}
+          <Selector value={area} ariaLabel="Área de la vida" onChange={(v) => { setArea(v); setMetric(""); setRef(""); }}
             opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
         <div className="field"><label>Fecha límite (opcional)</label>
           <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
         <div className="frow">
           <div className="field"><label>Se alimenta de (opcional)</label>
             <Selector value={metric} ariaLabel="Métrica que alimenta la meta" placeholder="Nada, progreso manual o por pasos"
-              opciones={[{ value: "", label: "Nada, progreso manual o por pasos" }, ...metricasParaArea(area || null).filter((m) => m.key !== "ahorro_meta").map((m) => ({ value: m.key, label: m.label }))]}
-              onChange={setMetric} /></div>
-          {metric && (
+              opciones={[{ value: "", label: "Nada, progreso manual o por pasos" }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: m.label }))]}
+              onChange={(v) => { setMetric(v); setRef(""); }} /></div>
+          {metric && metric !== "ahorro_meta" && (
             <div className="field" style={{ maxWidth: 120 }}><label>Por semana</label>
               <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="3" /></div>
           )}
         </div>
-        {area === "finanzas" && (
-          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-            💡 Si es una meta de plata, créala y luego ábrela: en Progreso automático podrás conectarla a una meta de ahorro de Finanzas (como Viaje a Chile) y su porcentaje será el dinero real aportado.
-          </p>
+        {METRICAS_CON_REF.includes(metric) && (
+          <div className="field">
+            <label>Conectada a</label>
+            <SelectorDeRef metric={metric} refVal={ref} onRef={setRef} cx={cx} />
+          </div>
         )}
         {metric && (
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-            Con la fecha límite, la meta calcula cuántas {METRICAS_AUTO.find((m) => m.key === metric)?.unidad ?? "veces"} son en total,
-            y cada registro real avanza su porcentaje, un día a la vez.
+            💡 Se alimenta de {METRICAS_AUTO.find((m) => m.key === metric)?.fuente}.
+            {metric !== "ahorro_meta" && " Con la fecha límite, la meta calcula el total del plazo y cada registro real avanza su porcentaje, un día a la vez."}
           </p>
         )}
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear meta"}</button>
