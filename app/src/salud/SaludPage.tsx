@@ -40,6 +40,7 @@ import { CicloTab } from "./CicloTab";
 import { useFechaActiva } from "../fecha/FechaActiva";
 import { CampoHora } from "../components/CampoHora";
 import { MetasDeArea } from "../components/MetasDeArea";
+import { Selector } from "../components/Selector";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
@@ -414,9 +415,10 @@ function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: Ex
         </div>
       ))}
       <form onSubmit={save} style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-        <select className="ms-sel" value={kind} onChange={(e) => setKind(e.target.value)} style={{ padding: "9px 10px" }}>
-          {EXERCISE_KINDS.map((k) => <option key={k}>{k}</option>)}
-        </select>
+        <div style={{ flex: "1 1 130px", minWidth: 120 }}>
+          <Selector value={kind} ariaLabel="Tipo de ejercicio" onChange={setKind}
+            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} />
+        </div>
         <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)} placeholder="minutos" style={{ maxWidth: 110, flex: "none" }} />
         <button className="btn ghost" disabled={busy}>
           <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Registrar

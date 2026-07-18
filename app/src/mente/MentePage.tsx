@@ -13,6 +13,7 @@ import {
 } from "./practicas";
 import { SADHANAS, minutosSadhana, type Sadhana } from "./sadhana";
 import { LunaFase } from "./LunaFase";
+import { Selector } from "../components/Selector";
 import { SadhanaPlayer } from "./SadhanaPlayer";
 import { SesionModal } from "./SesionModal";
 import { DiarioTab } from "./DiarioTab";
@@ -272,14 +273,15 @@ function ListaPracticas({ titulo, intro, practicas, onComenzar }: {
               <b>{p.nombre}</b>
               <small>{p.descripcion}</small>
             </div>
-            <select
-              className="ms-sel"
-              aria-label={`Duración de ${p.nombre}`}
-              value={min}
-              onChange={(e) => setMinutos((m) => ({ ...m, [p.id]: Number(e.target.value) }))}
-            >
-              {p.duraciones.map((d) => <option key={d} value={d}>{d} min</option>)}
-            </select>
+            <div style={{ width: 92, flex: "none" }}>
+              <Selector
+                compacto
+                ariaLabel={`Duración de ${p.nombre}`}
+                value={String(min)}
+                opciones={p.duraciones.map((d) => ({ value: String(d), label: `${d} min` }))}
+                onChange={(v) => setMinutos((m) => ({ ...m, [p.id]: Number(v) }))}
+              />
+            </div>
             <button className="btn ghost" onClick={() => onComenzar(p, min)}>Comenzar</button>
           </div>
         );

@@ -422,6 +422,19 @@ button{font-family:inherit}
 .pomo-hechos{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0}
 @media (max-width:740px){.pomo-fab{right:14px;bottom:14px}.pomo-panel{right:14px;bottom:78px;width:calc(100vw - 28px);max-width:300px}}
 
+/* ================= SELECTOR PROPIO (desplegable del tema) ================= */
+.sel{position:relative;flex:1;min-width:0}
+.sel-btn{width:100%;display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:13.5px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;transition:border-color .15s}
+.sel-btn.compacto{padding:8px 10px;font-size:12.5px}
+.sel-btn:hover{border-color:var(--muted)}
+.sel-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sel-txt{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sel-txt.vacio{color:var(--muted)}
+.sel-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:70;min-width:100%;max-height:224px;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh);padding:5px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.sel-opt{display:block;width:100%;text-align:left;font-family:var(--sans);font-size:13px;padding:8px 10px;border-radius:8px;border:none;background:transparent;color:var(--ink-soft);cursor:pointer}
+.sel-opt:hover{background:var(--line-soft);color:var(--ink)}
+.sel-opt.on{background:var(--accent-wash);color:var(--accent-ink);font-weight:600}
+
 /* ================= MODO DÍA PASADO ================= */
 .fecha-banner{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--warn) 16%,var(--paper));
   border-bottom:1px solid color-mix(in srgb,var(--warn) 35%,var(--paper));color:var(--ink);

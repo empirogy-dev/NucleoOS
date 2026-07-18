@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, PersonStanding, Plus, Trash2 } from "lucide-react";
 import { IconField } from "../components/IconField";
+import { Selector } from "../components/Selector";
 import { TablesMissingError } from "../finanzas/data";
 import { fechaRegistro } from "../lib/fechas";
 import { EXERCISE_KINDS, addExercise, sesionPrevia } from "../habitos/data";
@@ -142,9 +143,10 @@ function WorkoutLibre() {
         ¿Entrenaste por tu cuenta, fuera de un programa? Regístralo aquí y queda logueado con sus calorías estimadas.
       </p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <select className="ms-sel" style={{ padding: "9px 10px" }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Tipo de entrenamiento">
-          {EXERCISE_KINDS.map((k) => <option key={k}>{k}</option>)}
-        </select>
+        <div style={{ flex: "1 1 130px", minWidth: 120 }}>
+          <Selector value={kind} ariaLabel="Tipo de entrenamiento" onChange={setKind}
+            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} />
+        </div>
         <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)}
           placeholder="minutos" style={{ maxWidth: 110, flex: "none" }} aria-label="Minutos" />
         {min && <span style={{ fontSize: 12, color: "var(--muted)" }}>≈{estimarKcal(kind, Number(min), peso)} kcal</span>}
