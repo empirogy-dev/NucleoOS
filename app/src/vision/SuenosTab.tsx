@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Plus, Rocket, Trash2 } from "lucide-react";
 import { AREAS } from "../areas";
+import { Selector } from "../components/Selector";
 import { TablesMissingError } from "../finanzas/data";
 import { addObjective, listObjectives, objectiveProgress, type Objective } from "../objetivos/data";
 import {
@@ -192,14 +193,12 @@ function DreamModal({ dream, onClose, onSaved }: { dream: Dream | null; onClose:
             <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Viajar a Japón, escribir un libro…" autoFocus /></div>
           <div className="frow">
             <div className="field"><label>Categoría</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORIAS_SUENO.map((c) => <option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}
-              </select></div>
+              <Selector value={category} ariaLabel="Categoría del sueño" onChange={setCategory}
+                opciones={CATEGORIAS_SUENO.map((c) => ({ value: c.key, label: `${c.emoji} ${c.label}` }))} /></div>
             <div className="field"><label>Estado</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value as DreamStatus)}>
-                <option value="idea">Idea</option>
-                <option value="importante">Importante</option>
-              </select></div>
+              <Selector value={status} ariaLabel="Estado del sueño"
+                opciones={[{ value: "idea", label: "Idea" }, { value: "importante", label: "Importante" }]}
+                onChange={(v) => setStatus(v as DreamStatus)} /></div>
           </div>
           <div className="field"><label>¿Por qué lo quieres?</label>
             <input value={why} onChange={(e) => setWhy(e.target.value)} placeholder="Lo que ese sueño te haría sentir" /></div>
@@ -256,10 +255,8 @@ function ConvertirModal({ dream, onClose, onSaved }: { dream: Dream; onClose: ()
           <div className="field"><label>La meta, en concreto</label>
             <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ahorrar para viajar a Japón en 2027" autoFocus /></div>
           <div className="field"><label>Área de la vida</label>
-            <select value={area} onChange={(e) => setArea(e.target.value)}>
-              <option value="">General (toda la vida)</option>
-              {AREAS.map((a) => <option key={a.key} value={a.key}>{a.name}</option>)}
-            </select></div>
+            <Selector value={area} ariaLabel="Área de la vida" placeholder="General (toda la vida)" onChange={setArea}
+              opciones={[{ value: "", label: "General (toda la vida)" }, ...AREAS.map((a) => ({ value: a.key, label: a.name }))]} /></div>
           <div className="field"><label>Fecha objetivo (opcional)</label>
             <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Creando…" : "Crear la meta en Dirección"}</button>

@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
-import { TablesMissingError } from "../finanzas/data";
+import { TablesMissingError, listGoals } from "../finanzas/data";
+import type { Goal } from "../finanzas/types";
 import { listExercise, listHabitLogs, type ExerciseLog, type HabitLog } from "../habitos/data";
 import { listRetoLogs, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
@@ -42,7 +43,27 @@ export const METRICAS_AUTO = [
   { key: "area_avances", label: "Avances registrados en su área", unidad: "avances", singular: "avance", fuente: "el botón Registrar avance de su área" },
   { key: "trabajo_horas", label: "Horas de un proyecto", unidad: "horas", singular: "hora", fuente: "las jornadas de ese proyecto en Trabajo" },
   { key: "foco_minutos", label: "Minutos de foco (pomodoro)", unidad: "min", singular: "minuto", fuente: "tus bloques de foco ligados a ese proyecto o a Aprendizaje" },
+  { key: "ahorro_meta", label: "Dinero de una meta de ahorro", unidad: "aportado", singular: "aporte", fuente: "tus aportes en Finanzas → Metas" },
 ] as const;
+
+/** Qué métricas le calzan primero a cada área: una meta de Finanzas ofrece
+ *  ahorro antes que sesiones de movimiento. El resto queda disponible abajo. */
+export function metricasParaArea(area: string | null): Array<(typeof METRICAS_AUTO)[number]> {
+  const prioridad: Record<string, string[]> = {
+    finanzas: ["ahorro_meta", "area_avances"],
+    salud: ["mov_sesiones", "mov_minutos", "habito_marcas", "reto_dias", "mente_sesiones"],
+    habitos: ["habito_marcas", "reto_dias", "mov_sesiones"],
+    trabajo: ["trabajo_horas", "foco_minutos", "area_avances"],
+    aprendizaje: ["foco_minutos", "trabajo_horas", "area_avances", "habito_marcas"],
+    relaciones: ["area_avances", "habito_marcas"],
+  };
+  const antes = prioridad[area ?? ""] ?? [];
+  return [...METRICAS_AUTO].sort((a, b) => {
+    const ia = antes.indexOf(a.key);
+    const ib = antes.indexOf(b.key);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+}
 
 /** Para "foco_minutos", auto_ref guarda a qué se liga: "p:<id de proyecto>" o "a:aprendizaje". */
 export function focoRefOpciones(proyectos: Array<{ id: string; name: string }>): Array<{ value: string; label: string }> {
@@ -63,6 +84,7 @@ export interface Fuentes {
   avances: ActivityEntry[];
   workLogs: WorkLog[];
   focusBlocks: FocusBlock[];
+  goals: Goal[];
 }
 
 /** Las fuentes completas del progreso automático, con las MISMAS ventanas
@@ -76,15 +98,16 @@ export async function cargarFuentes(): Promise<Fuentes> {
       return fallback;
     }
   };
-  const [ejercicio, habitLogs, retoLogs, avances, workLogs, focusBlocks] = await Promise.all([
+  const [ejercicio, habitLogs, retoLogs, avances, workLogs, focusBlocks, goals] = await Promise.all([
     seguro(() => listExercise(365), [] as ExerciseLog[]),
     seguro(() => listHabitLogs(), [] as HabitLog[]),
     seguro(() => listRetoLogs(), [] as RetoLog[]),
     seguro(() => listActivity(500), [] as ActivityEntry[]),
     seguro(() => listWorkLogs(365), [] as WorkLog[]),
     seguro(() => listFocusBlocks(365), [] as FocusBlock[]),
+    seguro(() => listGoals(), [] as Goal[]),
   ]);
-  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs, focusBlocks };
+  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs, focusBlocks, goals };
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
@@ -112,11 +135,24 @@ export function valorAuto(o: Objective, f: Fuentes): number {
       .filter((b) => (ref.startsWith("p:") ? b.project_id === ref.slice(2) : ref.startsWith("a:") ? b.area === ref.slice(2) : false))
       .reduce((s, b) => s + b.minutes, 0);
   }
+  if (o.auto_metric === "ahorro_meta") {
+    const g = f.goals.find((x) => x.id === o.auto_ref);
+    return g ? Math.round(Number(g.current_amount)) : 0;
+  }
   return 0;
 }
 
 /** Progreso efectivo considerando el automático, los pasos o lo manual. */
 export function progresoDe(o: Objective, f: Fuentes): number {
+  // El ahorro no va por ritmo semanal: su porcentaje es dinero aportado
+  // sobre el objetivo de la meta de ahorro conectada.
+  if (o.auto_metric === "ahorro_meta") {
+    const g = f.goals.find((x) => x.id === o.auto_ref);
+    if (g && Number(g.target_amount) > 0) {
+      return Math.min(100, Math.round((Number(g.current_amount) / Number(g.target_amount)) * 100));
+    }
+    return objectiveProgress(o);
+  }
   const esperado = metaAutoEsperado(o);
   if (esperado !== null) {
     return Math.min(100, Math.round((valorAuto(o, f) / esperado) * 100));

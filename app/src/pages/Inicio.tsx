@@ -56,6 +56,7 @@ export function Inicio() {
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [workLogsF, setWorkLogsF] = useState<Fuentes["workLogs"]>([]);
   const [focusBlocksF, setFocusBlocksF] = useState<Fuentes["focusBlocks"]>([]);
+  const [goalsF, setGoalsF] = useState<Fuentes["goals"]>([]);
   const [perfil, setPerfil] = useState<HealthProfile | null>(null);
 
   const [brujulaSel, setBrujulaSel] = useState(0);
@@ -88,6 +89,7 @@ export function Inicio() {
       setRetoLogs(f.retoLogs);
       setWorkLogsF(f.workLogs);
       setFocusBlocksF(f.focusBlocks);
+      setGoalsF(f.goals);
     } catch { /* fuentes opcionales */ }
     try {
       const [h, hl] = await Promise.all([listHabits(), listHabitLogs()]);
@@ -153,7 +155,7 @@ export function Inicio() {
   const avancesMes = activity.filter((a) => a.date.startsWith(month)).length;
   const metasEnCamino = objectives.filter((o) => o.status === "en_camino").length;
   // Las fuentes del progreso automático: las mismas ventanas que Dirección.
-  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF, focusBlocks: focusBlocksF };
+  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF, focusBlocks: focusBlocksF, goals: goalsF };
   const globalPct = objectives.length
     ? Math.round(objectives.reduce((s, o) => s + progresoDe(o, fuentes), 0) / objectives.length)
     : null;

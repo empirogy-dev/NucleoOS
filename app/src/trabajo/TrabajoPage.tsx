@@ -25,6 +25,7 @@ import {
 } from "./data";
 import { abrirPomodoro, listFocusBlocks, type FocusBlock } from "../foco/data";
 import { MetasDeArea } from "../components/MetasDeArea";
+import { Selector } from "../components/Selector";
 
 const STATUS_TONES: Record<ProjectStatus, { bg: string; fg: string }> = {
   idea: { bg: "color-mix(in srgb,var(--muted) 18%,var(--paper))", fg: "var(--muted)" },
@@ -394,10 +395,10 @@ function WorkLogModal({ projects, onClose, onSaved }: { projects: Project[]; onC
       <form onSubmit={save}>
         {kind === "proyecto" && (
           <div className="field"><label>Proyecto</label>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              {projects.length === 0 && <option value="">Primero crea un proyecto</option>}
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select></div>
+            <Selector value={projectId} ariaLabel="Proyecto de la jornada"
+              placeholder={projects.length === 0 ? "Primero crea un proyecto" : "Elige el proyecto"}
+              opciones={projects.map((p) => ({ value: p.id, label: `💼 ${p.name}` }))}
+              onChange={setProjectId} /></div>
         )}
         <div className="field"><label>¿Qué hiciste?</label>
           <textarea className="vision-edit" rows={2} value={description} autoFocus

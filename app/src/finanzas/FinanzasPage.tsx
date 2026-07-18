@@ -3,6 +3,7 @@ import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
+import { Selector } from "../components/Selector";
 import {
   TablesMissingError,
   addAccount,
@@ -208,8 +209,6 @@ export function FinanzasPage() {
     <div className="page">
       <Head />
 
-      <MetasDeArea area="finanzas" />
-
       <div className="ftabs">
         {(
           [
@@ -324,22 +323,34 @@ export function FinanzasPage() {
                 <div className="searchbox" style={{ minWidth: 200 }}>
                   <input value={fq} onChange={(e) => setFq(e.target.value)} placeholder="Buscar movimientos…" aria-label="Buscar movimientos" />
                 </div>
-                <select className="ms-sel" value={fType} onChange={(e) => setFType(e.target.value as typeof fType)} aria-label="Filtrar por tipo">
-                  <option value="all">Todos los tipos</option>
-                  <option value="expense">Gastos</option>
-                  <option value="income">Ingresos</option>
-                  <option value="transfer">Transferencias</option>
-                </select>
-                <select className="ms-sel" value={fCat} onChange={(e) => setFCat(e.target.value)} aria-label="Filtrar por categoría">
-                  <option value="all">Todas las categorías</option>
-                  <option value="none">Sin categoría</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-                </select>
-                <select className="ms-sel" value={fAcc} onChange={(e) => setFAcc(e.target.value)} aria-label="Filtrar por cuenta o tarjeta">
-                  <option value="all">Todas las cuentas y tarjetas</option>
-                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  {cards.map((c) => <option key={c.id} value={c.id}>💳 {c.name}</option>)}
-                </select>
+                <div style={{ width: 150 }}>
+                  <Selector compacto value={fType} ariaLabel="Filtrar por tipo"
+                    opciones={[
+                      { value: "all", label: "Todos los tipos" },
+                      { value: "expense", label: "Gastos" },
+                      { value: "income", label: "Ingresos" },
+                      { value: "transfer", label: "Transferencias" },
+                    ]}
+                    onChange={(v) => setFType(v as typeof fType)} />
+                </div>
+                <div style={{ width: 185 }}>
+                  <Selector compacto value={fCat} ariaLabel="Filtrar por categoría"
+                    opciones={[
+                      { value: "all", label: "Todas las categorías" },
+                      { value: "none", label: "Sin categoría" },
+                      ...categories.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` })),
+                    ]}
+                    onChange={setFCat} />
+                </div>
+                <div style={{ width: 210 }}>
+                  <Selector compacto value={fAcc} ariaLabel="Filtrar por cuenta o tarjeta"
+                    opciones={[
+                      { value: "all", label: "Todas las cuentas y tarjetas" },
+                      ...accounts.map((a) => ({ value: a.id, label: a.name })),
+                      ...cards.map((c) => ({ value: c.id, label: `💳 ${c.name}` })),
+                    ]}
+                    onChange={setFAcc} />
+                </div>
               </div>
               {vistaTx === "revisar" && (
                 <div className="card pad">
@@ -415,6 +426,9 @@ export function FinanzasPage() {
 
           {tab === "metas" && (
             <>
+              {/* Las metas de Dirección del área Finanzas viven aquí, junto a
+                  las de ahorro: son la misma historia contada en dos niveles. */}
+              <MetasDeArea area="finanzas" />
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))" }}>
                 {goals.map((g) => {
                   const target = Number(g.target_amount);
@@ -858,10 +872,8 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
             Descarga la cartola desde tu banco (CSV, OFX o QFX) y súbela aquí. Los movimientos repetidos se omiten solos.
           </p>
           <div className="field"><label>Cuenta de destino</label>
-            <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-              <option value="">Sin cuenta</option>
-              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select></div>
+            <Selector value={accountId} ariaLabel="Cuenta de destino" placeholder="Sin cuenta" onChange={setAccountId}
+              opciones={[{ value: "", label: "Sin cuenta" }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
           <div className="field"><label>Archivo</label>
             <input type="file" accept=".csv,.ofx,.qfx,text/csv" onChange={onFile} /></div>
           {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
@@ -1033,11 +1045,13 @@ function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
             <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
         </div>
         <div className="field"><label>Se repite</label>
-          <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as typeof recurrence)}>
-            <option value="monthly">Cada mes</option>
-            <option value="biweekly">Cada 2 semanas</option>
-            <option value="oneTime">Solo una vez</option>
-          </select></div>
+          <Selector value={recurrence} ariaLabel="Recurrencia del pago"
+            opciones={[
+              { value: "monthly", label: "Cada mes" },
+              { value: "biweekly", label: "Cada 2 semanas" },
+              { value: "oneTime", label: "Solo una vez" },
+            ]}
+            onChange={(v) => setRecurrence(v as typeof recurrence)} /></div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
@@ -1138,10 +1152,8 @@ function ContributeModal({ goal, accounts, currency, onClose, onSaved }: {
         <div className="field"><label>Monto a aportar</label>
           <input type="number" required min="1" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" autoFocus /></div>
         <div className="field"><label>Desde la cuenta</label>
-          <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            <option value="">Sin cuenta (solo anota el avance)</option>
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select></div>
+          <Selector value={accountId} ariaLabel="Cuenta de origen del aporte" placeholder="Sin cuenta (solo anota el avance)" onChange={setAccountId}
+            opciones={[{ value: "", label: "Sin cuenta (solo anota el avance)" }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           Con una cuenta elegida, el aporte queda como transferencia: descuenta de la cuenta y suma a la meta.
         </p>
@@ -1284,11 +1296,11 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
         <div key={i} style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
           <input className="input-inline" style={{ flex: "1 1 120px" }} value={p.description} placeholder={i === 0 ? "Calcetines" : "Frutillas"}
             aria-label={`Descripción de la parte ${i + 1}`} onChange={(e) => cambiar(i, { description: e.target.value })} />
-          <select className="ms-sel" style={{ padding: "9px 8px", maxWidth: 130 }} value={p.category_id}
-            aria-label={`Categoría de la parte ${i + 1}`} onChange={(e) => cambiar(i, { category_id: e.target.value })}>
-            <option value="">Sin categoría</option>
-            {cats.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-          </select>
+          <div style={{ width: 145, flex: "none" }}>
+            <Selector compacto value={p.category_id} ariaLabel={`Categoría de la parte ${i + 1}`} placeholder="Sin categoría"
+              opciones={[{ value: "", label: "Sin categoría" }, ...cats.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]}
+              onChange={(v) => cambiar(i, { category_id: v })} />
+          </div>
           <input className="input-inline tnum" type="number" min="0" step="any" style={{ maxWidth: 95, flex: "none" }} value={p.amount}
             placeholder="monto" aria-label={`Monto de la parte ${i + 1}`} onChange={(e) => cambiar(i, { amount: e.target.value })} />
           {restante > 0 && !p.amount && (
@@ -1418,41 +1430,22 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
         <div className="frow">
           {type !== "transfer" && (
             <div className="field"><label>Categoría</label>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">Sin categoría</option>
-                {cats.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-              </select></div>
+              <Selector value={categoryId} ariaLabel="Categoría" placeholder="Sin categoría" onChange={setCategoryId}
+                opciones={[{ value: "", label: "Sin categoría" }, ...cats.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} /></div>
           )}
           <div className="field"><label>{type === "transfer" ? "Desde la cuenta" : "Cuenta"}</label>
-            <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-              <option value="">Sin cuenta</option>
-              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select></div>
+            <Selector value={accountId} ariaLabel="Cuenta" placeholder="Sin cuenta" onChange={setAccountId}
+              opciones={[{ value: "", label: "Sin cuenta" }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
           {type === "transfer" && (
             <div className="field"><label>Hacia</label>
-              <select value={destino} onChange={(e) => setDestino(e.target.value)}>
-                <option value="">Fuera de la app (otro banco)</option>
-                {accounts.filter((a) => a.id !== accountId).length > 0 && (
-                  <optgroup label="Cuentas">
-                    {accounts.filter((a) => a.id !== accountId).map((a) => <option key={a.id} value={`account:${a.id}`}>{a.name}</option>)}
-                  </optgroup>
-                )}
-                {cards.length > 0 && (
-                  <optgroup label="Tarjetas de crédito">
-                    {cards.map((c) => <option key={c.id} value={`card:${c.id}`}>{c.name}{c.last_four ? ` •••• ${c.last_four}` : ""}</option>)}
-                  </optgroup>
-                )}
-                {debts.length > 0 && (
-                  <optgroup label="Deudas">
-                    {debts.map((d) => <option key={d.id} value={`debt:${d.id}`}>{d.name}</option>)}
-                  </optgroup>
-                )}
-                {goals.length > 0 && (
-                  <optgroup label="Metas de ahorro">
-                    {goals.map((g) => <option key={g.id} value={`goal:${g.id}`}>{g.icon ?? "🎯"} {g.name}</option>)}
-                  </optgroup>
-                )}
-              </select></div>
+              <Selector value={destino} ariaLabel="Destino de la transferencia" placeholder="Fuera de la app (otro banco)" onChange={setDestino}
+                opciones={[
+                  { value: "", label: "Fuera de la app (otro banco)" },
+                  ...accounts.filter((a) => a.id !== accountId).map((a) => ({ value: `account:${a.id}`, label: `🏦 ${a.name}` })),
+                  ...cards.map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` •••• ${c.last_four}` : ""}` })),
+                  ...debts.map((d) => ({ value: `debt:${d.id}`, label: `📉 ${d.name}` })),
+                  ...goals.map((g) => ({ value: `goal:${g.id}`, label: `${g.icon ?? "🎯"} ${g.name}` })),
+                ]} /></div>
           )}
         </div>
         {type === "transfer" && (
@@ -1500,13 +1493,11 @@ function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClo
           <input value={bank} onChange={(e) => setBank(e.target.value)} placeholder="Banco Estado" /></div>
         <div className="frow">
           <div className="field"><label>Tipo</label>
-            <select value={type} onChange={(e) => setType(e.target.value)}>
-              {ACCOUNT_TYPES.map((t) => <option key={t} value={t}>{ACCOUNT_TYPE_LABELS[t]}</option>)}
-            </select></div>
+            <Selector value={type} ariaLabel="Tipo de cuenta" onChange={setType}
+              opciones={ACCOUNT_TYPES.map((t) => ({ value: t, label: ACCOUNT_TYPE_LABELS[t] }))} /></div>
           <div className="field"><label>Moneda</label>
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
-            </select></div>
+            <Selector value={currency} ariaLabel="Moneda de la cuenta" onChange={setCurrency}
+              opciones={CURRENCIES.map((c) => ({ value: c, label: c }))} /></div>
         </div>
         {type === "Credit Card" && (
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
@@ -1565,22 +1556,25 @@ function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onC
           <IconField value={icon} onChange={setIcon} />
         </div>
         <div className="field"><label>Tipo</label>
-          <select value={type} onChange={(e) => setType(e.target.value as Category["type"])}>
-            <option value="expense">Gasto</option>
-            <option value="income">Ingreso</option>
-            <option value="savings">Ahorro</option>
-          </select></div>
+          <Selector value={type} ariaLabel="Tipo de categoría"
+            opciones={[
+              { value: "expense", label: "Gasto" },
+              { value: "income", label: "Ingreso" },
+              { value: "savings", label: "Ahorro" },
+            ]}
+            onChange={(v) => setType(v as Category["type"])} /></div>
         {edit && type === "expense" && (
           <>
             <div className="field"><label>Presupuesto mensual (vacío para quitarlo)</label>
               <input type="number" min="0" step="any" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="300" /></div>
             <div className="field"><label>Modo de presupuesto</label>
-              <select value={budgetMode} onChange={(e) => setBudgetMode(e.target.value)}>
-                <option value="">Sin modo</option>
-                <option value="fixed">Fijo (mismo monto cada mes, como el arriendo)</option>
-                <option value="flexible">Flexible (varía mes a mes, como la comida)</option>
-                <option value="variable">Variable (gastos no mensuales)</option>
-              </select></div>
+              <Selector value={budgetMode} ariaLabel="Modo de presupuesto" placeholder="Sin modo" onChange={setBudgetMode}
+                opciones={[
+                  { value: "", label: "Sin modo" },
+                  { value: "fixed", label: "Fijo (mismo monto cada mes, como el arriendo)" },
+                  { value: "flexible", label: "Flexible (varía mes a mes, como la comida)" },
+                  { value: "variable", label: "Variable (gastos no mensuales)" },
+                ]} /></div>
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer" }}>
               <input type="checkbox" checked={exclude} onChange={(e) => setExclude(e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--accent)" }} />
               Excluir del presupuesto (no aparece en los paneles del mes)

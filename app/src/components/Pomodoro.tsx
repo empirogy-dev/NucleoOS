@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw, Timer, X } from "lucide-react";
 import { bloquesHoyLocal, saveFocusBlock, sumarBloqueLocal, type PomodoroPreset } from "../foco/data";
 import { listProjects, type Project } from "../trabajo/data";
+import { Selector } from "./Selector";
 
 // Pomodoro global, pensado para el foco con TDAH: vive sobre todas las
 // páginas, externaliza el tiempo (lo ves siempre), parte con un toque,
@@ -200,20 +201,15 @@ export function Pomodoro() {
             placeholder="¿En qué te enfocas ahora?"
           />
 
-          <select
-            className="pomo-destino"
-            value={destino}
-            onChange={(ev) => setDestino(ev.target.value)}
-            aria-label="A qué empuja este bloque"
-          >
-            <option value="libre">Bloque libre, sin proyecto</option>
-            {proyectos.length > 0 && (
-              <optgroup label="Trabajo">
-                {proyectos.map((p) => <option key={p.id} value={`p:${p.id}`}>💼 {p.name}</option>)}
-              </optgroup>
-            )}
-            <option value="a:aprendizaje">📚 Aprendizaje</option>
-          </select>
+          <div style={{ marginBottom: 12 }}>
+            <Selector compacto value={destino} ariaLabel="A qué empuja este bloque"
+              opciones={[
+                { value: "libre", label: "Bloque libre, sin proyecto" },
+                ...proyectos.map((p) => ({ value: `p:${p.id}`, label: `💼 ${p.name}` })),
+                { value: "a:aprendizaje", label: "📚 Aprendizaje" },
+              ]}
+              onChange={setDestino} />
+          </div>
 
           <div className="pomo-reloj tnum">{mmss(e.restante)}</div>
           <div className="pomo-track"><div className="pomo-fill" style={{ width: `${pct}%` }} /></div>

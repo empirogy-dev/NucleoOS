@@ -5,6 +5,7 @@ import { useFechaActiva } from "../fecha/FechaActiva";
 import { sincronizarHabitosConEjercicio } from "./data";
 import { CampoHora } from "../components/CampoHora";
 import { MetasDeArea } from "../components/MetasDeArea";
+import { Selector } from "../components/Selector";
 import { useCallback, useEffect, useState } from "react";
 import { Moon, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -311,9 +312,8 @@ function ExerciseForm({ onSaved }: { onSaved: () => void }) {
 
   return (
     <form onSubmit={save} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-      <select className="ms-sel" style={{ flex: 1 }} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Tipo de ejercicio">
-        {EXERCISE_KINDS.map((k) => <option key={k}>{k}</option>)}
-      </select>
+      <Selector compacto value={kind} ariaLabel="Tipo de ejercicio" onChange={setKind}
+        opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} />
       <input className="input-inline" style={{ width: 90, flex: "none" }} type="number" min="1" placeholder="min"
         value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label="Minutos" />
       <button className="btn ghost" type="submit" disabled={busy}>Anotar</button>
@@ -395,14 +395,15 @@ function HabitModal({ base, habit, onClose, onSaved }: {
           </div>
           <div className="frow">
             <div className="field"><label>¿Por cuánto tiempo?</label>
-              <select value={dias} onChange={(e) => setDias(e.target.value)}>
-                <option value="7">7 días</option>
-                <option value="14">14 días</option>
-                <option value="21">21 días</option>
-                <option value="28">28 días</option>
-                <option value="66">66 días (hábito instalado)</option>
-                <option value="90">90 días</option>
-              </select></div>
+              <Selector value={dias} ariaLabel="Duración del desafío" onChange={setDias}
+                opciones={[
+                  { value: "7", label: "7 días" },
+                  { value: "14", label: "14 días" },
+                  { value: "21", label: "21 días" },
+                  { value: "28", label: "28 días" },
+                  { value: "66", label: "66 días (hábito instalado)" },
+                  { value: "90", label: "90 días" },
+                ]} /></div>
             <div className="field" style={{ maxWidth: 130 }}><label>Minutos al día</label>
               <input type="number" min={1} max={600} value={minutos} onChange={(e) => setMinutos(e.target.value)} placeholder="10" /></div>
           </div>
@@ -418,10 +419,8 @@ function HabitModal({ base, habit, onClose, onSaved }: {
           </div>
           {!habit && metas.length > 0 && (
             <div className="field"><label>¿A qué dirección de tu vida apunta? (opcional)</label>
-              <select value={metaId} onChange={(e) => setMetaId(e.target.value)}>
-                <option value="">Ninguna meta por ahora</option>
-                {metas.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
-              </select>
+              <Selector value={metaId} ariaLabel="Meta que alimenta este hábito" placeholder="Ninguna meta por ahora" onChange={setMetaId}
+                opciones={[{ value: "", label: "Ninguna meta por ahora" }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
                   Cada día que marques este hábito hará avanzar esa meta, a ritmo diario.

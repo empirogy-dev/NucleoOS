@@ -218,10 +218,11 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
         {!iniciado && !completada && (
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12.5, color: "var(--muted)" }}>¿Cuánto tiempo tienes?</span>
-            <select className="ms-sel" value={minutos} aria-label="Duración de la rutina"
-              onChange={(e) => { const m = Number(e.target.value); setMinutos(m); setRestante(m * 60); }}>
-              {duraciones.map((d) => <option key={d} value={d}>{d} min{d === rutina.minutos ? " (sugerido)" : ""}</option>)}
-            </select>
+            <div style={{ width: 150 }}>
+              <Selector compacto value={String(minutos)} ariaLabel="Duración de la rutina"
+                opciones={duraciones.map((d) => ({ value: String(d), label: `${d} min${d === rutina.minutos ? " (sugerido)" : ""}` }))}
+                onChange={(v) => { const m = Number(v); setMinutos(m); setRestante(m * 60); }} />
+            </div>
             <span style={{ fontSize: 12, color: "var(--muted)" }}>≈{estimarKcal(rutina.categoria, minutos, peso)} kcal</span>
           </div>
         )}

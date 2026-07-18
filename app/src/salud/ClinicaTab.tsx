@@ -24,6 +24,7 @@ import {
   type Medication,
 } from "./data";
 import { hoyLocal } from "../lib/fechas";
+import { Selector } from "../components/Selector";
 
 // Salud clínica: tu ficha, medicamentos, citas y exámenes.
 // Es el archivo médico; lo diario vive en las otras pestañas de Energía.
@@ -238,10 +239,8 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
       <h3>📋 Mi ficha</h3>
       <form onSubmit={save}>
         <div className="field"><label>Tipo de sangre</label>
-          <select value={blood} onChange={(e) => setBlood(e.target.value)}>
-            <option value="">No lo sé</option>
-            {BLOOD_TYPES.map((b) => <option key={b}>{b}</option>)}
-          </select></div>
+          <Selector value={blood} ariaLabel="Tipo de sangre" placeholder="No lo sé" onChange={setBlood}
+            opciones={[{ value: "", label: "No lo sé" }, ...BLOOD_TYPES.map((b) => ({ value: b, label: b }))]} /></div>
         <div className="field"><label>Alergias</label>
           <input value={allergies} onChange={(e) => setAllergies(e.target.value)} placeholder="Penicilina, maní…" /></div>
         <div className="field"><label>Condiciones</label>
@@ -256,31 +255,29 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
         </div>
         <div className="frow">
           <div className="field"><label>Alimentación</label>
-            <select value={dieta} onChange={(e) => setDieta(e.target.value)}>
-              <option value="">Sin definir</option>
-              {DIETAS.map((d) => <option key={d}>{d}</option>)}
-            </select></div>
+            <Selector value={dieta} ariaLabel="Tipo de alimentación" placeholder="Sin definir" onChange={setDieta}
+              opciones={[{ value: "", label: "Sin definir" }, ...DIETAS.map((d) => ({ value: d, label: d }))]} /></div>
           <div className="field"><label>Color de ojos</label>
             <input value={ojos} onChange={(e) => setOjos(e.target.value)} placeholder="café, verdes…" /></div>
         </div>
         <div className="frow">
           <div className="field" style={{ flex: 1.4 }}><label>¿Qué tan activa es tu vida?</label>
-            <select value={actividad} onChange={(e) => setActividad(e.target.value)}>
-              <option value="">Sin definir</option>
-              {NIVELES_ACTIVIDAD.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
-            </select></div>
+            <Selector value={actividad} ariaLabel="Nivel de actividad" placeholder="Sin definir" onChange={setActividad}
+              opciones={[{ value: "", label: "Sin definir" }, ...NIVELES_ACTIVIDAD.map((n) => ({ value: n.key, label: n.label }))]} /></div>
           <div className="field"><label>Sexo (para las calorías)</label>
-            <select value={sexo} onChange={(e) => setSexo(e.target.value)}>
-              <option value="">Sin definir</option>
-              <option value="femenino">Femenino</option>
-              <option value="masculino">Masculino</option>
-            </select></div>
+            <Selector value={sexo} ariaLabel="Sexo" placeholder="Sin definir" onChange={setSexo}
+              opciones={[
+                { value: "", label: "Sin definir" },
+                { value: "femenino", label: "Femenino" },
+                { value: "masculino", label: "Masculino" },
+              ]} /></div>
           <div className="field"><label>Estado civil</label>
-            <select value={civil} onChange={(e) => setCivil(e.target.value)}>
-              <option value="">Sin definir</option>
-              <option value="soltera">Soltera o soltero</option>
-              <option value="en_pareja">En pareja</option>
-            </select></div>
+            <Selector value={civil} ariaLabel="Estado civil" placeholder="Sin definir" onChange={setCivil}
+              opciones={[
+                { value: "", label: "Sin definir" },
+                { value: "soltera", label: "Soltera o soltero" },
+                { value: "en_pareja", label: "En pareja" },
+              ]} /></div>
         </div>
         <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>
           Con peso, estatura, actividad y sexo, la meta de proteína y las calorías del día se calculan solas en Nutrición.

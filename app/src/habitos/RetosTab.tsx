@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Flag, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { IconField } from "../components/IconField";
+import { Selector } from "../components/Selector";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
@@ -357,10 +358,8 @@ function RetoModal({ reto, base, onClose, onSaved }: {
           </div>
           {!reto && metas.length > 0 && (
             <div className="field"><label>¿A qué dirección de tu vida apunta? (opcional)</label>
-              <select value={metaId} onChange={(e) => setMetaId(e.target.value)}>
-                <option value="">Ninguna meta por ahora</option>
-                {metas.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
-              </select>
+              <Selector value={metaId} ariaLabel="Meta que alimenta este reto" placeholder="Ninguna meta por ahora" onChange={setMetaId}
+                opciones={[{ value: "", label: "Ninguna meta por ahora" }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
                   Cada día cumplido del reto hará avanzar esa meta, a tu ritmo de {diasPorSemana(mask)} por semana.

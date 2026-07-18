@@ -786,9 +786,8 @@ function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
       <h3>Registrar sesión</h3>
       <form onSubmit={save}>
         <div className="field"><label>Tipo</label>
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            {EXERCISE_KINDS.map((k) => <option key={k}>{k}</option>)}
-          </select></div>
+          <Selector value={kind} ariaLabel="Tipo de ejercicio" onChange={setKind}
+            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} /></div>
         <div className="frow">
           <div className="field"><label>Minutos</label>
             <input className="input-inline" style={{ width: "100%" }} type="number" min={1} max={600} required value={min} onChange={(e) => setMin(e.target.value)} placeholder="30" /></div>

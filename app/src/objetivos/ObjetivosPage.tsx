@@ -10,12 +10,15 @@ import { listRetoLogs, listRetos, type Reto, type RetoLog } from "../habitos/ret
 import { listSesiones, type Sesion } from "../mente/practicas";
 import { listProjects, listWorkLogs, type Project, type WorkLog } from "../trabajo/data";
 import { listFocusBlocks, type FocusBlock } from "../foco/data";
+import { listGoals } from "../finanzas/data";
+import { Selector } from "../components/Selector";
 import {
   METRICAS_AUTO,
   PLAZO_DEFECTO_DIAS,
   STATUS_LABELS,
   focoRefOpciones,
   metaAutoEsperado,
+  metricasParaArea,
   progresoDe,
   valorAuto,
   type Fuentes,
@@ -70,6 +73,7 @@ export function ObjetivosPage() {
   const [proyectos, setProyectos] = useState<Project[]>([]);
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [focusBlocks, setFocusBlocks] = useState<FocusBlock[]>([]);
+  const [goals, setGoals] = useState<Fuentes["goals"]>([]);
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -124,6 +128,11 @@ export function ObjetivosPage() {
     } catch {
       /* sin la 0035, la métrica de foco no está disponible */
     }
+    try {
+      setGoals(await listGoals());
+    } catch {
+      /* sin Finanzas migrado, la métrica de ahorro no está disponible */
+    }
     setSesiones(listSesiones());
     setLoading(false);
   }, []);
@@ -135,7 +144,7 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
-  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs, focusBlocks };
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs, focusBlocks, goals };
   const promedio = activas.length
     ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
@@ -234,10 +243,11 @@ export function ObjetivosPage() {
                       {o.title}{m.progress > 0 ? `, va en ${m.progress}%` : ""}
                     </small>
                   </div>
-                  <select className="ms-sel" value={m.progress} aria-label="Progreso del paso"
-                    onChange={async (e) => { await updateMilestoneProgress(m.id, Number(e.target.value)); void reload(); }}>
-                    {[0, 25, 50, 75, 100].map((v) => <option key={v} value={v}>{v}%</option>)}
-                  </select>
+                  <div style={{ width: 86, flex: "none" }}>
+                    <Selector compacto value={String(m.progress)} ariaLabel="Progreso del paso"
+                      opciones={[0, 25, 50, 75, 100].map((v) => ({ value: String(v), label: `${v}%` }))}
+                      onChange={async (v) => { await updateMilestoneProgress(m.id, Number(v)); void reload(); }} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -339,7 +349,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
   const [editando, setEditando] = useState(false);
   const [newMs, setNewMs] = useState("");
   const esperado = metaAutoEsperado(o);
-  const esAuto = esperado !== null;
+  const esAuto = esperado !== null || o.auto_metric === "ahorro_meta";
   const metrica = METRICAS_AUTO.find((m) => m.key === o.auto_metric) ?? null;
   const habitoDe = o.auto_metric === "habito_marcas"
     ? habitos.find((h) => h.id === o.auto_ref) ?? null
@@ -406,7 +416,14 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
         <div className="top">
           <span>
             {esAuto && metrica
-              ? `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` de ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
+              ? o.auto_metric === "ahorro_meta"
+                ? (() => {
+                    const g = fuentes.goals.find((x) => x.id === o.auto_ref);
+                    return g
+                      ? `⚡ ${Math.round(Number(g.current_amount)).toLocaleString("es-CL")} de ${Math.round(Number(g.target_amount)).toLocaleString("es-CL")} aportados en ${g.icon ?? "🎯"} ${g.name}`
+                      : "⚡ conectada a una meta de ahorro (revisa la conexión)";
+                  })()
+                : `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` de ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
               : hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}
           </span>
           <b className="tnum">{pct}%</b>
@@ -430,18 +447,19 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos}
-            activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}, a ${o.auto_target} por semana` : null}
+          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos} goals={fuentes.goals}
+            activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}${o.auto_metric !== "ahorro_meta" && o.auto_target ? `, a ${o.auto_target} por semana` : ""}` : null}
             onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
               <span style={{ flex: 1, fontSize: 13.5, color: m.progress >= 100 ? "var(--muted)" : "var(--ink-soft)", textDecoration: m.progress >= 100 ? "line-through" : "none" }}>
                 {m.title}
               </span>
-              <select className="ms-sel" value={m.progress} aria-label="Progreso del paso"
-                onChange={async (e) => { await updateMilestoneProgress(m.id, Number(e.target.value)); onChanged(); }}>
-                {[0, 25, 50, 75, 100].map((v) => <option key={v} value={v}>{v}%</option>)}
-              </select>
+              <div style={{ width: 86, flex: "none" }}>
+                <Selector compacto value={String(m.progress)} ariaLabel="Progreso del paso"
+                  opciones={[0, 25, 50, 75, 100].map((v) => ({ value: String(v), label: `${v}%` }))}
+                  onChange={async (v) => { await updateMilestoneProgress(m.id, Number(v)); onChanged(); }} />
+              </div>
               <button className="xdel" aria-label="Eliminar paso" onClick={async () => { await deleteMilestone(m.id); onChanged(); }}>
                 <Trash2 size={13} />
               </button>
@@ -522,7 +540,7 @@ function GuiaDireccion() {
 }
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
-function AutoConfig({ o, habitos, retos, proyectos, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; activaLabel: string | null; onChanged: () => void }) {
+function AutoConfig({ o, habitos, retos, proyectos, goals, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; goals: Fuentes["goals"]; activaLabel: string | null; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
   const [ref, setRef] = useState(o.auto_ref ?? "");
@@ -547,11 +565,15 @@ function AutoConfig({ o, habitos, retos, proyectos, activaLabel, onChanged }: { 
       setErr("Elige a qué proyecto o área ligas tus bloques de foco.");
       return;
     }
+    if (metric === "ahorro_meta" && !ref) {
+      setErr("Elige qué meta de ahorro de Finanzas alimenta esta meta.");
+      return;
+    }
     try {
       await updateObjective(o.id, {
         auto_metric: metric || null,
-        auto_target: metric && target ? Number(target) : null,
-        auto_ref: metric === "habito_marcas" || metric === "reto_dias" || metric === "trabajo_horas" || metric === "foco_minutos" ? ref : null,
+        auto_target: metric && metric !== "ahorro_meta" && target ? Number(target) : null,
+        auto_ref: ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta"].includes(metric) ? ref : null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -572,40 +594,47 @@ function AutoConfig({ o, habitos, retos, proyectos, activaLabel, onChanged }: { 
         </p>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <select className="ms-sel" style={{ padding: "8px 10px" }} value={metric} aria-label="Métrica automática"
-          onChange={(e) => setMetric(e.target.value)}>
-          <option value="">Sin conexión automática</option>
-          {METRICAS_AUTO.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-        </select>
+        <div style={{ flex: "1 1 210px", minWidth: 190 }}>
+          <Selector compacto value={metric} ariaLabel="Métrica automática" placeholder="Sin conexión automática"
+            opciones={[{ value: "", label: "Sin conexión automática" }, ...metricasParaArea(o.area).map((m) => ({ value: m.key, label: m.label }))]}
+            onChange={(v) => { setMetric(v); setRef(""); }} />
+        </div>
         {metric === "habito_marcas" && (
-          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Hábito que alimenta la meta"
-            onChange={(e) => setRef(e.target.value)}>
-            <option value="">¿Qué hábito?</option>
-            {habitos.map((h) => <option key={h.id} value={h.id}>{h.icon} {h.name}</option>)}
-          </select>
+          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
+            <Selector compacto value={ref} ariaLabel="Hábito que alimenta la meta" placeholder="¿Qué hábito?"
+              opciones={habitos.map((h) => ({ value: h.id, label: `${h.icon ?? "✓"} ${h.name}` }))}
+              onChange={setRef} />
+          </div>
         )}
         {metric === "reto_dias" && (
-          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Reto que alimenta la meta"
-            onChange={(e) => setRef(e.target.value)}>
-            <option value="">¿Qué reto?</option>
-            {retos.filter((r) => r.status !== "terminado").map((r) => <option key={r.id} value={r.id}>{r.icon} {r.title}</option>)}
-          </select>
+          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
+            <Selector compacto value={ref} ariaLabel="Reto que alimenta la meta" placeholder="¿Qué reto?"
+              opciones={retos.filter((r) => r.status !== "terminado").map((r) => ({ value: r.id, label: `${r.icon ?? "🎯"} ${r.title}` }))}
+              onChange={setRef} />
+          </div>
         )}
         {metric === "trabajo_horas" && (
-          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Proyecto que alimenta la meta"
-            onChange={(e) => setRef(e.target.value)}>
-            <option value="">¿Qué proyecto?</option>
-            {proyectos.map((p) => <option key={p.id} value={p.id}>💼 {p.name}</option>)}
-          </select>
+          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
+            <Selector compacto value={ref} ariaLabel="Proyecto que alimenta la meta" placeholder="¿Qué proyecto?"
+              opciones={proyectos.map((p) => ({ value: p.id, label: `💼 ${p.name}` }))}
+              onChange={setRef} />
+          </div>
         )}
         {metric === "foco_minutos" && (
-          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Proyecto o área que alimenta la meta"
-            onChange={(e) => setRef(e.target.value)}>
-            <option value="">¿A qué liga tu foco?</option>
-            {focoRefOpciones(proyectos).map((o2) => <option key={o2.value} value={o2.value}>{o2.label}</option>)}
-          </select>
+          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
+            <Selector compacto value={ref} ariaLabel="Proyecto o área que alimenta la meta" placeholder="¿A qué liga tu foco?"
+              opciones={focoRefOpciones(proyectos)}
+              onChange={setRef} />
+          </div>
         )}
-        {metric && (
+        {metric === "ahorro_meta" && (
+          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
+            <Selector compacto value={ref} ariaLabel="Meta de ahorro que alimenta esta meta" placeholder="¿Qué meta de ahorro?"
+              opciones={goals.map((g) => ({ value: g.id, label: `${g.icon ?? "🎯"} ${g.name}` }))}
+              onChange={setRef} />
+          </div>
+        )}
+        {metric && metric !== "ahorro_meta" && (
           <>
             <input className="input-inline" type="number" min={1} max={10000} value={target} placeholder="3"
               aria-label="Ritmo por semana" style={{ maxWidth: 80, flex: "none" }}
@@ -616,6 +645,11 @@ function AutoConfig({ o, habitos, retos, proyectos, activaLabel, onChanged }: { 
         <button className="btn ghost" type="button" onClick={() => void guardar()}>Guardar</button>
         {saved && <span className="chip">✓ Conectada</span>}
       </div>
+      {metric === "ahorro_meta" && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+          El porcentaje será el dinero aportado sobre el objetivo de esa meta de ahorro. Aportas en Finanzas → Metas y esta meta avanza sola.
+        </p>
+      )}
       {metric && target && Number(target) > 0 && (() => {
         const m = METRICAS_AUTO.find((x) => x.key === metric);
         const esperado = metaAutoEsperado({ ...o, auto_metric: metric, auto_target: Number(target) });
@@ -660,9 +694,8 @@ function EditObjectiveModal({ o, onClose, onSaved }: { o: Objective; onClose: ()
         <div className="field"><label>La meta</label>
           <input required value={title} onChange={(e) => setTitle(e.target.value)} autoFocus /></div>
         <div className="field"><label>Área de la vida</label>
-          <select value={area} onChange={(e) => setArea(e.target.value)}>
-            {AREA_OPTIONS.map((a) => <option key={a.key} value={a.key}>{a.name}</option>)}
-          </select></div>
+          <Selector value={area} ariaLabel="Área de la vida" onChange={setArea}
+            opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
         <div className="field"><label>Fecha límite</label>
           <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
@@ -709,22 +742,25 @@ function ObjectiveModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         <div className="field"><label>¿Qué quieres lograr?</label>
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ahorrar para el viaje a Japón" autoFocus /></div>
         <div className="field"><label>Área de la vida</label>
-          <select value={area} onChange={(e) => setArea(e.target.value)}>
-            {AREA_OPTIONS.map((a) => <option key={a.key} value={a.key}>{a.name}</option>)}
-          </select></div>
+          <Selector value={area} ariaLabel="Área de la vida" onChange={setArea}
+            opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
         <div className="field"><label>Fecha límite (opcional)</label>
           <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
         <div className="frow">
           <div className="field"><label>Se alimenta de (opcional)</label>
-            <select value={metric} onChange={(e) => setMetric(e.target.value)}>
-              <option value="">Nada, progreso manual o por pasos</option>
-              {METRICAS_AUTO.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-            </select></div>
+            <Selector value={metric} ariaLabel="Métrica que alimenta la meta" placeholder="Nada, progreso manual o por pasos"
+              opciones={[{ value: "", label: "Nada, progreso manual o por pasos" }, ...metricasParaArea(area || null).filter((m) => m.key !== "ahorro_meta").map((m) => ({ value: m.key, label: m.label }))]}
+              onChange={setMetric} /></div>
           {metric && (
             <div className="field" style={{ maxWidth: 120 }}><label>Por semana</label>
               <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="3" /></div>
           )}
         </div>
+        {area === "finanzas" && (
+          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+            💡 Si es una meta de plata, créala y luego ábrela: en Progreso automático podrás conectarla a una meta de ahorro de Finanzas (como Viaje a Chile) y su porcentaje será el dinero real aportado.
+          </p>
+        )}
         {metric && (
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
             Con la fecha límite, la meta calcula cuántas {METRICAS_AUTO.find((m) => m.key === metric)?.unidad ?? "veces"} son en total,
@@ -759,9 +795,8 @@ function AvanceModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
             onChange={(e) => setDescription(e.target.value)} /></div>
         <div className="frow">
           <div className="field"><label>Área</label>
-            <select value={area} onChange={(e) => setArea(e.target.value)}>
-              {AREAS.map((a) => <option key={a.key} value={a.key}>{a.name}</option>)}
-            </select></div>
+            <Selector value={area} ariaLabel="Área del avance" onChange={setArea}
+              opciones={AREAS.map((a) => ({ value: a.key, label: a.name }))} /></div>
           <div className="field"><label>Fecha</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
         </div>

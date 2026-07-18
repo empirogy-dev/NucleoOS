@@ -7,6 +7,7 @@ import { PALETTES } from "../theme/palettes";
 import { useTheme } from "../theme/ThemeProvider";
 import { fechaLarga, useFechaActiva } from "../fecha/FechaActiva";
 import { diasAtrasLocal, hoyLocal } from "../lib/fechas";
+import { Selector } from "../components/Selector";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -61,11 +62,9 @@ export function Ajustes() {
             Se usa en los totales y como moneda inicial de tus cuentas nuevas.
           </p>
           <div className="field" style={{ maxWidth: 320 }}>
-            <select value={currency} onChange={(e) => void onCurrency(e.target.value)}>
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>{CURRENCY_NAMES[c]} ({c})</option>
-              ))}
-            </select>
+            <Selector value={currency} ariaLabel="Moneda predeterminada"
+              opciones={CURRENCIES.map((c) => ({ value: c, label: `${CURRENCY_NAMES[c]} (${c})` }))}
+              onChange={(v) => void onCurrency(v)} />
           </div>
           {saved && <span className="chip" style={{ marginTop: 4 }}>✓ Guardado</span>}
         </div>
