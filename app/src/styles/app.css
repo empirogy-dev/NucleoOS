@@ -376,6 +376,34 @@ button{font-family:inherit}
 /* ================= REVISIÓN ================= */
 .rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-items:start}
 
+/* ================= POMODORO GLOBAL ================= */
+.pomo-fab{position:fixed;right:20px;bottom:20px;z-index:60;min-width:56px;height:56px;padding:0 14px;border:none;border-radius:var(--r-full);
+  background:var(--accent);color:#fff;cursor:pointer;box-shadow:var(--sh-md,0 10px 30px rgba(0,0,0,.16));
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .15s}
+.pomo-fab:hover{transform:translateY(-2px)}
+.pomo-fab.corriendo{background:var(--accent-ink)}
+.pomo-fab-time{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.pomo-fab-dot{width:7px;height:7px;border-radius:50%}
+.pomo-fab-dot.focus{background:#fff}
+.pomo-fab-dot.break{background:var(--sec)}
+.pomo-panel{position:fixed;right:20px;bottom:86px;z-index:60;width:280px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);box-shadow:var(--sh-md,0 12px 34px rgba(0,0,0,.18));padding:16px}
+.pomo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pomo-head b{font-family:var(--serif);font-size:15px}
+.pomo-label{width:100%;margin-bottom:12px}
+.pomo-reloj{font-size:52px;font-weight:700;text-align:center;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.pomo-track{height:6px;border-radius:999px;background:var(--surface);margin:12px 0 14px;overflow:hidden}
+.pomo-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .3s linear}
+.pomo-controls{display:flex;gap:8px;margin-bottom:12px}
+.pomo-controls .btn.primary{flex:1}
+.pomo-presets{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pomo-presets-lb{font-size:11.5px;color:var(--muted)}
+.pomo-chip{border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);border-radius:var(--r-full);
+  padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.pomo-chip.on{background:var(--accent-wash);border-color:transparent;color:var(--accent-ink)}
+.pomo-hechos{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0}
+@media (max-width:740px){.pomo-fab{right:14px;bottom:14px}.pomo-panel{right:14px;bottom:78px;width:calc(100vw - 28px);max-width:300px}}
+
 /* ================= SADHANA ================= */
 .sadhana-hero{border-color:color-mix(in srgb,var(--men) 45%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--men) 8%,var(--card)),var(--card))}
 .sd-dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px}

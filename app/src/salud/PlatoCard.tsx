@@ -3,7 +3,7 @@ import { Camera, ImagePlus, Sparkles } from "lucide-react";
 import { analizarComidaTexto, analizarPlato, blobToBase64, iaConfigured, type AnalisisPlato } from "../lib/ia";
 import { TablesMissingError } from "../finanzas/data";
 import { hoyLocal } from "../lib/fechas";
-import { addMeal } from "./comidas";
+import { addMeal, MOMENTOS, momentoSugerido } from "./comidas";
 
 // Tu plato: foto → estimación de macros con IA → guardado en el día.
 // Es una estimación amable para acompañar hábitos, no un diagnóstico.
@@ -15,6 +15,7 @@ export function PlatoCard({ onSaved }: { onSaved: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [falta0020, setFalta0020] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [momento, setMomento] = useState(momentoSugerido());
 
   async function analizarTexto(e: React.FormEvent) {
     e.preventDefault();
@@ -68,8 +69,11 @@ export function PlatoCard({ onSaved }: { onSaved: () => void }) {
         fiber_g: resultado.fibra_g,
         satiety: resultado.saciedad,
         impact: resultado.impacto || null,
+        meal_type: momento,
+        eaten_at: new Date().toISOString(),
       });
       setResultado(null);
+      setMomento(momentoSugerido());
       onSaved();
     } catch (ex) {
       if (ex instanceof TablesMissingError) setFalta0020(true);
@@ -142,6 +146,18 @@ export function PlatoCard({ onSaved }: { onSaved: () => void }) {
                 Saciedad {"●".repeat(resultado.saciedad)}{"○".repeat(5 - resultado.saciedad)}
                 {resultado.impacto ? `. ${resultado.impacto}` : ""}
               </p>
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 6 }}>¿Qué comida es?</p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {MOMENTOS.map((m) => (
+                    <button key={m.key} type="button"
+                      className={"pomo-chip" + (momento === m.key ? " on" : "")}
+                      onClick={() => setMomento(m.key)}>
+                      {m.emoji} {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="btn primary" disabled={guardando} onClick={() => void guardar()}>
                   {guardando ? "Guardando…" : "Guardar en mi día"}

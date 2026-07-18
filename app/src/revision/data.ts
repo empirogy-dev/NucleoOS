@@ -1,7 +1,7 @@
 import { fmtFechaLocal } from "../lib/fechas";
 import { listSesiones } from "../mente/practicas";
 import { listEnergy } from "../salud/energia";
-import { listMeals, totalesDia } from "../salud/comidas";
+import { listMeals, momentoDe, totalesDia } from "../salud/comidas";
 import { listExercise, listHabitLogs, listHabits, listRoutine, sleepHours } from "../habitos/data";
 import { listRetoLogs, listRetos } from "../habitos/retos";
 import { listCategories, listTransactions } from "../finanzas/data";
@@ -273,7 +273,10 @@ export async function armarDia(fecha: string): Promise<{ modulos: ModuloResumen[
     modulos.push({
       emoji: "🍽", titulo: "Comidas", to: "/salud",
       lineas: [
-        ...meals.map((m) => ({ k: m.description, v: `${m.kcal ?? 0} kcal, ${Math.round(m.protein_g ?? 0)} g prot` })),
+        ...meals.map((m) => {
+          const mm = momentoDe(m.meal_type);
+          return { k: mm ? `${mm.emoji} ${m.description}` : m.description, v: `${m.kcal ?? 0} kcal, ${Math.round(m.protein_g ?? 0)} g prot` };
+        }),
         { k: "Total del día", v: `${tot.kcal} kcal, ${tot.proteina} g de proteína` },
       ],
     });

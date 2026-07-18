@@ -18,7 +18,7 @@ import { ClinicaTab } from "./ClinicaTab";
 import { RecuperacionTab } from "./RecuperacionTab";
 import { PlatoCard } from "./PlatoCard";
 import { GUIAS_NUTRICION } from "./nutricionGuias";
-import { deleteMeal, listMeals, totalesDia, type Meal } from "./comidas";
+import { deleteMeal, listMeals, momentoDe, totalesDia, type Meal } from "./comidas";
 import { getHealthProfile, type HealthProfile } from "./data";
 import {
   META_AGUA_VASOS,
@@ -35,6 +35,7 @@ import {
   type ObjetivoCal,
 } from "./energia";
 import { useSettings } from "../settings/SettingsProvider";
+import { AyunoCard } from "./AyunoCard";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
@@ -475,6 +476,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
       { id: "balance", el: (
         <BalanceCalorico profile={profile} edad={edad} comido={tot.kcal} quemadas={quemadasHoy} irAClinica={irAClinica} />
       ) },
+      { id: "ayuno", el: <AyunoCard meals={meals} /> },
       { id: "comidas", el: (
       <div className="card panel">
         <h3>🍽 Tus comidas de hoy</h3>
@@ -486,10 +488,11 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
           <>
             {comidasHoy.map((m) => (
               <div className="txrow" key={m.id}>
-                <span className="txicon">🍽</span>
+                <span className="txicon">{momentoDe(m.meal_type)?.emoji ?? "🍽"}</span>
                 <div className="txmeta">
                   <b>{m.description}</b>
                   <small>
+                    {momentoDe(m.meal_type) ? `${momentoDe(m.meal_type)!.label}, ` : ""}
                     {m.kcal ?? 0} kcal, 🍗 {Math.round(m.protein_g ?? 0)} g, 🍞 {Math.round(m.carbs_g ?? 0)} g, 🥑 {Math.round(m.fat_g ?? 0)} g
                   </small>
                 </div>

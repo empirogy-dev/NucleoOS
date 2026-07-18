@@ -162,6 +162,9 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` DESIGN.md y CLAUDE.md puestos al día: navegación por secciones, lema, reglas de layout (sin espacios vacíos, luna boho, colores por hábito) y registro de decisiones al 11 de julio.
 - [x] `[Nuevo]` Relaciones rediseñada (fusión elegida por la usuaria entre opciones): tip del día como franja a lo ancho, personas como filas anchas arrastrables por prioridad (nada se aprieta) y la guía para conectar con la ciencia en columna fija a la derecha.
 - [x] `[Nuevo]` Tareas de hoy en el Inicio (migración 0033): checklist del día para lo suelto que no es hábito ni meta (hacer la cama, lavar la ropa). Se anota, se marca, se borra, y lo pendiente de otros días aparece con "pasar a hoy", sin culpa. Queda registrado en Revisión: en la pestaña Día tarea por tarea, y en Semana y Mes el total completado.
+- [x] `[Nuevo]` Pomodoro global para el foco con TDAH: botón flotante presente en todas las páginas, bloques de 15, 25 o 45 minutos, descanso automático, campana suave al terminar, etiqueta "¿en qué te enfocas?" para anclar la atención, y cuenta los bloques del día sin culpa. Sobrevive al cambiar de página y a recargar.
+- [x] `[Nuevo]` Comidas con momento del día (migración 0034): al guardar un plato eliges desayuno, almuerzo, cena o snack, presugerido según la hora. Se ve en la lista de comidas y en Revisión → Día.
+- [x] `[Nuevo]` Contador de ayuno en Nutrición (migración 0034 agrega eaten_at): horas desde tu última comida con meta elegible (12, 14, 16, 18 h) y barra. Se alimenta solo de tus comidas, con nota amable de que no le sirve a todo el mundo.
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
 ## Bloque G, al final

@@ -4,6 +4,7 @@ import { Menu, Palette, Settings } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { NotifBell } from "./NotifBell";
 import { ThemePicker } from "./ThemePicker";
+import { Pomodoro } from "./Pomodoro";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
@@ -51,6 +52,7 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+      <Pomodoro />
       {pickerOpen && <ThemePicker onClose={() => setPickerOpen(false)} />}
     </div>
   );
