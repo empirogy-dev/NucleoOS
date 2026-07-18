@@ -3,6 +3,8 @@
 // Nueve por sección (tres filas de tres tarjetas), cada uno con el
 // porqué y sus tres ideas para llevar.
 
+import { hoyLocal } from "../lib/fechas";
+
 export type ViaLibro = "tdah" | "habitos" | "emociones" | "relaciones" | "finanzas" | "proposito" | "espiritualidad";
 
 export const VIAS_LIBRO: Array<{ key: ViaLibro; label: string }> = [
@@ -869,18 +871,36 @@ export type EstadoLibro = "quiero" | "leido";
 
 const LS_ESTADOS = "nucleoos-libros-estado";
 
-export function estadosLibros(): Record<string, EstadoLibro> {
+// Cada marca guarda también su fecha, para que "Libros terminados" pueda
+// alimentar metas de Aprendizaje. El formato viejo (solo el estado) se
+// sigue leyendo: esas marcas cuentan como sin fecha, a tu favor.
+type MarcaLibro = EstadoLibro | { e: EstadoLibro; f: string };
+
+function marcasCrudas(): Record<string, MarcaLibro> {
   try {
     const raw = localStorage.getItem(LS_ESTADOS);
-    if (raw) return JSON.parse(raw) as Record<string, EstadoLibro>;
+    if (raw) return JSON.parse(raw) as Record<string, MarcaLibro>;
   } catch { /* nada */ }
   return {};
 }
 
+export function estadosLibros(): Record<string, EstadoLibro> {
+  const out: Record<string, EstadoLibro> = {};
+  for (const [id, m] of Object.entries(marcasCrudas())) out[id] = typeof m === "string" ? m : m.e;
+  return out;
+}
+
+/** Libros marcados como leídos, con la fecha de la marca si existe. */
+export function librosLeidos(): Array<{ id: string; fecha: string | null }> {
+  return Object.entries(marcasCrudas())
+    .filter(([, m]) => (typeof m === "string" ? m : m.e) === "leido")
+    .map(([id, m]) => ({ id, fecha: typeof m === "string" ? null : m.f }));
+}
+
 export function marcarLibro(id: string, estado: EstadoLibro | null): Record<string, EstadoLibro> {
-  const todos = estadosLibros();
+  const todos = marcasCrudas();
   if (estado === null) delete todos[id];
-  else todos[id] = estado;
+  else todos[id] = { e: estado, f: hoyLocal() };
   localStorage.setItem(LS_ESTADOS, JSON.stringify(todos));
-  return todos;
+  return estadosLibros();
 }

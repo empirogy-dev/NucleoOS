@@ -19,6 +19,7 @@ import { getHealthProfile, type HealthProfile } from "../salud/data";
 import { listProjects, type Project } from "../trabajo/data";
 import { SOBRIETY_MILESTONES, daysSince, humanizeDays, listAppointments, listSobriety, type Appointment, type Sobriety } from "../salud/data";
 import { listEntries, type Entry } from "../aprendizaje/data";
+import { librosLeidos } from "../aprendizaje/biblioteca";
 import { listRelLogs, listRelationships, needsReconnect, type RelLog, type Relationship } from "../relaciones/data";
 import { TareasHoy } from "../tareas/TareasHoy";
 import { UnPaso } from "../components/UnPaso";
@@ -155,7 +156,7 @@ export function Inicio() {
   const avancesMes = activity.filter((a) => a.date.startsWith(month)).length;
   const metasEnCamino = objectives.filter((o) => o.status === "en_camino").length;
   // Las fuentes del progreso automático: las mismas ventanas que Dirección.
-  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF, focusBlocks: focusBlocksF, goals: goalsF };
+  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF, focusBlocks: focusBlocksF, goals: goalsF, relLogs, libros: librosLeidos() };
   const globalPct = objectives.length
     ? Math.round(objectives.reduce((s, o) => s + progresoDe(o, fuentes), 0) / objectives.length)
     : null;

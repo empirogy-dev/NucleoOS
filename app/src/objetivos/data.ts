@@ -6,6 +6,8 @@ import { listRetoLogs, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
 import { listWorkLogs, type WorkLog } from "../trabajo/data";
 import { listFocusBlocks, type FocusBlock } from "../foco/data";
+import { listRelLogs, type RelLog } from "../relaciones/data";
+import { librosLeidos } from "../aprendizaje/biblioteca";
 
 export type ObjectiveStatus = "en_camino" | "en_riesgo" | "lograda" | "pausada";
 
@@ -44,25 +46,31 @@ export const METRICAS_AUTO = [
   { key: "trabajo_horas", label: "Horas de un proyecto", unidad: "horas", singular: "hora", fuente: "las jornadas de ese proyecto en Trabajo" },
   { key: "foco_minutos", label: "Minutos de foco (pomodoro)", unidad: "min", singular: "minuto", fuente: "tus bloques de foco ligados a ese proyecto o a Aprendizaje" },
   { key: "ahorro_meta", label: "Dinero de una meta de ahorro", unidad: "aportado", singular: "aporte", fuente: "tus aportes en Finanzas → Metas" },
+  { key: "rel_momentos", label: "Momentos con una persona", unidad: "momentos", singular: "momento", fuente: "los momentos que registras en Relaciones" },
+  { key: "libros_leidos", label: "Libros terminados", unidad: "libros", singular: "libro", fuente: "la biblioteca de Aprendizaje" },
 ] as const;
 
-/** Qué métricas le calzan primero a cada área: una meta de Finanzas ofrece
- *  ahorro antes que sesiones de movimiento. El resto queda disponible abajo. */
+/** Qué métricas calzan con cada área: una meta de Relaciones se alimenta de
+ *  momentos con tus personas, no de sesiones de gimnasio. Las universales
+ *  (hábitos, retos y avances) quedan disponibles al final en todas, porque
+ *  cualquier meta puede apoyarse en un hábito. Una meta general ofrece todo. */
 export function metricasParaArea(area: string | null): Array<(typeof METRICAS_AUTO)[number]> {
-  const prioridad: Record<string, string[]> = {
-    finanzas: ["ahorro_meta", "area_avances"],
-    salud: ["mov_sesiones", "mov_minutos", "habito_marcas", "reto_dias", "mente_sesiones"],
-    habitos: ["habito_marcas", "reto_dias", "mov_sesiones"],
-    trabajo: ["trabajo_horas", "foco_minutos", "area_avances"],
-    aprendizaje: ["foco_minutos", "trabajo_horas", "area_avances", "habito_marcas"],
-    relaciones: ["area_avances", "habito_marcas"],
+  const UNIVERSALES = ["habito_marcas", "reto_dias", "area_avances"];
+  const propias: Record<string, string[]> = {
+    salud: ["mov_sesiones", "mov_minutos", "mente_sesiones"],
+    habitos: ["habito_marcas", "reto_dias", "mov_sesiones", "mov_minutos"],
+    relaciones: ["rel_momentos"],
+    trabajo: ["trabajo_horas", "foco_minutos"],
+    finanzas: ["ahorro_meta"],
+    aprendizaje: ["foco_minutos", "libros_leidos", "mente_sesiones"],
+    objetivos: ["area_avances"],
   };
-  const antes = prioridad[area ?? ""] ?? [];
-  return [...METRICAS_AUTO].sort((a, b) => {
-    const ia = antes.indexOf(a.key);
-    const ib = antes.indexOf(b.key);
-    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-  });
+  const antes = propias[area ?? ""];
+  if (antes === undefined) return [...METRICAS_AUTO]; // meta general: todo disponible
+  const orden = [...new Set([...antes, ...UNIVERSALES])];
+  return orden
+    .map((k) => METRICAS_AUTO.find((m) => m.key === k))
+    .filter((m): m is (typeof METRICAS_AUTO)[number] => Boolean(m));
 }
 
 /** Para "foco_minutos", auto_ref guarda a qué se liga: "p:<id de proyecto>" o "a:aprendizaje". */
@@ -85,6 +93,8 @@ export interface Fuentes {
   workLogs: WorkLog[];
   focusBlocks: FocusBlock[];
   goals: Goal[];
+  relLogs: RelLog[];
+  libros: Array<{ id: string; fecha: string | null }>;
 }
 
 /** Las fuentes completas del progreso automático, con las MISMAS ventanas
@@ -98,7 +108,7 @@ export async function cargarFuentes(): Promise<Fuentes> {
       return fallback;
     }
   };
-  const [ejercicio, habitLogs, retoLogs, avances, workLogs, focusBlocks, goals] = await Promise.all([
+  const [ejercicio, habitLogs, retoLogs, avances, workLogs, focusBlocks, goals, relLogs] = await Promise.all([
     seguro(() => listExercise(365), [] as ExerciseLog[]),
     seguro(() => listHabitLogs(), [] as HabitLog[]),
     seguro(() => listRetoLogs(), [] as RetoLog[]),
@@ -106,8 +116,9 @@ export async function cargarFuentes(): Promise<Fuentes> {
     seguro(() => listWorkLogs(365), [] as WorkLog[]),
     seguro(() => listFocusBlocks(365), [] as FocusBlock[]),
     seguro(() => listGoals(), [] as Goal[]),
+    seguro(() => listRelLogs(), [] as RelLog[]),
   ]);
-  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs, focusBlocks, goals };
+  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs, focusBlocks, goals, relLogs, libros: librosLeidos() };
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
@@ -138,6 +149,14 @@ export function valorAuto(o: Objective, f: Fuentes): number {
   if (o.auto_metric === "ahorro_meta") {
     const g = f.goals.find((x) => x.id === o.auto_ref);
     return g ? Math.round(Number(g.current_amount)) : 0;
+  }
+  if (o.auto_metric === "rel_momentos") {
+    // Sin auto_ref cuenta con cualquier persona; con él, solo con esa.
+    return f.relLogs.filter((l) => l.date >= desde && (!o.auto_ref || l.relationship_id === o.auto_ref)).length;
+  }
+  if (o.auto_metric === "libros_leidos") {
+    // Las marcas antiguas no guardaban fecha: cuentan igual, a tu favor.
+    return f.libros.filter((l) => l.fecha === null || l.fecha >= desde).length;
   }
   return 0;
 }

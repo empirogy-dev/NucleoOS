@@ -11,6 +11,8 @@ import { listSesiones, type Sesion } from "../mente/practicas";
 import { listProjects, listWorkLogs, type Project, type WorkLog } from "../trabajo/data";
 import { listFocusBlocks, type FocusBlock } from "../foco/data";
 import { listGoals } from "../finanzas/data";
+import { listRelationships, listRelLogs, type Relationship, type RelLog } from "../relaciones/data";
+import { librosLeidos } from "../aprendizaje/biblioteca";
 import { Selector } from "../components/Selector";
 import {
   METRICAS_AUTO,
@@ -74,6 +76,8 @@ export function ObjetivosPage() {
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [focusBlocks, setFocusBlocks] = useState<FocusBlock[]>([]);
   const [goals, setGoals] = useState<Fuentes["goals"]>([]);
+  const [personas, setPersonas] = useState<Relationship[]>([]);
+  const [relLogs, setRelLogs] = useState<RelLog[]>([]);
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -133,6 +137,13 @@ export function ObjetivosPage() {
     } catch {
       /* sin Finanzas migrado, la métrica de ahorro no está disponible */
     }
+    try {
+      const [pe, pl] = await Promise.all([listRelationships(), listRelLogs()]);
+      setPersonas(pe);
+      setRelLogs(pl);
+    } catch {
+      /* sin Relaciones migrado, la métrica de momentos no está disponible */
+    }
     setSesiones(listSesiones());
     setLoading(false);
   }, []);
@@ -144,7 +155,7 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
-  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs, focusBlocks, goals };
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs, focusBlocks, goals, relLogs, libros: librosLeidos() };
   const promedio = activas.length
     ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
@@ -212,7 +223,7 @@ export function ObjetivosPage() {
               )}
               {activas.map((o) => (
                 <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null}
-                  fuentes={fuentes} habitos={habitos} retos={retos} proyectos={proyectos} onChanged={() => void reload()} />
+                  fuentes={fuentes} habitos={habitos} retos={retos} proyectos={proyectos} personas={personas} onChanged={() => void reload()} />
               ))}
               <GuiaDireccion />
             </div>
@@ -336,13 +347,14 @@ function Head() {
   );
 }
 
-function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged }: {
+function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas, onChanged }: {
   o: Objective;
   sueno: Dream | null;
   fuentes: Fuentes;
   habitos: Habit[];
   retos: Reto[];
   proyectos: Project[];
+  personas: Relationship[];
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -364,7 +376,13 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
               if (ref === "a:aprendizaje") return { icon: "🎯📚", name: "Aprendizaje" };
               return null;
             })()
-          : null;
+          : o.auto_metric === "rel_momentos"
+            ? (() => {
+                if (!o.auto_ref) return { icon: "💞", name: "cualquier persona" };
+                const p = personas.find((x) => x.id === o.auto_ref);
+                return p ? { icon: "💞", name: p.name } : null;
+              })()
+            : null;
   const valor = esAuto ? valorAuto(o, fuentes) : 0;
   const pct = progresoDe(o, fuentes);
   const tone = STATUS_TONES[o.status];
@@ -423,7 +441,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
                       ? `⚡ ${Math.round(Number(g.current_amount)).toLocaleString("es-CL")} de ${Math.round(Number(g.target_amount)).toLocaleString("es-CL")} aportados en ${g.icon ?? "🎯"} ${g.name}`
                       : "⚡ conectada a una meta de ahorro (revisa la conexión)";
                   })()
-                : `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` de ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
+                : `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` ${o.auto_metric === "rel_momentos" ? "con" : "de"} ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
               : hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}
           </span>
           <b className="tnum">{pct}%</b>
@@ -447,7 +465,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos} goals={fuentes.goals}
+          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos} goals={fuentes.goals} personas={personas}
             activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}${o.auto_metric !== "ahorro_meta" && o.auto_target ? `, a ${o.auto_target} por semana` : ""}` : null}
             onChanged={onChanged} />
           {o.milestones.map((m) => (
@@ -540,7 +558,7 @@ function GuiaDireccion() {
 }
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
-function AutoConfig({ o, habitos, retos, proyectos, goals, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; goals: Fuentes["goals"]; activaLabel: string | null; onChanged: () => void }) {
+function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; goals: Fuentes["goals"]; personas: Relationship[]; activaLabel: string | null; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
   const [ref, setRef] = useState(o.auto_ref ?? "");
@@ -573,7 +591,7 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, activaLabel, onChange
       await updateObjective(o.id, {
         auto_metric: metric || null,
         auto_target: metric && metric !== "ahorro_meta" && target ? Number(target) : null,
-        auto_ref: ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta"].includes(metric) ? ref : null,
+        auto_ref: ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta", "rel_momentos"].includes(metric) ? (ref || null) : null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -634,6 +652,13 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, activaLabel, onChange
               onChange={setRef} />
           </div>
         )}
+        {metric === "rel_momentos" && (
+          <div style={{ flex: "1 1 170px", minWidth: 150 }}>
+            <Selector compacto value={ref} ariaLabel="Persona cuyos momentos alimentan esta meta"
+              opciones={[{ value: "", label: "💞 Con cualquier persona" }, ...personas.map((p) => ({ value: p.id, label: `💞 ${p.name}` }))]}
+              onChange={setRef} />
+          </div>
+        )}
         {metric && metric !== "ahorro_meta" && (
           <>
             <input className="input-inline" type="number" min={1} max={10000} value={target} placeholder="3"
@@ -648,6 +673,16 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, activaLabel, onChange
       {metric === "ahorro_meta" && (
         <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
           El porcentaje será el dinero aportado sobre el objetivo de esa meta de ahorro. Aportas en Finanzas → Metas y esta meta avanza sola.
+        </p>
+      )}
+      {metric === "rel_momentos" && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+          Cada interacción que registres en Relaciones (una llamada, una visita, un mensaje) avanza esta meta. Si eliges una persona, solo cuentan los momentos con ella.
+        </p>
+      )}
+      {metric === "libros_leidos" && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+          Cada libro que marques como leído en Aprendizaje → Biblioteca avanza esta meta.
         </p>
       )}
       {metric && target && Number(target) > 0 && (() => {
