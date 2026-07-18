@@ -9,9 +9,9 @@ import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
 import { TablesMissingError, listAccounts, listReminders, listTransactions } from "../finanzas/data";
 import { daysUntil, dueLabel, fmtMoney, nextOccurrence, type Account, type Reminder, type Tx } from "../finanzas/types";
-import { METRICAS_AUTO, listActivity, listObjectives, metaAutoEsperado, objectiveProgress, progresoDe, valorAuto, type ActivityEntry, type Fuentes, type Objective } from "../objetivos/data";
-import { listExercise, listHabitLogs, listHabits, listRoutine, sleepHours, type ExerciseLog, type Habit, type HabitLog, type RoutineLog } from "../habitos/data";
-import { listRetoLogs, type RetoLog } from "../habitos/retos";
+import { METRICAS_AUTO, cargarFuentes, listObjectives, metaAutoEsperado, objectiveProgress, progresoDe, valorAuto, type ActivityEntry, type Fuentes, type Objective } from "../objetivos/data";
+import { listHabitLogs, listHabits, listRoutine, sleepHours, type ExerciseLog, type Habit, type HabitLog, type RoutineLog } from "../habitos/data";
+import { type RetoLog } from "../habitos/retos";
 import { listSesiones } from "../mente/practicas";
 import { META_AGUA_VASOS, listEnergy, metaProteina, type EnergyLog } from "../salud/energia";
 import { listMeals, totalesDia, type Meal } from "../salud/comidas";
@@ -71,13 +71,19 @@ export function Inicio() {
       if (e instanceof TablesMissingError) setFinReady(false);
     }
     try {
-      const [act, obj] = await Promise.all([listActivity(10), listObjectives()]);
-      setActivity(act);
-      setObjectives(obj);
+      setObjectives(await listObjectives());
       setObjReady(true);
     } catch {
       setObjReady(false);
     }
+    // Las fuentes del progreso automático se cargan con las mismas ventanas
+    // que usa Dirección: la brújula y las metas deben decir lo mismo.
+    try {
+      const f = await cargarFuentes();
+      setActivity(f.avances);
+      setExercise(f.ejercicio);
+      setRetoLogs(f.retoLogs);
+    } catch { /* fuentes opcionales */ }
     try {
       const [h, hl] = await Promise.all([listHabits(), listHabitLogs()]);
       setHabits(h);
@@ -114,11 +120,9 @@ export function Inicio() {
     } catch {
       setRelReady(false);
     }
-    // Pulso del día y brújula (cada fuente es opcional, sin drama si falta).
+    // Pulso del día (cada fuente es opcional, sin drama si falta).
     try {
-      const [ru, ej] = await Promise.all([listRoutine(3), listExercise(7)]);
-      setRoutine(ru);
-      setExercise(ej);
+      setRoutine(await listRoutine(3));
     } catch { /* sin tablas de rutina */ }
     try {
       setEnergy(await listEnergy(2));
@@ -126,9 +130,6 @@ export function Inicio() {
     try {
       setMeals(await listMeals(2));
     } catch { /* sin la 0020 */ }
-    try {
-      setRetoLogs(await listRetoLogs());
-    } catch { /* sin la 0022 */ }
     try {
       setPerfil(await getHealthProfile());
     } catch { /* sin ficha */ }

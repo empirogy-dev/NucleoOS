@@ -1,8 +1,8 @@
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
-import type { ExerciseLog, HabitLog } from "../habitos/data";
-import type { RetoLog } from "../habitos/retos";
-import type { Sesion } from "../mente/practicas";
+import { listExercise, listHabitLogs, type ExerciseLog, type HabitLog } from "../habitos/data";
+import { listRetoLogs, type RetoLog } from "../habitos/retos";
+import { listSesiones, type Sesion } from "../mente/practicas";
 
 export type ObjectiveStatus = "en_camino" | "en_riesgo" | "lograda" | "pausada";
 
@@ -49,6 +49,26 @@ export interface Fuentes {
   habitLogs: HabitLog[];
   retoLogs: RetoLog[];
   avances: ActivityEntry[];
+}
+
+/** Las fuentes completas del progreso automático, con las MISMAS ventanas
+ *  en todas las páginas: si el Inicio y Dirección miran datos distintos,
+ *  la misma meta muestra porcentajes distintos y se pierde la confianza. */
+export async function cargarFuentes(): Promise<Fuentes> {
+  const seguro = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      return await fn();
+    } catch {
+      return fallback;
+    }
+  };
+  const [ejercicio, habitLogs, retoLogs, avances] = await Promise.all([
+    seguro(() => listExercise(365), [] as ExerciseLog[]),
+    seguro(() => listHabitLogs(), [] as HabitLog[]),
+    seguro(() => listRetoLogs(), [] as RetoLog[]),
+    seguro(() => listActivity(500), [] as ActivityEntry[]),
+  ]);
+  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances };
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
