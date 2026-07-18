@@ -8,6 +8,7 @@ import { listDreams, type Dream } from "../vision/suenos";
 import { listExercise, listHabitLogs, listHabits, type ExerciseLog, type Habit, type HabitLog } from "../habitos/data";
 import { listRetoLogs, listRetos, type Reto, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
+import { listProjects, listWorkLogs, type Project, type WorkLog } from "../trabajo/data";
 import {
   METRICAS_AUTO,
   PLAZO_DEFECTO_DIAS,
@@ -64,6 +65,8 @@ export function ObjetivosPage() {
   const [habitos, setHabitos] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [retos, setRetos] = useState<Reto[]>([]);
+  const [proyectos, setProyectos] = useState<Project[]>([]);
+  const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -106,6 +109,13 @@ export function ObjetivosPage() {
     } catch {
       /* sin tablas de retos, la métrica de reto no está disponible */
     }
+    try {
+      const [p, w] = await Promise.all([listProjects(), listWorkLogs(365)]);
+      setProyectos(p);
+      setWorkLogs(w);
+    } catch {
+      /* sin tablas de trabajo, la métrica de horas no está disponible */
+    }
     setSesiones(listSesiones());
     setLoading(false);
   }, []);
@@ -117,7 +127,7 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
-  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity };
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs };
   const promedio = activas.length
     ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
@@ -185,7 +195,7 @@ export function ObjetivosPage() {
               )}
               {activas.map((o) => (
                 <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null}
-                  fuentes={fuentes} habitos={habitos} retos={retos} onChanged={() => void reload()} />
+                  fuentes={fuentes} habitos={habitos} retos={retos} proyectos={proyectos} onChanged={() => void reload()} />
               ))}
               <GuiaDireccion />
             </div>
@@ -308,12 +318,13 @@ function Head() {
   );
 }
 
-function ObjectiveCard({ o, sueno, fuentes, habitos, retos, onChanged }: {
+function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, onChanged }: {
   o: Objective;
   sueno: Dream | null;
   fuentes: Fuentes;
   habitos: Habit[];
   retos: Reto[];
+  proyectos: Project[];
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -326,7 +337,9 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, onChanged }: {
     ? habitos.find((h) => h.id === o.auto_ref) ?? null
     : o.auto_metric === "reto_dias"
       ? (() => { const r = retos.find((x) => x.id === o.auto_ref); return r ? { icon: r.icon, name: r.title } : null; })()
-      : null;
+      : o.auto_metric === "trabajo_horas"
+        ? (() => { const p = proyectos.find((x) => x.id === o.auto_ref); return p ? { icon: "💼", name: p.name } : null; })()
+        : null;
   const valor = esAuto ? valorAuto(o, fuentes) : 0;
   const pct = progresoDe(o, fuentes);
   const tone = STATUS_TONES[o.status];
@@ -402,7 +415,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, onChanged }: {
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-          <AutoConfig o={o} habitos={habitos} retos={retos} onChanged={onChanged} />
+          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos} onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
               <span style={{ flex: 1, fontSize: 13.5, color: m.progress >= 100 ? "var(--muted)" : "var(--ink-soft)", textDecoration: m.progress >= 100 ? "line-through" : "none" }}>
@@ -492,7 +505,7 @@ function GuiaDireccion() {
 }
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
-function AutoConfig({ o, habitos, retos, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; onChanged: () => void }) {
+function AutoConfig({ o, habitos, retos, proyectos, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
   const [ref, setRef] = useState(o.auto_ref ?? "");
@@ -509,11 +522,15 @@ function AutoConfig({ o, habitos, retos, onChanged }: { o: Objective; habitos: H
       setErr("Elige qué reto alimenta esta meta.");
       return;
     }
+    if (metric === "trabajo_horas" && !ref) {
+      setErr("Elige qué proyecto de Trabajo alimenta esta meta.");
+      return;
+    }
     try {
       await updateObjective(o.id, {
         auto_metric: metric || null,
         auto_target: metric && target ? Number(target) : null,
-        auto_ref: metric === "habito_marcas" || metric === "reto_dias" ? ref : null,
+        auto_ref: metric === "habito_marcas" || metric === "reto_dias" || metric === "trabajo_horas" ? ref : null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
@@ -546,6 +563,13 @@ function AutoConfig({ o, habitos, retos, onChanged }: { o: Objective; habitos: H
             onChange={(e) => setRef(e.target.value)}>
             <option value="">¿Qué reto?</option>
             {retos.filter((r) => r.status !== "terminado").map((r) => <option key={r.id} value={r.id}>{r.icon} {r.title}</option>)}
+          </select>
+        )}
+        {metric === "trabajo_horas" && (
+          <select className="ms-sel" style={{ padding: "8px 10px" }} value={ref} aria-label="Proyecto que alimenta la meta"
+            onChange={(e) => setRef(e.target.value)}>
+            <option value="">¿Qué proyecto?</option>
+            {proyectos.map((p) => <option key={p.id} value={p.id}>💼 {p.name}</option>)}
           </select>
         )}
         {metric && (

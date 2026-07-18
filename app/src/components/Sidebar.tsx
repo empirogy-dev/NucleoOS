@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { Brain, CalendarDays, Home, LineChart, LogOut, PersonStanding, Sparkles, type LucideIcon } from "lucide-react";
 import { areaPor } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
+import { LogoAtomo } from "./LogoAtomo";
 
 interface Item {
   name: string;
@@ -63,7 +64,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   return (
     <aside className={"sidebar" + (open ? " open" : "")}>
       <div className="brand">
-        <div className="logo">N</div>
+        <div className="logo"><LogoAtomo size={22} /></div>
         <div>
           <b>NucleoOS</b>
           <small>El sistema operativo de tu vida</small>

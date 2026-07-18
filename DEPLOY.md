@@ -1,5 +1,27 @@
 # Checklist de deployment de NucleoOS
 
+## 0. Prueba completa antes de publicar (que todo funcione)
+
+La pasada de verificación, módulo por módulo. Si algo falla o pide migración, se arregla antes de seguir.
+
+- [ ] **Prueba de oro**: registrar una tarea en Inicio y dos vasos de agua en Energía, y verlos en Revisión → Día.
+- [ ] **Inicio**: visión editable, Tareas de hoy (anotar, dividir con ✂️, marcar), "¿No sabes por dónde empezar?", pulso con números, brújula con el mismo % que Dirección, menú de dopamina.
+- [ ] **Pomodoro** ⏱: bloque de 15 min ligado a un proyecto, campana al terminar, el bloque aparece en Trabajo y en Revisión.
+- [ ] **Captura rápida** ⚡: anotar un pensamiento y encontrarlo en Tareas de hoy.
+- [ ] **Energía**: agua, proteína, plato por foto y por texto con su momento, balance calórico con objetivo, ayuno (automático y manual), sueño, ciclo con fase y aviso a la pareja, ficha guardando sexo y actividad.
+- [ ] **Hábitos**: marcar uno (se pinta con su color), cuadrícula anclada al primer día (las marcas viejas se ven), reto con racha, rutina guiada paso a paso, y el automarcado: registrar gimnasio marca el hábito de gimnasio.
+- [ ] **Movimiento**: rutina y workout libre (con la guardia antiduplicados), suma minutos en Energía.
+- [ ] **Mente**: una práctica con campana, sadhana, diario, luna boho e insights.
+- [ ] **Relaciones**: tip a lo ancho, personas arrastrables, guía por vínculo, lazo mutuo (correo, invitación, recordito), libros al pie.
+- [ ] **Dirección**: meta automática avanzando (por movimiento, hábito, reto, avances u horas de proyecto), editable, misma cifra que el Inicio.
+- [ ] **Trabajo**: proyecto con checklist que recalcula el %, jornada registrada, bloques de foco visibles.
+- [ ] **Finanzas**: gasto nuevo, categorizar (sale de la bandeja), dividir con ✂️, presupuestos.
+- [ ] **Aprendizaje**: nota en cuaderno, Biblioteca con estados (Mi lista y Leídos).
+- [ ] **Visión**: collage editable y sueños guardados.
+- [ ] **Revisión**: Día, Semana, Mes, Patrones, lectura con IA y Copiar para Notion.
+- [ ] **Ajustes**: nombre, cumpleaños, registrar un día pasado (banner y volver a hoy), tema, avisos.
+- [ ] **Celular**: foto del plato con cámara, menú hamburguesa, todo en una columna.
+
 > El camino para publicar la app en internet, en orden. La base de datos ya vive en Supabase (proyecto devxnjumkapxqguasgaz); lo que se publica es la app web, y se recomienda Vercel (gratis, ideal para Vite y SPA).
 
 ## 1. Antes de publicar (preparación)

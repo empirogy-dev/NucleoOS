@@ -3,6 +3,7 @@ import { TablesMissingError } from "../finanzas/data";
 import { listExercise, listHabitLogs, type ExerciseLog, type HabitLog } from "../habitos/data";
 import { listRetoLogs, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
+import { listWorkLogs, type WorkLog } from "../trabajo/data";
 
 export type ObjectiveStatus = "en_camino" | "en_riesgo" | "lograda" | "pausada";
 
@@ -38,6 +39,7 @@ export const METRICAS_AUTO = [
   { key: "habito_marcas", label: "Días de un hábito", unidad: "días", singular: "día", fuente: "Hábitos" },
   { key: "reto_dias", label: "Días de un reto", unidad: "días", singular: "día", fuente: "Hábitos, pestaña Retos" },
   { key: "area_avances", label: "Avances registrados en su área", unidad: "avances", singular: "avance", fuente: "el botón Registrar avance de su área" },
+  { key: "trabajo_horas", label: "Horas de un proyecto", unidad: "horas", singular: "hora", fuente: "las jornadas de ese proyecto en Trabajo" },
 ] as const;
 
 export const PLAZO_DEFECTO_DIAS = 90;
@@ -49,6 +51,7 @@ export interface Fuentes {
   habitLogs: HabitLog[];
   retoLogs: RetoLog[];
   avances: ActivityEntry[];
+  workLogs: WorkLog[];
 }
 
 /** Las fuentes completas del progreso automático, con las MISMAS ventanas
@@ -62,13 +65,14 @@ export async function cargarFuentes(): Promise<Fuentes> {
       return fallback;
     }
   };
-  const [ejercicio, habitLogs, retoLogs, avances] = await Promise.all([
+  const [ejercicio, habitLogs, retoLogs, avances, workLogs] = await Promise.all([
     seguro(() => listExercise(365), [] as ExerciseLog[]),
     seguro(() => listHabitLogs(), [] as HabitLog[]),
     seguro(() => listRetoLogs(), [] as RetoLog[]),
     seguro(() => listActivity(500), [] as ActivityEntry[]),
+    seguro(() => listWorkLogs(365), [] as WorkLog[]),
   ]);
-  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances };
+  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs };
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
@@ -81,6 +85,13 @@ export function valorAuto(o: Objective, f: Fuentes): number {
   if (o.auto_metric === "reto_dias") return f.retoLogs.filter((l) => l.challenge_id === o.auto_ref && l.date >= desde).length;
   if (o.auto_metric === "area_avances") {
     return f.avances.filter((a) => a.date >= desde && (o.area === null || a.area === o.area)).length;
+  }
+  if (o.auto_metric === "trabajo_horas") {
+    return Math.round(
+      f.workLogs
+        .filter((w) => w.project_id === o.auto_ref && w.date >= desde && w.hours)
+        .reduce((s, w) => s + Number(w.hours), 0) * 10,
+    ) / 10;
   }
   return 0;
 }

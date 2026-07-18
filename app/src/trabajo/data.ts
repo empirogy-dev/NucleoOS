@@ -125,3 +125,49 @@ export function hoursByProject(logs: WorkLog[]): Map<string, number> {
   }
   return m;
 }
+
+// ---------- Checklist del proyecto (migración 0038) ----------
+// Los pasos marcados calculan solos el porcentaje de avance del proyecto.
+
+export interface ProjectTask {
+  id: string;
+  project_id: string;
+  title: string;
+  done: boolean;
+}
+
+export async function listProjectTasks(): Promise<ProjectTask[]> {
+  const { data, error } = await sb()
+    .from("project_tasks")
+    .select("id,project_id,title,done")
+    .order("created_at");
+  check(error);
+  return (data ?? []) as ProjectTask[];
+}
+
+export async function addProjectTask(project_id: string, title: string): Promise<void> {
+  const { error } = await sb().from("project_tasks").insert({ project_id, title, user_id: await uid() });
+  if (error && /project_tasks|schema cache/i.test(error.message)) {
+    throw new Error("Para el checklist de proyectos falta la migración 0038 (supabase/migrations/0038_proyectos_checklist.sql).");
+  }
+  check(error);
+}
+
+export async function toggleProjectTask(id: string, done: boolean): Promise<void> {
+  const { error } = await sb().from("project_tasks").update({ done }).eq("id", id);
+  check(error);
+}
+
+export async function deleteProjectTask(id: string): Promise<void> {
+  const { error } = await sb().from("project_tasks").delete().eq("id", id);
+  check(error);
+}
+
+/** Con checklist, el avance del proyecto se calcula solo y se guarda. */
+export async function sincronizarProgreso(project_id: string, tasks: ProjectTask[]): Promise<number | null> {
+  const del = tasks.filter((t) => t.project_id === project_id);
+  if (del.length === 0) return null;
+  const pct = Math.round((del.filter((t) => t.done).length / del.length) * 100);
+  await updateProject(project_id, { progress: pct });
+  return pct;
+}

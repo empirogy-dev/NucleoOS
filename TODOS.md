@@ -187,6 +187,10 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Hábitos que se marcan solos: registrar ejercicio marca los hábitos que hablan de entrenar (gimnasio, yoga, caminar...) y completar una práctica de Mente marca los de meditar o respirar. Sin doble trabajo, y Revisión los cuenta.
 - [x] `[Bug]` Las barras de "Tus áreas" del Inicio ignoraban el progreso automático de las metas (usaban solo el manual): con Estar en forma al 9%, Hábitos mostraba 0%. Ahora usan progresoDe con las fuentes completas, verificado en vivo (Hábitos 11%).
 - [x] `[Nuevo]` DEPLOY.md: el checklist completo del deployment (preparación, Supabase, Vercel, post publicación y Fase 4).
+- [x] `[Nuevo]` Checklist por proyecto en Trabajo (migración 0038, project_tasks): pasos concretos que al marcarse recalculan solos el porcentaje del proyecto (el slider manual queda para proyectos sin checklist).
+- [x] `[Nuevo]` Métrica "Horas de un proyecto" (0038 amplía el check): una meta como Estudiar IA se conecta al proyecto Estudiar y avanza con las horas de jornada registradas en Trabajo. Selector de proyecto en la conexión automática de Dirección.
+- [x] `[Nuevo]` Logo nuevo: átomo con núcleo en línea (LogoAtomo.tsx), en el sidebar, el login y el favicon de la pestaña de Chrome (favicon.svg). El núcleo eres tú.
+- [x] `[Nuevo]` DEPLOY.md ahora abre con la "Prueba completa antes de publicar": el checklist módulo por módulo para verificar que todo funcione.
 - [ ] `[Nuevo]` Correos automáticos (Fase 4, con servidor): recordatorios del ciclo a la pareja y recorditos del lazo a quienes aceptaron; hoy salen prellenados desde tu propio correo con un clic.
 - [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas, marca manual de ayuno y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).

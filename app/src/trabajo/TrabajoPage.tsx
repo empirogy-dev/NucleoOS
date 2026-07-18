@@ -6,15 +6,21 @@ import {
   MOODS,
   STATUS_LABELS,
   addProject,
+  addProjectTask,
   addWorkLog,
   deleteProject,
+  deleteProjectTask,
   deleteWorkLog,
   hoursByProject,
   listProjects,
+  listProjectTasks,
   listWorkLogs,
+  sincronizarProgreso,
+  toggleProjectTask,
   updateProject,
   type Project,
   type ProjectStatus,
+  type ProjectTask,
   type WorkLog,
 } from "./data";
 import { abrirPomodoro, listFocusBlocks, type FocusBlock } from "../foco/data";
@@ -44,6 +50,7 @@ export function TrabajoPage() {
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<"project" | "worklog" | null>(null);
   const [focos, setFocos] = useState<FocusBlock[]>([]);
+  const [ptasks, setPtasks] = useState<ProjectTask[]>([]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -62,6 +69,9 @@ export function TrabajoPage() {
     try {
       setFocos(await listFocusBlocks(7));
     } catch { /* sin la 0035, los bloques no se muestran y ya */ }
+    try {
+      setPtasks(await listProjectTasks());
+    } catch { /* sin la 0038, el checklist no aparece y ya */ }
   }, []);
 
   useEffect(() => {
@@ -164,13 +174,19 @@ export function TrabajoPage() {
                       </button>
                     </div>
                     <div className="bar" style={{ margin: "12px 0 0" }}>
-                      <div className="top"><span>avance</span><b className="tnum">{p.progress}%</b></div>
+                      <div className="top">
+                        <span>{ptasks.some((t) => t.project_id === p.id) ? "avance por checklist" : "avance"}</span>
+                        <b className="tnum">{p.progress}%</b>
+                      </div>
                       <div className="track"><div className="fill" style={{ width: `${p.progress}%`, background: "var(--tra)" }} /></div>
                     </div>
-                    <input type="range" min={0} max={100} step={5} defaultValue={p.progress} className="slider"
-                      aria-label="Avance del proyecto"
-                      onMouseUp={async (e) => { await updateProject(p.id, { progress: Number((e.target as HTMLInputElement).value) }); void reload(); }}
-                      onTouchEnd={async (e) => { await updateProject(p.id, { progress: Number((e.target as HTMLInputElement).value) }); void reload(); }} />
+                    {!ptasks.some((t) => t.project_id === p.id) && (
+                      <input type="range" min={0} max={100} step={5} defaultValue={p.progress} className="slider"
+                        aria-label="Avance del proyecto"
+                        onMouseUp={async (e) => { await updateProject(p.id, { progress: Number((e.target as HTMLInputElement).value) }); void reload(); }}
+                        onTouchEnd={async (e) => { await updateProject(p.id, { progress: Number((e.target as HTMLInputElement).value) }); void reload(); }} />
+                    )}
+                    <ChecklistProyecto projectId={p.id} tasks={ptasks} onChanged={() => void reload()} />
                   </div>
                 );
               })}
@@ -210,6 +226,94 @@ export function TrabajoPage() {
 
       {modal === "project" && <ProjectModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
       {modal === "worklog" && <WorkLogModal projects={projects} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
+    </div>
+  );
+}
+
+/** El checklist del proyecto: los pasos marcados calculan el avance solos. */
+function ChecklistProyecto({ projectId, tasks, onChanged }: { projectId: string; tasks: ProjectTask[]; onChanged: () => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [nueva, setNueva] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const del = tasks.filter((t) => t.project_id === projectId);
+  const listas = del.filter((t) => t.done).length;
+
+  async function agregar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nueva.trim()) return;
+    setErr(null);
+    try {
+      await addProjectTask(projectId, nueva.trim());
+      setNueva("");
+      const todas = await listProjectTasks();
+      await sincronizarProgreso(projectId, todas);
+      onChanged();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    }
+  }
+
+  async function marcar(t: ProjectTask) {
+    try {
+      await toggleProjectTask(t.id, !t.done);
+      const todas = await listProjectTasks();
+      await sincronizarProgreso(projectId, todas);
+      onChanged();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    }
+  }
+
+  async function borrar(t: ProjectTask) {
+    try {
+      await deleteProjectTask(t.id);
+      const todas = await listProjectTasks();
+      await sincronizarProgreso(projectId, todas);
+      onChanged();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button className="linklike" onClick={() => setAbierto(!abierto)}>
+        {abierto ? "Ocultar checklist" : del.length > 0 ? `Checklist: ${listas} de ${del.length} pasos` : "＋ Agregar checklist de pasos"}
+      </button>
+      {abierto && (
+        <div style={{ marginTop: 8 }}>
+          {del.map((t) => (
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "5px 0", borderBottom: "1px solid var(--line-soft)" }}>
+              <button
+                aria-label={t.done ? "Desmarcar paso" : "Marcar paso listo"}
+                onClick={() => void marcar(t)}
+                style={{
+                  width: 18, height: 18, borderRadius: 6, cursor: "pointer", flex: "none",
+                  border: `1.5px solid ${t.done ? "var(--tra)" : "var(--line)"}`,
+                  background: t.done ? "var(--tra)" : "transparent",
+                  color: "#fff", fontSize: 10, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                {t.done ? "✓" : ""}
+              </button>
+              <span style={{ flex: 1, fontSize: 13, color: t.done ? "var(--muted)" : "var(--ink)", textDecoration: t.done ? "line-through" : "none" }}>
+                {t.title}
+              </span>
+              <button className="xdel" aria-label="Eliminar paso" style={{ width: 22, height: 22 }} onClick={() => void borrar(t)}>
+                <Trash2 size={11} />
+              </button>
+            </div>
+          ))}
+          <form onSubmit={agregar} style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <input className="input-inline" style={{ flex: 1 }} value={nueva} onChange={(e) => setNueva(e.target.value)}
+              placeholder="Un paso concreto: armar el pitch, estudiar el capítulo 2…" />
+            <button className="btn ghost" type="submit" disabled={!nueva.trim()}>Anotar</button>
+          </form>
+          <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
+            Cada paso marcado recalcula solo el porcentaje del proyecto.
+          </p>
+          {err && <p style={{ fontSize: 12, color: "var(--err)", marginTop: 6 }}>{err}</p>}
+        </div>
+      )}
     </div>
   );
 }

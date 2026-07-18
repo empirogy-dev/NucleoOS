@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { supabaseConfigured } from "../lib/supabase";
+import { LogoAtomo } from "../components/LogoAtomo";
 
 export function Login() {
   const { signIn, signUp } = useAuth();
@@ -27,7 +28,7 @@ export function Login() {
     <div className="auth-wrap">
       <div className="auth">
         <div className="auth-brand">
-          <div className="logo">N</div>
+          <div className="logo"><LogoAtomo size={24} /></div>
           <div>
             <b>NucleoOS</b>
             <small>El sistema operativo de tu vida</small>

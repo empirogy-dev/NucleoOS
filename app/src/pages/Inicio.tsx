@@ -54,6 +54,7 @@ export function Inicio() {
   const [energy, setEnergy] = useState<EnergyLog[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
+  const [workLogsF, setWorkLogsF] = useState<Fuentes["workLogs"]>([]);
   const [perfil, setPerfil] = useState<HealthProfile | null>(null);
 
   const [editingVision, setEditingVision] = useState(false);
@@ -83,6 +84,7 @@ export function Inicio() {
       setActivity(f.avances);
       setExercise(f.ejercicio);
       setRetoLogs(f.retoLogs);
+      setWorkLogsF(f.workLogs);
     } catch { /* fuentes opcionales */ }
     try {
       const [h, hl] = await Promise.all([listHabits(), listHabitLogs()]);
@@ -148,7 +150,7 @@ export function Inicio() {
   const avancesMes = activity.filter((a) => a.date.startsWith(month)).length;
   const metasEnCamino = objectives.filter((o) => o.status === "en_camino").length;
   // Las fuentes del progreso automático: las mismas ventanas que Dirección.
-  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity };
+  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF };
   const globalPct = objectives.length
     ? Math.round(objectives.reduce((s, o) => s + progresoDe(o, fuentes), 0) / objectives.length)
     : null;
