@@ -127,6 +127,9 @@ export function HabitosPage() {
             {/* Checklist de hábitos */}
             <div className="card panel">
               <h3>Hábitos de hoy</h3>
+              <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>
+                El cuadrado grande marca el día de hoy. Los chiquitos son tu calendario: un día cada uno, y puedes tocar cualquiera para marcarlo o desmarcarlo, incluso días pasados.
+              </p>
               {habits.length === 0 && (
                 <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
                   Crea tu primer hábito: meditar, leer, tomar agua, salir a caminar. Lo que quieras cultivar.

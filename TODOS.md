@@ -193,6 +193,8 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` DEPLOY.md ahora abre con la "Prueba completa antes de publicar": el checklist módulo por módulo para verificar que todo funcione.
 - [x] `[Bug]` Revisión mostraba "Dirección y avances" en cero aunque hubo 4 sesiones de gimnasio: ahora el módulo muestra cuánto empujó cada meta automática en el período ("⚡ Estar en forma: +4 sesiones"), verificado en vivo.
 - [x] `[Nuevo]` Sincronización retroactiva de hábitos: al abrir Hábitos o Revisión, los días de ejercicio ya registrados (últimos 60) pintan solos los hábitos de movimiento que existan. Crear "Ir al gimnasio" hoy rescata tu historia completa. Con "Ir al gimnasio 🏋️" agregado a los sugeridos de un clic.
+- [x] `[Bug]` La sincronización de hábitos peleaba con el desmarque manual: si desmarcabas un día pintado por el ejercicio, la siguiente carga lo volvía a marcar. Ahora recuerda lo que ya pintó (memoria local) y nunca insiste sobre algo que desmarcaste. Tu palabra manda. Verificado en vivo.
+- [x] `[Nuevo]` Microcopy en Hábitos: explica que el cuadrado grande marca hoy y los chiquitos son el calendario día a día (tocables, incluso retroactivos).
 - [ ] `[Nuevo]` Correos automáticos (Fase 4, con servidor): recordatorios del ciclo a la pareja y recorditos del lazo a quienes aceptaron; hoy salen prellenados desde tu propio correo con un clic.
 - [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas, marca manual de ayuno y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).

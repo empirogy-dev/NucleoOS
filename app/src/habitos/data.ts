@@ -230,24 +230,40 @@ export const RE_HABITO_MENTE = /medita|mindful|respira|sadhana|journal|diario|gr
 /** Sincroniza hacia atrás: pinta en los hábitos de movimiento los días de
  *  ejercicio ya registrados (últimos 60). Idempotente: solo agrega lo que
  *  falta. Así, crear el hábito "Ir al gimnasio" hoy rescata tu historia. */
+const LS_SYNC_EJERCICIO = "nucleoos-sync-ejercicio";
+
 export async function sincronizarHabitosConEjercicio(): Promise<number> {
   try {
     const [habits, logs, ejercicio] = await Promise.all([listHabits(), listHabitLogs(), listExercise(60)]);
     const deMovimiento = habits.filter((h) => RE_HABITO_MOVIMIENTO.test(h.name.toLowerCase()));
     if (deMovimiento.length === 0 || ejercicio.length === 0) return 0;
     const existentes = new Set(logs.map((l) => `${l.habit_id}|${l.date}`));
+    // Memoria de lo ya sincronizado (o visto marcado): si desmarcas un día
+    // a mano, la sincronización lo respeta y no insiste. Tu palabra manda.
+    let previas: Set<string>;
+    try {
+      previas = new Set(JSON.parse(localStorage.getItem(LS_SYNC_EJERCICIO) ?? "[]") as string[]);
+    } catch {
+      previas = new Set();
+    }
     let nuevos = 0;
     for (const e of ejercicio) {
       for (const h of deMovimiento) {
         const nombre = h.name.toLowerCase();
         if (!(RE_HABITO_MOVIMIENTO.test(nombre) || nombre.includes(e.kind.toLowerCase()))) continue;
         const clave = `${h.id}|${e.date}`;
-        if (existentes.has(clave)) continue;
+        if (previas.has(clave)) continue;
+        if (existentes.has(clave)) {
+          previas.add(clave);
+          continue;
+        }
         await toggleHabit(h.id, e.date, true);
         existentes.add(clave);
+        previas.add(clave);
         nuevos += 1;
       }
     }
+    localStorage.setItem(LS_SYNC_EJERCICIO, JSON.stringify([...previas].slice(-600)));
     return nuevos;
   } catch {
     return 0;
