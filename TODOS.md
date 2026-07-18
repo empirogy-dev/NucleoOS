@@ -191,6 +191,8 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [x] `[Nuevo]` Métrica "Horas de un proyecto" (0038 amplía el check): una meta como Estudiar IA se conecta al proyecto Estudiar y avanza con las horas de jornada registradas en Trabajo. Selector de proyecto en la conexión automática de Dirección.
 - [x] `[Nuevo]` Logo nuevo: átomo con núcleo en línea (LogoAtomo.tsx), en el sidebar, el login y el favicon de la pestaña de Chrome (favicon.svg). El núcleo eres tú.
 - [x] `[Nuevo]` DEPLOY.md ahora abre con la "Prueba completa antes de publicar": el checklist módulo por módulo para verificar que todo funcione.
+- [x] `[Bug]` Revisión mostraba "Dirección y avances" en cero aunque hubo 4 sesiones de gimnasio: ahora el módulo muestra cuánto empujó cada meta automática en el período ("⚡ Estar en forma: +4 sesiones"), verificado en vivo.
+- [x] `[Nuevo]` Sincronización retroactiva de hábitos: al abrir Hábitos o Revisión, los días de ejercicio ya registrados (últimos 60) pintan solos los hábitos de movimiento que existan. Crear "Ir al gimnasio" hoy rescata tu historia completa. Con "Ir al gimnasio 🏋️" agregado a los sugeridos de un clic.
 - [ ] `[Nuevo]` Correos automáticos (Fase 4, con servidor): recordatorios del ciclo a la pareja y recorditos del lazo a quienes aceptaron; hoy salen prellenados desde tu propio correo con un clic.
 - [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas, marca manual de ayuno y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).

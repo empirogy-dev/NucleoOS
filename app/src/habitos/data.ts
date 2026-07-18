@@ -227,6 +227,33 @@ export const RE_HABITO_MOVIMIENTO = /gimnasio|gym|entren|ejercicio|deporte|worko
 /** Palabras de hábitos de mente: se marcan al completar una práctica. */
 export const RE_HABITO_MENTE = /medita|mindful|respira|sadhana|journal|diario|gratitud/i;
 
+/** Sincroniza hacia atrás: pinta en los hábitos de movimiento los días de
+ *  ejercicio ya registrados (últimos 60). Idempotente: solo agrega lo que
+ *  falta. Así, crear el hábito "Ir al gimnasio" hoy rescata tu historia. */
+export async function sincronizarHabitosConEjercicio(): Promise<number> {
+  try {
+    const [habits, logs, ejercicio] = await Promise.all([listHabits(), listHabitLogs(), listExercise(60)]);
+    const deMovimiento = habits.filter((h) => RE_HABITO_MOVIMIENTO.test(h.name.toLowerCase()));
+    if (deMovimiento.length === 0 || ejercicio.length === 0) return 0;
+    const existentes = new Set(logs.map((l) => `${l.habit_id}|${l.date}`));
+    let nuevos = 0;
+    for (const e of ejercicio) {
+      for (const h of deMovimiento) {
+        const nombre = h.name.toLowerCase();
+        if (!(RE_HABITO_MOVIMIENTO.test(nombre) || nombre.includes(e.kind.toLowerCase()))) continue;
+        const clave = `${h.id}|${e.date}`;
+        if (existentes.has(clave)) continue;
+        await toggleHabit(h.id, e.date, true);
+        existentes.add(clave);
+        nuevos += 1;
+      }
+    }
+    return nuevos;
+  } catch {
+    return 0;
+  }
+}
+
 /** ¿Ya hay una sesión de ese tipo registrada en esa fecha? Para avisar antes de duplicar. */
 export async function sesionPrevia(kind: string, date: string): Promise<number | null> {
   try {
@@ -257,6 +284,7 @@ export async function deleteExercise(id: string): Promise<void> {
 
 /** Hábitos sugeridos para estar en paz (pedido de la usuaria). */
 export const HABITOS_DE_PAZ: Array<{ name: string; icon: string; dias: number }> = [
+  { name: "Ir al gimnasio", icon: "🏋️", dias: 28 },
   { name: "Meditar 10 minutos", icon: "🧘", dias: 28 },
   { name: "Caminata consciente", icon: "🚶", dias: 28 },
   { name: "Escribir tres gratitudes", icon: "🙏", dias: 21 },

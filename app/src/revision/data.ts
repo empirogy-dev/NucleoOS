@@ -2,7 +2,8 @@ import { fmtFechaLocal } from "../lib/fechas";
 import { listSesiones } from "../mente/practicas";
 import { listEnergy } from "../salud/energia";
 import { listMeals, momentoDe, totalesDia } from "../salud/comidas";
-import { listExercise, listHabitLogs, listHabits, listRoutine, sleepHours } from "../habitos/data";
+import { listExercise, listHabitLogs, listHabits, listRoutine, sincronizarHabitosConEjercicio, sleepHours } from "../habitos/data";
+import { METRICAS_AUTO, cargarFuentes, listObjectives, type Fuentes, type Objective } from "../objetivos/data";
 import { listRetoLogs, listRetos } from "../habitos/retos";
 import { listCategories, listTransactions } from "../finanzas/data";
 import { listActivity } from "../objetivos/data";
@@ -151,8 +152,9 @@ export async function armarResumen(p: Periodo): Promise<{ modulos: ModuloResumen
     });
   });
 
-  // Hábitos y retos
+  // Hábitos y retos (rescatando primero los días de ejercicio ya hechos)
   await seguro(async () => {
+    await sincronizarHabitosConEjercicio();
     const marcas = (await listHabitLogs()).filter((l) => dentro(l.date)).length;
     let retoMarcas = 0;
     try {
@@ -221,21 +223,29 @@ export async function armarResumen(p: Periodo): Promise<{ modulos: ModuloResumen
     });
   });
 
-  // Dirección, Relaciones y Aprendizaje (avances y vínculos)
+  // Dirección, Relaciones y Aprendizaje (avances, vínculos y lo que empujó cada meta)
   await seguro(async () => {
     const avances = (await listActivity(300)).filter((a) => dentro(a.date));
     let vinculos = 0;
     try {
       vinculos = (await listRelLogs()).filter((l) => dentro(l.date)).length;
     } catch { /* relaciones sin migrar */ }
-    modulos.push({
-      emoji: "🧭", titulo: "Dirección y avances", to: "/objetivos",
-      lineas: [
-        { k: "Avances registrados", v: String(avances.length) },
-        { k: "De aprendizaje", v: String(avances.filter((a) => a.area === "aprendizaje").length) },
-        { k: "Conexiones con personas", v: String(vinculos) },
-      ],
-    });
+    const lineas: LineaResumen[] = [
+      { k: "Avances registrados", v: String(avances.length) },
+      { k: "De aprendizaje", v: String(avances.filter((a) => a.area === "aprendizaje").length) },
+      { k: "Conexiones con personas", v: String(vinculos) },
+    ];
+    // Lo que cada meta automática avanzó en el período: aquí se VE el empuje.
+    try {
+      const [objs, f] = await Promise.all([listObjectives(), cargarFuentes()]);
+      for (const o of objs.filter((x) => x.status === "en_camino" || x.status === "en_riesgo")) {
+        if (!o.auto_metric) continue;
+        const m = METRICAS_AUTO.find((x) => x.key === o.auto_metric);
+        const n = eventosEnPeriodo(o, f, dentro);
+        if (m && n > 0) lineas.push({ k: `⚡ ${o.title}`, v: `+${n} ${m.unidad} en el período` });
+      }
+    } catch { /* sin metas automáticas */ }
+    modulos.push({ emoji: "🧭", titulo: "Dirección y avances", to: "/objetivos", lineas });
   });
 
   // Markdown listo para pegar en Notion o donde quieras.
@@ -251,6 +261,20 @@ export async function armarResumen(p: Periodo): Promise<{ modulos: ModuloResumen
   ].join("\n");
 
   return { modulos, markdown: md };
+}
+
+/** Cuánto empujó una meta automática dentro del período. */
+function eventosEnPeriodo(o: Objective, f: Fuentes, dentro: (d: string) => boolean): number {
+  if (o.auto_metric === "mov_sesiones") return f.ejercicio.filter((e) => dentro(e.date)).length;
+  if (o.auto_metric === "mov_minutos") return f.ejercicio.filter((e) => dentro(e.date)).reduce((s, e) => s + e.minutes, 0);
+  if (o.auto_metric === "mente_sesiones") return f.sesiones.filter((s) => dentro(s.fecha)).length;
+  if (o.auto_metric === "habito_marcas") return f.habitLogs.filter((l) => l.habit_id === o.auto_ref && dentro(l.date)).length;
+  if (o.auto_metric === "reto_dias") return f.retoLogs.filter((l) => l.challenge_id === o.auto_ref && dentro(l.date)).length;
+  if (o.auto_metric === "area_avances") return f.avances.filter((a) => dentro(a.date) && (o.area === null || a.area === o.area)).length;
+  if (o.auto_metric === "trabajo_horas") {
+    return Math.round(f.workLogs.filter((w) => w.project_id === o.auto_ref && dentro(w.date) && w.hours).reduce((s, w) => s + Number(w.hours), 0) * 10) / 10;
+  }
+  return 0;
 }
 
 // ---------- Día: la página de agenda de una fecha ----------

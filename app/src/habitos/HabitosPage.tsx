@@ -2,6 +2,7 @@ import { IconField } from "../components/IconField";
 import { Link } from "react-router-dom";
 import { fechaRegistro, fmtFechaLocal } from "../lib/fechas";
 import { useFechaActiva } from "../fecha/FechaActiva";
+import { sincronizarHabitosConEjercicio } from "./data";
 import { useCallback, useEffect, useState } from "react";
 import { Moon, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -54,6 +55,9 @@ export function HabitosPage() {
     setLoading(true);
     setError(null);
     try {
+      // Antes de leer, la app rescata lo que ya hiciste: días de ejercicio
+      // pasados pintan los hábitos de movimiento (idempotente).
+      await sincronizarHabitosConEjercicio();
       const [h, l, r, e] = await Promise.all([listHabits(), listHabitLogs(), listRoutine(), listExercise()]);
       setHabits(h);
       setLogs(l);
