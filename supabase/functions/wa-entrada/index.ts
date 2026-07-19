@@ -69,8 +69,40 @@ Deno.serve(async (req: Request) => {
   const ok = () => new Response("ok", { status: 200 }); // a Telegram SIEMPRE 200 salvo secret malo
   if (req.method !== "POST") return ok();
 
-  // 1) Seguridad: Telegram manda el secret token que registramos con setWebhook.
   const db = admin();
+  const raw = await req.text();
+
+  // 0) Utilidades de administración, autenticadas con WA_CRON_SECRET.
+  //    Sirven para configurar el webhook de Telegram usando el token que ya
+  //    vive en los secretos del servidor, sin que nadie tenga que copiarlo.
+  const llaveAdmin = (Deno.env.get("WA_CRON_SECRET") ?? "").trim();
+  const auth = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (llaveAdmin && auth === llaveAdmin) {
+    try {
+      const orden = JSON.parse(raw || "{}");
+      const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+      if (!token) return new Response(JSON.stringify({ error: "falta TELEGRAM_BOT_TOKEN" }), { status: 500 });
+
+      if (orden?.accion === "configurar_webhook") {
+        const r = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-entrada`,
+            secret_token: String(orden.secret ?? ""),
+            allowed_updates: ["message"],
+          }),
+        });
+        return new Response(await r.text(), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (orden?.accion === "ver_webhook") {
+        const r = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+        return new Response(await r.text(), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+    } catch { /* si el body no es una orden, sigue el camino normal */ }
+  }
+
+  // 1) Seguridad: Telegram manda el secret token que registramos con setWebhook.
   const secreto = Deno.env.get("TELEGRAM_SECRET");
   if (secreto) {
     const cabecera = req.headers.get("x-telegram-bot-api-secret-token") ?? "";
@@ -80,7 +112,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const body = await req.json();
+    const body = JSON.parse(raw || "{}");
     const m = body?.message;
     // Solo mensajes de chats privados: el bot no participa en grupos.
     if (!m?.chat?.id || m.chat.type !== "private") return ok();
