@@ -16,19 +16,36 @@ function metaGuardada(): number {
   return METAS.includes(v) ? v : 16;
 }
 
-function manualGuardado(): Date | null {
+/** La marca manual guarda el inicio del ayuno Y cuándo la hiciste.
+ *  El formato viejo (solo el ISO del inicio) se sigue leyendo. */
+function manualGuardado(): { inicio: Date; marcadaEn: Date } | null {
   const raw = localStorage.getItem(LS_MANUAL);
   if (!raw) return null;
+  try {
+    const j = JSON.parse(raw) as { i?: string; en?: string };
+    if (j && j.i) {
+      const inicio = new Date(j.i);
+      const marcadaEn = new Date(j.en ?? j.i);
+      if (!isNaN(inicio.getTime())) return { inicio, marcadaEn: isNaN(marcadaEn.getTime()) ? inicio : marcadaEn };
+    }
+  } catch { /* formato viejo: un ISO pelado */ }
   const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
+  return isNaN(d.getTime()) ? null : { inicio: d, marcadaEn: d };
 }
 
-/** La última comida real: el plato registrado más reciente o la marca manual, lo que sea más nuevo. */
+function guardarManual(inicio: Date) {
+  localStorage.setItem(LS_MANUAL, JSON.stringify({ i: inicio.toISOString(), en: new Date().toISOString() }));
+}
+
+/** La última comida real. La marca manual es una corrección explícita:
+ *  si la hiciste DESPUÉS de registrar el último plato, tu palabra manda
+ *  aunque apunte hacia atrás (el plato pudo quedar con la hora en que lo
+ *  anotaste, no la real). Si luego comes algo nuevo, el plato vuelve a mandar. */
 function ultimaComida(meals: Meal[]): Date | null {
   const delPlato = ultimoBocado(meals);
   const manual = manualGuardado();
-  if (delPlato && manual) return delPlato > manual ? delPlato : manual;
-  return delPlato ?? manual;
+  if (delPlato && manual) return manual.marcadaEn > delPlato ? manual.inicio : delPlato;
+  return delPlato ?? manual?.inicio ?? null;
 }
 
 export function AyunoCard({ meals }: { meals: Meal[] }) {
@@ -45,7 +62,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   }, []);
 
   function marcarAhora() {
-    localStorage.setItem(LS_MANUAL, new Date().toISOString());
+    guardarManual(new Date());
     setAhora(Date.now());
     setEditandoHora(false);
   }
@@ -54,7 +71,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
     if (!horaManual || !fechaManual) return;
     const d = new Date(`${fechaManual}T${horaManual}`);
     if (isNaN(d.getTime()) || d.getTime() > Date.now()) return;
-    localStorage.setItem(LS_MANUAL, d.toISOString());
+    guardarManual(d);
     setAhora(Date.now());
     setEditandoHora(false);
     setHoraManual("");
