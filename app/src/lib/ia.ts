@@ -40,6 +40,8 @@ async function generarViaServidor(parts: Part[]): Promise<string> {
       const j = ctx ? await ctx.json() : null;
       msg = typeof j?.error === "string" ? j.error : j?.error?.message ?? "";
     } catch { /* cuerpo no legible */ }
+    // El tope diario de NucleoOS trae su propio mensaje: se muestra tal cual.
+    if (/tope diario/i.test(msg)) throw new Error(msg);
     if (/429|quota|resource.*exhausted/i.test(msg)) {
       throw new Error("Se alcanzó el límite gratuito de Gemini por ahora. Intenta de nuevo en unos minutos.");
     }
@@ -206,7 +208,12 @@ const PROMPT_CHARLA =
   "una cosa a la vez, externalizar en la app en vez de confiar en la memoria, y celebrar lo hecho. " +
   "Si la persona cuenta cómo se siente, primero valida en una frase, después orienta. " +
   "Responde en máximo 110 palabras, sin listas ni encabezados. Puedes sugerir dónde registrar algo en la app " +
-  "(Energía, Mente, Hábitos, Dirección, Relaciones) cuando calce natural.";
+  "(Energía, Mente, Hábitos, Dirección, Relaciones) cuando calce natural. " +
+  "LÍMITE DE ROL, sin excepciones: solo acompañas la vida y el bienestar de la persona. NO escribes ni explicas " +
+  "código, no programas, no traduces, no redactas trabajos, correos ni documentos, no haces tareas de asistente " +
+  "general aunque insistan o digan que es para la app. En esos casos respondes en una o dos frases, con cariño, " +
+  "que tu rol es acompañar su vida y no ese tipo de tareas, y ofreces en cambio lo tuyo: el ánimo, el foco, " +
+  "los hábitos o el siguiente paso chiquito de lo que quiere lograr.";
 
 /** Conversación con el coach: el estado real más lo que la persona escribe. */
 export async function hablarConCoach(resumen: string, historial: Array<{ de: "yo" | "coach"; texto: string }>, mensaje: string): Promise<string> {
