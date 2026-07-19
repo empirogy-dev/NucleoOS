@@ -890,11 +890,15 @@ export function estadosLibros(): Record<string, EstadoLibro> {
   return out;
 }
 
-/** Libros marcados como leídos, con la fecha de la marca si existe. */
-export function librosLeidos(): Array<{ id: string; fecha: string | null }> {
+/** Libros marcados como leídos, con la fecha de la marca si existe y su vía. */
+export function librosLeidos(): Array<{ id: string; fecha: string | null; via: ViaLibro | null }> {
   return Object.entries(marcasCrudas())
     .filter(([, m]) => (typeof m === "string" ? m : m.e) === "leido")
-    .map(([id, m]) => ({ id, fecha: typeof m === "string" ? null : m.f }));
+    .map(([id, m]) => ({
+      id,
+      fecha: typeof m === "string" ? null : m.f,
+      via: LIBROS.find((l) => l.id === id)?.via ?? null,
+    }));
 }
 
 export function marcarLibro(id: string, estado: EstadoLibro | null): Record<string, EstadoLibro> {

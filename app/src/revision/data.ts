@@ -285,7 +285,11 @@ function eventosEnPeriodo(o: Objective, f: Fuentes, dentro: (d: string) => boole
     return f.relLogs.filter((l) => dentro(l.date) && (!o.auto_ref || l.relationship_id === o.auto_ref)).length;
   }
   if (o.auto_metric === "libros_leidos") {
-    return f.libros.filter((l) => l.fecha !== null && dentro(l.fecha)).length;
+    const ref = o.auto_ref ?? "";
+    return f.libros
+      .filter((l) => l.fecha !== null && dentro(l.fecha))
+      .filter((l) => (ref.startsWith("v:") ? l.via === ref.slice(2) : true))
+      .length;
   }
   return 0;
 }

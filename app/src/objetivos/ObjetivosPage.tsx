@@ -12,7 +12,7 @@ import { listProjects, listWorkLogs, type Project, type WorkLog } from "../traba
 import { listFocusBlocks, type FocusBlock } from "../foco/data";
 import { listGoals } from "../finanzas/data";
 import { listRelationships, listRelLogs, type Relationship, type RelLog } from "../relaciones/data";
-import { librosLeidos } from "../aprendizaje/biblioteca";
+import { VIAS_LIBRO, librosLeidos } from "../aprendizaje/biblioteca";
 import { Selector } from "../components/Selector";
 import {
   METRICAS_AUTO,
@@ -382,7 +382,13 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
                 const p = personas.find((x) => x.id === o.auto_ref);
                 return p ? { icon: "💞", name: p.name } : null;
               })()
-            : null;
+            : o.auto_metric === "libros_leidos"
+              ? (() => {
+                  const ref = o.auto_ref ?? "";
+                  if (ref.startsWith("v:")) { const v = VIAS_LIBRO.find((x) => x.key === ref.slice(2)); return v ? { icon: "📚", name: v.label } : null; }
+                  return { icon: "📚", name: "la biblioteca" };
+                })()
+              : null;
   const valor = esAuto ? valorAuto(o, fuentes) : 0;
   const pct = progresoDe(o, fuentes);
   const tone = STATUS_TONES[o.status];
@@ -441,7 +447,9 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
                       ? `⚡ ${Math.round(Number(g.current_amount)).toLocaleString("es-CL")} de ${Math.round(Number(g.target_amount)).toLocaleString("es-CL")} aportados en ${g.icon ?? "🎯"} ${g.name}`
                       : "⚡ conectada a una meta de ahorro (revisa la conexión)";
                   })()
-                : `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` ${o.auto_metric === "rel_momentos" ? "con" : "de"} ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
+                : o.auto_metric === "libros_leidos"
+                  ? `⚡ ${valor} de ${esperado} ${metrica.unidad}${habitoDe ? ` de ${habitoDe.icon} ${habitoDe.name}` : ""}`
+                  : `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` ${o.auto_metric === "rel_momentos" ? "con" : "de"} ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
               : hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}
           </span>
           <b className="tnum">{pct}%</b>
@@ -466,7 +474,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
           <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos} goals={fuentes.goals} personas={personas}
-            activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}${o.auto_metric !== "ahorro_meta" && o.auto_target ? `, a ${o.auto_target} por semana` : ""}` : null}
+            activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}${o.auto_metric === "libros_leidos" && o.auto_target ? `, ${o.auto_target} en total` : o.auto_metric !== "ahorro_meta" && o.auto_target ? `, a ${o.auto_target} por semana` : ""}` : null}
             onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
@@ -595,6 +603,10 @@ function SelectorDeRef({ metric, refVal, onRef, cx, compacto }: { metric: string
     return <Selector {...props} ariaLabel="Persona cuyos momentos alimentan esta meta"
       opciones={[{ value: "", label: "💞 Con cualquier persona" }, ...cx.personas.map((p) => ({ value: p.id, label: `💞 ${p.name}` }))]} />;
   }
+  if (metric === "libros_leidos") {
+    return <Selector {...props} ariaLabel="Libros que alimentan esta meta"
+      opciones={[{ value: "", label: "📚 Cualquier libro de la biblioteca" }, ...VIAS_LIBRO.map((v) => ({ value: `v:${v.key}`, label: `📚 Los de ${v.label}` }))]} />;
+  }
   return null;
 }
 
@@ -608,7 +620,7 @@ function faltaEnConexion(metric: string, ref: string): string | null {
   return null;
 }
 
-const METRICAS_CON_REF = ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta", "rel_momentos"];
+const METRICAS_CON_REF = ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta", "rel_momentos", "libros_leidos"];
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
 function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; goals: Fuentes["goals"]; personas: Relationship[]; activaLabel: string | null; onChanged: () => void }) {
@@ -664,9 +676,9 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
         {metric && metric !== "ahorro_meta" && (
           <>
             <input className="input-inline" type="number" min={1} max={10000} value={target} placeholder="3"
-              aria-label="Ritmo por semana" style={{ maxWidth: 80, flex: "none" }}
+              aria-label={metric === "libros_leidos" ? "Libros en total" : "Ritmo por semana"} style={{ maxWidth: 80, flex: "none" }}
               onChange={(e) => setTarget(e.target.value)} />
-            <span style={{ fontSize: 12.5, color: "var(--muted)" }}>por semana</span>
+            <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{metric === "libros_leidos" ? "libros en total" : "por semana"}</span>
           </>
         )}
         <button className="btn ghost" type="button" onClick={() => void guardar()}>Guardar</button>
@@ -684,6 +696,13 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
         const m = METRICAS_AUTO.find((x) => x.key === metric);
         const esperado = metaAutoEsperado({ ...o, auto_metric: metric, auto_target: Number(target) });
         if (!m || !esperado) return null;
+        if (metric === "libros_leidos") {
+          return (
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6, lineHeight: 1.5 }}>
+              Son {esperado} {esperado === 1 ? "libro" : "libros"} en total: cada libro que termines avanza ≈{Math.max(0.1, Math.round((100 / esperado) * 10) / 10)}%. Una página a la vez.
+            </p>
+          );
+        }
         return (
           <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6, lineHeight: 1.5 }}>
             Con tu plazo{o.deadline ? ` hasta el ${o.deadline}` : ` (${PLAZO_DEFECTO_DIAS} días por defecto, edita la meta y ponle fecha límite para afinarlo)`},
@@ -789,7 +808,7 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
               opciones={[{ value: "", label: "Nada, progreso manual o por pasos" }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: m.label }))]}
               onChange={(v) => { setMetric(v); setRef(""); }} /></div>
           {metric && metric !== "ahorro_meta" && (
-            <div className="field" style={{ maxWidth: 120 }}><label>Por semana</label>
+            <div className="field" style={{ maxWidth: 120 }}><label>{metric === "libros_leidos" ? "Libros en total" : "Por semana"}</label>
               <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="3" /></div>
           )}
         </div>
@@ -802,7 +821,7 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
         {metric && (
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
             💡 Se alimenta de {METRICAS_AUTO.find((m) => m.key === metric)?.fuente}.
-            {metric !== "ahorro_meta" && " Con la fecha límite, la meta calcula el total del plazo y cada registro real avanza su porcentaje, un día a la vez."}
+            {metric !== "ahorro_meta" && metric !== "libros_leidos" && " Con la fecha límite, la meta calcula el total del plazo y cada registro real avanza su porcentaje, un día a la vez."}
           </p>
         )}
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear meta"}</button>

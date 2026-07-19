@@ -47,7 +47,7 @@ export const METRICAS_AUTO = [
   { key: "foco_minutos", label: "Minutos de foco (pomodoro)", unidad: "min", singular: "minuto", fuente: "tus bloques de pomodoro ligados a ese proyecto o a Aprendizaje" },
   { key: "ahorro_meta", label: "Dinero de una meta de ahorro", unidad: "aportado", singular: "aporte", fuente: "tus aportes en Finanzas → Metas: el porcentaje es el dinero real sobre el objetivo de esa meta de ahorro" },
   { key: "rel_momentos", label: "Momentos con una persona", unidad: "momentos", singular: "momento", fuente: "las interacciones que registras en Relaciones (si eliges una persona, solo cuentan las de ella)" },
-  { key: "libros_leidos", label: "Libros terminados", unidad: "libros", singular: "libro", fuente: "los libros que marcas como leídos en Aprendizaje → Biblioteca" },
+  { key: "libros_leidos", label: "Libros terminados", unidad: "libros", singular: "libro", fuente: "los libros que marcas como leídos en Aprendizaje → Biblioteca (si eliges una vía, solo cuentan los suyos). El objetivo es el total de libros, no un ritmo semanal" },
 ] as const;
 
 /** Qué métricas calzan con cada área, ESTRICTO: lo de Relaciones va con
@@ -92,7 +92,7 @@ export interface Fuentes {
   focusBlocks: FocusBlock[];
   goals: Goal[];
   relLogs: RelLog[];
-  libros: Array<{ id: string; fecha: string | null }>;
+  libros: Array<{ id: string; fecha: string | null; via: string | null }>;
 }
 
 /** Las fuentes completas del progreso automático, con las MISMAS ventanas
@@ -154,7 +154,12 @@ export function valorAuto(o: Objective, f: Fuentes): number {
   }
   if (o.auto_metric === "libros_leidos") {
     // Las marcas antiguas no guardaban fecha: cuentan igual, a tu favor.
-    return f.libros.filter((l) => l.fecha === null || l.fecha >= desde).length;
+    // Con auto_ref "v:<vía>" solo cuentan los libros de esa vía.
+    const ref = o.auto_ref ?? "";
+    return f.libros
+      .filter((l) => l.fecha === null || l.fecha >= desde)
+      .filter((l) => (ref.startsWith("v:") ? l.via === ref.slice(2) : true))
+      .length;
   }
   return 0;
 }
@@ -178,9 +183,12 @@ export function progresoDe(o: Objective, f: Fuentes): number {
 }
 
 /** Total esperado de la meta automática: ritmo semanal por las semanas del plazo.
- *  El plazo va desde la creación hasta la fecha límite (o 90 días si no hay). */
+ *  El plazo va desde la creación hasta la fecha límite (o 90 días si no hay).
+ *  Los libros son la excepción: su objetivo es un TOTAL ("leerme 3 libros"),
+ *  no un ritmo por semana. */
 export function metaAutoEsperado(o: Objective): number | null {
   if (!o.auto_metric || !o.auto_target) return null;
+  if (o.auto_metric === "libros_leidos") return o.auto_target;
   const inicio = o.created_at ? new Date(o.created_at) : new Date();
   const fin = o.deadline
     ? new Date(`${o.deadline}T00:00:00`)
