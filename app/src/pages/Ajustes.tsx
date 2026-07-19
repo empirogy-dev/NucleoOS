@@ -11,6 +11,7 @@ import { diasAtrasLocal, hoyLocal } from "../lib/fechas";
 import { Selector } from "../components/Selector";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { IDIOMAS, type Idioma } from "../idioma/textos";
+import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -59,6 +60,7 @@ export function Ajustes() {
 
       <div className="grid" style={{ maxWidth: 640 }}>
         <IdiomaCard />
+        <WhatsAppCard />
         <NameCard />
         <CumpleCard />
         <DiaPasadoCard />

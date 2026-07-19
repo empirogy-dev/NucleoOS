@@ -99,11 +99,11 @@ El LLM NUNCA elige a quién pertenece un dato:
 - Horas de silencio y tope diario de avisos como diseño, no como cortesía.
 
 ### SEC-N8 — RLS y aislamiento de las tablas nuevas
-**Adapta:** SEC-02 · **Severidad:** 🔴 · **Fase:** F1 (migración 0052)
+**Adapta:** SEC-02 · **Severidad:** 🔴 · **Fase:** F1 (migración 0051)
 
 - Las 6 tablas `wa_*` nacen CON RLS en la misma migración: la usuaria autenticada solo lee su
   vínculo, sus códigos y su historial; `wa_mensajes`, `wa_lotes` y `wa_eventos` son solo service role.
-- Sin "el resto sigue el mismo patrón": las políticas de las 6 tablas van escritas explícitas en 0052.
+- Sin "el resto sigue el mismo patrón": las políticas de las 6 tablas van escritas explícitas en 0051.
 - Verificación: `get_advisors` de Supabase después de correr la migración + test de que la usuaria B
   no lee filas de A.
 

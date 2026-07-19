@@ -66,7 +66,7 @@ WhatsApp (YCloud)
 
 ### Modelo de datos (Supabase, objetivo)
 
-**Tablas nuevas (migración `0052_whatsapp.sql` en adelante):**
+**Tablas nuevas (migración `0051_whatsapp.sql` en adelante):**
 - `wa_vinculos` — user_id · telefono (E.164, único) · vinculado_en · avisos jsonb (switches:
   ayuno, tareas, cumples, pagos, habitos, retos, brujula, ciclo) · silencio_desde/hasta ·
   hora_resumen · timezone.
@@ -120,7 +120,7 @@ alimentan al Coach; las de escritura son el Escriba.
 > Requisito previo de Bárbara: cuenta YCloud + número de WhatsApp (el curso lo cubre).
 
 1. **Docs YCloud** a mano: inbound webhook, send message, media download, templates, status.
-2. **Migración `0052_whatsapp.sql`**: `wa_vinculos`, `wa_codigos`, `wa_mensajes`, `wa_lotes`,
+2. **Migración `0051_whatsapp.sql`**: `wa_vinculos`, `wa_codigos`, `wa_mensajes`, `wa_lotes`,
    `wa_avisos_enviados`, `wa_eventos` (RLS: solo service role; la usuaria lee su vínculo).
 3. **Edge Function `wa-entrada`**: webhook YCloud → normalizar → `vincular` como primer comando
    que funciona de punta a punta.

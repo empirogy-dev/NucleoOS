@@ -77,7 +77,7 @@ UX:
 - [ ] Texto en el idioma elegido (es/en/pt vía `t()`)
 
 **Prioridad:** P0 · **Estimación:** S · **Dependencias:** Ninguna
-**Notas técnicas:** Migración `0052_whatsapp.sql`. RLS: la usuaria solo ve sus códigos.
+**Notas técnicas:** Migración `0051_whatsapp.sql`. RLS: la usuaria solo ve sus códigos.
 
 ---
 

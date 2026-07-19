@@ -29,7 +29,7 @@ Las del `BRIEF.md` §Decisiones fijas. Recordatorio de las tres que definen el c
 
 ---
 
-## 3. Esquema de base de datos (migración `0052_whatsapp.sql`)
+## 3. Esquema de base de datos (migración `0051_whatsapp.sql`)
 
 > Patrón heredado del repo: RLS explícita en la misma migración, `gen_random_uuid()`, dedupe por
 > índice único parcial, espejo `user_kv` intacto. La usuaria corre la migración a mano en el SQL
@@ -37,7 +37,7 @@ Las del `BRIEF.md` §Decisiones fijas. Recordatorio de las tres que definen el c
 
 ```sql
 -- ============================================
--- 0052: Núcleo WhatsApp (vínculos, buffer, cartero, observabilidad)
+-- 0051: Núcleo WhatsApp (vínculos, buffer, cartero, observabilidad)
 -- ============================================
 
 create table wa_vinculos (
@@ -257,7 +257,7 @@ Toda tool devuelve un `resumen` de una línea que el motor usa para confirmar.
 
 | Fase | Entrega | Stories | Cierra con |
 |------|---------|---------|------------|
-| **F1** | Migración 0052 + `wa-entrada` + vínculo punta a punta + **enviar templates a Meta** | E1 completa | Checklist F1 del SECURITY-AUDIT |
+| **F1** | Migración 0051 + `wa-entrada` + vínculo punta a punta + **enviar templates a Meta** | E1 completa | Checklist F1 del SECURITY-AUDIT |
 | **F2** | Escriba texto: tarea, ejercicio, agua, sueño, plato, gasto 🔒, `deshacer` | E2 completa | Checklist F2 (identidad + topes + confirmación) |
 | **F3** | Audio nativo + foto del plato | E3 | SSRF check |
 | **F4** | Buffer con lease/reclaim/dead-letter + `wa_eventos` con trace | E4, US-E7-2 | Checklist F4 |
