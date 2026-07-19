@@ -1,43 +1,45 @@
 -- ============================================================
--- Reprogramar el cron del motor usando TU palabra secreta.
+-- Reprogramar el cron del motor con TU palabra secreta.
 --
--- Antes: el cron llevaba la service role key (frágil, porque Supabase
--- cambió de sistema de llaves, y encima obligaba a pegar un secreto
--- crítico dentro de un SQL).
--- Ahora: lleva la palabra que TÚ inventas en WA_CRON_SECRET. Si algún
--- día se filtra, solo sirve para despertar el motor un minuto antes.
+-- ⬇️⬇️ SOLO TIENES QUE CAMBIAR UNA COSA: la palabra de la línea 14.
+--      Pon ahí, entre las comillas, la MISMA palabra que guardaste en
+--      el secreto WA_CRON_SECRET (el valor, no el nombre del secreto).
+--      Ejemplo: si tu secreto vale motor-nucleoos-2026, la línea queda:
+--         mi_palabra text := 'motor-nucleoos-2026';
 --
--- ANTES DE CORRER:
---   1. En Supabase → Edge Functions → Secrets, crea el secreto
---      WA_CRON_SECRET con una palabra tuya (ej: motor-nucleoos-2026).
---   2. Vuelve a desplegar wa-motor con el código nuevo del repo.
---   3. Apaga otra vez "Verify JWT with legacy secret" en wa-motor.
---   4. Pega esto en el SQL Editor, reemplaza AQUÍ la palabra y Run.
+-- Si se te olvida cambiarla, el script se detiene y te avisa, en vez de
+-- dejar el cron mal puesto en silencio.
 -- ============================================================
 
-do $$
+do $outer$
+declare
+  mi_palabra text := 'PON_AQUI_TU_PALABRA';   -- ⬅️ CAMBIA ESTO Y NADA MÁS
+  comando text;
 begin
+  if mi_palabra = 'PON_AQUI_TU_PALABRA' or length(mi_palabra) < 4 then
+    raise exception 'Falta tu palabra: cambia PON_AQUI_TU_PALABRA por el valor de tu secreto WA_CRON_SECRET y vuelve a correr esto.';
+  end if;
+
   if exists (select 1 from cron.job where jobname = 'nucleoos-wa-motor') then
     perform cron.unschedule('nucleoos-wa-motor');
   end if;
-end $$;
 
-select cron.schedule(
-  'nucleoos-wa-motor',
-  '* * * * *',
-  $cron$
-  select net.http_post(
-    url := 'https://devxnjumkapxqguasgaz.supabase.co/functions/v1/wa-motor',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ESCRIBE_AQUI_TU_PALABRA_DE_WA_CRON_SECRET'
-    ),
-    body := '{}'::jsonb
+  comando := format(
+    'select net.http_post(url := %L, headers := jsonb_build_object(%L, %L, %L, %L), body := %L::jsonb);',
+    'https://devxnjumkapxqguasgaz.supabase.co/functions/v1/wa-motor',
+    'Content-Type', 'application/json',
+    'Authorization', 'Bearer ' || mi_palabra,
+    '{}'
   );
-  $cron$
-);
 
--- Un minuto después de correr esto, comprueba que el motor ya trabaja:
---   status_code 200 = ✅ funcionando · 401 = la palabra no coincide
-select r.created, r.status_code, left(r.content, 120) as respuesta
+  perform cron.schedule('nucleoos-wa-motor', '* * * * *', comando);
+  raise notice 'Cron reprogramado. En un minuto revisa la consulta de abajo.';
+end $outer$;
+
+-- Espera un minuto y corre esto: debe decir "✅ el motor ya trabaja".
+select r.created, r.status_code,
+       case when r.status_code = 200 then '✅ el motor ya trabaja'
+            when r.status_code = 401 then '❌ la palabra no coincide con el secreto'
+            else '❓ revisar' end as estado,
+       left(r.content, 120) as respuesta
 from net._http_response r order by r.created desc limit 3;
