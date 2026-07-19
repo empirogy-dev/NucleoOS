@@ -49,14 +49,24 @@ function ayerEn(timezone: string): string {
   return enZona(timezone, new Date(Date.now() - 24 * 3600_000));
 }
 
-async function enviarTexto(chatId: string, texto: string): Promise<void> {
+/** Manda el mensaje y DICE si pudo: un envio fallido en silencio deja a la
+ *  usuaria esperando una respuesta que nunca llega. */
+async function enviarTexto(chatId: string, texto: string): Promise<{ ok: boolean; error?: string }> {
   const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
-  if (!token) return;
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: Number(chatId), text: texto }),
-  }).catch(() => undefined);
+  if (!token) return { ok: false, error: "falta el secreto TELEGRAM_BOT_TOKEN" };
+  if (!texto.trim()) return { ok: false, error: "mensaje vacio" };
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: Number(chatId), text: texto }),
+    });
+    const j = await res.json();
+    if (!j?.ok) return { ok: false, error: String(j?.description ?? `http ${res.status}`).slice(0, 200) };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e).slice(0, 200) };
+  }
 }
 
 /** Telegram entrega los medios en dos pasos: getFile cambia el file_id por
@@ -709,7 +719,13 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      await enviarTexto(vinculo.telefono, respuesta.slice(0, 3000));
+      const envio = await enviarTexto(vinculo.telefono, respuesta.slice(0, 3000));
+      if (!envio.ok) {
+        await db.from("wa_eventos").insert({
+          user_id: lote.user_id, lote_id: lote.id, tipo: "error",
+          detalle: { donde: "telegram", error: envio.error, chat: String(vinculo.telefono).slice(-4) },
+        });
+      }
       await db.from("wa_mensajes").insert({
         user_id: lote.user_id, telefono: vinculo.telefono, direccion: "out",
         tipo: "texto", contenido: respuesta.slice(0, 2000), lote_id: lote.id,
