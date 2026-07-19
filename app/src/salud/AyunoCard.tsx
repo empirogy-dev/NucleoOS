@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { CampoHora } from "../components/CampoHora";
 import { hoyLocal } from "../lib/fechas";
@@ -49,6 +50,7 @@ function ultimaComida(meals: Meal[]): Date | null {
 }
 
 export function AyunoCard({ meals }: { meals: Meal[] }) {
+  const { t: tr, idioma } = useIdioma();
   const [meta, setMeta] = useState(metaGuardada);
   const [ahora, setAhora] = useState(() => Date.now());
   const [editandoHora, setEditandoHora] = useState(false);
@@ -80,12 +82,12 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   const formularioManual = (
     <div style={{ marginTop: 10 }}>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button type="button" className="btn primary" onClick={marcarAhora}>⏳ Empezar mi ayuno ahora</button>
-        <button type="button" className="btn ghost" onClick={marcarAhora}>🍴 Acabo de comer</button>
-        <button type="button" className="btn ghost" onClick={() => setEditandoHora(!editandoHora)}>Fue a otra hora</button>
+        <button type="button" className="btn primary" onClick={marcarAhora}>⏳ {tr("Empezar mi ayuno ahora")}</button>
+        <button type="button" className="btn ghost" onClick={marcarAhora}>🍴 {tr("Acabo de comer")}</button>
+        <button type="button" className="btn ghost" onClick={() => setEditandoHora(!editandoHora)}>{tr("Fue a otra hora")}</button>
       </div>
       <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
-        Los dos botones hacen lo mismo por dentro: el ayuno siempre parte en tu último bocado. Si comes dentro de tu ventana, el contador se reinicia, así funciona el ayuno de verdad.
+        {tr("Los dos botones hacen lo mismo por dentro: el ayuno siempre parte en tu último bocado. Si comes dentro de tu ventana, el contador se reinicia, así funciona el ayuno de verdad.")}
       </p>
       {editandoHora && (
         <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -96,7 +98,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
           <div style={{ flex: "1 1 150px" }}>
             <CampoHora value={horaManual} onChange={setHoraManual} ariaLabel="Hora de tu última comida" />
           </div>
-          <button type="button" className="btn primary" disabled={!horaManual} onClick={guardarHoraManual}>Guardar</button>
+          <button type="button" className="btn primary" disabled={!horaManual} onClick={guardarHoraManual}>{tr("com.guardar")}</button>
         </div>
       )}
     </div>
@@ -107,9 +109,9 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   if (!ultima) {
     return (
       <div className="card panel">
-        <h3>⏳ Ayuno</h3>
+        <h3>⏳ {tr("Ayuno")}</h3>
         <p style={{ fontSize: 13.5, color: "var(--muted)" }}>
-          Registra un plato o marca a qué hora comiste por última vez, y aquí verás cuántas horas llevas en ayuno.
+          {tr("Registra un plato o marca a qué hora comiste por última vez, y aquí verás cuántas horas llevas en ayuno.")}
         </p>
         {formularioManual}
       </div>
@@ -122,13 +124,13 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   const min = Math.floor((ms % 3600000) / 60000);
   const pct = Math.min(100, (horas / meta) * 100);
   const cumplida = horas >= meta;
-  const hora = ultima.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+  const hora = ultima.toLocaleTimeString(idioma === "en" ? "en-US" : idioma === "pt" ? "pt-BR" : "es-CL", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="card panel">
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <h3 style={{ flex: 1 }}>⏳ Ayuno</h3>
-        {cumplida && <span className="chip">meta cumplida</span>}
+        <h3 style={{ flex: 1 }}>⏳ {tr("Ayuno")}</h3>
+        {cumplida && <span className="chip">{tr("meta cumplida")}</span>}
       </div>
 
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "2px 0 8px" }}>
@@ -136,7 +138,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
         <span style={{ color: "var(--muted)" }}>h</span>
         <b className="tnum" style={{ fontSize: 30, letterSpacing: "-.02em" }}>{min}</b>
         <span style={{ color: "var(--muted)" }}>min</span>
-        <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>meta {meta} h</span>
+        <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>{tr("meta")} {meta} h</span>
       </div>
 
       <div className="track" style={{ height: 8 }}>
@@ -145,12 +147,12 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
 
       <p style={{ fontSize: 12.5, color: "var(--ink-soft)", margin: "10px 0 8px" }}>
         {cumplida
-          ? `Completaste tu ventana de ${meta} horas. Come cuando tu cuerpo lo pida, sin apuro.`
-          : `Tu última comida fue a las ${hora}. Te faltan ${Math.max(0, meta - h)} h para tu meta, si es que quieres llegar.`}
+          ? `${tr("Completaste tu ventana de")} ${meta} ${tr("horas")}. ${tr("Come cuando tu cuerpo lo pida, sin apuro.")}`
+          : `${tr("Tu última comida fue a las")} ${hora}. ${tr("Te faltan")} ${Math.max(0, meta - h)} h ${tr("para tu meta, si es que quieres llegar.")}`}
       </p>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 11.5, color: "var(--muted)" }}>Tu ventana</span>
+        <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{tr("Tu ventana")}</span>
         <div style={{ display: "flex", gap: 6 }}>
           {METAS.map((m) => (
             <button key={m} type="button"
@@ -163,7 +165,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
       </div>
       {formularioManual}
       <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
-        El ayuno intermitente no le sirve a todo el mundo. Esto es una guía amable, no una regla. Si tienes dudas de salud, pregúntale a tu médico.
+        {tr("El ayuno intermitente no le sirve a todo el mundo. Esto es una guía amable, no una regla. Si tienes dudas de salud, pregúntale a tu médico.")}
       </p>
     </div>
   );

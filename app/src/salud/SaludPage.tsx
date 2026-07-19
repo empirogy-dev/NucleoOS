@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
+import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { OrdenGrid } from "../components/OrdenGrid";
@@ -44,6 +45,11 @@ import { CampoHora } from "../components/CampoHora";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
+
+function locDeIdioma(): string {
+  const i = idiomaActual();
+  return i === "en" ? "en-US" : i === "pt" ? "pt-BR" : "es-CL";
+}
 
 // Energía: el combustible diario del cuerpo. Lo primero es la lectura
 // rápida de hoy (sueño, agua, proteína, movimiento); lo médico vive
@@ -205,12 +211,12 @@ export function SaludPage() {
 
       {/* Lectura rápida del estado corporal, siempre visible */}
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">😴 Sueño anoche</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></div>
-        <div className="card stat"><div className="k">{tr("💧 Agua")}</div><div className="v tnum">{agua} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {META_AGUA_VASOS}</small></div></div>
-        <div className="card stat"><div className="k">{tr("🍗 Proteína")}</div><div className="v tnum">{Math.round(Number(proteina))} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {metaProt} g</small></div></div>
-        <div className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min{kcalHoy > 0 ? `, ≈${kcalHoy} kcal` : ""}</small></div></div>
+        <div className="card stat"><div className="k">{tr("😴 Sueño anoche")}</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></div>
+        <div className="card stat"><div className="k">{tr("💧 Agua")}</div><div className="v tnum">{agua} <small style={{ fontSize: 13, color: "var(--muted)" }}>{tr("de")} {META_AGUA_VASOS}</small></div></div>
+        <div className="card stat"><div className="k">{tr("🍗 Proteína")}</div><div className="v tnum">{Math.round(Number(proteina))} <small style={{ fontSize: 13, color: "var(--muted)" }}>{tr("de")} {metaProt} g</small></div></div>
+        <div className="card stat"><div className="k">{tr("🏃 Movimiento")}</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min{kcalHoy > 0 ? `, ≈${kcalHoy} kcal` : ""}</small></div></div>
       </div>
-      <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{ESTADOS[señales]}</p>
+      <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{tr(ESTADOS[señales])}</p>
 
       <MetasDeArea area="salud" />
 
@@ -342,8 +348,8 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
           </div>
           <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
             {protComidas > 0
-              ? `${protComidas} g vienen de tus platos registrados. Los botones suman lo demás.`
-              : "Referencias: un huevo 6 g, pechuga de pollo 30 g, un yogur griego 15 g, una taza de lentejas 18 g."}
+              ? `${protComidas} g ${tr("vienen de tus platos registrados. Los botones suman lo demás.")}`
+              : tr("Referencias: un huevo 6 g, pechuga de pollo 30 g, un yogur griego 15 g, una taza de lentejas 18 g.")}
           </p>
         </div>
   );
@@ -414,7 +420,7 @@ function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: Ex
       {exercise.map((e) => (
         <div className="txrow" key={e.id}>
           <span className="txicon">🏃</span>
-          <div className="txmeta"><b>{e.kind}</b><small>{e.minutes} minutos, ≈{estimarKcal(e.kind, e.minutes, pesoKg)} kcal</small></div>
+          <div className="txmeta"><b>{tr(e.kind)}</b><small>{e.minutes} {tr("minutos")}, ≈{estimarKcal(e.kind, e.minutes, pesoKg)} kcal</small></div>
           <button className="xdel" aria-label="Eliminar registro" onClick={async () => { await deleteExercise(e.id); onChanged(); }}>
             <Trash2 size={13} />
           </button>
@@ -423,11 +429,11 @@ function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: Ex
       <form onSubmit={save} style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 130px", minWidth: 120 }}>
           <Selector value={kind} ariaLabel="Tipo de ejercicio" onChange={setKind}
-            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} />
+            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: tr(k) }))} />
         </div>
-        <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)} placeholder="minutos" style={{ maxWidth: 110, flex: "none" }} />
+        <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)} placeholder={tr("minutos")} style={{ maxWidth: 110, flex: "none" }} />
         <button className="btn ghost" disabled={busy}>
-          <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Registrar
+          <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> {tr("btn.registrar")}
         </button>
       </form>
     </div>
@@ -460,7 +466,7 @@ function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: 
       <h3>{tr("😴 Sueño de anoche")}</h3>
       {horas !== null && (
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 10 }}>
-          Dormiste <b className="tnum">{horas} horas</b>{horas >= 7 ? ", muy bien. 🌙" : ". Intenta acostarte más temprano hoy."}
+          {tr("Dormiste")} <b className="tnum">{horas} {tr("horas")}</b>{horas >= 7 ? `, ${tr("muy bien. 🌙")}` : `. ${tr("Intenta acostarte más temprano hoy.")}`}
         </p>
       )}
       <form onSubmit={save}>
@@ -487,6 +493,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
   irAClinica: () => void;
   onChanged: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const hoy = hoyLocal();
   const tot = totalesDia(meals, hoy);
   const comidasHoy = meals.filter((m) => m.date === hoy);
@@ -497,7 +504,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
   });
   const fmtDia = (iso: string) => {
     const [y, m, d] = iso.split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString("es-CL", { weekday: "short", day: "numeric" });
+    return new Date(y, m - 1, d).toLocaleDateString(locDeIdioma(), { weekday: "short", day: "numeric" });
   };
 
   return (
@@ -509,10 +516,10 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
       { id: "ayuno", el: <AyunoCard meals={meals} /> },
       { id: "comidas", el: (
       <div className="card panel">
-        <h3>🍽 Tus comidas de hoy</h3>
+        <h3>{tr("🍽 Tus comidas de hoy")}</h3>
         {comidasHoy.length === 0 ? (
           <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-            Aún no hay platos registrados hoy. Usa la foto del plato en la pestaña Hoy y el acumulado aparece aquí.
+            {tr("Aún no hay platos registrados hoy. Usa la foto del plato en la pestaña Hoy y el acumulado aparece aquí.")}
           </p>
         ) : (
           <>
@@ -540,7 +547,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
             </div>
             {quemadasHoy > 0 && (
               <p style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 10 }}>
-                🔥 En movimiento quemaste ≈{quemadasHoy} kcal hoy: balance ≈{tot.kcal - quemadasHoy} kcal. Es una estimación para ver la tendencia, no una balanza.
+                🔥 {tr("En movimiento quemaste")} ≈{quemadasHoy} {tr("kcal hoy: balance")} ≈{tot.kcal - quemadasHoy} kcal. {tr("Es una estimación para ver la tendencia, no una balanza.")}
               </p>
             )}
           </>
@@ -549,7 +556,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
       ) },
       { id: "semana", el: (
       <div className="card panel">
-        <h3>📈 Tu semana de nutrición</h3>
+        <h3>{tr("📈 Tu semana de nutrición")}</h3>
         {dias.map((d) => {
           const log = energy.find((e) => e.date === d);
           const cups = log?.water_cups ?? 0;
@@ -575,24 +582,24 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
       ) },
       { id: "metas", el: (
         <div className="card panel">
-          <h3>🎯 Tus metas</h3>
+          <h3>{tr("🎯 Tus metas")}</h3>
           <div className="txrow">
             <span className="txicon">💧</span>
             <div className="txmeta" style={{ whiteSpace: "normal" }}>
-              <b>{META_AGUA_VASOS} vasos de agua</b>
-              <small>Unos dos litros al día. Con calor o ejercicio, un poco más.</small>
+              <b>{META_AGUA_VASOS} {tr("vasos de agua")}</b>
+              <small>{tr("Unos dos litros al día. Con calor o ejercicio, un poco más.")}</small>
             </div>
           </div>
           <div className="txrow">
             <span className="txicon">🍗</span>
             <div className="txmeta" style={{ whiteSpace: "normal" }}>
-              <b>{metaProt} g de proteína</b>
+              <b>{metaProt} g {tr("de proteína")}</b>
               <small>
                 {profile?.weight_kg
                   ? profile.activity_level
-                    ? `Calculada con tu peso y tu nivel de actividad. Si cambias de ritmo, actualízalo en la ficha.`
-                    : `Estimada con tu peso. Dime qué tan activa eres en la ficha y la afino: quien entrena a diario necesita hasta 2 g por kilo.`
-                  : "Meta general. Registra tu peso y tu nivel de actividad en Salud clínica y la calculo a tu medida."}
+                    ? tr("Calculada con tu peso y tu nivel de actividad. Si cambias de ritmo, actualízalo en la ficha.")
+                    : tr("Estimada con tu peso. Dime qué tan activa eres en la ficha y la afino: quien entrena a diario necesita hasta 2 g por kilo.")
+                  : tr("Meta general. Registra tu peso y tu nivel de actividad en Salud clínica y la calculo a tu medida.")}
               </small>
             </div>
           </div>
@@ -600,26 +607,26 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
             <div className="txrow">
               <span className="txicon">🥗</span>
               <div className="txmeta" style={{ whiteSpace: "normal" }}>
-                <b>Tu alimentación: {profile.diet}</b>
-                <small>Definida en tu ficha.</small>
+                <b>{tr("Tu alimentación:")} {tr(profile.diet)}</b>
+                <small>{tr("Definida en tu ficha.")}</small>
               </div>
             </div>
           )}
-          <button className="btn ghost" style={{ marginTop: 10 }} onClick={irAClinica}>Editar mi ficha</button>
+          <button className="btn ghost" style={{ marginTop: 10 }} onClick={irAClinica}>{tr("Editar mi ficha")}</button>
         </div>
       ) },
       { id: "tip", el: (
         <div className="tip-destacado" style={{ marginBottom: 0 }}>
-          💡 La proteína reparte mejor su efecto si la distribuyes en las comidas del día en vez de concentrarla en una sola.
+          {tr("💡 La proteína reparte mejor su efecto si la distribuyes en las comidas del día en vez de concentrarla en una sola.")}
         </div>
       ) },
     ]} />
 
     {/* Capa educativa: guías breves, humanas y aplicables */}
     <div style={{ marginTop: 18 }}>
-      <h3 style={{ fontSize: 16, marginBottom: 4 }}>🌱 Aprende, sin moralismos</h3>
+      <h3 style={{ fontSize: 16, marginBottom: 4 }}>{tr("🌱 Aprende, sin moralismos")}</h3>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-        Mini guías para entender tu comida y aplicar cambios chicos. Toca una para abrirla.
+        {tr("Mini guías para entender tu comida y aplicar cambios chicos. Toca una para abrirla.")}
       </p>
       <div className="guia-grid">
         {GUIAS_NUTRICION.map((g) => <GuiaCard key={g.id} guia={g} />)}
@@ -636,18 +643,18 @@ function BalanceCalorico({ profile, edad, comido, quemadas, irAClinica }: {
   quemadas: number;
   irAClinica: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const [objetivo, setObjetivo] = useState<ObjetivoCal>(getObjetivoCal());
   const mantencion = metaCalorias(profile, edad);
 
   if (mantencion === null) {
     return (
       <div className="card panel">
-        <h3>🔥 Balance calórico de hoy</h3>
+        <h3>{tr("🔥 Balance calórico de hoy")}</h3>
         <p style={{ fontSize: 13.5, color: "var(--muted)" }}>
-          Para decirte cuántas calorías comer al día y si vas en déficit, necesito tu peso y tu estatura.
-          Con tu nivel de actividad y tu sexo el cálculo queda aún más fino.
+          {tr("Para decirte cuántas calorías comer al día y si vas en déficit, necesito tu peso y tu estatura. Con tu nivel de actividad y tu sexo el cálculo queda aún más fino.")}
         </p>
-        <button className="btn ghost" style={{ marginTop: 10 }} onClick={irAClinica}>Completar mi ficha</button>
+        <button className="btn ghost" style={{ marginTop: 10 }} onClick={irAClinica}>{tr("Completar mi ficha")}</button>
       </div>
     );
   }
@@ -660,7 +667,7 @@ function BalanceCalorico({ profile, edad, comido, quemadas, irAClinica }: {
 
   return (
     <div className="card panel">
-      <h3>🔥 Balance calórico de hoy</h3>
+      <h3>{tr("🔥 Balance calórico de hoy")}</h3>
       <div className="seg" style={{ marginBottom: 12 }}>
         {OBJETIVOS_CAL.map((o) => (
           <button key={o.key} className={`segbtn ${objetivo === o.key ? "active" : ""}`}
@@ -671,23 +678,23 @@ function BalanceCalorico({ profile, edad, comido, quemadas, irAClinica }: {
       </div>
       <p style={{ fontSize: 13.5, marginBottom: 8 }}>
         Tu meta de hoy: <b className="tnum">{meta} kcal</b>, {obj.nota}.
-        Tu mantención es <b className="tnum">{mantencion}</b> kcal.
+        {tr("Tu mantención es")} <b className="tnum">{mantencion}</b> kcal.
       </p>
       <div className="track" style={{ height: 8 }}>
         <div className="fill" style={{ width: `${pct}%`, background: restante >= 0 ? "var(--sal)" : "var(--warn, #d97706)" }} />
       </div>
       <div className="macro-fila" style={{ marginTop: 10 }}>
         <span className="macro">Comido <b className="tnum">{comido}</b></span>
-        <span className="macro">{restante >= 0 ? "Te quedan" : "Te pasaste por"} <b className="tnum">{Math.abs(restante)}</b></span>
+        <span className="macro">{restante >= 0 ? tr("Te quedan") : tr("Te pasaste por")} <b className="tnum">{Math.abs(restante)}</b></span>
         {quemadas > 0 && <span className="macro">Movimiento <b className="tnum">≈{quemadas}</b></span>}
       </div>
       <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 10 }}>
         {balance < 0
-          ? `Hoy vas ${Math.abs(balance)} kcal por debajo de tu mantención: eso es déficit calórico.`
+          ? `${tr("Hoy vas")} ${Math.abs(balance)} ${tr("kcal por debajo de tu mantención: eso es déficit calórico.")}`
           : balance === 0
-            ? "Hoy vas justo en tu mantención."
-            : `Hoy vas ${balance} kcal por sobre tu mantención: superávit.`}
-        {" "}Registra todas tus comidas para que el número sea real.
+            ? tr("Hoy vas justo en tu mantención.")
+            : `${tr("Hoy vas")} ${balance} ${tr("kcal por sobre tu mantención: superávit.")}`}
+        {" "}{tr("Registra todas tus comidas para que el número sea real.")}
       </p>
       <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
         Tu mantención ya considera tu nivel de actividad, por eso lo quemado en movimiento se muestra aparte, como referencia. Es una estimación para guiarte, no un examen de laboratorio.
@@ -697,21 +704,22 @@ function BalanceCalorico({ profile, edad, comido, quemadas, irAClinica }: {
 }
 
 function GuiaCard({ guia }: { guia: (typeof GUIAS_NUTRICION)[number] }) {
+  const { t: tr } = useIdioma();
   const [open, setOpen] = useState(false);
   return (
     <button className={"card guia-card" + (open ? " open" : "")} onClick={() => setOpen(!open)}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontSize: 22 }}>{guia.emoji}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ fontSize: 14, display: "block" }}>{guia.titulo}</b>
-          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>{guia.resumen}</small>
+          <b style={{ fontSize: 14, display: "block" }}>{tr(guia.titulo)}</b>
+          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>{tr(guia.resumen)}</small>
         </div>
         <span style={{ color: "var(--muted)", fontSize: 12 }}>{open ? "▴" : "▾"}</span>
       </div>
       {open && (
         <ul style={{ marginTop: 10, paddingLeft: 18, display: "grid", gap: 6, textAlign: "left" }}>
           {guia.consejos.map((c) => (
-            <li key={c} style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>{c}</li>
+            <li key={c} style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>{tr(c)}</li>
           ))}
         </ul>
       )}
@@ -721,6 +729,7 @@ function GuiaCard({ guia }: { guia: (typeof GUIAS_NUTRICION)[number] }) {
 
 // ---------- Movimiento ----------
 function MovimientoTab({ exercise, pesoKg, onChanged }: { exercise: ExerciseLog[]; pesoKg: number | null; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const hace7 = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return fmtFechaLocal(d); })();
   const semana = exercise.filter((e) => e.date >= hace7);
   const minSemana = semana.reduce((s, e) => s + e.minutes, 0);
@@ -737,23 +746,23 @@ function MovimientoTab({ exercise, pesoKg, onChanged }: { exercise: ExerciseLog[
     <>
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
         <div className="card stat"><div className="k">Esta semana</div><div className="v tnum">{minSemana} min</div></div>
-        <div className="card stat"><div className="k">Kcal (7 días)</div><div className="v tnum">≈{kcalSemana}</div></div>
-        <div className="card stat"><div className="k">Sesiones (7 días)</div><div className="v tnum">{semana.length}</div></div>
-        <div className="card stat"><div className="k">Tu favorito</div><div className="v" style={{ fontSize: 19 }}>{favorito ?? "aún ninguno"}</div></div>
+        <div className="card stat"><div className="k">{tr("Kcal (7 días)")}</div><div className="v tnum">≈{kcalSemana}</div></div>
+        <div className="card stat"><div className="k">{tr("Sesiones (7 días)")}</div><div className="v tnum">{semana.length}</div></div>
+        <div className="card stat"><div className="k">{tr("Tu favorito")}</div><div className="v" style={{ fontSize: 19 }}>{favorito ?? tr("aún ninguno")}</div></div>
       </div>
       <OrdenGrid clave="energia-movimiento" bloques={[
         { id: "lista", el: (
         <div className="card panel">
-          <h3>🏃 Últimos 30 días</h3>
+          <h3>{tr("🏃 Últimos 30 días")}</h3>
           {exercise.length === 0 && (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-              Aún no hay movimiento registrado. Una caminata de 15 minutos ya cuenta.
+              {tr("Aún no hay movimiento registrado. Una caminata de 15 minutos ya cuenta.")}
             </p>
           )}
           {exercise.map((e) => (
             <div className="txrow" key={e.id}>
               <span className="txicon">🏃</span>
-              <div className="txmeta"><b>{e.kind}</b><small>{e.date}, {e.minutes} minutos, ≈{estimarKcal(e.kind, e.minutes, pesoKg)} kcal</small></div>
+              <div className="txmeta"><b>{tr(e.kind)}</b><small>{e.date}, {e.minutes} {tr("minutos")}, ≈{estimarKcal(e.kind, e.minutes, pesoKg)} kcal</small></div>
               <button className="xdel" aria-label="Eliminar registro" onClick={async () => { await deleteExercise(e.id); onChanged(); }}>
                 <Trash2 size={13} />
               </button>
@@ -764,7 +773,7 @@ function MovimientoTab({ exercise, pesoKg, onChanged }: { exercise: ExerciseLog[
         { id: "registrar", el: <RegistrarMovimiento onChanged={onChanged} /> },
         { id: "tip", el: (
           <div className="tip-destacado" style={{ marginBottom: 0 }}>
-            💡 La meta amable son 150 minutos a la semana, unos 30 al día. No importa el deporte, importa moverte.
+            {tr("💡 La meta amable son 150 minutos a la semana, unos 30 al día. No importa el deporte, importa moverte.")}
           </div>
         ) },
       ]} />
@@ -791,11 +800,11 @@ function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
 
   return (
     <div className="card panel">
-      <h3>Registrar sesión</h3>
+      <h3>{tr("Registrar sesión")}</h3>
       <form onSubmit={save}>
         <div className="field"><label>Tipo</label>
           <Selector value={kind} ariaLabel="Tipo de ejercicio" onChange={setKind}
-            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} /></div>
+            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: tr(k) }))} /></div>
         <div className="frow">
           <div className="field"><label>Minutos</label>
             <input className="input-inline" style={{ width: "100%" }} type="number" min={1} max={600} required value={min} onChange={(e) => setMin(e.target.value)} placeholder="30" /></div>
@@ -810,6 +819,7 @@ function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
 
 // ---------- Sueño ----------
 function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const conHoras = routine.map((r) => ({ r, h: sleepHours(r) })).filter((x): x is { r: RoutineLog; h: number } => x.h !== null);
   const promedio = conHoras.length ? Math.round((conHoras.reduce((s, x) => s + x.h, 0) / conHoras.length) * 10) / 10 : null;
   const hoy = hoyLocal();
@@ -817,22 +827,22 @@ function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: ()
 
   const fmtDia = (iso: string) => {
     const [y, m, d] = iso.split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "short" });
+    return new Date(y, m - 1, d).toLocaleDateString(locDeIdioma(), { weekday: "long", day: "numeric", month: "short" });
   };
 
   return (
     <>
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr" }}>
-        <div className="card stat"><div className="k">Promedio (14 días)</div><div className="v tnum">{promedio !== null ? `${promedio} h` : "sin datos"}</div></div>
+        <div className="card stat"><div className="k">{tr("Promedio (14 días)")}</div><div className="v tnum">{promedio !== null ? `${promedio} h` : tr("sin datos")}</div></div>
         <div className="card stat"><div className="k">Meta amable</div><div className="v tnum">7 a 9 h</div></div>
       </div>
       <OrdenGrid clave="energia-sueno" bloques={[
         { id: "bitacora", el: (
         <div className="card panel">
-          <h3>🌙 Bitácora de sueño</h3>
+          <h3>{tr("🌙 Bitácora de sueño")}</h3>
           {routine.length === 0 && (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-              Registra a qué hora te acuestas y despiertas, y aquí aparece tu historia de descanso.
+              {tr("Registra a qué hora te acuestas y despiertas, y aquí aparece tu historia de descanso.")}
             </p>
           )}
           {routine.map((r) => {
@@ -843,8 +853,8 @@ function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: ()
                 <div className="txmeta">
                   <b style={{ textTransform: "capitalize" }}>{fmtDia(r.date)}</b>
                   <small>
-                    {r.bed_time ? `me acosté ${r.bed_time.slice(0, 5)}` : "sin hora de acostarse"}
-                    {r.wake_time ? `, desperté ${r.wake_time.slice(0, 5)}` : ""}
+                    {r.bed_time ? `${tr("me acosté")} ${r.bed_time.slice(0, 5)}` : tr("sin hora de acostarse")}
+                    {r.wake_time ? `, ${tr("desperté")} ${r.wake_time.slice(0, 5)}` : ""}
                   </small>
                 </div>
                 {h !== null && <b className="tnum" style={{ fontSize: 13.5, color: h >= 7 ? "var(--ok)" : "var(--warn)" }}>{h} h</b>}
@@ -856,7 +866,7 @@ function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: ()
         { id: "registrar", el: <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} /> },
         { id: "tip", el: (
           <div className="tip-destacado" style={{ marginBottom: 0 }}>
-            💡 Acostarte y despertar a la misma hora todos los días le enseña a tu cuerpo cuándo soltar. La regularidad vale más que la cantidad.
+            {tr("💡 Acostarte y despertar a la misma hora todos los días le enseña a tu cuerpo cuándo soltar. La regularidad vale más que la cantidad.")}
           </div>
         ) },
       ]} />

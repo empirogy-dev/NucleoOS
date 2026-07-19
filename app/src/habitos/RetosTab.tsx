@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
@@ -33,6 +34,7 @@ import {
 // lo personalizas, lo marcas día a día, y lo puedes pausar o cerrar.
 
 export function RetosTab() {
+  const { t: tr } = useIdioma();
   const [retos, setRetos] = useState<Reto[]>([]);
   const [logs, setLogs] = useState<RetoLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ export function RetosTab() {
       <div className="ftabs">
         <span style={{ flex: 1 }} />
         <button className="btn primary" onClick={() => setModal({})}>
-          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} /> Crear mi reto
+          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} /> {tr("Crear mi reto")}
         </button>
       </div>
 
@@ -94,7 +96,7 @@ export function RetosTab() {
           {enCurso.length === 0 && (
             <div className="card pad">
               <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                Un reto es un compromiso contigo por un tiempo definido: se elige, se personaliza y se trabaja día a día.
+                {tr("Un reto es un compromiso contigo por un tiempo definido: se elige, se personaliza y se trabaja día a día.")}
                 Parte con uno sugerido de abajo, o crea el tuyo.
               </p>
             </div>
@@ -106,15 +108,15 @@ export function RetosTab() {
 
           {sugeridos.length > 0 && (
             <div className="card panel">
-              <h3>✨ Retos sugeridos</h3>
+              <h3>{tr("✨ Retos sugeridos")}</h3>
               <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-                Toca uno y personalízalo antes de empezar: duración, días y tu porqué.
+                {tr("Toca uno y personalízalo antes de empezar: duración, días y tu porqué.")}
               </p>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {sugeridos.map((s) => (
                   <button key={s.title} className="chip" style={{ border: "none", cursor: "pointer" }}
                     onClick={() => setModal({ base: s })}>
-                    {s.icon} {s.title}
+                    {s.icon} {tr(s.title)}
                   </button>
                 ))}
               </div>
@@ -128,7 +130,7 @@ export function RetosTab() {
 
           {terminados.length > 0 && (
             <div className="card panel">
-              <h3>🏆 Retos terminados</h3>
+              <h3>{tr("🏆 Retos terminados")}</h3>
               {terminados.map((r) => {
                 const marcados = new Set(logs.filter((l) => l.challenge_id === r.id).map((l) => l.date));
                 const ventana = ventanaReto(r);
@@ -138,14 +140,14 @@ export function RetosTab() {
                     <span className="txicon">{r.icon ?? "🏆"}</span>
                     <div className="txmeta">
                       <b>{r.title}</b>
-                      <small>{hechos} de {ventana.length} días cumplidos</small>
+                      <small>{hechos} {tr("de")} {ventana.length} {tr("días cumplidos")}</small>
                     </div>
                     <button className="xdel" title="Retomar este reto" aria-label="Retomar reto"
                       onClick={async () => { await updateReto(r.id, { status: "activo" }); void reload(); }}>
                       <Play size={13} />
                     </button>
                     <button className="xdel" aria-label="Eliminar reto"
-                      onClick={async () => { if (!window.confirm(`¿Eliminar el reto ${r.title}? Se pierde su historial.`)) return; await deleteReto(r.id); void reload(); }}>
+                      onClick={async () => { if (!window.confirm(`${tr("¿Eliminar el reto")} ${r.title}? ${tr("Se pierde su historial.")}`)) return; await deleteReto(r.id); void reload(); }}>
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -174,6 +176,7 @@ function RetoCard({ reto, logs, onChanged, onEditar }: {
   onChanged: () => void;
   onEditar: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const hoy = hoyLocal();
   const marcados = new Set(logs.filter((l) => l.challenge_id === reto.id).map((l) => l.date));
   const ventana = ventanaReto(reto);
@@ -192,22 +195,22 @@ function RetoCard({ reto, logs, onChanged, onEditar }: {
         <div style={{ flex: 1, minWidth: 0 }}>
           <b style={{ fontSize: 15 }}>{reto.title}</b>
           <div style={{ fontSize: 12, color: "var(--muted)" }}>
-            {reto.duration_days} días, {etiquetaFrecuencia(reto.days_mask)}
-            {racha > 0 ? `, racha de ${racha} 🔥` : ""}
+            {reto.duration_days} {tr("días")}, {tr(etiquetaFrecuencia(reto.days_mask))}
+            {racha > 0 ? `, ${tr("racha de")} ${racha} 🔥` : ""}
           </div>
         </div>
-        {pausado && <span className="chip" style={{ background: "color-mix(in srgb,var(--muted) 16%,var(--paper))", color: "var(--muted)" }}>En pausa</span>}
+        {pausado && <span className="chip" style={{ background: "color-mix(in srgb,var(--muted) 16%,var(--paper))", color: "var(--muted)" }}>{tr("En pausa")}</span>}
         <button className="xdel" title="Editar reto" aria-label="Editar reto" onClick={onEditar}><Pencil size={13} /></button>
         <button className="xdel" title={pausado ? "Retomar" : "Pausar"} aria-label={pausado ? "Retomar reto" : "Pausar reto"}
           onClick={async () => { await updateReto(reto.id, { status: pausado ? "activo" : "pausado" }); onChanged(); }}>
           {pausado ? <Play size={13} /> : <Pause size={13} />}
         </button>
         <button className="xdel" title="Terminar reto" aria-label="Terminar reto"
-          onClick={async () => { if (!window.confirm(`¿Cerrar el reto ${reto.title}? Quedará en tus terminados.`)) return; await updateReto(reto.id, { status: "terminado" }); celebrar("grande"); onChanged(); }}>
+          onClick={async () => { if (!window.confirm(`${tr("¿Cerrar el reto")} ${reto.title}? ${tr("Quedará en tus terminados.")}`)) return; await updateReto(reto.id, { status: "terminado" }); celebrar("grande"); onChanged(); }}>
           <Flag size={13} />
         </button>
         <button className="xdel" aria-label="Eliminar reto"
-          onClick={async () => { if (!window.confirm(`¿Eliminar el reto ${reto.title}? Se pierde su historial.`)) return; await deleteReto(reto.id); onChanged(); }}>
+          onClick={async () => { if (!window.confirm(`${tr("¿Eliminar el reto")} ${reto.title}? ${tr("Se pierde su historial.")}`)) return; await deleteReto(reto.id); onChanged(); }}>
           <Trash2 size={13} />
         </button>
       </div>
@@ -216,7 +219,7 @@ function RetoCard({ reto, logs, onChanged, onEditar }: {
 
       <div className="bar" style={{ margin: "10px 0 0" }}>
         <div className="top">
-          <span>{hechos} de {ventana.length} días</span>
+          <span>{hechos} {tr("de")} {ventana.length} {tr("días")}</span>
           <b className="tnum">{pct}%</b>
         </div>
         <div className="track">
@@ -238,14 +241,14 @@ function RetoCard({ reto, logs, onChanged, onEditar }: {
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
         {!pausado && hoyProgramado && !hoyHecho && (
           <button className="btn primary" onClick={async () => { await toggleRetoDay(reto.id, hoy, true); celebrar("chica"); onChanged(); }}>
-            ✓ Marcar hoy
+            ✓ {tr("Marcar hoy")}
           </button>
         )}
         {!pausado && hoyHecho && <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>✓ Hoy cumplido</span>}
-        {!pausado && !hoyProgramado && !plazoTermino && <span style={{ fontSize: 12.5, color: "var(--muted)" }}>Hoy es día libre de este reto. 🌿</span>}
+        {!pausado && !hoyProgramado && !plazoTermino && <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{tr("Hoy es día libre de este reto. 🌿")}</span>}
         {plazoTermino && (
           <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
-            El plazo terminó con {hechos} de {ventana.length} días. Ciérralo con la banderita, o edítalo para extenderlo.
+            {tr("El plazo terminó con")} {hechos} {tr("de")} {ventana.length} {tr("días")}. {tr("Ciérralo con la banderita, o edítalo para extenderlo.")}
           </span>
         )}
       </div>
@@ -259,9 +262,10 @@ function RetoModal({ reto, base, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [title, setTitle] = useState(reto?.title ?? base?.title ?? "");
+  const { t: tr } = useIdioma();
+  const [title, setTitle] = useState(reto?.title ?? (base?.title ? tr(base.title) : ""));
   const [icon, setIcon] = useState(reto?.icon ?? base?.icon ?? "🎯");
-  const [why, setWhy] = useState(reto?.why ?? base?.why ?? "");
+  const [why, setWhy] = useState(reto?.why ?? (base?.why ? tr(base.why) : ""));
   const [duracion, setDuracion] = useState(String(reto?.duration_days ?? base?.duration_days ?? 21));
   const [mask, setMask] = useState(reto?.days_mask ?? base?.days_mask ?? TODOS_LOS_DIAS);
   const [inicio, setInicio] = useState(reto?.start_date ?? hoyLocal());
@@ -284,7 +288,7 @@ function RetoModal({ reto, base, onClose, onSaved }: {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (mask === 0) {
-      setErr("Elige al menos un día de la semana.");
+      setErr(tr("Elige al menos un día de la semana."));
       return;
     }
     setBusy(true);
@@ -322,21 +326,21 @@ function RetoModal({ reto, base, onClose, onSaved }: {
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
-        <h3 style={{ marginBottom: 4 }}>{reto ? "Editar reto" : "Nuevo reto"}</h3>
+        <h3 style={{ marginBottom: 4 }}>{reto ? tr("Editar reto") : tr("Nuevo reto")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
-          Hazlo tuyo: ajusta la duración, los días y sobre todo el porqué.
+          {tr("Hazlo tuyo: ajusta la duración, los días y sobre todo el porqué.")}
         </p>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
           <div className="frow">
             <div className="field" style={{ flex: 1 }}><label>El reto</label>
-              <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Caminar 20 minutos" autoFocus /></div>
+              <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Caminar 20 minutos")} autoFocus /></div>
             <IconField value={icon} onChange={setIcon} />
           </div>
-          <div className="field"><label>¿Por qué lo tomas?</label>
-            <input value={why} onChange={(e) => setWhy(e.target.value)} placeholder="Lo que este reto te va a regalar" /></div>
+          <div className="field"><label>{tr("¿Por qué lo tomas?")}</label>
+            <input value={why} onChange={(e) => setWhy(e.target.value)} placeholder={tr("Lo que este reto te va a regalar")} /></div>
           <div className="frow">
-            <div className="field"><label>Duración (días)</label>
+            <div className="field"><label>{tr("Duración (días)")}</label>
               <input type="number" min={3} max={365} value={duracion} onChange={(e) => setDuracion(e.target.value)} /></div>
             <div className="field"><label>Empieza el</label>
               <CampoFecha value={inicio} onChange={setInicio} ariaLabel="Empieza el" conBorrar={false} /></div>
@@ -354,23 +358,23 @@ function RetoModal({ reto, base, onClose, onSaved }: {
               ))}
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-              <button type="button" className="chip" style={{ border: "none", cursor: "pointer" }} onClick={() => setMask(TODOS_LOS_DIAS)}>Todos los días</button>
+              <button type="button" className="chip" style={{ border: "none", cursor: "pointer" }} onClick={() => setMask(TODOS_LOS_DIAS)}>{tr("Todos los días")}</button>
               <button type="button" className="chip" style={{ border: "none", cursor: "pointer" }} onClick={() => setMask(LUNES_A_VIERNES)}>Lunes a viernes</button>
             </div>
           </div>
           {!reto && metas.length > 0 && (
-            <div className="field"><label>¿A qué dirección de tu vida apunta? (opcional)</label>
-              <Selector value={metaId} ariaLabel="Meta que alimenta este reto" placeholder="Ninguna meta por ahora" onChange={setMetaId}
-                opciones={[{ value: "", label: "Ninguna meta por ahora" }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
+            <div className="field"><label>{tr("¿A qué dirección de tu vida apunta? (opcional)")}</label>
+              <Selector value={metaId} ariaLabel="Meta que alimenta este reto" placeholder={tr("Ninguna meta por ahora")} onChange={setMetaId}
+                opciones={[{ value: "", label: tr("Ninguna meta por ahora") }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
-                  Cada día cumplido del reto hará avanzar esa meta, a tu ritmo de {diasPorSemana(mask)} por semana.
+                  {tr("Cada día cumplido del reto hará avanzar esa meta, a tu ritmo de")} {diasPorSemana(mask)} {tr("por semana")}.
                 </p>
               )}
             </div>
           )}
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 6 }}>
-            {busy ? "Guardando…" : reto ? "Guardar cambios" : "Empezar el reto"}
+            {busy ? tr("com.guardando") : reto ? tr("m.meta.cambios") : tr("Empezar el reto")}
           </button>
         </form>
       </div>

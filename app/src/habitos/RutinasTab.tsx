@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Pencil, Play, Plus, Trash2, X } from "lucide-react";
 
 // Rutinas guiadas paso a paso: función ejecutiva externalizada.
@@ -88,6 +89,7 @@ function campanita() {
 }
 
 export function RutinasTab() {
+  const { t: tr } = useIdioma();
   const [rutinas, setRutinas] = useState<Rutina[]>(cargar);
   const [activa, setActiva] = useState<Rutina | null>(null);
   const [editando, setEditando] = useState<Rutina | null>(null);
@@ -118,7 +120,7 @@ export function RutinasTab() {
   return (
     <>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14, maxWidth: "64ch" }}>
-        Una rutina guiada te muestra un solo paso a la vez, en grande, con el tiempo que tú le pusiste. Nada de listas eternas: la app recuerda por ti qué viene después.
+        {tr("Una rutina guiada te muestra un solo paso a la vez, en grande, con el tiempo que tú le pusiste. Nada de listas eternas: la app recuerda por ti qué viene después.")}
       </p>
       <div className="rev-grid">
         {rutinas.map((r) => {
@@ -127,17 +129,17 @@ export function RutinasTab() {
             <div className="card panel" key={r.id}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span style={{ fontSize: 22 }}>{r.emoji}</span>
-                <h3 style={{ margin: 0, flex: 1 }}>{r.nombre}</h3>
+                <h3 style={{ margin: 0, flex: 1 }}>{tr(r.nombre)}</h3>
                 <button className="xdel" aria-label="Editar rutina" style={{ width: 26, height: 26 }} onClick={() => setEditando(r)}>
                   <Pencil size={13} />
                 </button>
                 <button className="xdel" aria-label="Eliminar rutina" style={{ width: 26, height: 26 }}
-                  onClick={() => { if (window.confirm(`¿Eliminar la rutina ${r.nombre}?`)) actualizar(rutinas.filter((x) => x.id !== r.id)); }}>
+                  onClick={() => { if (window.confirm(`${tr("¿Eliminar la rutina")} ${r.nombre}?`)) actualizar(rutinas.filter((x) => x.id !== r.id)); }}>
                   <Trash2 size={13} />
                 </button>
               </div>
               <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
-                {r.pasos.length} pasos{totalMin > 0 ? `, ≈${totalMin} min` : ""}. El primero: {r.pasos[0]?.texto ?? "sin pasos"}
+                {r.pasos.length} {tr("pasos")}{totalMin > 0 ? `, ≈${totalMin} min` : ""}. {tr("El primero:")} {r.pasos[0] ? tr(r.pasos[0].texto) : tr("sin pasos")}
               </p>
               <button className="btn primary" onClick={() => setActiva(r)}>
                 <Play size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
@@ -149,7 +151,7 @@ export function RutinasTab() {
         <div className="card panel" style={{ display: "grid", placeItems: "center", minHeight: 140 }}>
           <button className="btn ghost" onClick={() => setEditando({ id: `r${Date.now()}`, nombre: "", emoji: "✨", pasos: [] })}>
             <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-            Nueva rutina
+            {tr("Nueva rutina")}
           </button>
         </div>
       </div>
@@ -159,6 +161,7 @@ export function RutinasTab() {
 
 /** Reproductor: un paso a la vez, con cuenta regresiva si el paso tiene minutos. */
 function ReproductorRutina({ rutina, onSalir }: { rutina: Rutina; onSalir: () => void }) {
+  const { t: tr } = useIdioma();
   const [paso, setPaso] = useState(0);
   const actual = rutina.pasos[paso] ?? null;
   const [restante, setRestante] = useState<number | null>(actual?.min != null ? actual.min * 60 : null);
@@ -191,7 +194,7 @@ function ReproductorRutina({ rutina, onSalir }: { rutina: Rutina; onSalir: () =>
 
   return (
     <div className="card panel" style={{ maxWidth: 560, margin: "0 auto", textAlign: "center", padding: "34px 26px" }}>
-      <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{rutina.emoji} {rutina.nombre}</p>
+      <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{rutina.emoji} {tr(rutina.nombre)}</p>
       <div className="sd-dots">
         {rutina.pasos.map((_, i) => (
           <span key={i} className={"sd-dot" + (i === paso ? " activo" : i < paso ? " done" : "")} />
@@ -199,18 +202,18 @@ function ReproductorRutina({ rutina, onSalir }: { rutina: Rutina; onSalir: () =>
       </div>
       {terminada ? (
         <>
-          <p style={{ fontSize: 22, fontWeight: 600, margin: "18px 0" }}>Rutina completa. 🌱</p>
+          <p style={{ fontSize: 22, fontWeight: 600, margin: "18px 0" }}>{tr("Rutina completa. 🌱")}</p>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 20 }}>
-            Cada paso que diste hoy le baja la fricción al de mañana.
+            {tr("Cada paso que diste hoy le baja la fricción al de mañana.")}
           </p>
-          <button className="btn primary" onClick={onSalir}>Listo</button>
+          <button className="btn primary" onClick={onSalir}>{tr("Listo")}</button>
         </>
       ) : actual && (
         <>
           <p style={{ fontSize: 12, color: "var(--muted)", margin: "14px 0 4px" }}>
-            Paso {paso + 1} de {rutina.pasos.length}{actual.min != null ? `, ${actual.min} min` : ""}, solo esto:
+            {tr("Paso")} {paso + 1} {tr("de")} {rutina.pasos.length}{actual.min != null ? `, ${actual.min} min` : ""}, {tr("solo esto:")}
           </p>
-          <p style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.35, margin: "6px 0 10px" }}>{actual.texto}</p>
+          <p style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.35, margin: "6px 0 10px" }}>{tr(actual.texto)}</p>
           {restante !== null && (
             <div className="tnum" style={{ fontSize: 34, fontWeight: 600, color: corriendo ? "var(--ink)" : "var(--muted)", marginBottom: 14 }}>
               {mm}:{ss}
@@ -219,13 +222,13 @@ function ReproductorRutina({ rutina, onSalir }: { rutina: Rutina; onSalir: () =>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             {restante !== null && (
               <button className="btn primary" onClick={() => setCorriendo(!corriendo)}>
-                {corriendo ? "Pausar" : "Empezar el reloj"}
+                {corriendo ? tr("Pausar") : tr("Empezar el reloj")}
               </button>
             )}
             <button className={restante !== null ? "btn ghost" : "btn primary"} onClick={() => { campanita(); setPaso(paso + 1); }}>
-              Listo, siguiente
+              {tr("Listo, siguiente")}
             </button>
-            <button className="btn ghost" onClick={onSalir}>Salir</button>
+            <button className="btn ghost" onClick={onSalir}>{tr("Salir")}</button>
           </div>
         </>
       )}
@@ -235,6 +238,7 @@ function ReproductorRutina({ rutina, onSalir }: { rutina: Rutina; onSalir: () =>
 
 /** Editor: hasta 10 pasos, cada uno con su texto y sus minutos (opcionales). */
 function RutinaEditor({ rutina, onSave, onCancel }: { rutina: Rutina; onSave: (r: Rutina) => void; onCancel: () => void }) {
+  const { t: tr } = useIdioma();
   const [nombre, setNombre] = useState(rutina.nombre);
   const [emoji, setEmoji] = useState(rutina.emoji);
   const [pasos, setPasos] = useState<PasoRutina[]>(rutina.pasos.length > 0 ? rutina.pasos : [{ texto: "", min: null }]);
@@ -248,24 +252,24 @@ function RutinaEditor({ rutina, onSave, onCancel }: { rutina: Rutina; onSave: (r
   return (
     <div className="card panel" style={{ maxWidth: 560 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <h3 style={{ margin: 0, flex: 1 }}>{rutina.nombre ? "Editar rutina" : "Nueva rutina"}</h3>
+        <h3 style={{ margin: 0, flex: 1 }}>{rutina.nombre ? tr("Editar rutina") : tr("Nueva rutina")}</h3>
         <button className="xdel" aria-label="Cerrar" style={{ width: 26, height: 26 }} onClick={onCancel}><X size={14} /></button>
       </div>
       <div className="frow">
         <div className="field" style={{ width: 74 }}><label>Emoji</label>
           <input value={emoji} onChange={(e) => setEmoji(e.target.value)} maxLength={4} /></div>
         <div className="field" style={{ flex: 1 }}><label>Nombre</label>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Mañana suave" autoFocus /></div>
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={tr("Mañana suave")} autoFocus /></div>
       </div>
 
       <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "2px 0 8px" }}>
-        Pasos chiquititos (hasta {MAX_PASOS}), cada uno con sus minutos si quieres reloj. Sin minutos, avanzas tú con el botón.
+        {tr("Pasos chiquititos (hasta")} {MAX_PASOS}), {tr("cada uno con sus minutos si quieres reloj. Sin minutos, avanzas tú con el botón.")}
       </p>
       {pasos.map((p, i) => (
         <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
           <span style={{ fontSize: 11.5, color: "var(--muted)", width: 16, flex: "none" }} className="tnum">{i + 1}</span>
           <input className="input-inline" style={{ flex: 1 }} value={p.texto}
-            placeholder="Un paso concreto y chico"
+            placeholder={tr("Un paso concreto y chico")}
             onChange={(e) => setPaso(i, { texto: e.target.value })} />
           <input className="input-inline" type="number" min={1} max={120} style={{ width: 64, flex: "none" }}
             value={p.min ?? ""} placeholder="min"

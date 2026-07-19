@@ -402,7 +402,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
             : o.auto_metric === "libros_leidos"
               ? (() => {
                   const ref = o.auto_ref ?? "";
-                  if (ref.startsWith("l:")) return { icon: "📚", name: "los que elegiste" };
+                  if (ref.startsWith("l:")) return { icon: "📚", name: tr("los que elegiste") };
                   if (ref.startsWith("v:")) { const v = VIAS_LIBRO.find((x) => x.key === ref.slice(2)); return v ? { icon: "📚", name: v.label } : null; }
                   return { icon: "📚", name: "la biblioteca" };
                 })()
@@ -499,7 +499,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
             }
             return (
               <span style={{ display: "block", marginTop: 2, color: "var(--accent-ink)" }}>
-                🔥 Motor diario: {motor.marcas} {motor.marcas === 1 ? "día" : "días"} de {motor.habitos.map((h) => `${h.icon ?? "✓"} ${h.name.trim()}`).join(" y ")} empujando la barra. Terminar un libro completa su tramo.
+                🔥 {tr("Motor diario:")} {motor.marcas} {motor.marcas === 1 ? tr("día") : tr("días")} {tr("de")} {motor.habitos.map((h) => `${h.icon ?? "✓"} ${h.name.trim()}`).join(` ${tr("y")} `)} {tr("empujando la barra. Terminar un libro completa su tramo.")}
               </span>
             );
           })()}
@@ -551,6 +551,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
 /** Ideas con respaldo de investigación para cumplir lo que te propones.
  *  Fuentes variadas: Gollwitzer, Oettingen, Milkman, Locke y Latham, Kivetz. */
 function GuiaDireccion() {
+  const { t: tr } = useIdioma();
   const [abierta, setAbierta] = useState(false);
   const IDEAS = [
     {
@@ -587,8 +588,8 @@ function GuiaDireccion() {
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontSize: 22 }}>🧭</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ fontSize: 14, display: "block" }}>El arte de cumplir lo que te propones</b>
-          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>Siete ideas con respaldo de investigación, de varias fuentes. Cero frases de taza.</small>
+          <b style={{ fontSize: 14, display: "block" }}>{tr("El arte de cumplir lo que te propones")}</b>
+          <small style={{ fontSize: 12.5, color: "var(--muted)" }}>{tr("Siete ideas con respaldo de investigación, de varias fuentes. Cero frases de taza.")}</small>
         </div>
         <span style={{ color: "var(--muted)", fontSize: 12 }}>{abierta ? "▴" : "▾"}</span>
       </div>
@@ -598,13 +599,13 @@ function GuiaDireccion() {
             <div key={p.titulo} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
               <b className="tnum" style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{i + 1}</b>
               <div>
-                <b style={{ fontSize: 13 }}>{p.titulo}</b>
-                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55 }}>{p.texto}</p>
+                <b style={{ fontSize: 13 }}>{tr(p.titulo)}</b>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55 }}>{tr(p.texto)}</p>
               </div>
             </div>
           ))}
           <p style={{ fontSize: 12, color: "var(--muted)", borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-            En NucleoOS esto ya está cableado: tus deseos se escriben en Visión, maduran a metas con fecha aquí, y se conectan a hábitos, retos y movimiento para que el porcentaje avance con lo que haces de verdad.
+            {tr("En NucleoOS esto ya está cableado: tus deseos se escriben en Visión, maduran a metas con fecha aquí, y se conectan a hábitos, retos y movimiento para que el porcentaje avance con lo que haces de verdad.")}
           </p>
         </div>
       )}

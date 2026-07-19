@@ -151,7 +151,7 @@ function WorkoutLibre() {
       <form onSubmit={save} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: "1 1 130px", minWidth: 120 }}>
           <Selector value={kind} ariaLabel="Tipo de entrenamiento" onChange={setKind}
-            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} />
+            opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: tr(k) }))} />
         </div>
         <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)}
           placeholder={tr("minutos")} style={{ maxWidth: 110, flex: "none" }} aria-label="Minutos" />
@@ -259,7 +259,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
           )}
           {completada ? (
             <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>
-              🎉 {tr("Registrada:")} {rutina.categoria}, {minutos} min, ≈{estimarKcal(rutina.categoria, minutos, peso)} kcal
+              🎉 {tr("Registrada:")} {tr(rutina.categoria)}, {minutos} min, ≈{estimarKcal(rutina.categoria, minutos, peso)} kcal
             </span>
           ) : (
             <button className="btn primary" disabled={guardando} onClick={() => void completar()}>

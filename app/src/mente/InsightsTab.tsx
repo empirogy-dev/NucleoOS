@@ -1,4 +1,5 @@
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CATEGORIAS_MENTE, PRACTICAS, listSesiones, type Sesion } from "./practicas";
 
 // Insights de Mente: qué te dice tu propia práctica.
@@ -23,6 +24,7 @@ function rachaDias(sesiones: Sesion[]): number {
 }
 
 export function InsightsTab() {
+  const { t: tr } = useIdioma();
   const sesiones = listSesiones();
 
   const semana = sesiones.filter((s) => s.fecha >= hace(6));
@@ -60,7 +62,7 @@ export function InsightsTab() {
     const ini = hace(6 + i * 7);
     const fin = hace(i * 7);
     const del = sesiones.filter((s) => s.fecha >= ini && s.fecha <= fin);
-    return { etiqueta: i === 0 ? "Esta semana" : i === 1 ? "Hace 1 semana" : `Hace ${i} semanas`, minutos: del.reduce((a, s) => a + s.minutos, 0) };
+    return { etiqueta: i === 0 ? tr("Esta semana") : i === 1 ? tr("Hace 1 semana") : `${tr("Hace")} ${i} ${tr("semanas")}`, minutos: del.reduce((a, s) => a + s.minutos, 0) };
   });
   const maxMin = Math.max(1, ...barras.map((b) => b.minutos));
 
@@ -68,7 +70,7 @@ export function InsightsTab() {
     return (
       <div className="card pad" style={{ maxWidth: 640 }}>
         <p style={{ color: "var(--muted)", fontSize: 14 }}>
-          Aún no hay sesiones registradas, así que no hay espejo que mostrar. Después de tus primeras prácticas, aquí verás tus ritmos, tu práctica favorita y hacia dónde se inclina tu mente.
+          {tr("Aún no hay sesiones registradas, así que no hay espejo que mostrar. Después de tus primeras prácticas, aquí verás tus ritmos, tu práctica favorita y hacia dónde se inclina tu mente.")}
         </p>
       </div>
     );
@@ -79,20 +81,20 @@ export function InsightsTab() {
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
         <div className="card stat"><div className="k">Minutos esta semana</div><div className="v tnum">{minSemana}</div></div>
         <div className="card stat"><div className="k">Semana anterior</div><div className="v tnum">{minAnterior}</div></div>
-        <div className="card stat"><div className="k">Racha de práctica</div><div className="v tnum">{racha > 0 ? `🔥 ${racha}` : "0"} <small style={{ fontSize: 13, color: "var(--muted)" }}>días</small></div></div>
-        <div className="card stat"><div className="k">Tu favorita</div><div className="v" style={{ fontSize: 17 }}>{favorita ?? "aún ninguna"}</div></div>
+        <div className="card stat"><div className="k">{tr("Racha de práctica")}</div><div className="v tnum">{racha > 0 ? `🔥 ${racha}` : "0"} <small style={{ fontSize: 13, color: "var(--muted)" }}>días</small></div></div>
+        <div className="card stat"><div className="k">{tr("Tu favorita")}</div><div className="v" style={{ fontSize: 17 }}>{favorita ? tr(favorita) : tr("aún ninguna")}</div></div>
       </div>
 
       <div className="panelgrid">
         <div className="card panel" style={{ alignSelf: "start" }}>
-          <h3>🧭 Hacia dónde se inclina tu mente</h3>
+          <h3>{tr("🧭 Hacia dónde se inclina tu mente")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Sesiones por vía en los últimos 30 días.
+            {tr("Sesiones por vía en los últimos 30 días.")}
           </p>
           {categorias.map((c) => (
             <div className="bar" key={c.key}>
               <div className="top">
-                <span className="lbl">{c.label}</span>
+                <span className="lbl">{tr(c.label)}</span>
                 <b className="tnum">{c.n}</b>
               </div>
               <div className="track">
@@ -102,15 +104,15 @@ export function InsightsTab() {
           ))}
           {masVisitada.n > 0 && (
             <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 12, lineHeight: 1.5 }}>
-              Tu vía más visitada es <b>{masVisitada.label}</b>. {masVisitada.descripcion} Eso también es información: tu mente sabe qué está buscando.
+              {tr("Tu vía más visitada es")} <b>{tr(masVisitada.label)}</b>. {tr(masVisitada.descripcion)} {tr("Eso también es información: tu mente sabe qué está buscando.")}
             </p>
           )}
         </div>
 
         <div className="card panel" style={{ alignSelf: "start" }}>
-          <h3>📈 Tu ritmo de práctica</h3>
+          <h3>{tr("📈 Tu ritmo de práctica")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Minutos por semana, las últimas cuatro.
+            {tr("Minutos por semana, las últimas cuatro.")}
           </p>
           {barras.map((b) => (
             <div className="bar" key={b.etiqueta}>
@@ -125,8 +127,8 @@ export function InsightsTab() {
           ))}
           <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 12, lineHeight: 1.5 }}>
             {minSemana >= minAnterior
-              ? "Vas sosteniendo o subiendo tu práctica. La constancia le gana a la intensidad. 🌱"
-              : "Esta semana bajó un poco. Sin culpa: una sesión de dos minutos hoy ya reactiva el ritmo."}
+              ? tr("Vas sosteniendo o subiendo tu práctica. La constancia le gana a la intensidad. 🌱")
+              : tr("Esta semana bajó un poco. Sin culpa: una sesión de dos minutos hoy ya reactiva el ritmo.")}
           </p>
         </div>
       </div>

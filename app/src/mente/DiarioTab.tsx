@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import { fechaRegistro } from "../lib/fechas";
@@ -7,6 +8,7 @@ import { PROMPTS_DIARIO, addEntry, deleteEntry, listEntries, type JournalEntry }
 // Diario: escribir para ordenar la cabeza. Con pregunta guía o en libre.
 
 export function DiarioTab() {
+  const { t: tr } = useIdioma();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [prompt, setPrompt] = useState<string | null>(null);
   const [texto, setTexto] = useState("");
@@ -65,9 +67,9 @@ export function DiarioTab() {
   return (
     <div className="panelgrid">
       <div className="card panel" style={{ alignSelf: "start" }}>
-        <h3>✍️ Hoy</h3>
+        <h3>✍️ {tr("hoy").charAt(0).toUpperCase() + tr("hoy").slice(1)}</h3>
         <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-          Elige una pregunta guía o escribe libre. No tiene que ser bonito, tiene que ser honesto.
+          {tr("Elige una pregunta guía o escribe libre. No tiene que ser bonito, tiene que ser honesto.")}
         </p>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
           {PROMPTS_DIARIO.map((p) => (
@@ -75,11 +77,11 @@ export function DiarioTab() {
               className="chip"
               style={{ border: "none", cursor: "pointer", ...(prompt === p.texto ? {} : { background: "var(--surface)", color: "var(--ink-soft)" }) }}
               onClick={() => setPrompt(prompt === p.texto ? null : p.texto)}>
-              {p.emoji} {p.texto.split(":")[0].split(",")[0].split("?")[0].slice(0, 32)}
+              {p.emoji} {tr(p.texto).split(":")[0].split(",")[0].split("?")[0].slice(0, 32)}
             </button>
           ))}
         </div>
-        {prompt && <p style={{ fontSize: 13, color: "var(--accent-ink)", fontWeight: 500, marginBottom: 8 }}>{prompt}</p>}
+        {prompt && <p style={{ fontSize: 13, color: "var(--accent-ink)", fontWeight: 500, marginBottom: 8 }}>{tr(prompt)}</p>}
         {error && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 8 }}>{error}</p>}
         <form onSubmit={guardar}>
           <textarea
@@ -87,21 +89,21 @@ export function DiarioTab() {
             rows={6}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Escribe aquí, para ti…"
+            placeholder={tr("Escribe aquí, para ti…")}
           />
           <button className="btn primary" disabled={busy || !texto.trim()} style={{ marginTop: 10 }}>
-            {busy ? "Guardando…" : "Guardar en mi diario"}
+            {busy ? tr("com.guardando") : tr("Guardar en mi diario")}
           </button>
         </form>
       </div>
 
       <div className="card panel" style={{ alignSelf: "start" }}>
-        <h3>📖 Entradas anteriores</h3>
+        <h3>{tr("📖 Entradas anteriores")}</h3>
         {loading ? (
           <p style={{ color: "var(--muted)" }}>Cargando…</p>
         ) : entries.length === 0 ? (
           <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-            Aún no hay entradas. La primera puede ser de dos líneas, eso ya cuenta.
+            {tr("Aún no hay entradas. La primera puede ser de dos líneas, eso ya cuenta.")}
           </p>
         ) : (
           entries.slice(0, 20).map((e) => (
@@ -109,7 +111,7 @@ export function DiarioTab() {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <b style={{ fontSize: 12, color: "var(--muted)", flex: 1 }}>{e.date}{e.prompt ? `, ${e.prompt.slice(0, 40)}…` : ""}</b>
                 <button className="xdel" style={{ width: 24, height: 24 }} aria-label="Eliminar entrada"
-                  onClick={async () => { if (!window.confirm("¿Eliminar esta entrada del diario?")) return; await deleteEntry(e.id); void reload(); }}>
+                  onClick={async () => { if (!window.confirm(tr("¿Eliminar esta entrada del diario?"))) return; await deleteEntry(e.id); void reload(); }}>
                   <Trash2 size={12} />
                 </button>
               </div>
