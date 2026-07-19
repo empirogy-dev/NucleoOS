@@ -1,4 +1,5 @@
 import { Selector } from "./Selector";
+import { useIdioma } from "../idioma/IdiomaProvider";
 
 // Selector de hora 100% del tema: dos desplegables propios (hora y minutos).
 // Nada nativo del navegador. Entrega y recibe "HH:MM" (24 horas).
@@ -11,6 +12,7 @@ export function CampoHora({ value, onChange, ariaLabel }: {
   onChange: (v: string) => void;
   ariaLabel: string;
 }) {
+  const { t } = useIdioma();
   const [h, m] = value ? value.split(":") : ["", ""];
   // Si el minuto guardado no es múltiplo de 5 (registros antiguos), se ofrece igual.
   const minutos = m && !MINUTOS.includes(m) ? [m, ...MINUTOS] : MINUTOS;
@@ -20,7 +22,7 @@ export function CampoHora({ value, onChange, ariaLabel }: {
       <Selector
         value={h}
         ariaLabel={`${ariaLabel}, hora`}
-        placeholder="hora"
+        placeholder={t("com.hora")}
         opciones={HORAS.map((x) => ({ value: x, label: x }))}
         onChange={(nh) => onChange(`${nh}:${m || "00"}`)}
       />
@@ -28,7 +30,7 @@ export function CampoHora({ value, onChange, ariaLabel }: {
       <Selector
         value={m}
         ariaLabel={`${ariaLabel}, minutos`}
-        placeholder="min"
+        placeholder={t("com.min")}
         opciones={minutos.map((x) => ({ value: x, label: x }))}
         onChange={(nm) => onChange(`${h || "00"}:${nm}`)}
       />

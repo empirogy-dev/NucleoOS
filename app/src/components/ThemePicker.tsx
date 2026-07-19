@@ -1,17 +1,20 @@
 import { X } from "lucide-react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { PALETTES } from "../theme/palettes";
 import { useTheme } from "../theme/ThemeProvider";
 
 export function ThemePicker({ onClose }: { onClose: () => void }) {
+  const { t: tr } = useIdioma();
+
   const { palette, setPalette } = useTheme();
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <h3>Elige tu tema</h3>
+          <h3>{tr("tp.titulo")}</h3>
           <button className="xdel" aria-label="Cerrar" onClick={onClose}><X size={14} /></button>
         </div>
-        <p>Tu espacio, tu color. Toda la app se adapta al instante.</p>
+        <p>{tr("tp.sub")}</p>
         <div className="tp-grid">
           {PALETTES.map((p) => (
             <button
@@ -29,7 +32,7 @@ export function ThemePicker({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <div className="tp-close">
-          <button className="btn primary" onClick={onClose}>Listo</button>
+          <button className="btn primary" onClick={onClose}>{tr("tp.listo")}</button>
         </div>
       </div>
     </div>

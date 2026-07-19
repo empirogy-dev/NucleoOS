@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { Scissors, Trash2 } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
@@ -17,6 +18,7 @@ import {
 // ni meta (hacer la cama, lavar la ropa), anotadas para no olvidarlas.
 
 export function TareasHoy() {
+  const { t: tr } = useIdioma();
   const [tareas, setTareas] = useState<DayTask[]>([]);
   const [nueva, setNueva] = useState("");
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -61,7 +63,7 @@ export function TareasHoy() {
   if (needsMigration) {
     return (
       <div className="card panel">
-        <h3>📝 Tareas de hoy</h3>
+        <h3>{tr("i.tareas")}</h3>
         <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
           Para estrenar el checklist del día falta un paso en Supabase: corre
           <code> supabase/migrations/0033_tareas_dia.sql</code> en el SQL Editor y listo.
@@ -74,7 +76,7 @@ export function TareasHoy() {
   return (
     <div className="card panel">
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <h3 style={{ flex: 1 }}>📝 Tareas de hoy</h3>
+        <h3 style={{ flex: 1 }}>{tr("i.tareas")}</h3>
         {deHoy.length > 0 && (
           <span className="chip">{listas} de {deHoy.length}</span>
         )}
@@ -82,8 +84,8 @@ export function TareasHoy() {
 
       <form onSubmit={agregar} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
         <input className="input-inline" value={nueva} onChange={(e) => setNueva(e.target.value)}
-          placeholder="Hacer la cama, lavar la ropa, llamar al banco…" />
-        <button className="btn ghost" type="submit" disabled={busy}>Anotar</button>
+          placeholder={tr("i.tareas.ph")} />
+        <button className="btn ghost" type="submit" disabled={busy}>{tr("i.tareas.anotar")}</button>
       </form>
 
       {error && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 8 }}>{error}</p>}

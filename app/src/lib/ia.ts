@@ -4,8 +4,22 @@
 // en el navegador. La llave local en .env queda como respaldo de desarrollo.
 
 import { supabase } from "./supabase";
+import { idiomaActual } from "../idioma/actual";
 
 const key = import.meta.env.VITE_GEMINI_API_KEY;
+
+// La IA le habla a la persona en el idioma que eligió en Ajustes. Los
+// prompts están escritos en español (la fuente de verdad), así que esta
+// directiva final manda sobre ellos cuando el idioma es otro.
+const DIRECTIVA_IDIOMA: Record<string, string> = {
+  en: "\n\nIMPORTANT OVERRIDE: the person uses the app in ENGLISH. Even if the instructions above ask for Spanish, write your ENTIRE response in natural English. If a JSON format was requested, keep the JSON keys exactly as specified and translate only the values.",
+  pt: "\n\nIMPORTANTE: a pessoa usa o app em PORTUGUÊS. Mesmo que as instruções acima peçam espanhol, escreva TODA a sua resposta em português natural do Brasil. Se um formato JSON foi pedido, mantenha as chaves do JSON exatamente como especificado e traduza apenas os valores.",
+};
+
+function conIdioma(parts: Part[]): Part[] {
+  const directiva = DIRECTIVA_IDIOMA[idiomaActual()];
+  return directiva ? [...parts, { text: directiva }] : parts;
+}
 
 export const iaConfigured = Boolean(supabase) || Boolean(key);
 
@@ -53,9 +67,10 @@ async function generarViaServidor(parts: Part[]): Promise<string> {
 }
 
 async function generate(parts: Part[]): Promise<string> {
+  const partes = conIdioma(parts);
   if (supabase) {
     try {
-      return await generarViaServidor(parts);
+      return await generarViaServidor(partes);
     } catch (e) {
       // Sin llave local no hay respaldo: el error del servidor manda.
       if (!key) throw e;
@@ -67,7 +82,7 @@ async function generate(parts: Part[]): Promise<string> {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts }] }),
+      body: JSON.stringify({ contents: [{ parts: partes }] }),
     }
   );
   if (!res.ok) {

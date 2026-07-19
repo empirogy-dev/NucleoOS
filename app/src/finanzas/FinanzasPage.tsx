@@ -1081,6 +1081,8 @@ function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
 }
 
 function GoalModal({ edit, metasDireccion, onClose, onSaved }: { edit?: Goal | null; metasDireccion: Objective[]; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
+
   const [name, setName] = useState(edit?.name ?? "");
   const [target, setTarget] = useState(edit ? String(edit.target_amount) : "");
   const [current, setCurrent] = useState(edit ? String(edit.current_amount) : "");
@@ -1114,18 +1116,18 @@ function GoalModal({ edit, metasDireccion, onClose, onSaved }: { edit?: Goal | n
   }
 
   return (
-    <Modal title={edit ? "Editar meta de ahorro" : "Nueva meta de ahorro"} onClose={onClose}>
+    <Modal title={edit ? tr("m.gol.editar") : tr("m.gol.nueva")} onClose={onClose}>
       <form onSubmit={save}>
         <div className="frow">
-          <div className="field" style={{ flex: 1 }}><label>Nombre</label>
+          <div className="field" style={{ flex: 1 }}><label>{tr("com.nombre")}</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Viaje a Chile" autoFocus /></div>
           <IconField value={icon} onChange={setIcon} />
         </div>
         <div className="frow">
-          <div className="field"><label>Monto objetivo</label>
+          <div className="field"><label>{tr("m.gol.monto")}</label>
             <input type="number" required min="1" step="any" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="2000" /></div>
           {edit && (
-            <div className="field"><label>Llevo ahorrado</label>
+            <div className="field"><label>{tr("m.gol.llevo")}</label>
               <input type="number" min="0" step="any" value={current} onChange={(e) => setCurrent(e.target.value)} /></div>
           )}
         </div>
@@ -1133,7 +1135,7 @@ function GoalModal({ edit, metasDireccion, onClose, onSaved }: { edit?: Goal | n
           <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         {metasDireccion.length > 0 && (
           <div className="field">
-            <label>Empuja una meta de tu Dirección (opcional)</label>
+            <label>{tr("m.gol.empuja")}</label>
             <Selector value={objetivoId} ariaLabel="Meta de Dirección que este ahorro empuja"
               opciones={[{ value: "", label: "Ninguna, este ahorro va solo" }, ...metasDireccion.map((o) => ({ value: o.id, label: `🧭 ${o.title}` }))]}
               onChange={setObjetivoId} />
@@ -1389,6 +1391,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
           : "")
     : "";
   const [type, setType] = useState<Tx["type"]>(edit?.type ?? "expense");
+  const { t: tr } = useIdioma();
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
   // La firma del banco: bank_ref (0043), o la descripción en filas antiguas.
@@ -1459,19 +1462,19 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
   }
 
   return (
-    <Modal title={edit ? "Editar movimiento" : "Registrar movimiento"} onClose={onClose}>
+    <Modal title={edit ? tr("m.tx.editar") : tr("m.tx.registrar")} onClose={onClose}>
       <div className="seg">
-        <button className={"segbtn" + (type === "expense" ? " active" : "")} onClick={() => setType("expense")} type="button">Gasto</button>
-        <button className={"segbtn" + (type === "income" ? " active" : "")} onClick={() => setType("income")} type="button">Ingreso</button>
-        <button className={"segbtn" + (type === "transfer" ? " active" : "")} onClick={() => setType("transfer")} type="button">Transferencia</button>
+        <button className={"segbtn" + (type === "expense" ? " active" : "")} onClick={() => setType("expense")} type="button">{tr("m.tx.gasto")}</button>
+        <button className={"segbtn" + (type === "income" ? " active" : "")} onClick={() => setType("income")} type="button">{tr("m.tx.ingreso")}</button>
+        <button className={"segbtn" + (type === "transfer" ? " active" : "")} onClick={() => setType("transfer")} type="button">{tr("m.tx.transfer")}</button>
       </div>
       {err && <div className="msg err" style={{ fontSize: 12.5, padding: "8px 10px", borderRadius: 8, background: "color-mix(in srgb,var(--err) 12%,var(--paper))", borderLeft: "3px solid var(--err)", marginBottom: 10 }}>{err}</div>}
       <form onSubmit={save}>
-        <div className="field"><label>Monto</label>
+        <div className="field"><label>{tr("m.tx.monto")}</label>
           <input type="number" required min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="36000" autoFocus /></div>
-        <div className="field"><label>Comercio (a quién le pagaste)</label>
+        <div className="field"><label>{tr("m.tx.comercio")}</label>
           <input value={merchant} onChange={(e) => setMerchant(e.target.value)} placeholder="Amazon, Spice Sex, Metro…" /></div>
-        <div className="field"><label>Descripción (qué fue)</label>
+        <div className="field"><label>{tr("m.tx.desc")}</label>
           <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="el internet, frutillas, regalo…" /></div>
         {esDelBanco && (merchant.trim() !== "" || categoryId !== "") && (
           <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer", lineHeight: 1.45 }}>
@@ -1484,7 +1487,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
         )}
         <div className="frow">
           {type !== "transfer" && (
-            <div className="field"><label>Categoría</label>
+            <div className="field"><label>{tr("m.tx.categoria")}</label>
               <Selector value={categoryId} ariaLabel="Categoría" placeholder="Sin categoría" onChange={setCategoryId}
                 opciones={[{ value: "", label: "Sin categoría" }, ...cats.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} /></div>
           )}
@@ -1568,6 +1571,7 @@ function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClo
 }
 
 function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [name, setName] = useState(edit?.name ?? "");
   const [type, setType] = useState<Category["type"]>(edit?.type ?? "expense");
   const [icon, setIcon] = useState(edit?.icon ?? "🏷️");
@@ -1606,7 +1610,7 @@ function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onC
       {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
       <form onSubmit={save}>
         <div className="frow">
-          <div className="field" style={{ flex: 1 }}><label>Nombre</label>
+          <div className="field" style={{ flex: 1 }}><label>{tr("com.nombre")}</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Mascotas" autoFocus /></div>
           <IconField value={icon} onChange={setIcon} />
         </div>

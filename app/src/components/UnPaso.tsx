@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { hoyLocal } from "../lib/fechas";
 import { listDayTasks, toggleDayTask, type DayTask } from "../tareas/data";
@@ -23,6 +24,8 @@ const MICROS = [
 ];
 
 export function UnPaso() {
+  const { t: tr } = useIdioma();
+
   const [paso, setPaso] = useState<Paso | null>(null);
   const [cargando, setCargando] = useState(false);
   const [hecha, setHecha] = useState(false);
@@ -72,10 +75,10 @@ export function UnPaso() {
     <div className="card panel" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: paso ? 10 : 0 }}>
         <span style={{ fontSize: 20 }}>👉</span>
-        <h3 style={{ margin: 0, flex: 1 }}>¿No sabes por dónde empezar?</h3>
+        <h3 style={{ margin: 0, flex: 1 }}>{tr("i.unpaso")}</h3>
         {!paso && (
           <button className="btn primary" disabled={cargando} onClick={() => void elegir()}>
-            {cargando ? "Eligiendo…" : "Dime una sola cosa"}
+            {cargando ? tr("i.unpaso.eligiendo") : tr("i.unpaso.btn")}
           </button>
         )}
       </div>

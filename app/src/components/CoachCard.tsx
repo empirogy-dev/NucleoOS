@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Compass, Send } from "lucide-react";
 import { consejoCoach, hablarConCoach, iaConfigured } from "../lib/ia";
 
@@ -11,6 +12,7 @@ interface Mensaje {
 }
 
 export function CoachCard({ resumen }: { resumen: string }) {
+  const { t: tr } = useIdioma();
   const [charla, setCharla] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,7 +51,7 @@ export function CoachCard({ resumen }: { resumen: string }) {
 
   return (
     <div className="card panel" style={{ marginBottom: 16 }}>
-      <h3><Compass size={14} style={{ verticalAlign: "-2px" }} /> Tu coach</h3>
+      <h3><Compass size={14} style={{ verticalAlign: "-2px" }} /> {tr("i.coach")}</h3>
       {!iaConfigured ? (
         <p style={{ fontSize: 13, color: "var(--muted)" }}>
           Para activar el coach, agrega tu llave gratuita de Gemini como VITE_GEMINI_API_KEY en app/.env
@@ -78,14 +80,14 @@ export function CoachCard({ resumen }: { resumen: string }) {
               style={{ flex: "1 1 220px" }}
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
-              placeholder="Cuéntale cómo te sientes o pregúntale algo…"
+              placeholder={tr("i.coach.ph")}
               disabled={busy}
             />
             <button className="btn primary" disabled={busy || !texto.trim()} aria-label="Enviar al coach">
               <Send size={14} style={{ verticalAlign: "-2px" }} />
             </button>
             <button type="button" className="btn ghost" disabled={busy} onClick={() => void pedirConsejo()}>
-              {charla.length > 0 ? "Otro consejo" : "Pedir un consejo"}
+              {charla.length > 0 ? tr("i.coach.otro") : tr("i.coach.pedir")}
             </button>
           </form>
         </>

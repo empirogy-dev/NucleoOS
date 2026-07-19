@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 
 // Desplegable propio de NucleoOS: el listado de un <select> nativo lo
 // dibuja el sistema operativo y no se puede pintar. Este panel es nuestro,
@@ -10,7 +11,7 @@ export interface OpcionSelector {
   label: string;
 }
 
-export function Selector({ value, onChange, opciones, ariaLabel, placeholder = "Elegir", compacto = false }: {
+export function Selector({ value, onChange, opciones, ariaLabel, placeholder, compacto = false }: {
   value: string;
   onChange: (v: string) => void;
   opciones: OpcionSelector[];
@@ -19,6 +20,8 @@ export function Selector({ value, onChange, opciones, ariaLabel, placeholder = "
   compacto?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useIdioma();
+  const ph = placeholder ?? t("com.elegir");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export function Selector({ value, onChange, opciones, ariaLabel, placeholder = "
         aria-label={ariaLabel}
         onClick={() => setOpen(!open)}
       >
-        <span className={"sel-txt" + (actual ? "" : " vacio")}>{actual?.label ?? placeholder}</span>
+        <span className={"sel-txt" + (actual ? "" : " vacio")}>{actual?.label ?? ph}</span>
         <ChevronDown size={13} style={{ flex: "none", color: "var(--muted)" }} />
       </button>
       {open && (

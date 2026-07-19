@@ -338,6 +338,7 @@ function HabitModal({ base, habit, onClose, onSaved }: {
   const [minutos, setMinutos] = useState(habit?.daily_minutes != null ? String(habit.daily_minutes) : "");
   const [metas, setMetas] = useState<Objective[]>([]);
   const [metaId, setMetaId] = useState(habit?.meta_id ?? "");
+  const { t: tr } = useIdioma();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -382,11 +383,11 @@ function HabitModal({ base, habit, onClose, onSaved }: {
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
-        <h3 style={{ marginBottom: 14 }}>{habit ? "Editar hábito" : "Nuevo hábito"}</h3>
+        <h3 style={{ marginBottom: 14 }}>{habit ? tr("m.hab.editar") : tr("m.hab.nuevo")}</h3>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
           <div className="frow">
-            <div className="field" style={{ flex: 1 }}><label>Nombre</label>
+            <div className="field" style={{ flex: 1 }}><label>{tr("com.nombre")}</label>
               <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Proyección de familia" autoFocus /></div>
             <IconField value={icon} onChange={setIcon} />
           </div>
@@ -415,7 +416,7 @@ function HabitModal({ base, habit, onClose, onSaved }: {
             </div>
           </div>
           {metas.length > 0 && (
-            <div className="field"><label>¿A qué meta de tu Dirección empuja? (opcional)</label>
+            <div className="field"><label>{tr("m.hab.meta")}</label>
               <Selector value={metaId} ariaLabel="Meta de la que este hábito es motor diario" placeholder="Ninguna meta por ahora" onChange={setMetaId}
                 opciones={[{ value: "", label: "Ninguna meta por ahora" }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (

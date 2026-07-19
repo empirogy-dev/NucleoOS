@@ -1,25 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
+import { useIdioma } from "../idioma/IdiomaProvider";
+import { CALENDARIO } from "../idioma/textos";
 
 // Calendario propio de NucleoOS: el panel de un <input type="date"> lo
 // dibuja el navegador y no se puede pintar. Este calendario es nuestro,
-// con la tarjeta, los bordes y los colores del tema. Entrega "YYYY-MM-DD".
-
-const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-const DIAS = ["lu", "ma", "mi", "ju", "vi", "sá", "do"];
+// con la tarjeta, los bordes y los colores del tema, y habla el idioma
+// elegido en Ajustes. Entrega "YYYY-MM-DD".
 
 function fmt(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-function legible(v: string): string {
-  const [y, m, d] = v.split("-").map(Number);
-  if (!y || !m || !d) return v;
-  return `${d} de ${MESES[m - 1]} de ${y}`;
-}
-
-export function CampoFecha({ value, onChange, ariaLabel, placeholder = "Elegir fecha", compacto = false, conBorrar = true, min, max }: {
+export function CampoFecha({ value, onChange, ariaLabel, placeholder, compacto = false, conBorrar = true, min, max }: {
   value: string;
   onChange: (v: string) => void;
   ariaLabel: string;
@@ -31,11 +25,19 @@ export function CampoFecha({ value, onChange, ariaLabel, placeholder = "Elegir f
   max?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { idioma, t } = useIdioma();
+  const cal = CALENDARIO[idioma];
   const hoy = hoyLocal();
   const base = value || hoy;
   const [anio, setAnio] = useState(Number(base.slice(0, 4)));
   const [mes, setMes] = useState(Number(base.slice(5, 7)) - 1);
   const ref = useRef<HTMLDivElement>(null);
+
+  function legible(v: string): string {
+    const [y, m, d] = v.split("-").map(Number);
+    if (!y || !m || !d) return v;
+    return cal.legible(d, cal.meses[m - 1], y);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -83,7 +85,7 @@ export function CampoFecha({ value, onChange, ariaLabel, placeholder = "Elegir f
         aria-label={ariaLabel}
         onClick={() => setOpen(!open)}
       >
-        <span className={"sel-txt" + (value ? "" : " vacio")}>{value ? legible(value) : placeholder}</span>
+        <span className={"sel-txt" + (value ? "" : " vacio")}>{value ? legible(value) : placeholder ?? t("com.elegirfecha")}</span>
         <CalendarDays size={13} style={{ flex: "none", color: "var(--muted)" }} />
       </button>
       {open && (
@@ -91,12 +93,12 @@ export function CampoFecha({ value, onChange, ariaLabel, placeholder = "Elegir f
           <div className="cal-head">
             <button type="button" className="cal-nav" aria-label="Año anterior" onClick={() => setAnio(anio - 1)}><ChevronsLeft size={13} /></button>
             <button type="button" className="cal-nav" aria-label="Mes anterior" onClick={() => mover(-1)}><ChevronLeft size={14} /></button>
-            <span className="cal-mes">{MESES[mes]} {anio}</span>
+            <span className="cal-mes">{cal.meses[mes]} {anio}</span>
             <button type="button" className="cal-nav" aria-label="Mes siguiente" onClick={() => mover(1)}><ChevronRight size={14} /></button>
             <button type="button" className="cal-nav" aria-label="Año siguiente" onClick={() => setAnio(anio + 1)}><ChevronsRight size={13} /></button>
           </div>
           <div className="cal-grid">
-            {DIAS.map((d) => <span key={d} className="cal-dow">{d}</span>)}
+            {cal.dias.map((d) => <span key={d} className="cal-dow">{d}</span>)}
             {celdas.map((d, i) => d === null
               ? <span key={`v${i}`} />
               : (() => {
@@ -114,9 +116,9 @@ export function CampoFecha({ value, onChange, ariaLabel, placeholder = "Elegir f
           </div>
           <div className="cal-pie">
             {conBorrar && value
-              ? <button type="button" className="cal-accion" onClick={() => { onChange(""); setOpen(false); }}>Borrar</button>
+              ? <button type="button" className="cal-accion" onClick={() => { onChange(""); setOpen(false); }}>{t("com.borrar")}</button>
               : <span />}
-            <button type="button" className="cal-accion" onClick={() => { onChange(hoy); setOpen(false); }}>Hoy</button>
+            <button type="button" className="cal-accion" onClick={() => { onChange(hoy); setOpen(false); }}>{t("com.hoy")}</button>
           </div>
         </div>
       )}

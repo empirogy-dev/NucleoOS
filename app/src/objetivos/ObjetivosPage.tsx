@@ -829,6 +829,8 @@ function AutoConfig({ o, cx, activaLabel, onChanged }: { o: Objective; cx: Conex
 
 /** Editar lo esencial de una meta: título, área y fecha límite. */
 function EditObjectiveModal({ o, onClose, onSaved }: { o: Objective; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
+
   const [title, setTitle] = useState(o.title);
   const [area, setArea] = useState(o.area ?? "");
   const [deadline, setDeadline] = useState(o.deadline ?? "");
@@ -849,26 +851,28 @@ function EditObjectiveModal({ o, onClose, onSaved }: { o: Objective; onClose: ()
   }
 
   return (
-    <ModalShell title="Editar meta" onClose={onClose}>
+    <ModalShell title={tr("m.meta.editar")} onClose={onClose}>
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
       <form onSubmit={save}>
-        <div className="field"><label>La meta</label>
+        <div className="field"><label>{tr("m.meta.lameta")}</label>
           <input required value={title} onChange={(e) => setTitle(e.target.value)} autoFocus /></div>
-        <div className="field"><label>Área de la vida</label>
+        <div className="field"><label>{tr("m.meta.area")}</label>
           <Selector value={area} ariaLabel="Área de la vida" onChange={setArea}
             opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
-        <div className="field"><label>Fecha límite</label>
+        <div className="field"><label>{tr("m.meta.fecha")}</label>
           <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           La fecha límite también define el plazo del progreso automático: con ella la meta sabe cuántas semanas tiene.
         </p>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar cambios"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("m.meta.cambios")}</button>
       </form>
     </ModalShell>
   );
 }
 
 function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
+
   const [title, setTitle] = useState("");
   const [area, setArea] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -907,29 +911,29 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
   }
 
   return (
-    <ModalShell title="Nueva meta" onClose={onClose}>
+    <ModalShell title={tr("btn.nuevameta")} onClose={onClose}>
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
       <form onSubmit={save}>
-        <div className="field"><label>¿Qué quieres lograr?</label>
+        <div className="field"><label>{tr("m.meta.que")}</label>
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ahorrar para el viaje a Japón" autoFocus /></div>
-        <div className="field"><label>Área de la vida</label>
+        <div className="field"><label>{tr("m.meta.area")}</label>
           <Selector value={area} ariaLabel="Área de la vida" onChange={(v) => { setArea(v); setMetric(""); setRef(""); }}
             opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
-        <div className="field"><label>Fecha límite (opcional)</label>
+        <div className="field"><label>{tr("m.meta.fechaop")}</label>
           <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         <div className="frow">
-          <div className="field"><label>Se alimenta de (opcional)</label>
-            <Selector value={metric} ariaLabel="Métrica que alimenta la meta" placeholder="Nada, progreso manual o por pasos"
-              opciones={[{ value: "", label: "Nada, progreso manual o por pasos" }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: m.label }))]}
+          <div className="field"><label>{tr("m.meta.alimenta")}</label>
+            <Selector value={metric} ariaLabel="Métrica que alimenta la meta" placeholder={tr("m.meta.nada")}
+              opciones={[{ value: "", label: tr("m.meta.nada") }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: m.label }))]}
               onChange={(v) => { setMetric(v); setRef(v === "libros_leidos" ? "l:" : ""); }} /></div>
           {metric && metric !== "ahorro_meta" && !(metric === "libros_leidos" && ref.startsWith("l:")) && (
-            <div className="field" style={{ maxWidth: 120 }}><label>{metric === "libros_leidos" ? "Libros en total" : "Por semana"}</label>
+            <div className="field" style={{ maxWidth: 120 }}><label>{metric === "libros_leidos" ? tr("m.meta.libros") : tr("m.meta.porsemana")}</label>
               <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="3" /></div>
           )}
         </div>
         {METRICAS_CON_REF.includes(metric) && (
           <div className="field">
-            <label>Conectada a</label>
+            <label>{tr("m.meta.conectada")}</label>
             <SelectorDeRef metric={metric} refVal={ref} onRef={setRef} cx={cx} />
             {metric === "libros_leidos" && ref.startsWith("l:") && (
               <ChecklistLibros refVal={ref} onRef={setRef} libros={cx.libros} />
@@ -942,13 +946,15 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
             {metric !== "ahorro_meta" && metric !== "libros_leidos" && " Con la fecha límite, la meta calcula el total del plazo y cada registro real avanza su porcentaje, un día a la vez."}
           </p>
         )}
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear meta"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("m.meta.crear")}</button>
       </form>
     </ModalShell>
   );
 }
 
 function AvanceModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
+
   const [description, setDescription] = useState("");
   const [area, setArea] = useState("objetivos");
   const [date, setDate] = useState(hoyLocal());
@@ -962,20 +968,20 @@ function AvanceModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   }
 
   return (
-    <ModalShell title="Registrar avance" onClose={onClose}>
+    <ModalShell title={tr("btn.registraravance")} onClose={onClose}>
       <form onSubmit={save}>
-        <div className="field"><label>¿Qué lograste?</label>
+        <div className="field"><label>{tr("m.avance.que")}</label>
           <textarea className="vision-edit" rows={3} required value={description} autoFocus
             placeholder="Por ejemplo: hoy entrené 30 minutos, o ahorré 100 dólares."
             onChange={(e) => setDescription(e.target.value)} /></div>
         <div className="frow">
-          <div className="field"><label>Área</label>
+          <div className="field"><label>{tr("m.avance.area")}</label>
             <Selector value={area} ariaLabel="Área del avance" onChange={setArea}
               opciones={AREAS.map((a) => ({ value: a.key, label: a.name }))} /></div>
-          <div className="field"><label>Fecha</label>
+          <div className="field"><label>{tr("m.avance.fecha")}</label>
             <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha del avance" conBorrar={false} /></div>
         </div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar avance"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("m.avance.guardar")}</button>
       </form>
     </ModalShell>
   );

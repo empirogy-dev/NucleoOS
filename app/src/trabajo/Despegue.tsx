@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { Check, Rocket, RotateCcw } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
@@ -26,6 +27,8 @@ interface ItemRadar {
 }
 
 export function Despegue() {
+  const { t: tr } = useIdioma();
+
   const [items, setItems] = useState<ItemRadar[] | null>(null);
   const [primerPaso, setPrimerPaso] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -127,19 +130,19 @@ export function Despegue() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <Rocket size={18} style={{ color: "var(--accent-ink)", flex: "none" }} />
         <div style={{ flex: 1, minWidth: 180 }}>
-          <h3 style={{ margin: 0 }}>Despegue: por dónde empezar</h3>
+          <h3 style={{ margin: 0 }}>{tr("d.titulo")}</h3>
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "2px 0 0" }}>
-            Lo más difícil es dejar el suelo: tus pendientes, del más liviano al más pesado. Las victorias rápidas crean el impulso.
+            {tr("d.sub")}
           </p>
         </div>
         {items === null ? (
           <button className="btn primary" disabled={cargando} onClick={() => void escanear()}>
-            {cargando ? "Preparando…" : "Despegar 🚀"}
+            {cargando ? tr("d.preparando") : tr("d.boton")}
           </button>
         ) : (
           <button className="btn ghost" disabled={cargando} onClick={() => void escanear()} aria-label="Volver a escanear">
             <RotateCcw size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-            {cargando ? "Preparando…" : "Otra pasada"}
+            {cargando ? tr("d.preparando") : tr("d.otra")}
           </button>
         )}
       </div>
