@@ -684,11 +684,9 @@ Deno.serve(async (req: Request) => {
       // Red de seguridad: si el modelo dijo que guardó algo pero ninguna tool
       // escribió, se lo avisamos. Prefiero admitir el fallo antes que dejar a
       // la usuaria creyendo que su registro quedó hecho.
-      const suenaAConfirmacion = /(list[oa]|registr|anot|guard|apunt)/i.test(respuesta);
-      if (ctx.escrituras.length === 0 && suenaAConfirmacion) {
-        respuesta += "
-
-⚠️ Ojo: no alcancé a guardarlo en la app. ¿Me lo cuentas de nuevo con el detalle (qué hiciste y cuánto)?";
+      const dijoQueGuardo = /(listo|registr|anot|guard|apunt)/i.test(respuesta);
+      if (ctx.escrituras.length === 0 && dijoQueGuardo) {
+        respuesta += "\n\nOjo: no alcancé a guardarlo en la app. ¿Me lo cuentas otra vez con el detalle, qué hiciste y cuánto?";
         await db.from("wa_eventos").insert({
           user_id: lote.user_id, lote_id: lote.id, tipo: "error",
           detalle: { motivo: "confirmo sin registrar" },
