@@ -30,13 +30,22 @@ function admin(): SupabaseClient {
 
 // ---------- Utilidades ----------
 
+/** La fecha de la usuaria en SU zona (Santiago, Bogotá, Madrid, Vancouver…).
+ *  Si la zona guardada fuera inválida, cae a UTC en vez de romper el lote. */
+function enZona(timezone: string, d: Date): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(d); // YYYY-MM-DD
+  } catch {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC" }).format(d);
+  }
+}
+
 function hoyEn(timezone: string): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date()); // YYYY-MM-DD
+  return enZona(timezone, new Date());
 }
 
 function ayerEn(timezone: string): string {
-  const d = new Date(Date.now() - 24 * 3600_000);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(d);
+  return enZona(timezone, new Date(Date.now() - 24 * 3600_000));
 }
 
 async function enviarTexto(chatId: string, texto: string): Promise<void> {

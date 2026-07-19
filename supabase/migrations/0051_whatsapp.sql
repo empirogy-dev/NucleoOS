@@ -31,7 +31,12 @@ create table if not exists public.wa_vinculos (
   telefono text not null unique,              -- chat_id de Telegram (o teléfono si vuelve WhatsApp)
   vinculado_en timestamptz not null default now(),
   ventana_expira timestamptz,                 -- solo se usa con WhatsApp; en Telegram queda null
-  timezone text not null default 'America/Vancouver',
+  -- Zona horaria de la usuaria, en formato IANA (America/Santiago, America/Bogota,
+  -- Europe/Madrid...). NO se asume ninguna: la app la detecta del navegador al
+  -- generar el código y viaja hasta acá. El default solo existe por si algo falla,
+  -- y se puede cambiar a mano desde Ajustes. De esto dependen "hoy", "ayer" y las
+  -- horas de silencio, así que importa.
+  timezone text not null default 'UTC',
   hora_resumen text not null default '09:00',
   silencio_desde text not null default '22:00',
   silencio_hasta text not null default '08:00',
@@ -40,10 +45,14 @@ create table if not exists public.wa_vinculos (
 );
 
 -- ---------- 2) Códigos de vinculación ----------
+-- El código lleva de pasajera la zona horaria que detectó el navegador:
+-- cuando el bot lo valida, la copia al vínculo. Así la usuaria nunca tiene
+-- que elegir su zona a mano, viva donde viva.
 create table if not exists public.wa_codigos (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   codigo text not null,
+  timezone text,                              -- IANA, detectada por la app
   expira_en timestamptz not null,
   usado boolean not null default false,
   creado_en timestamptz not null default now()

@@ -36,6 +36,17 @@ function api(metodo: string): string {
   return `https://api.telegram.org/bot${Deno.env.get("TELEGRAM_BOT_TOKEN")}/${metodo}`;
 }
 
+/** ¿Es una zona IANA que Deno entiende? Si no, no la guardamos: mejor el
+ *  default que una zona inventada que rompa el cálculo de "hoy". */
+function zonaValida(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function enviarTexto(chatId: string, texto: string): Promise<void> {
   if (!Deno.env.get("TELEGRAM_BOT_TOKEN")) return;
   await fetch(api("sendMessage"), {
@@ -103,7 +114,7 @@ Deno.serve(async (req: Request) => {
     const cmdVincular = texto.toLowerCase().match(/^\/?vincular\s+(\d{6})$/);
     if (cmdVincular) {
       const { data: cod } = await db.from("wa_codigos")
-        .select("id,user_id,expira_en,usado").eq("codigo", cmdVincular[1])
+        .select("id,user_id,timezone,expira_en,usado").eq("codigo", cmdVincular[1])
         .order("creado_en", { ascending: false }).limit(1).maybeSingle();
       if (!cod || cod.usado || new Date(cod.expira_en) < new Date()) {
         await enviarTexto(chatId, "Ese código ya no sirve. Genera uno nuevo en NucleoOS → Ajustes → Telegram.");
@@ -111,7 +122,11 @@ Deno.serve(async (req: Request) => {
       }
       await db.from("wa_codigos").update({ usado: true }).eq("id", cod.id);
       await db.from("wa_vinculos").delete().eq("telefono", chatId); // si era de otra cuenta, el código manda
-      await db.from("wa_vinculos").upsert({ user_id: cod.user_id, telefono: chatId }, { onConflict: "user_id" });
+      // La zona horaria viaja en el código: así "hoy" y "ayer" son los de ELLA,
+      // esté en Santiago, Bogotá, Madrid o Vancouver.
+      const vinculoNuevo: Record<string, unknown> = { user_id: cod.user_id, telefono: chatId };
+      if (cod.timezone && zonaValida(String(cod.timezone))) vinculoNuevo.timezone = cod.timezone;
+      await db.from("wa_vinculos").upsert(vinculoNuevo, { onConflict: "user_id" });
       await evento(db, { user_id: cod.user_id, tipo: "inbound", detalle: { accion: "vinculado" } });
       await enviarTexto(chatId,
         "Listo, tu Telegram quedó vinculado a NucleoOS. 🎉\n\n" +
