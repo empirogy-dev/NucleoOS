@@ -286,6 +286,9 @@ export async function listObjectives(): Promise<Objective[]> {
 
 export async function addObjective(o: { title: string; area: string | null; deadline: string | null; dream_id?: string | null; auto_metric?: string | null; auto_target?: number | null; auto_ref?: string | null }): Promise<void> {
   const { error } = await sb().from("objectives").insert({ ...o, user_id: await uid() });
+  if (error && /invalid input syntax for type uuid/.test(error.message)) {
+    throw new Error("Para esta conexión falta la migración 0047 (supabase/migrations/0047_auto_ref_texto.sql).");
+  }
   if (error && /dream_id/.test(error.message)) {
     throw new Error("Para convertir sueños en metas falta la migración 0019 (supabase/migrations/0019_suenos_vida_ideal.sql).");
   }
@@ -297,6 +300,9 @@ export async function addObjective(o: { title: string; area: string | null; dead
 
 export async function updateObjective(id: string, patch: { title?: string; area?: string | null; deadline?: string | null; status?: ObjectiveStatus; progress?: number; auto_metric?: string | null; auto_target?: number | null; auto_ref?: string | null }): Promise<void> {
   const { error } = await sb().from("objectives").update(patch).eq("id", id);
+  if (error && /invalid input syntax for type uuid/.test(error.message)) {
+    throw new Error("Para esta conexión falta la migración 0047 (supabase/migrations/0047_auto_ref_texto.sql).");
+  }
   if (error && /auto_metric_check/.test(error.message)) {
     throw new Error("Para esta conexión falta la migración 0028 (supabase/migrations/0028_meta_avances.sql).");
   }
