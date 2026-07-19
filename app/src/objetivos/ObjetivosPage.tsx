@@ -25,6 +25,7 @@ import {
   focoRefOpciones,
   metaAutoEsperado,
   metricasParaArea,
+  motorDiarioDe,
   progresoDe,
   valorAuto,
   type Fuentes,
@@ -165,7 +166,7 @@ export function ObjetivosPage() {
   const activas = objectives.filter((o) => o.status !== "lograda");
   const logradas = objectives.filter((o) => o.status === "lograda");
   const enRiesgo = activas.filter((o) => o.status === "en_riesgo").length;
-  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs, focusBlocks, goals, relLogs, libros: librosLeidos() };
+  const fuentes: Fuentes = { ejercicio, sesiones, habitLogs, retoLogs, avances: activity, workLogs, focusBlocks, goals, relLogs, libros: librosLeidos(), habits: habitos };
   const promedio = activas.length
     ? Math.round(activas.reduce((s, o) => s + progresoDe(o, fuentes), 0) / activas.length)
     : 0;
@@ -482,9 +483,21 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
               return `${estados[id] === "leido" ? "✓" : "☐"} ${l ? `${l.emoji} ${l.titulo}` : id}`;
             }).join("  ·  ");
           })()}
-          <span style={{ display: "block", marginTop: 2 }}>
-            La meta avanza cuando marcas un libro como leído en Aprendizaje → Biblioteca. Tu lectura diaria vive en su hábito.
-          </span>
+          {(() => {
+            const motor = motorDiarioDe(o, fuentes);
+            if (motor.habitos.length === 0) {
+              return (
+                <span style={{ display: "block", marginTop: 2 }}>
+                  Cada libro que marques como leído completa su tramo. Tip: edita tu hábito de lectura y apúntalo a esta meta para que cada día leído también empuje la barra.
+                </span>
+              );
+            }
+            return (
+              <span style={{ display: "block", marginTop: 2, color: "var(--accent-ink)" }}>
+                🔥 Motor diario: {motor.marcas} {motor.marcas === 1 ? "día" : "días"} de {motor.habitos.map((h) => `${h.icon ?? "✓"} ${h.name.trim()}`).join(" y ")} empujando la barra. Terminar un libro completa su tramo.
+              </span>
+            );
+          })()}
         </p>
       )}
       {!hasMs && !esAuto && (

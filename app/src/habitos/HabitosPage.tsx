@@ -9,7 +9,7 @@ import { Selector } from "../components/Selector";
 import { useCallback, useEffect, useState } from "react";
 import { Moon, Pencil, Plus, Repeat, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
-import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
+import { listObjectives, type Objective } from "../objetivos/data";
 import { RetosTab } from "./RetosTab";
 import { RutinasTab } from "./RutinasTab";
 import {
@@ -333,12 +333,11 @@ function HabitModal({ base, habit, onClose, onSaved }: {
   const [color, setColor] = useState(habit?.color ?? "var(--hab)");
   const [minutos, setMinutos] = useState(habit?.daily_minutes != null ? String(habit.daily_minutes) : "");
   const [metas, setMetas] = useState<Objective[]>([]);
-  const [metaId, setMetaId] = useState("");
+  const [metaId, setMetaId] = useState(habit?.meta_id ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (habit) return; // la conexión a meta se ofrece al crear
     void (async () => {
       try {
         setMetas((await listObjectives()).filter((o) => o.status !== "lograda"));
@@ -346,18 +345,21 @@ function HabitModal({ base, habit, onClose, onSaved }: {
         /* sin metas disponibles, el select no se muestra */
       }
     })();
-  }, [habit]);
+  }, []);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setErr(null);
+    // El vínculo con la meta vive en el hábito (motor diario): la meta
+    // conserva su propia métrica de resultado, nada se sobreescribe.
     const datos = {
       name,
       icon,
       target_days: dias ? Number(dias) : null,
       color: color === "var(--hab)" ? null : color,
       daily_minutes: minutos ? Number(minutos) : null,
+      meta_id: metaId || null,
     };
     try {
       if (habit) {
@@ -365,16 +367,7 @@ function HabitModal({ base, habit, onClose, onSaved }: {
         onSaved();
         return;
       }
-      const habitId = await addHabit(datos);
-      if (metaId) {
-        try {
-          await updateObjective(metaId, { auto_metric: "habito_marcas", auto_ref: habitId, auto_target: 7 });
-        } catch (ex) {
-          setErr(`El hábito quedó creado, pero no pude conectarlo a la meta: ${ex instanceof Error ? ex.message : String(ex)}`);
-          setBusy(false);
-          return;
-        }
-      }
+      await addHabit(datos);
       onSaved();
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
@@ -417,13 +410,13 @@ function HabitModal({ base, habit, onClose, onSaved }: {
               ))}
             </div>
           </div>
-          {!habit && metas.length > 0 && (
-            <div className="field"><label>¿A qué dirección de tu vida apunta? (opcional)</label>
-              <Selector value={metaId} ariaLabel="Meta que alimenta este hábito" placeholder="Ninguna meta por ahora" onChange={setMetaId}
+          {metas.length > 0 && (
+            <div className="field"><label>¿A qué meta de tu Dirección empuja? (opcional)</label>
+              <Selector value={metaId} ariaLabel="Meta de la que este hábito es motor diario" placeholder="Ninguna meta por ahora" onChange={setMetaId}
                 opciones={[{ value: "", label: "Ninguna meta por ahora" }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
-                  Cada día que marques este hábito hará avanzar esa meta, a ritmo diario.
+                  Este hábito será el motor diario de esa meta: cada marca empuja visiblemente su barra, sin cambiar a qué está conectada la meta.
                 </p>
               )}
             </div>

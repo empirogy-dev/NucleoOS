@@ -156,7 +156,7 @@ export function Inicio() {
   const avancesMes = activity.filter((a) => a.date.startsWith(month)).length;
   const metasEnCamino = objectives.filter((o) => o.status === "en_camino").length;
   // Las fuentes del progreso automático: las mismas ventanas que Dirección.
-  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF, focusBlocks: focusBlocksF, goals: goalsF, relLogs, libros: librosLeidos() };
+  const fuentes: Fuentes = { ejercicio: exercise, sesiones: listSesiones(), habitLogs, retoLogs, avances: activity, workLogs: workLogsF, focusBlocks: focusBlocksF, goals: goalsF, relLogs, libros: librosLeidos(), habits };
   const globalPct = objectives.length
     ? Math.round(objectives.reduce((s, o) => s + progresoDe(o, fuentes), 0) / objectives.length)
     : null;

@@ -9,6 +9,8 @@ export interface Habit {
   target_days: number | null;
   color: string | null;
   daily_minutes: number | null;
+  /** Meta de Dirección de la que este hábito es motor diario (migración 0050). */
+  meta_id?: string | null;
 }
 
 /** Paleta de colores para los hábitos, tomada de las áreas de la app. */
@@ -70,7 +72,13 @@ function daysAgo(n: number): string {
 
 // ---------- Hábitos ----------
 export async function listHabits(): Promise<Habit[]> {
-  const { data, error } = await sb().from("habits").select("id,name,icon,target_days,color,daily_minutes").order("created_at");
+  const { data, error } = await sb().from("habits").select("id,name,icon,target_days,color,daily_minutes,meta_id").order("created_at");
+  if (error && /meta_id/.test(error.message)) {
+    // La migración 0050 aún no se corre: leemos sin el motor diario.
+    const sinMotor = await sb().from("habits").select("id,name,icon,target_days,color,daily_minutes").order("created_at");
+    check(sinMotor.error);
+    return (sinMotor.data ?? []).map((h) => ({ ...h, meta_id: null })) as Habit[];
+  }
   if (error && /color|daily_minutes/.test(error.message)) {
     // La migración 0030 aún no se corre: leemos sin color ni minutos.
     const medio = await sb().from("habits").select("id,name,icon,target_days").order("created_at");
@@ -97,10 +105,14 @@ export interface HabitInput {
   target_days: number | null;
   color: string | null;
   daily_minutes: number | null;
+  meta_id?: string | null;
 }
 
 function errorHabito(error: { message: string } | null): void {
   if (!error) return;
+  if (/meta_id/.test(error.message)) {
+    throw new Error("Para que el hábito sea motor diario de una meta falta la migración 0050 (supabase/migrations/0050_motor_diario.sql).");
+  }
   if (/color|daily_minutes/.test(error.message)) {
     throw new Error("Para el color y los minutos del hábito falta la migración 0030 (supabase/migrations/0030_habitos_color.sql).");
   }

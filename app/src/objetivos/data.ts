@@ -2,7 +2,7 @@ import { supabase } from "../lib/supabase";
 import { fmtFechaLocal } from "../lib/fechas";
 import { TablesMissingError, listGoals } from "../finanzas/data";
 import type { Goal } from "../finanzas/types";
-import { listExercise, listHabitLogs, type ExerciseLog, type HabitLog } from "../habitos/data";
+import { listExercise, listHabitLogs, listHabits, type ExerciseLog, type Habit, type HabitLog } from "../habitos/data";
 import { listRetoLogs, type RetoLog } from "../habitos/retos";
 import { listSesiones, type Sesion } from "../mente/practicas";
 import { listWorkLogs, type WorkLog } from "../trabajo/data";
@@ -94,6 +94,7 @@ export interface Fuentes {
   goals: Goal[];
   relLogs: RelLog[];
   libros: Array<{ id: string; fecha: string | null; via: string | null }>;
+  habits: Habit[];
 }
 
 /** Las fuentes completas del progreso automático, con las MISMAS ventanas
@@ -107,7 +108,7 @@ export async function cargarFuentes(): Promise<Fuentes> {
       return fallback;
     }
   };
-  const [ejercicio, habitLogs, retoLogs, avances, workLogs, focusBlocks, goals, relLogs] = await Promise.all([
+  const [ejercicio, habitLogs, retoLogs, avances, workLogs, focusBlocks, goals, relLogs, habits] = await Promise.all([
     seguro(() => listExercise(365), [] as ExerciseLog[]),
     seguro(() => listHabitLogs(), [] as HabitLog[]),
     seguro(() => listRetoLogs(), [] as RetoLog[]),
@@ -116,8 +117,9 @@ export async function cargarFuentes(): Promise<Fuentes> {
     seguro(() => listFocusBlocks(365), [] as FocusBlock[]),
     seguro(() => listGoals(), [] as Goal[]),
     seguro(() => listRelLogs(), [] as RelLog[]),
+    seguro(() => listHabits(), [] as Habit[]),
   ]);
-  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs, focusBlocks, goals, relLogs, libros: librosLeidos() };
+  return { ejercicio, sesiones: listSesiones(), habitLogs, retoLogs, avances, workLogs, focusBlocks, goals, relLogs, libros: librosLeidos(), habits };
 }
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
@@ -173,6 +175,26 @@ export function valorAuto(o: Objective, f: Fuentes): number {
   return 0;
 }
 
+/** El motor diario de una meta: los hábitos que apuntan a ella (meta_id)
+ *  y sus marcas desde que la meta nació. */
+export function motorDiarioDe(o: Objective, f: Fuentes): { habitos: Habit[]; marcas: number } {
+  const habitos = f.habits.filter((h) => h.meta_id === o.id);
+  if (habitos.length === 0) return { habitos, marcas: 0 };
+  const desde = o.created_at ? fmtFechaLocal(new Date(o.created_at)) : "0000-00-00";
+  const ids = new Set(habitos.map((h) => h.id));
+  const marcas = f.habitLogs.filter((l) => ids.has(l.habit_id) && l.date >= desde).length;
+  return { habitos, marcas };
+}
+
+/** Días del plazo de una meta: de su creación a su fecha límite (o 90). */
+function diasDelPlazo(o: Objective): number {
+  const inicio = o.created_at ? new Date(o.created_at) : new Date();
+  const fin = o.deadline
+    ? new Date(`${o.deadline}T00:00:00`)
+    : new Date(inicio.getTime() + PLAZO_DEFECTO_DIAS * 86400000);
+  return Math.max(7, Math.round((fin.getTime() - inicio.getTime()) / 86400000));
+}
+
 /** Progreso efectivo considerando el automático, los pasos o lo manual. */
 export function progresoDe(o: Objective, f: Fuentes): number {
   // El ahorro no va por ritmo semanal: su porcentaje es dinero aportado
@@ -183,6 +205,24 @@ export function progresoDe(o: Objective, f: Fuentes): number {
       return Math.min(100, Math.round((Number(g.current_amount) / Number(g.target_amount)) * 100));
     }
     return objectiveProgress(o);
+  }
+  // Libros exactos con motor diario: cada libro es su tramo de la barra
+  // (2 libros = 50% cada uno), y las marcas del hábito linkeado van
+  // RELLENANDO el tramo del libro en curso (hasta 90%: el último tramo
+  // se completa terminando el libro de verdad). Leer cada día se VE.
+  if (o.auto_metric === "libros_leidos" && (o.auto_ref ?? "").startsWith("l:")) {
+    const ids = (o.auto_ref ?? "").slice(2).split(",").filter(Boolean);
+    const total = Math.max(1, ids.length);
+    const terminados = ids.filter((id) => f.libros.some((l) => l.id === id)).length;
+    let motor = 0;
+    if (terminados < total) {
+      const { habitos, marcas } = motorDiarioDe(o, f);
+      if (habitos.length > 0 && marcas > 0) {
+        const diasPorLibro = Math.max(3, diasDelPlazo(o) / total);
+        motor = Math.min(0.9, marcas / diasPorLibro) * (100 / total);
+      }
+    }
+    return Math.min(100, Math.round(terminados * (100 / total) + motor));
   }
   const esperado = metaAutoEsperado(o);
   if (esperado !== null) {
