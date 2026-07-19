@@ -143,7 +143,7 @@ export function RutinasTab() {
               </p>
               <button className="btn primary" onClick={() => setActiva(r)}>
                 <Play size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-                Empezar
+                {tr("Empezar")}
               </button>
             </div>
           );

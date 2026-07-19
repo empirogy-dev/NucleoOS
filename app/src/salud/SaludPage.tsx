@@ -565,7 +565,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
             <div key={d} style={{ padding: "8px 0", borderBottom: "1px solid var(--line-soft)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 5 }}>
                 <b style={{ textTransform: "capitalize" }}>{fmtDia(d)}</b>
-                <span className="tnum">💧 {cups} de {META_AGUA_VASOS}, 🍗 {Math.round(prot)} g</span>
+                <span className="tnum">💧 {cups} {tr("de")} {META_AGUA_VASOS}, 🍗 {Math.round(prot)} g</span>
               </div>
               <div style={{ display: "grid", gap: 3 }}>
                 <div className="track" style={{ height: 5 }}>

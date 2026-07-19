@@ -121,9 +121,9 @@ export function RetosTab() {
                 ))}
               </div>
               <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 12 }}>
-                Tip: las sesiones de <Link to="/mente" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Mente</Link> y
-                las rutinas de <Link to="/movimiento" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Movimiento</Link> son
-                perfectas para cumplir el reto del día.
+                {tr("Tip: las sesiones de")} <Link to="/mente" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>{tr("nav.mente")}</Link> {tr("y")}{" "}
+                {tr("las rutinas de")} <Link to="/movimiento" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>{tr("nav.movimiento")}</Link>{" "}
+                {tr("son perfectas para cumplir el reto del día.")}
               </p>
             </div>
           )}
