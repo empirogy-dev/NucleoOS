@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { Menu, Palette, Settings } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { NotifBell } from "./NotifBell";
+import { Alarma } from "../recordatorios/Alarma";
 import { ThemePicker } from "./ThemePicker";
 import { Pomodoro } from "./Pomodoro";
 import { CapturaRapida } from "./CapturaRapida";
@@ -72,6 +73,7 @@ export function Layout() {
         )}
         <main>
           <Outlet />
+          <Alarma />
         </main>
       </div>
       <Pomodoro />

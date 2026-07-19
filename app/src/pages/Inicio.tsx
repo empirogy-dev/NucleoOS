@@ -25,6 +25,7 @@ import { listRelLogs, listRelationships, needsReconnect, type RelLog, type Relat
 import { TareasHoy } from "../tareas/TareasHoy";
 import { UnPaso } from "../components/UnPaso";
 import { DopaminaCard } from "../components/DopaminaCard";
+import { RecordatoriosCard } from "../recordatorios/RecordatoriosCard";
 import { abrirPomodoro, bloquesHoyLocal } from "../foco/data";
 
 export function Inicio() {
@@ -332,9 +333,10 @@ export function Inicio() {
 
       {/* Orden pensado para que las columnas queden parejas: lo alto primero. */}
       <OrdenGrid clave="inicio-v2" dosColumnas bloques={(() => {
-        const prio = ["tareas", "areas", "pagos", "avances", "dopamina", "sobriedad"];
+        const prio = ["tareas", "recordatorios", "areas", "pagos", "avances", "dopamina", "sobriedad"];
         const b = [
         { id: "tareas", el: <TareasHoy /> },
+        { id: "recordatorios", el: <RecordatoriosCard /> },
         { id: "dopamina", el: <DopaminaCard /> },
         ...(reminders.length > 0 ? [{ id: "pagos", el: (
         <div className="card panel">
