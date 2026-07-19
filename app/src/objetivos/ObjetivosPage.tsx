@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronDown, ChevronRight, Compass, Pencil, Plus, Trash2 } from "lucide-react";
 import { AREAS } from "../areas";
 import { TablesMissingError } from "../finanzas/data";
+import { MONTO_OCULTO, modoPrivado } from "../finanzas/types";
 import { listDreams, type Dream } from "../vision/suenos";
 import { listExercise, listHabitLogs, listHabits, type ExerciseLog, type Habit, type HabitLog } from "../habitos/data";
 import { listRetoLogs, listRetos, type Reto, type RetoLog } from "../habitos/retos";
@@ -453,9 +454,10 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
               ? o.auto_metric === "ahorro_meta"
                 ? (() => {
                     const g = fuentes.goals.find((x) => x.id === o.auto_ref);
-                    return g
-                      ? `⚡ ${Math.round(Number(g.current_amount)).toLocaleString("es-CL")} de ${Math.round(Number(g.target_amount)).toLocaleString("es-CL")} aportados en ${g.icon ?? "🎯"} ${g.name}`
-                      : "⚡ conectada a una meta de ahorro (revisa la conexión)";
+                    if (!g) return "⚡ conectada a una meta de ahorro (revisa la conexión)";
+                    // Con el ojito de Finanzas cerrado, aquí tampoco se ve la plata.
+                    if (modoPrivado()) return `⚡ ${MONTO_OCULTO} aportados en ${g.icon ?? "🎯"} ${g.name}`;
+                    return `⚡ ${Math.round(Number(g.current_amount)).toLocaleString("es-CL")} de ${Math.round(Number(g.target_amount)).toLocaleString("es-CL")} aportados en ${g.icon ?? "🎯"} ${g.name}`;
                   })()
                 : o.auto_metric === "libros_leidos"
                   ? `⚡ ${valor} de ${esperado} ${metrica.unidad}${habitoDe ? ` de ${habitoDe.icon} ${habitoDe.name}` : ""}`

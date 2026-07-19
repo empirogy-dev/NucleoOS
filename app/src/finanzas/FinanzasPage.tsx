@@ -2,7 +2,7 @@ import { IconField } from "../components/IconField";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
+import { Eye, EyeOff, Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import {
@@ -53,6 +53,8 @@ import {
   daysUntil,
   dueLabel,
   fmtMoney,
+  modoPrivado,
+  setModoPrivado,
   nextOccurrence,
   type Account,
   type Category,
@@ -68,6 +70,8 @@ type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "ca
 
 export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
+  // El ojito: con el modo privado activo, todos los montos se enmascaran.
+  const [privado, setPrivado] = useState(modoPrivado());
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -236,6 +240,11 @@ export function FinanzasPage() {
           </button>
         ))}
         <span style={{ flex: 1 }} />
+        <button className="btn ghost" title={privado ? "Mostrar los montos" : "Ocultar los montos para mostrar la app sin mostrar tu plata"}
+          aria-label={privado ? "Mostrar los montos" : "Ocultar los montos"}
+          onClick={() => { setModoPrivado(!privado); setPrivado(!privado); }}>
+          {privado ? <EyeOff size={15} /> : <Eye size={15} />}
+        </button>
         <button className="btn ghost" onClick={() => setModal("import")}>Importar cartola</button>
         <button className="btn primary" onClick={() => setModal("tx")}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />

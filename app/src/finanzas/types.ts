@@ -161,7 +161,31 @@ export const DEFAULT_CATEGORIES: Array<Pick<Category, "name" | "type" | "icon">>
   { name: "Ahorro", type: "savings", icon: "🌱" },
 ];
 
+// ---------- Modo privado (el ojito de Finanzas) ----------
+// Con el modo privado activo, TODOS los montos se muestran enmascarados:
+// perfecto para enseñar la app sin enseñar tu plata. La preferencia se
+// recuerda en este navegador.
+const LS_PRIVADO = "nucleoos-finanzas-privado";
+let privado = false;
+try {
+  privado = localStorage.getItem(LS_PRIVADO) === "1";
+} catch { /* sin navegador */ }
+
+export function modoPrivado(): boolean {
+  return privado;
+}
+
+export function setModoPrivado(v: boolean): void {
+  privado = v;
+  try {
+    localStorage.setItem(LS_PRIVADO, v ? "1" : "0");
+  } catch { /* nada */ }
+}
+
+export const MONTO_OCULTO = "✱✱✱✱✱";
+
 export function fmtMoney(n: number, currency = "CLP"): string {
+  if (privado) return MONTO_OCULTO;
   try {
     return new Intl.NumberFormat("es-CL", {
       style: "currency",
