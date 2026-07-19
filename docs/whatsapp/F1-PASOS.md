@@ -46,11 +46,19 @@ https://api.telegram.org/botTU_TOKEN/setWebhook?url=https://devxnjumkapxqguasgaz
 Debe responder `{"ok":true,"result":true,"description":"Webhook was set"}`.
 
 ## 5. Migración 0051 (SQL Editor)
-1. Abre `supabase/migrations/0051_whatsapp.sql`.
-2. Reemplaza `PEGA_AQUI_TU_SERVICE_ROLE_KEY` por tu service role key
-   (Dashboard → Settings → API → service_role). Como siempre: esa llave solo
-   se pega ahí, nunca en el chat ni en GitHub.
-3. Pega todo en el SQL Editor y Run.
+> El orden importa: la llave se reemplaza **dentro del SQL Editor**, nunca en el
+> archivo. Así tu service role key jamás queda escrita en el repositorio.
+
+1. Abre `supabase/migrations/0051_whatsapp.sql`, selecciona todo y cópialo.
+2. Pégalo en el **SQL Editor de Supabase**.
+3. **Ahí, dentro del editor de Supabase**, busca la última línea del cron que
+   dice `Bearer PEGA_AQUI_TU_SERVICE_ROLE_KEY` y reemplaza ese marcador por tu
+   service role key (Dashboard → Settings → API → service_role).
+   Es la ÚNICA línea que se toca; el marcador aparece una sola vez.
+4. Run.
+5. El archivo de tu computador se queda con el marcador puesto, tal cual. Si
+   alguna vez ves un `eyJhbGci...` dentro de un archivo del proyecto, bórralo
+   antes de hacer commit.
 
 ## 6. La prueba de oro (hoy mismo)
 1. En la app: **Ajustes → Telegram → Generar código**.
