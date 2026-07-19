@@ -8,7 +8,7 @@
 //   SEC-N2: el user_id sale del vínculo, jamás del modelo. Toda escritura
 //           lleva su user_id explícito.
 //   SEC-N3: máximo 5 tools por turno y 50 escrituras al día por vínculo.
-//   SEC-N5: solo se descargan medios cuyo host sea de YCloud.
+//   SEC-N5: solo se descargan medios cuyo host sea de Meta/WhatsApp.
 //   COST-N1: comparte el tope diario de ia_uso con la app.
 //
 // Secretos: GEMINI_API_KEY · WHATSAPP_TOKEN · WHATSAPP_PHONE_ID
