@@ -21,6 +21,8 @@ interface ItemRadar {
   refId: string;
   projectId?: string;
   min?: number;
+  /** Para poder deshacer un paso de meta sin perder su avance anterior. */
+  progresoPrevio?: number;
 }
 
 export function Despegue() {
@@ -29,11 +31,14 @@ export function Despegue() {
   const [cargando, setCargando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [hechas, setHechas] = useState(0);
+  // Las victorias de esta pasada, en orden: el clic curioso se deshace.
+  const [historial, setHistorial] = useState<ItemRadar[]>([]);
 
   async function escanear() {
     setCargando(true);
     setAviso(null);
     setHechas(0);
+    setHistorial([]);
     const candidatos: ItemRadar[] = [];
     try {
       const [proyectos, pasos] = await Promise.all([listProjects(), listProjectTasks()]);
@@ -48,7 +53,7 @@ export function Despegue() {
     try {
       for (const o of (await listObjectives()).filter((x) => x.status === "en_camino" || x.status === "en_riesgo")) {
         for (const m of o.milestones.filter((x) => x.progress < 100)) {
-          candidatos.push({ id: `m${candidatos.length}`, texto: m.title, origen: `🧭 ${o.title}`, tipo: "meta", refId: m.id });
+          candidatos.push({ id: `m${candidatos.length}`, texto: m.title, origen: `🧭 ${o.title}`, tipo: "meta", refId: m.id, progresoPrevio: m.progress });
         }
       }
     } catch { /* sin metas, seguimos */ }
@@ -96,6 +101,25 @@ export function Despegue() {
     celebrar(quedan === 0 ? "grande" : "chica");
     setItems((arr) => (arr ?? []).filter((x) => x.id !== item.id));
     setHechas((n) => n + 1);
+    setHistorial((h) => [...h, item]);
+  }
+
+  /** El clic curioso tiene vuelta atrás: desmarca la última victoria en su
+   *  lugar de origen y la devuelve al principio de la lista. */
+  async function deshacer() {
+    const item = historial[historial.length - 1];
+    if (!item) return;
+    try {
+      if (item.tipo === "proyecto") await toggleProjectTask(item.refId, false);
+      if (item.tipo === "meta") await updateMilestoneProgress(item.refId, item.progresoPrevio ?? 0);
+      if (item.tipo === "tarea") await toggleDayTask(item.refId, false);
+    } catch (e) {
+      setAviso(e instanceof Error ? e.message : String(e));
+      return;
+    }
+    setHistorial((h) => h.slice(0, -1));
+    setItems((arr) => [item, ...(arr ?? [])]);
+    setHechas((n) => Math.max(0, n - 1));
   }
 
   return (
@@ -123,16 +147,31 @@ export function Despegue() {
       {aviso && <p style={{ fontSize: 12, color: "var(--warn)", marginTop: 8 }}>La IA no pudo ordenar ({aviso}), así que va lo más corto primero.</p>}
 
       {items && items.length === 0 && (
-        <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 10 }}>
-          Nada pendiente en proyectos, metas ni tareas. O estás al día, o toca anotar el próximo paso chiquito. 🌱
-        </p>
+        <div style={{ marginTop: 10 }}>
+          <p style={{ fontSize: 13.5, color: "var(--muted)" }}>
+            {historial.length > 0
+              ? "Lista vacía a punta de victorias. Eso fue un despegue de verdad. 🚀"
+              : "Nada pendiente en proyectos, metas ni tareas. O estás al día, o toca anotar el próximo paso chiquito. 🌱"}
+          </p>
+          {historial.length > 0 && (
+            <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => void deshacer()}>
+              ↩︎ Deshacer la última
+            </button>
+          )}
+        </div>
       )}
 
       {items && items.length > 0 && (
         <div style={{ marginTop: 12 }}>
           {hechas > 0 && (
-            <p style={{ fontSize: 12.5, color: "var(--ok)", marginBottom: 8 }}>
-              ✓ {hechas} {hechas === 1 ? "victoria" : "victorias"} en esta pasada. El impulso ya está andando.
+            <p style={{ fontSize: 12.5, color: "var(--ok)", marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span>✓ {hechas} {hechas === 1 ? "victoria" : "victorias"} en esta pasada. El impulso ya está andando.</span>
+              {historial.length > 0 && (
+                <button className="chip" style={{ border: "none", cursor: "pointer" }} title="¿Marcaste una sin querer? La devuelvo a la lista"
+                  onClick={() => void deshacer()}>
+                  ↩︎ deshacer la última
+                </button>
+              )}
             </p>
           )}
           {items.slice(0, 6).map((it, i) => (
