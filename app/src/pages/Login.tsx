@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { supabaseConfigured } from "../lib/supabase";
 import { LogoAtomo } from "../components/LogoAtomo";
 
 export function Login() {
   const { signIn, signUp } = useAuth();
+  const { t } = useIdioma();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +22,7 @@ export function Login() {
     if (res.error) {
       setMsg({ kind: "err", text: res.error });
     } else if (mode === "up" && "needsConfirm" in res && res.needsConfirm) {
-      setMsg({ kind: "ok", text: "Cuenta creada. Revisa tu correo para confirmarla y luego entra." });
+      setMsg({ kind: "ok", text: t("login.cuentacreada") });
     }
   }
 
@@ -31,7 +33,7 @@ export function Login() {
           <div className="logo"><LogoAtomo size={24} /></div>
           <div>
             <b>NucleoOS</b>
-            <small>Un sistema para cambiar el rumbo de tu vida</small>
+            <small>{t("lema")}</small>
           </div>
         </div>
 
@@ -44,23 +46,23 @@ export function Login() {
         ) : (
           <>
             <div className="tabs">
-              <button className={"tab" + (mode === "in" ? " active" : "")} onClick={() => { setMode("in"); setMsg(null); }}>Entrar</button>
-              <button className={"tab" + (mode === "up" ? " active" : "")} onClick={() => { setMode("up"); setMsg(null); }}>Crear cuenta</button>
+              <button className={"tab" + (mode === "in" ? " active" : "")} onClick={() => { setMode("in"); setMsg(null); }}>{t("login.entrar")}</button>
+              <button className={"tab" + (mode === "up" ? " active" : "")} onClick={() => { setMode("up"); setMsg(null); }}>{t("login.crearcuenta")}</button>
             </div>
 
             {msg && <div className={"msg " + msg.kind}>{msg.text}</div>}
 
             <form onSubmit={submit}>
               <div className="field">
-                <label>Correo</label>
+                <label>{t("login.correo")}</label>
                 <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@correo.com" autoComplete="email" />
               </div>
               <div className="field">
-                <label>Contraseña</label>
-                <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="mínimo 6 caracteres" autoComplete={mode === "in" ? "current-password" : "new-password"} />
+                <label>{t("login.contrasena")}</label>
+                <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("login.minimo")} autoComplete={mode === "in" ? "current-password" : "new-password"} />
               </div>
               <button className="btn primary" type="submit" disabled={busy} style={{ width: "100%", justifyContent: "center", marginTop: 4 }}>
-                {busy ? "Un momento…" : mode === "in" ? "Entrar" : "Crear cuenta"}
+                {busy ? t("login.unmomento") : mode === "in" ? t("login.entrar") : t("login.crearcuenta")}
               </button>
             </form>
           </>

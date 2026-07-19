@@ -2,10 +2,11 @@ import { NavLink } from "react-router-dom";
 import { Brain, CalendarDays, Home, LineChart, LogOut, PersonStanding, Sparkles, X, type LucideIcon } from "lucide-react";
 import { areaPor } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { LogoAtomo } from "./LogoAtomo";
 
 interface Item {
-  name: string;
+  tkey: string; // llave del diccionario: el menú habla el idioma elegido
   path: string;
   icon: LucideIcon;
   color?: string;
@@ -15,25 +16,26 @@ interface Item {
 // Arquitectura del menú: primero el pulso diario, luego el núcleo
 // (cuerpo, mente, orden), luego el resto de la vida, y al final la inspiración.
 const PANORAMA: Item[] = [
-  { name: "Inicio", path: "/", icon: Home, end: true },
-  { name: "Calendario", path: "/calendario", icon: CalendarDays },
-  { name: "Revisión", path: "/revision", icon: LineChart },
+  { tkey: "nav.inicio", path: "/", icon: Home, end: true },
+  { tkey: "nav.calendario", path: "/calendario", icon: CalendarDays },
+  { tkey: "nav.revision", path: "/revision", icon: LineChart },
 ];
 
 const NUCLEO: Item[] = [
-  areaPor("salud"),
-  { name: "Mente", path: "/mente", icon: Brain, color: "var(--men)" },
-  { name: "Movimiento", path: "/movimiento", icon: PersonStanding, color: "var(--mov)" },
-  areaPor("habitos"),
+  { ...areaPor("salud"), tkey: "area.salud" },
+  { tkey: "nav.mente", path: "/mente", icon: Brain, color: "var(--men)" },
+  { tkey: "nav.movimiento", path: "/movimiento", icon: PersonStanding, color: "var(--mov)" },
+  { ...areaPor("habitos"), tkey: "area.habitos" },
 ];
 
-const VIDA: Item[] = ["relaciones", "objetivos", "trabajo", "finanzas", "aprendizaje"].map(areaPor);
+const VIDA: Item[] = ["relaciones", "objetivos", "trabajo", "finanzas", "aprendizaje"].map((k) => ({ ...areaPor(k), tkey: `area.${k}` }));
 
 const INSPIRACION: Item[] = [
-  { name: "Visión", path: "/vision", icon: Sparkles, color: "var(--obj)" },
+  { tkey: "nav.vision", path: "/vision", icon: Sparkles, color: "var(--obj)" },
 ];
 
 function Seccion({ label, items, onNavigate }: { label: string; items: Item[]; onNavigate: () => void }) {
+  const { t } = useIdioma();
   return (
     <>
       <div className="nav-label">{label}</div>
@@ -48,7 +50,7 @@ function Seccion({ label, items, onNavigate }: { label: string; items: Item[]; o
             onClick={onNavigate}
           >
             <Icon className="ico" size={18} strokeWidth={1.9} />
-            {it.name}
+            {t(it.tkey)}
             {it.color && <span className="dot" style={{ background: it.color }} />}
           </NavLink>
         );
@@ -59,6 +61,7 @@ function Seccion({ label, items, onNavigate }: { label: string; items: Item[]; o
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { session, signOut } = useAuth();
+  const { t } = useIdioma();
   const email = session?.user?.email ?? "";
   const initial = email ? email[0].toUpperCase() : "?";
   return (
@@ -67,23 +70,23 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         <div className="logo"><LogoAtomo size={22} /></div>
         <div>
           <b>NucleoOS</b>
-          <small>Un sistema para cambiar el rumbo de tu vida</small>
+          <small>{t("lema")}</small>
         </div>
-        <button className="side-close" aria-label="Cerrar menú" onClick={onNavigate}>
+        <button className="side-close" aria-label={t("topbar.cerrarmenu")} onClick={onNavigate}>
           <X size={15} />
         </button>
       </div>
       <nav className="nav">
-        <Seccion label="Panorama" items={PANORAMA} onNavigate={onNavigate} />
-        <Seccion label="Núcleo" items={NUCLEO} onNavigate={onNavigate} />
-        <Seccion label="Mi vida" items={VIDA} onNavigate={onNavigate} />
-        <Seccion label="Inspiración" items={INSPIRACION} onNavigate={onNavigate} />
+        <Seccion label={t("sec.panorama")} items={PANORAMA} onNavigate={onNavigate} />
+        <Seccion label={t("sec.nucleo")} items={NUCLEO} onNavigate={onNavigate} />
+        <Seccion label={t("sec.mivida")} items={VIDA} onNavigate={onNavigate} />
+        <Seccion label={t("sec.inspiracion")} items={INSPIRACION} onNavigate={onNavigate} />
       </nav>
       <div className="spacer" />
       <div className="side-acct">
         <div className="ava">{initial}</div>
         <div className="meta" title={email}>{email}</div>
-        <button className="logout" aria-label="Cerrar sesión" title="Cerrar sesión" onClick={() => signOut()}>
+        <button className="logout" aria-label={t("topbar.cerrarsesion")} title={t("topbar.cerrarsesion")} onClick={() => signOut()}>
           <LogOut size={16} />
         </button>
       </div>

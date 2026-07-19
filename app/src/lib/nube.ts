@@ -17,6 +17,7 @@ export const CLAVES_NUBE: string[] = [
   "nucleoos-ayuno-manual", // inicio manual del ayuno
   "nucleoos-ciclo-config", // configuración del ciclo
   "nucleoos-objetivo-cal", // objetivo calórico
+  "nucleoos-idioma", // el idioma elegido para la app
 ];
 
 // Guardamos los métodos originales para leer y escribir sin eco:

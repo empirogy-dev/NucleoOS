@@ -7,18 +7,19 @@ import { ThemePicker } from "./ThemePicker";
 import { Pomodoro } from "./Pomodoro";
 import { CapturaRapida } from "./CapturaRapida";
 import { fechaLarga, useFechaActiva } from "../fecha/FechaActiva";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { AREAS } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { useSettings } from "../settings/SettingsProvider";
 
-const NOMBRES: Record<string, string> = {
-  "/": "Inicio",
-  "/calendario": "Calendario",
-  "/revision": "Revisión",
-  "/mente": "Mente",
-  "/movimiento": "Movimiento",
-  "/vision": "Visión",
-  "/ajustes": "Ajustes",
+const TKEYS_RUTA: Record<string, string> = {
+  "/": "nav.inicio",
+  "/calendario": "nav.calendario",
+  "/revision": "nav.revision",
+  "/mente": "nav.mente",
+  "/movimiento": "nav.movimiento",
+  "/vision": "nav.vision",
+  "/ajustes": "nav.ajustes",
 };
 
 export function Layout() {
@@ -28,8 +29,11 @@ export function Layout() {
   const { session } = useAuth();
   const { displayName } = useSettings();
   const { fecha, esHoy, volverAHoy } = useFechaActiva();
+  const { t } = useIdioma();
   const inicial = (displayName || session?.user?.email || "?").trim().charAt(0).toUpperCase();
-  const current = NOMBRES[loc.pathname] ?? AREAS.find((a) => a.path === loc.pathname)?.name ?? "";
+  const areaActual = AREAS.find((a) => a.path === loc.pathname);
+  const tkeyActual = TKEYS_RUTA[loc.pathname] ?? (areaActual ? `area.${areaActual.key}` : "");
+  const current = tkeyActual ? t(tkeyActual) : "";
 
   // Con el menú abierto, el fondo queda quieto: en celular, scrollear
   // detrás mueve la barra del navegador y desarma el panel.
@@ -44,16 +48,16 @@ export function Layout() {
       <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
       <div className="content">
         <header className="topbar">
-          <button className="iconbtn hamb" aria-label="Menú" onClick={() => setNavOpen(true)}>
+          <button className="iconbtn hamb" aria-label={t("topbar.menu")} onClick={() => setNavOpen(true)}>
             <Menu size={18} />
           </button>
           <span className="crumb">NucleoOS: {current}</span>
           <span className="sp" />
           <NotifBell />
-          <button className="iconbtn" aria-label="Cambiar tema" title="Cambiar tema" onClick={() => setPickerOpen(true)}>
+          <button className="iconbtn" aria-label={t("topbar.tema")} title={t("topbar.tema")} onClick={() => setPickerOpen(true)}>
             <Palette size={18} />
           </button>
-          <Link to="/ajustes" className="iconbtn" aria-label="Ajustes" title="Ajustes">
+          <Link to="/ajustes" className="iconbtn" aria-label={t("nav.ajustes")} title={t("nav.ajustes")}>
             <Settings size={18} />
           </Link>
           <div className="avatar">{inicial}</div>

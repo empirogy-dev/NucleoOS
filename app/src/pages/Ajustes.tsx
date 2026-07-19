@@ -9,6 +9,8 @@ import { useTheme } from "../theme/ThemeProvider";
 import { fechaLarga, useFechaActiva } from "../fecha/FechaActiva";
 import { diasAtrasLocal, hoyLocal } from "../lib/fechas";
 import { Selector } from "../components/Selector";
+import { useIdioma } from "../idioma/IdiomaProvider";
+import { IDIOMAS, type Idioma } from "../idioma/textos";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -54,6 +56,7 @@ export function Ajustes() {
       )}
 
       <div className="grid" style={{ maxWidth: 640 }}>
+        <IdiomaCard />
         <NameCard />
         <CumpleCard />
         <DiaPasadoCard />
@@ -170,6 +173,23 @@ function DiaPasadoCard() {
       <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>
         Hasta dos semanas atrás. Lo registrado suma a tus metas igual que si lo hubieras anotado ese día.
       </p>
+    </div>
+  );
+}
+
+function IdiomaCard() {
+  const { idioma, setIdioma, t } = useIdioma();
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>🌍 {t("ajustes.idioma")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        {t("ajustes.idiomaDesc")}
+      </p>
+      <div style={{ maxWidth: 240 }}>
+        <Selector value={idioma} ariaLabel={t("ajustes.idioma")}
+          opciones={IDIOMAS.map((i) => ({ value: i.key, label: i.label }))}
+          onChange={(v) => setIdioma(v as Idioma)} />
+      </div>
     </div>
   );
 }
