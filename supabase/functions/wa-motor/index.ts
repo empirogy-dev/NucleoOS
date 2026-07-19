@@ -51,6 +51,21 @@ function ayerEn(timezone: string): string {
 
 /** Manda el mensaje y DICE si pudo: un envio fallido en silencio deja a la
  *  usuaria esperando una respuesta que nunca llega. */
+/** La hora local de la usuaria, "HH:MM". */
+function horaEn(timezone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  } catch {
+    return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  }
+}
+
+/** Minutos desde medianoche, para comparar horas sin enredos. */
+function minutosDe(hhmm: string): number {
+  const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : -1;
+}
+
 async function enviarTexto(chatId: string, texto: string): Promise<{ ok: boolean; error?: string }> {
   const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
   if (!token) return { ok: false, error: "falta el secreto TELEGRAM_BOT_TOKEN" };
@@ -438,6 +453,76 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     },
   },
 
+  crear_recordatorio: {
+    decl: {
+      name: "crear_recordatorio",
+      description:
+        "Programa un recordatorio con hora para que el bot le escriba a esa hora. " +
+        "Usalo cuando diga 'recuerdame X a las N', 'avisame a las N' o pida que le avises a una hora. " +
+        "La hora SIEMPRE en formato 24 horas: las 2 de la tarde es 14:00, las 8 de la manana es 08:00.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          texto: { type: "STRING", description: "Que hay que recordarle, corto y en segunda persona (ej: tomar tus suplementos)" },
+          hora: { type: "STRING", description: "HH:MM en 24 horas" },
+          repite: { type: "STRING", description: "diario si es todos los dias, unico si es solo por hoy. Ante la duda, diario" },
+        },
+        required: ["texto", "hora"],
+      },
+    },
+    run: async (args, ctx) => {
+      const texto = String(args.texto ?? "").slice(0, 200).trim();
+      const hora = String(args.hora ?? "").trim();
+      const m = hora.match(/^(\d{1,2}):(\d{2})$/);
+      if (!texto) return "Falta que me digas qué recordar.";
+      if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return "La hora debe venir como HH:MM en formato 24 horas. Pregúntale a qué hora exacta.";
+      const horaNorm = `${m[1].padStart(2, "0")}:${m[2]}`;
+      const repite = args.repite === "unico" ? "unico" : "diario";
+      const { data, error } = await ctx.db.from("wa_recordatorios")
+        .insert({
+          user_id: ctx.userId, texto, hora: horaNorm, repite,
+          fecha: repite === "unico" ? hoyEn(ctx.timezone) : null,
+        }).select("id").single();
+      if (error || !data) return `No pude programarlo: ${error?.message ?? "sin fila"}`;
+      await anotarEscritura(ctx, "wa_recordatorios", data.id, `recordatorio "${texto}" a las ${horaNorm}`);
+      return `Recordatorio listo: te escribo a las ${horaNorm} ${repite === "diario" ? "todos los días" : "hoy"} para ${texto}.`;
+    },
+  },
+
+  ver_recordatorios: {
+    decl: {
+      name: "ver_recordatorios",
+      description: "Lee los recordatorios activos de la usuaria, con su hora. Úsala si pregunta qué recordatorios tiene.",
+    },
+    run: async (_args, ctx) => {
+      const { data } = await ctx.db.from("wa_recordatorios")
+        .select("texto,hora,repite").eq("user_id", ctx.userId).eq("activo", true).order("hora");
+      const lista = (data ?? []) as Array<{ texto: string; hora: string; repite: string }>;
+      if (lista.length === 0) return "No tiene recordatorios programados.";
+      return "Recordatorios activos: " + lista.map((r) => `${r.hora} ${r.texto}${r.repite === "diario" ? " (cada día)" : " (solo hoy)"}`).join(" · ");
+    },
+  },
+
+  borrar_recordatorio: {
+    decl: {
+      name: "borrar_recordatorio",
+      description: "Apaga un recordatorio que la usuaria ya no quiere, buscándolo por sus palabras.",
+      parameters: {
+        type: "OBJECT",
+        properties: { texto: { type: "STRING", description: "Palabras del recordatorio a apagar" } },
+        required: ["texto"],
+      },
+    },
+    run: async (args, ctx) => {
+      const palabra = String(args.texto ?? "").trim().split(/\s+/)[0] ?? "";
+      const { data } = await ctx.db.from("wa_recordatorios").select("id,texto,hora")
+        .eq("user_id", ctx.userId).eq("activo", true).ilike("texto", `%${palabra}%`).limit(1).maybeSingle();
+      if (!data) return `No encontré un recordatorio parecido a "${args.texto}".`;
+      await ctx.db.from("wa_recordatorios").update({ activo: false }).eq("id", data.id).eq("user_id", ctx.userId);
+      return `Apagado el recordatorio de las ${data.hora}: ${data.texto}`;
+    },
+  },
+
   ver_dia: {
     decl: {
       name: "ver_dia",
@@ -522,7 +607,8 @@ function promptSistema(idioma: string, timezone: string): string {
     "· \"hice 30 minutos de gimnasio\" → llama registrar_ejercicio con tipo \"Gimnasio\" y minutos 30.\n" +
     "· \"salí a caminar media hora\" → registrar_ejercicio con tipo \"Caminata\" y minutos 30.\n" +
     "· \"tomé dos vasos de agua\" → registrar_agua con vasos 2.\n" +
-    "· \"recuérdame comprar pan\" → crear_tarea con titulo \"comprar pan\".\n" +
+    "· \"recuérdame comprar pan\" (SIN hora) → crear_tarea con titulo \"comprar pan\".\n" +
+    "· \"recuérdame tomar mis suplementos a las 2\" (CON hora) → crear_recordatorio con texto \"tomar tus suplementos\" y hora \"14:00\". Si menciona una hora, SIEMPRE crear_recordatorio y nunca crear_tarea, porque solo así te escribo a esa hora. Si pide varios recordatorios en un mensaje, crea uno por cada hora.\n" +
     "· \"me comí un yogur con granola\" → registrar_plato con esa descripción.\n" +
     "· \"llamé a mi mamá\" → registrar_interaccion con persona \"mamá\".\n" +
     "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n\n" +
@@ -606,6 +692,43 @@ async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: str
     contents.push({ role: "user", parts: respuestas });
   }
   return "Registré lo que pude. Revisa la app para confirmar. 🌱";
+}
+
+/** El repartidor: recorre los vínculos y manda los recordatorios cuya hora
+ *  ya llegó, cada uno en la zona horaria de su dueña. Se apoya en
+ *  ultimo_envio para no avisar dos veces el mismo día, y solo mira hacia
+ *  atrás media hora para no soltar de golpe recordatorios viejos. */
+async function repartirRecordatorios(db: SupabaseClient): Promise<number> {
+  let enviados = 0;
+  const { data: vinculos } = await db.from("wa_vinculos")
+    .select("user_id,telefono,timezone,avisos_activos").eq("avisos_activos", true);
+
+  for (const v of (vinculos ?? []) as Array<{ user_id: string; telefono: string; timezone: string }>) {
+    const ahora = minutosDe(horaEn(v.timezone));
+    const hoy = hoyEn(v.timezone);
+    const { data: pendientes, error } = await db.from("wa_recordatorios")
+      .select("id,texto,hora,repite,fecha,ultimo_envio")
+      .eq("user_id", v.user_id).eq("activo", true);
+    if (error) return enviados; // sin la 0052 todavía, el resto del motor sigue igual
+
+    for (const r of (pendientes ?? []) as Array<{ id: string; texto: string; hora: string; repite: string; fecha: string | null; ultimo_envio: string | null }>) {
+      if (r.ultimo_envio === hoy) continue;
+      if (r.repite === "unico" && r.fecha !== hoy) continue;
+      const cuando = minutosDe(r.hora);
+      if (cuando < 0 || ahora < cuando || ahora - cuando > 30) continue;
+
+      const envio = await enviarTexto(v.telefono, `⏰ ${r.texto}`);
+      await db.from("wa_recordatorios")
+        .update({ ultimo_envio: hoy, ...(r.repite === "unico" ? { activo: false } : {}) })
+        .eq("id", r.id);
+      await db.from("wa_eventos").insert({
+        user_id: v.user_id, tipo: "aviso",
+        detalle: { clase: "recordatorio", hora: r.hora, ok: envio.ok, error: envio.error ?? null },
+      });
+      if (envio.ok) enviados++;
+    }
+  }
+  return enviados;
 }
 
 // ---------- El drenaje del buffer ----------
@@ -757,10 +880,16 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // 3) Limpieza: eventos viejos y códigos vencidos.
+  // 3) Los recordatorios con hora, que no dependen de que ella escriba.
+  let recordatorios = 0;
+  try {
+    recordatorios = await repartirRecordatorios(db);
+  } catch { /* si algo falla aquí, el procesamiento de mensajes ya quedó hecho */ }
+
+  // 4) Limpieza: eventos viejos y códigos vencidos.
   const hace30d = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
   await db.from("wa_eventos").delete().lt("creado_en", hace30d);
   await db.from("wa_codigos").delete().lt("expira_en", new Date(Date.now() - 3600_000).toISOString());
 
-  return new Response(JSON.stringify({ procesados }), { status: 200, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ procesados, recordatorios }), { status: 200, headers: { "Content-Type": "application/json" } });
 });
