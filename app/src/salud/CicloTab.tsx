@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
 import { Mail, Trash2 } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
 import { TablesMissingError } from "../finanzas/data";
@@ -95,8 +96,9 @@ export function CicloTab() {
       <button className="btn ghost" onClick={() => setOtraFecha(!otraFecha)}>Fue otro día</button>
       {otraFecha && (
         <>
-          <input type="date" className="input-inline" style={{ width: 150, flex: "none" }}
-            value={fechaInicio} max={hoyLocal()} onChange={(e) => setFechaInicio(e.target.value)} />
+          <div style={{ width: 180, flex: "none" }}>
+            <CampoFecha compacto value={fechaInicio} onChange={setFechaInicio} ariaLabel="Fecha de inicio del período" max={hoyLocal()} conBorrar={false} />
+          </div>
           <button className="btn ghost" onClick={() => void registrar(fechaInicio)}>Guardar</button>
         </>
       )}

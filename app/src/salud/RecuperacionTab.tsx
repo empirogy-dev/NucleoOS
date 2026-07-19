@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
 import { OrdenGrid } from "../components/OrdenGrid";
@@ -144,6 +145,7 @@ function SobModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!start) return;
     setBusy(true);
     await addSobriety(substance, start);
     onSaved();
@@ -155,7 +157,7 @@ function SobModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
         <div className="field"><label>¿Qué estás dejando?</label>
           <input required value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder="marihuana, alcohol, cigarro…" autoFocus /></div>
         <div className="field"><label>¿Desde cuándo estás limpia?</label>
-          <input type="date" required value={start} onChange={(e) => setStart(e.target.value)} /></div>
+          <CampoFecha value={start} onChange={setStart} ariaLabel="Desde cuándo estás limpia" conBorrar={false} /></div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Empezar a contar"}</button>
       </form>
     </ModalShell>

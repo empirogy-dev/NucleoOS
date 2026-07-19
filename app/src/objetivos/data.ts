@@ -47,7 +47,7 @@ export const METRICAS_AUTO = [
   { key: "foco_minutos", label: "Minutos de foco (pomodoro)", unidad: "min", singular: "minuto", fuente: "tus bloques de pomodoro ligados a ese proyecto o a Aprendizaje" },
   { key: "ahorro_meta", label: "Dinero de una meta de ahorro", unidad: "aportado", singular: "aporte", fuente: "tus aportes en Finanzas → Metas: el porcentaje es el dinero real sobre el objetivo de esa meta de ahorro" },
   { key: "rel_momentos", label: "Momentos con una persona", unidad: "momentos", singular: "momento", fuente: "las interacciones que registras en Relaciones (si eliges una persona, solo cuentan las de ella)" },
-  { key: "libros_leidos", label: "Libros terminados", unidad: "libros", singular: "libro", fuente: "los libros que marcas como leídos en Aprendizaje → Biblioteca (si eliges una vía, solo cuentan los suyos). El objetivo es el total de libros, no un ritmo semanal" },
+  { key: "libros_leidos", label: "Leer libros", unidad: "libros", singular: "libro", fuente: "los libros que marcas como leídos en Aprendizaje → Biblioteca. Puedes elegir los libros exactos que quieres leerte, una vía, o toda la biblioteca; el objetivo es el total de libros" },
 ] as const;
 
 /** Qué métricas calzan con cada área, ESTRICTO: lo de Relaciones va con
@@ -153,9 +153,14 @@ export function valorAuto(o: Objective, f: Fuentes): number {
     return f.relLogs.filter((l) => l.date >= desde && (!o.auto_ref || l.relationship_id === o.auto_ref)).length;
   }
   if (o.auto_metric === "libros_leidos") {
-    // Las marcas antiguas no guardaban fecha: cuentan igual, a tu favor.
-    // Con auto_ref "v:<vía>" solo cuentan los libros de esa vía.
     const ref = o.auto_ref ?? "";
+    // "l:<ids>": libros exactos que elegiste; cuentan apenas los marcas
+    // como leídos, sin importar la fecha (los elegiste tú, son la meta).
+    if (ref.startsWith("l:")) {
+      const ids = new Set(ref.slice(2).split(",").filter(Boolean));
+      return f.libros.filter((l) => ids.has(l.id)).length;
+    }
+    // "v:<vía>" o vacío: las marcas antiguas sin fecha cuentan igual, a tu favor.
     return f.libros
       .filter((l) => l.fecha === null || l.fecha >= desde)
       .filter((l) => (ref.startsWith("v:") ? l.via === ref.slice(2) : true))

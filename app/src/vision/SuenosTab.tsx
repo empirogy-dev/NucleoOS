@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { Pencil, Plus, Rocket, Trash2 } from "lucide-react";
 import { AREAS } from "../areas";
@@ -258,7 +259,7 @@ function ConvertirModal({ dream, onClose, onSaved }: { dream: Dream; onClose: ()
             <Selector value={area} ariaLabel="Área de la vida" placeholder="General (toda la vida)" onChange={setArea}
               opciones={[{ value: "", label: "General (toda la vida)" }, ...AREAS.map((a) => ({ value: a.key, label: a.name }))]} /></div>
           <div className="field"><label>Fecha objetivo (opcional)</label>
-            <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+            <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha objetivo" /></div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Creando…" : "Crear la meta en Dirección"}</button>
         </form>
       </div>

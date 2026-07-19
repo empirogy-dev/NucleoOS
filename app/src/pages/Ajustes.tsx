@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
 import { Palette, Settings } from "lucide-react";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import { useAuth } from "../auth/AuthProvider";
@@ -158,10 +159,9 @@ function DiaPasadoCard() {
         ¿Desapareciste unos días pero igual entrenaste, tomaste agua o marcaste hábitos? Elige el día y toda la app registra ahí: Energía, Hábitos, Movimiento, Mente, Tareas y más. Un aviso te acompaña hasta que vuelvas a hoy.
       </p>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <input type="date" className="input-inline" style={{ width: 160, flex: "none" }}
-          value={fecha} min={min} max={hoy}
-          onChange={(e) => { if (e.target.value) setFecha(e.target.value); }}
-          aria-label="Día que quieres registrar" />
+        <div style={{ width: 200, flex: "none" }}>
+          <CampoFecha value={fecha} onChange={(v) => { if (v) setFecha(v); }} ariaLabel="Día que quieres registrar" min={min} max={hoy} conBorrar={false} />
+        </div>
         {!esHoy && (
           <button className="btn ghost" onClick={volverAHoy}>Volver a hoy</button>
         )}
@@ -200,7 +200,7 @@ function CumpleCard() {
         Amor propio: la app también te celebra a ti. El día de tu cumpleaños, el Inicio se pone de fiesta.
       </p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
-        <input className="input-inline" type="date" value={value} onChange={(e) => setValue(e.target.value)} aria-label="Tu fecha de cumpleaños" />
+        <div style={{ flex: 1 }}><CampoFecha value={value} onChange={setValue} ariaLabel="Tu fecha de cumpleaños" /></div>
         <button className="btn primary" type="submit">Guardar</button>
       </form>
       {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}

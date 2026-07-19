@@ -286,9 +286,10 @@ function eventosEnPeriodo(o: Objective, f: Fuentes, dentro: (d: string) => boole
   }
   if (o.auto_metric === "libros_leidos") {
     const ref = o.auto_ref ?? "";
+    const ids = ref.startsWith("l:") ? new Set(ref.slice(2).split(",").filter(Boolean)) : null;
     return f.libros
       .filter((l) => l.fecha !== null && dentro(l.fecha))
-      .filter((l) => (ref.startsWith("v:") ? l.via === ref.slice(2) : true))
+      .filter((l) => (ids ? ids.has(l.id) : ref.startsWith("v:") ? l.via === ref.slice(2) : true))
       .length;
   }
   return 0;

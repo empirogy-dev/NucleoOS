@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { Flag, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { IconField } from "../components/IconField";
@@ -337,7 +338,7 @@ function RetoModal({ reto, base, onClose, onSaved }: {
             <div className="field"><label>Duración (días)</label>
               <input type="number" min={3} max={365} value={duracion} onChange={(e) => setDuracion(e.target.value)} /></div>
             <div className="field"><label>Empieza el</label>
-              <input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} /></div>
+              <CampoFecha value={inicio} onChange={setInicio} ariaLabel="Empieza el" conBorrar={false} /></div>
           </div>
           <div className="field"><label>Frecuencia</label>
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>

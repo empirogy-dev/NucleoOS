@@ -1,4 +1,5 @@
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
+import { CampoFecha } from "../components/CampoFecha";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -408,7 +409,7 @@ function WorkLogModal({ projects, onClose, onSaved }: { projects: Project[]; onC
           <div className="field"><label>Horas</label>
             <input type="number" min="0" step="0.5" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="8" /></div>
           <div className="field"><label>Fecha</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
         </div>
         {kind === "empleo" && (
           <div className="field">

@@ -1,4 +1,5 @@
 import { IconField } from "../components/IconField";
+import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
@@ -955,7 +956,7 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
           <div className="field"><label>Pago mínimo (opcional)</label>
             <input type="number" min="0" step="any" value={minPay} onChange={(e) => setMinPay(e.target.value)} /></div>
           <div className="field"><label>Próximo pago (opcional)</label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+            <CampoFecha value={dueDate} onChange={setDueDate} ariaLabel="Próximo pago" /></div>
         </div>
         <div className="field"><label>Notas (opcional)</label>
           <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Cuotas restantes, condiciones…" /></div>
@@ -1013,7 +1014,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
           <div className="field"><label>Pago mínimo (opcional)</label>
             <input type="number" min="0" step="any" value={minPay} onChange={(e) => setMinPay(e.target.value)} /></div>
           <div className="field"><label>Próximo pago (opcional)</label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+            <CampoFecha value={dueDate} onChange={setDueDate} ariaLabel="Próximo pago" /></div>
         </div>
         <div className="field"><label>Interés anual % (opcional)</label>
           <input type="number" min="0" step="any" value={apr} onChange={(e) => setApr(e.target.value)} placeholder="21.99" /></div>
@@ -1049,7 +1050,7 @@ function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           <div className="field"><label>Monto (opcional)</label>
             <input type="number" min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
           <div className="field"><label>Fecha</label>
-            <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
         </div>
         <div className="field"><label>Se repite</label>
           <Selector value={recurrence} ariaLabel="Recurrencia del pago"
@@ -1115,7 +1116,7 @@ function GoalModal({ edit, metasDireccion, onClose, onSaved }: { edit?: Goal | n
           )}
         </div>
         <div className="field"><label>Fecha límite (opcional)</label>
-          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+          <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         {metasDireccion.length > 0 && (
           <div className="field">
             <label>Empuja una meta de tu Dirección (opcional)</label>
@@ -1487,7 +1488,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
           </p>
         )}
         <div className="field"><label>Fecha</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>

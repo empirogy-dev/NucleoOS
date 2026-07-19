@@ -1,4 +1,5 @@
 import { OrdenGrid } from "../components/OrdenGrid";
+import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { librosDe } from "../aprendizaje/biblioteca";
 import { MetasDeArea } from "../components/MetasDeArea";
@@ -430,7 +431,7 @@ function RelModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
           </div>
           <div className="frow">
             <div className="field"><label>Cumpleaños (opcional)</label>
-              <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} /></div>
+              <CampoFecha value={birthday} onChange={setBirthday} ariaLabel="Cumpleaños" /></div>
             <div className="field"><label>Contacto ideal (días)</label>
               <input type="number" min="1" value={cadence} onChange={(e) => setCadence(e.target.value)} placeholder="7" /></div>
           </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
@@ -792,7 +793,7 @@ function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
           <div className="field"><label>Minutos</label>
             <input className="input-inline" style={{ width: "100%" }} type="number" min={1} max={600} required value={min} onChange={(e) => setMin(e.target.value)} placeholder="30" /></div>
           <div className="field"><label>Fecha</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
         </div>
         <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>

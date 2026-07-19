@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { CampoFecha } from "../components/CampoFecha";
 import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronDown, ChevronRight, Compass, Pencil, Plus, Trash2 } from "lucide-react";
@@ -12,7 +13,8 @@ import { listProjects, listWorkLogs, type Project, type WorkLog } from "../traba
 import { listFocusBlocks, type FocusBlock } from "../foco/data";
 import { listGoals } from "../finanzas/data";
 import { listRelationships, listRelLogs, type Relationship, type RelLog } from "../relaciones/data";
-import { VIAS_LIBRO, librosLeidos } from "../aprendizaje/biblioteca";
+import { LIBROS, VIAS_LIBRO, estadosLibros, librosLeidos, type Libro } from "../aprendizaje/biblioteca";
+import { comoLibro, listLibrosPropios } from "../aprendizaje/librosPropios";
 import { Selector } from "../components/Selector";
 import {
   METRICAS_AUTO,
@@ -78,6 +80,7 @@ export function ObjetivosPage() {
   const [goals, setGoals] = useState<Fuentes["goals"]>([]);
   const [personas, setPersonas] = useState<Relationship[]>([]);
   const [relLogs, setRelLogs] = useState<RelLog[]>([]);
+  const [librosCat, setLibrosCat] = useState<Libro[]>(LIBROS);
   const [retoLogs, setRetoLogs] = useState<RetoLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -143,6 +146,11 @@ export function ObjetivosPage() {
       setRelLogs(pl);
     } catch {
       /* sin Relaciones migrado, la métrica de momentos no está disponible */
+    }
+    try {
+      setLibrosCat([...LIBROS, ...(await listLibrosPropios()).map(comoLibro)]);
+    } catch {
+      /* sin la 0042 la meta de libros ofrece solo la biblioteca curada */
     }
     setSesiones(listSesiones());
     setLoading(false);
@@ -223,7 +231,7 @@ export function ObjetivosPage() {
               )}
               {activas.map((o) => (
                 <ObjectiveCard key={o.id} o={o} sueno={o.dream_id ? suenoDe.get(o.dream_id) ?? null : null}
-                  fuentes={fuentes} habitos={habitos} retos={retos} proyectos={proyectos} personas={personas} onChanged={() => void reload()} />
+                  fuentes={fuentes} habitos={habitos} retos={retos} proyectos={proyectos} personas={personas} libros={librosCat} onChanged={() => void reload()} />
               ))}
               <GuiaDireccion />
             </div>
@@ -326,7 +334,7 @@ export function ObjetivosPage() {
       )}
 
       {modal === "objective" && (
-        <ObjectiveModal cx={{ habitos, retos, proyectos, goals, personas }} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
+        <ObjectiveModal cx={{ habitos, retos, proyectos, goals, personas, libros: librosCat }} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
       )}
       {modal === "avance" && (
         <AvanceModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
@@ -347,7 +355,7 @@ function Head() {
   );
 }
 
-function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas, onChanged }: {
+function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas, libros, onChanged }: {
   o: Objective;
   sueno: Dream | null;
   fuentes: Fuentes;
@@ -355,6 +363,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
   retos: Reto[];
   proyectos: Project[];
   personas: Relationship[];
+  libros: Libro[];
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -385,6 +394,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
             : o.auto_metric === "libros_leidos"
               ? (() => {
                   const ref = o.auto_ref ?? "";
+                  if (ref.startsWith("l:")) return { icon: "📚", name: "los que elegiste" };
                   if (ref.startsWith("v:")) { const v = VIAS_LIBRO.find((x) => x.key === ref.slice(2)); return v ? { icon: "📚", name: v.label } : null; }
                   return { icon: "📚", name: "la biblioteca" };
                 })()
@@ -473,7 +483,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
 
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
-          <AutoConfig o={o} habitos={habitos} retos={retos} proyectos={proyectos} goals={fuentes.goals} personas={personas}
+          <AutoConfig o={o} cx={{ habitos, retos, proyectos, goals: fuentes.goals, personas, libros }}
             activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}${o.auto_metric === "libros_leidos" && o.auto_target ? `, ${o.auto_target} en total` : o.auto_metric !== "ahorro_meta" && o.auto_target ? `, a ${o.auto_target} por semana` : ""}` : null}
             onChanged={onChanged} />
           {o.milestones.map((m) => (
@@ -572,6 +582,7 @@ interface Conexiones {
   proyectos: Project[];
   goals: Fuentes["goals"];
   personas: Relationship[];
+  libros: Libro[];
 }
 
 /** El segundo selector de una conexión automática: a QUÉ hábito, reto,
@@ -604,10 +615,64 @@ function SelectorDeRef({ metric, refVal, onRef, cx, compacto }: { metric: string
       opciones={[{ value: "", label: "💞 Con cualquier persona" }, ...cx.personas.map((p) => ({ value: p.id, label: `💞 ${p.name}` }))]} />;
   }
   if (metric === "libros_leidos") {
-    return <Selector {...props} ariaLabel="Libros que alimentan esta meta"
-      opciones={[{ value: "", label: "📚 Cualquier libro de la biblioteca" }, ...VIAS_LIBRO.map((v) => ({ value: `v:${v.key}`, label: `📚 Los de ${v.label}` }))]} />;
+    // El modo: los libros exactos que ella elige, una vía, o toda la biblioteca.
+    const modo = refVal.startsWith("l:") ? "l:" : refVal;
+    return <Selector {...props} value={modo} onChange={onRef} ariaLabel="Libros que alimentan esta meta"
+      opciones={[
+        { value: "l:", label: "🎯 Elegir los libros exactos" },
+        { value: "", label: "📚 Cualquier libro de la biblioteca" },
+        ...VIAS_LIBRO.map((v) => ({ value: `v:${v.key}`, label: `📚 Los de ${v.label}` })),
+      ]} />;
   }
   return null;
+}
+
+/** La lista para marcar los libros exactos de una meta "Leer libros".
+ *  Los de "Mi lista" (los que quieres leer) aparecen primero. */
+function ChecklistLibros({ refVal, onRef, libros }: { refVal: string; onRef: (v: string) => void; libros: Libro[] }) {
+  const [filtro, setFiltro] = useState("");
+  const sel = new Set(refVal.slice(2).split(",").filter(Boolean));
+  const estados = estadosLibros();
+  const peso = (l: Libro) => (sel.has(l.id) ? 0 : estados[l.id] === "quiero" ? 1 : 2);
+  const orden = [...libros].sort((a, b) => peso(a) - peso(b));
+  const visibles = filtro.trim()
+    ? orden.filter((l) => `${l.titulo} ${l.autor}`.toLowerCase().includes(filtro.trim().toLowerCase()))
+    : orden;
+
+  function alternar(id: string) {
+    const s = new Set(sel);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    onRef(`l:${[...s].join(",")}`);
+  }
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <input className="input-inline" value={filtro} onChange={(e) => setFiltro(e.target.value)}
+        placeholder="Buscar por título o autor…" aria-label="Buscar un libro" style={{ marginBottom: 6, width: "100%" }} />
+      <div style={{ maxHeight: 172, overflowY: "auto", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: 4, background: "var(--surface)" }}>
+        {visibles.map((l) => (
+          <button key={l.id} type="button" className={"sel-opt" + (sel.has(l.id) ? " on" : "")}
+            style={{ display: "flex", gap: 7, alignItems: "center" }}
+            onClick={() => alternar(l.id)}>
+            <span style={{ flex: "none" }}>{sel.has(l.id) ? "☑" : "☐"}</span>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {l.emoji} {l.titulo}
+              {estados[l.id] === "quiero" ? " · 📖 en tu lista" : estados[l.id] === "leido" ? " · ✓ leído" : ""}
+            </span>
+          </button>
+        ))}
+        {visibles.length === 0 && <p style={{ fontSize: 12.5, color: "var(--muted)", padding: 8 }}>Ningún libro calza con esa búsqueda.</p>}
+      </div>
+      <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
+        {sel.size === 0
+          ? "Marca los libros que quieres leerte: el total de la meta será esa cantidad."
+          : sel.size === 1
+            ? "1 libro elegido: terminarlo completa la meta."
+            : `${sel.size} libros elegidos: cada uno que termines avanza ≈${Math.round(100 / sel.size)}%.`}
+      </p>
+    </div>
+  );
 }
 
 /** Qué le falta a una conexión para poder guardarse, o null si está completa. */
@@ -617,13 +682,19 @@ function faltaEnConexion(metric: string, ref: string): string | null {
   if (metric === "trabajo_horas" && !ref) return "Elige qué proyecto de Trabajo alimenta esta meta.";
   if (metric === "foco_minutos" && !ref) return "Elige a qué proyecto o área ligas tus bloques de foco.";
   if (metric === "ahorro_meta" && !ref) return "Elige qué meta de ahorro de Finanzas alimenta esta meta.";
+  if (metric === "libros_leidos" && ref === "l:") return "Marca al menos un libro para esta meta.";
   return null;
+}
+
+/** Cuántos libros exactos tiene elegidos una conexión "l:". */
+function librosElegidos(ref: string): number {
+  return ref.startsWith("l:") ? ref.slice(2).split(",").filter(Boolean).length : 0;
 }
 
 const METRICAS_CON_REF = ["habito_marcas", "reto_dias", "trabajo_horas", "foco_minutos", "ahorro_meta", "rel_momentos", "libros_leidos"];
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
-function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel, onChanged }: { o: Objective; habitos: Habit[]; retos: Reto[]; proyectos: Project[]; goals: Fuentes["goals"]; personas: Relationship[]; activaLabel: string | null; onChanged: () => void }) {
+function AutoConfig({ o, cx, activaLabel, onChanged }: { o: Objective; cx: Conexiones; activaLabel: string | null; onChanged: () => void }) {
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
   const [ref, setRef] = useState(o.auto_ref ?? "");
@@ -640,7 +711,10 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
     try {
       await updateObjective(o.id, {
         auto_metric: metric || null,
-        auto_target: metric && metric !== "ahorro_meta" && target ? Number(target) : null,
+        // Con libros exactos, el total ES la cantidad de libros elegidos.
+        auto_target: metric === "libros_leidos" && ref.startsWith("l:")
+          ? Math.max(1, librosElegidos(ref))
+          : metric && metric !== "ahorro_meta" && target ? Number(target) : null,
         auto_ref: METRICAS_CON_REF.includes(metric) ? (ref || null) : null,
       });
       setSaved(true);
@@ -665,15 +739,14 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
         <div style={{ flex: "1 1 210px", minWidth: 190 }}>
           <Selector compacto value={metric} ariaLabel="Métrica automática" placeholder="Sin conexión automática"
             opciones={[{ value: "", label: "Sin conexión automática" }, ...metricasParaArea(o.area).map((m) => ({ value: m.key, label: m.label }))]}
-            onChange={(v) => { setMetric(v); setRef(""); }} />
+            onChange={(v) => { setMetric(v); setRef(v === "libros_leidos" ? "l:" : ""); }} />
         </div>
         {METRICAS_CON_REF.includes(metric) && (
           <div style={{ flex: "1 1 170px", minWidth: 150 }}>
-            <SelectorDeRef compacto metric={metric} refVal={ref} onRef={setRef}
-              cx={{ habitos, retos, proyectos, goals, personas }} />
+            <SelectorDeRef compacto metric={metric} refVal={ref} onRef={setRef} cx={cx} />
           </div>
         )}
-        {metric && metric !== "ahorro_meta" && (
+        {metric && metric !== "ahorro_meta" && !(metric === "libros_leidos" && ref.startsWith("l:")) && (
           <>
             <input className="input-inline" type="number" min={1} max={10000} value={target} placeholder="3"
               aria-label={metric === "libros_leidos" ? "Libros en total" : "Ritmo por semana"} style={{ maxWidth: 80, flex: "none" }}
@@ -684,6 +757,9 @@ function AutoConfig({ o, habitos, retos, proyectos, goals, personas, activaLabel
         <button className="btn ghost" type="button" onClick={() => void guardar()}>Guardar</button>
         {saved && <span className="chip">✓ Conectada</span>}
       </div>
+      {metric === "libros_leidos" && ref.startsWith("l:") && (
+        <ChecklistLibros refVal={ref} onRef={setRef} libros={cx.libros} />
+      )}
       {metric && (() => {
         const m = METRICAS_AUTO.find((x) => x.key === metric);
         return m ? (
@@ -746,7 +822,7 @@ function EditObjectiveModal({ o, onClose, onSaved }: { o: Objective; onClose: ()
           <Selector value={area} ariaLabel="Área de la vida" onChange={setArea}
             opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
         <div className="field"><label>Fecha límite</label>
-          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+          <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           La fecha límite también define el plazo del progreso automático: con ella la meta sabe cuántas semanas tiene.
         </p>
@@ -781,7 +857,10 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
         area: area || null,
         deadline: deadline || null,
         auto_metric: metric || null,
-        auto_target: metric && metric !== "ahorro_meta" && target ? Number(target) : null,
+        // Con libros exactos, el total ES la cantidad de libros elegidos.
+        auto_target: metric === "libros_leidos" && ref.startsWith("l:")
+          ? Math.max(1, librosElegidos(ref))
+          : metric && metric !== "ahorro_meta" && target ? Number(target) : null,
         auto_ref: METRICAS_CON_REF.includes(metric) ? (ref || null) : null,
       });
       onSaved();
@@ -801,13 +880,13 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
           <Selector value={area} ariaLabel="Área de la vida" onChange={(v) => { setArea(v); setMetric(""); setRef(""); }}
             opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
         <div className="field"><label>Fecha límite (opcional)</label>
-          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div>
+          <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         <div className="frow">
           <div className="field"><label>Se alimenta de (opcional)</label>
             <Selector value={metric} ariaLabel="Métrica que alimenta la meta" placeholder="Nada, progreso manual o por pasos"
               opciones={[{ value: "", label: "Nada, progreso manual o por pasos" }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: m.label }))]}
-              onChange={(v) => { setMetric(v); setRef(""); }} /></div>
-          {metric && metric !== "ahorro_meta" && (
+              onChange={(v) => { setMetric(v); setRef(v === "libros_leidos" ? "l:" : ""); }} /></div>
+          {metric && metric !== "ahorro_meta" && !(metric === "libros_leidos" && ref.startsWith("l:")) && (
             <div className="field" style={{ maxWidth: 120 }}><label>{metric === "libros_leidos" ? "Libros en total" : "Por semana"}</label>
               <input type="number" min={1} required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="3" /></div>
           )}
@@ -816,6 +895,9 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
           <div className="field">
             <label>Conectada a</label>
             <SelectorDeRef metric={metric} refVal={ref} onRef={setRef} cx={cx} />
+            {metric === "libros_leidos" && ref.startsWith("l:") && (
+              <ChecklistLibros refVal={ref} onRef={setRef} libros={cx.libros} />
+            )}
           </div>
         )}
         {metric && (
@@ -855,7 +937,7 @@ function AvanceModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
             <Selector value={area} ariaLabel="Área del avance" onChange={setArea}
               opciones={AREAS.map((a) => ({ value: a.key, label: a.name }))} /></div>
           <div className="field"><label>Fecha</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha del avance" conBorrar={false} /></div>
         </div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar avance"}</button>
       </form>

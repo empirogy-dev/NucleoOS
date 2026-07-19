@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
 import { Plus, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import { daysUntil, dueLabel } from "../finanzas/types";
@@ -299,6 +300,7 @@ function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!date) return;
     setBusy(true);
     await addAppointment({ title, date, time: time || null, location: location || null });
     onSaved();
@@ -311,7 +313,7 @@ function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Psicóloga, dentista, médica general…" autoFocus /></div>
         <div className="frow">
           <div className="field"><label>Fecha</label>
-            <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha de la cita" conBorrar={false} /></div>
           <div className="field"><label>Hora (opcional)</label>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
         </div>
@@ -343,7 +345,7 @@ function ExamModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Examen de sangre, hierro, vitamina D…" autoFocus /></div>
         <div className="frow">
           <div className="field"><label>Para cuándo (opcional)</label>
-            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></div>
+            <CampoFecha value={due} onChange={setDue} ariaLabel="Para cuándo" /></div>
           <div className="field"><label>Resultado (si ya lo tienes)</label>
             <input value={result} onChange={(e) => setResult(e.target.value)} placeholder="normal, hierro bajo…" /></div>
         </div>
