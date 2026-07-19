@@ -2,18 +2,19 @@
 // La llama el cron cada minuto (migración 0051). Drena los lotes vencidos
 // del buffer, arma el bloque semántico (texto + audios + fotos), se lo da
 // a Gemini con las tools de registro, escribe en las MISMAS tablas de la
-// app a nombre de la usuaria del vínculo, y confirma por WhatsApp.
+// app a nombre de la usuaria del vínculo, y confirma por el chat.
 //
 // Seguridad (docs/whatsapp/SECURITY-AUDIT.md):
 //   SEC-N2: el user_id sale del vínculo, jamás del modelo. Toda escritura
 //           lleva su user_id explícito.
 //   SEC-N3: máximo 5 tools por turno y 50 escrituras al día por vínculo.
-//   SEC-N5: solo se descargan medios cuyo host sea de Meta/WhatsApp.
+//   SEC-N5: los medios se bajan del host oficial de Telegram.
 //   COST-N1: comparte el tope diario de ia_uso con la app.
 //
-// Secretos: GEMINI_API_KEY · TELEGRAM_BOT_TOKEN
+// Secretos: GEMINI_API_KEY · TELEGRAM_BOT_TOKEN · WA_CRON_SECRET
 // (proveedor: Telegram Bot API, gratis y sin ventana de 24 h)
-// Esta función se protege sola: exige el service role key en Authorization.
+// Esta función se protege sola: exige en Authorization la palabra de
+// WA_CRON_SECRET (o una llave de servicio), así solo el cron la despierta.
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
@@ -439,6 +440,55 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
 
 // ---------- El turno con Gemini (tool-calling con tope) ----------
 
+/** El mismo contexto que ve tu coach en el Inicio de la app: quién eres,
+ *  tu visión, tus metas vivas, los hábitos de hoy y tu sobriedad. Sin esto
+ *  el bot respondería como un asistente genérico, no como TU coach. */
+async function contextoDe(db: SupabaseClient, userId: string, timezone: string): Promise<string> {
+  const hoy = hoyEn(timezone);
+  const partes: string[] = [];
+  try {
+    const [perfil, metas, habitos, marcados, sobriedad, tareas] = await Promise.all([
+      db.from("profiles").select("display_name,life_vision").eq("id", userId).maybeSingle(),
+      db.from("objectives").select("title,status,area").eq("user_id", userId).neq("status", "lograda").limit(8),
+      db.from("habits").select("id,name").eq("user_id", userId).limit(15),
+      db.from("habit_logs").select("habit_id").eq("user_id", userId).eq("date", hoy),
+      db.from("sobriety").select("substance,start_date").eq("user_id", userId).limit(3),
+      db.from("day_tasks").select("title,done").eq("user_id", userId).eq("date", hoy).limit(10),
+    ]);
+
+    const nombre = (perfil.data as { display_name?: string } | null)?.display_name;
+    if (nombre) partes.push(`Se llama ${nombre}.`);
+    const vision = (perfil.data as { life_vision?: string } | null)?.life_vision;
+    if (vision) partes.push(`Su visión de vida: "${String(vision).slice(0, 300)}".`);
+
+    const listaMetas = (metas.data ?? []) as Array<{ title: string; status: string }>;
+    if (listaMetas.length > 0) {
+      partes.push("Metas activas: " + listaMetas.map((m) => `${m.title}${m.status === "en_riesgo" ? " (en riesgo)" : ""}`).join(", ") + ".");
+    }
+
+    const listaHabitos = (habitos.data ?? []) as Array<{ id: string; name: string }>;
+    if (listaHabitos.length > 0) {
+      const hechos = new Set(((marcados.data ?? []) as Array<{ habit_id: string }>).map((l) => l.habit_id));
+      const pendientes = listaHabitos.filter((h) => !hechos.has(h.id)).map((h) => h.name);
+      partes.push(pendientes.length === 0
+        ? "Hoy ya marcó todos sus hábitos. 🎉"
+        : `Hábitos que le faltan hoy: ${pendientes.join(", ")}.`);
+    }
+
+    const listaTareas = (tareas.data ?? []) as Array<{ title: string; done: boolean }>;
+    const pendTareas = listaTareas.filter((t) => !t.done).map((t) => t.title);
+    if (pendTareas.length > 0) partes.push(`Tareas pendientes de hoy: ${pendTareas.join(", ")}.`);
+
+    for (const s of (sobriedad.data ?? []) as Array<{ substance: string; start_date: string }>) {
+      const dias = Math.floor((Date.now() - new Date(s.start_date).getTime()) / 86400000);
+      if (dias >= 0) partes.push(`Lleva ${dias} días libre de ${s.substance}: celébralo si viene al caso, nunca lo minimices.`);
+    }
+  } catch {
+    /* si alguna tabla falla, el coach responde igual con lo que tenga */
+  }
+  return partes.length > 0 ? `\n\nLO QUE SABES DE ELLA HOY:\n${partes.join("\n")}` : "";
+}
+
 function promptSistema(idioma: string, timezone: string): string {
   const idiomaTxt = idioma === "en" ? "inglés" : idioma === "pt" ? "portugués" : "español";
   return (
@@ -456,7 +506,7 @@ function promptSistema(idioma: string, timezone: string): string {
   );
 }
 
-async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: string; data: string } }[], ctx: Ctx, idioma: string): Promise<string> {
+async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: string; data: string } }[], ctx: Ctx, idioma: string, contexto: string): Promise<string> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) return "La IA no está configurada todavía.";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
@@ -470,7 +520,7 @@ async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: str
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: promptSistema(idioma, ctx.timezone) }] },
+        systemInstruction: { parts: [{ text: promptSistema(idioma, ctx.timezone) + contexto }] },
         contents,
         tools: [{ functionDeclarations: declaraciones }],
       }),
@@ -508,11 +558,26 @@ async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: str
 
 // ---------- El drenaje del buffer ----------
 
+/** ¿Quien llama tiene derecho a despertar el motor?
+ *  Acepta tres llaves para no depender de qué sistema use el proyecto:
+ *   · WA_CRON_SECRET: una palabra tuya (la forma recomendada; así la
+ *     service role key nunca se escribe dentro de una migración SQL)
+ *   · la service role key legacy (eyJ...) o la nueva (sb_secret_...),
+ *     según cuál le inyecte Supabase a la función. */
+function autorizado(req: Request): boolean {
+  const enviada = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!enviada) return false;
+  const validas = [
+    Deno.env.get("WA_CRON_SECRET"),
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    Deno.env.get("SUPABASE_SECRET_KEY"),
+  ].filter((k): k is string => Boolean(k && k.trim())).map((k) => k.trim());
+  return validas.some((k) => k === enviada);
+}
+
 Deno.serve(async (req: Request) => {
-  // Solo el cron (o quien tenga el service role) puede invocar el motor.
-  const auth = req.headers.get("Authorization") ?? "";
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!service || auth !== `Bearer ${service}`) {
+  // Solo el cron (o quien tenga una llave de servicio) puede invocar el motor.
+  if (!autorizado(req)) {
     return new Response(JSON.stringify({ error: "Sin permiso." }), { status: 401 });
   }
   const db = admin();
@@ -590,7 +655,8 @@ Deno.serve(async (req: Request) => {
       const idioma = String((kvIdioma?.value as { raw?: string })?.raw ?? "es").replace(/"/g, "");
 
       const ctx: Ctx = { db, userId: lote.user_id, timezone: vinculo.timezone, loteId: lote.id, escrituras: [] };
-      const respuesta = await turnoGemini(bloque, ctx, idioma);
+      const contexto = await contextoDe(db, lote.user_id, vinculo.timezone);
+      const respuesta = await turnoGemini(bloque, ctx, idioma, contexto);
 
       await enviarTexto(vinculo.telefono, respuesta.slice(0, 3000));
       await db.from("wa_mensajes").insert({
