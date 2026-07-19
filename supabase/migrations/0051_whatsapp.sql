@@ -126,17 +126,28 @@ alter table public.wa_lotes enable row level security;
 alter table public.wa_avisos_enviados enable row level security;
 alter table public.wa_eventos enable row level security;
 
+-- Postgres no tiene "create policy if not exists", así que cada una se borra
+-- antes de crearse: así esta migración se puede correr las veces que haga falta
+-- sin el error 42710 (policy already exists).
+
 -- Vínculo: ver, ajustar switches y desvincular. Crear NO (solo el bot al validar el código).
+drop policy if exists wa_vinculo_ver on public.wa_vinculos;
 create policy wa_vinculo_ver on public.wa_vinculos for select using (auth.uid() = user_id);
+drop policy if exists wa_vinculo_editar on public.wa_vinculos;
 create policy wa_vinculo_editar on public.wa_vinculos for update using (auth.uid() = user_id);
+drop policy if exists wa_vinculo_borrar on public.wa_vinculos;
 create policy wa_vinculo_borrar on public.wa_vinculos for delete using (auth.uid() = user_id);
 
 -- Códigos: la usuaria genera y ve los suyos.
+drop policy if exists wa_codigos_ver on public.wa_codigos;
 create policy wa_codigos_ver on public.wa_codigos for select using (auth.uid() = user_id);
+drop policy if exists wa_codigos_crear on public.wa_codigos;
 create policy wa_codigos_crear on public.wa_codigos for insert with check (auth.uid() = user_id);
 
 -- Historial y eventos: solo lectura de lo propio (para el panel de Ajustes).
+drop policy if exists wa_mensajes_ver on public.wa_mensajes;
 create policy wa_mensajes_ver on public.wa_mensajes for select using (auth.uid() = user_id);
+drop policy if exists wa_eventos_ver on public.wa_eventos;
 create policy wa_eventos_ver on public.wa_eventos for select using (auth.uid() = user_id);
 
 -- wa_lotes y wa_avisos_enviados: sin políticas a propósito, solo el servidor.
