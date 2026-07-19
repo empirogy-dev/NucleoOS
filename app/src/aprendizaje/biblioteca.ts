@@ -503,6 +503,19 @@ export const LIBROS: Libro[] = [
       "La pareja perfecta no existe: existen dos personas que se eligen.",
     ],
   },
+  {
+    id: "masterylove",
+    titulo: "The Mastery of Love",
+    autor: "Don Miguel Ruiz",
+    via: "relaciones",
+    emoji: "🕊️",
+    porQue: "Del autor de Los cuatro acuerdos, aplicado al amor: dejamos de sufrir en las relaciones cuando dejamos de esperar que el otro nos llene. Sanador para quien ama con heridas.",
+    ideas: [
+      "Nadie viene a completarte: dos personas enteras se disfrutan, no se necesitan.",
+      "Tomarte las cosas de forma personal envenena el vínculo: casi nada es sobre ti.",
+      "El amor propio es el filtro: como te tratas tú, dejas que te traten.",
+    ],
+  },
 
   // ---------- Finanzas ----------
   {
@@ -741,6 +754,19 @@ export const LIBROS: Libro[] = [
       "Afila la sierra: renovarte no es perder el tiempo, es la base.",
     ],
   },
+  {
+    id: "thinkingbig",
+    titulo: "The Magic of Thinking Big",
+    autor: "David J. Schwartz",
+    via: "proposito",
+    emoji: "🎈",
+    porQue: "Un clásico de 1959 que sigue vivo por una razón: el tamaño de tu vida lo decide el tamaño de tus pensamientos, no tu talento. Ideal para cuando te sorprendes pidiendo poco.",
+    ideas: [
+      "No es la capacidad, es la escala: la mayoría no falla por soñar grande sino por apuntar chico.",
+      "La excusitis es la enfermedad del fracaso: salud, edad, suerte, todas tienen antídoto.",
+      "Actúa primero, la confianza llega después: la acción cura el miedo.",
+    ],
+  },
 
   // ---------- Espiritualidad ----------
   {
@@ -890,14 +916,19 @@ export function estadosLibros(): Record<string, EstadoLibro> {
   return out;
 }
 
-/** Libros marcados como leídos, con la fecha de la marca si existe y su vía. */
+/** Libros marcados como leídos, con la fecha de la marca si existe y su vía.
+ *  La vía sale de la biblioteca curada o de la memoria de libros propios. */
 export function librosLeidos(): Array<{ id: string; fecha: string | null; via: ViaLibro | null }> {
+  let viasPropias: Record<string, string> = {};
+  try {
+    viasPropias = JSON.parse(localStorage.getItem("nucleoos-libros-propios-vias") ?? "{}") as Record<string, string>;
+  } catch { /* nada */ }
   return Object.entries(marcasCrudas())
     .filter(([, m]) => (typeof m === "string" ? m : m.e) === "leido")
     .map(([id, m]) => ({
       id,
       fecha: typeof m === "string" ? null : m.f,
-      via: LIBROS.find((l) => l.id === id)?.via ?? null,
+      via: LIBROS.find((l) => l.id === id)?.via ?? (viasPropias[id] as ViaLibro | undefined) ?? null,
     }));
 }
 
