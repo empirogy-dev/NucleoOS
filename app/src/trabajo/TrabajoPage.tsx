@@ -1,4 +1,5 @@
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
@@ -55,6 +56,8 @@ export function TrabajoPage() {
   const [modal, setModal] = useState<"project" | "worklog" | null>(null);
   const [focos, setFocos] = useState<FocusBlock[]>([]);
   const [ptasks, setPtasks] = useState<ProjectTask[]>([]);
+  const { t: tr } = useIdioma();
+
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -111,23 +114,23 @@ export function TrabajoPage() {
 
       <div className="ftabs">
         <span style={{ flex: 1 }} />
-        <button className="btn ghost" onClick={() => setModal("worklog")}>Registrar jornada</button>
+        <button className="btn ghost" onClick={() => setModal("worklog")}>{tr("btn.registrarjornada")}</button>
         <button className="btn primary" onClick={() => setModal("project")}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          Nuevo proyecto
+          {tr("btn.nuevoproyecto")}
         </button>
       </div>
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
-        <p style={{ color: "var(--muted)" }}>Cargando…</p>
+        <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>
       ) : (
         <>
           <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-            <div className="card stat"><div className="k">Proyectos activos</div><div className="v tnum">{activos}</div></div>
-            <div className="card stat"><div className="k">Horas (7 días)</div><div className="v tnum">{Math.round(horasSemana * 10) / 10} h</div></div>
-            <div className="card stat"><div className="k">Registros</div><div className="v tnum">{logs.length}</div></div>
-            <div className="card stat"><div className="k">Ánimo laboral (14 días)</div><div className="v">{animo !== null ? `${moodEmoji(Math.round(animo))} ${animo}` : "sin datos"}</div></div>
+            <div className="card stat"><div className="k">{tr("stat.tra.activos")}</div><div className="v tnum">{activos}</div></div>
+            <div className="card stat"><div className="k">{tr("stat.tra.horas7")}</div><div className="v tnum">{Math.round(horasSemana * 10) / 10} h</div></div>
+            <div className="card stat"><div className="k">{tr("stat.tra.registros")}</div><div className="v tnum">{logs.length}</div></div>
+            <div className="card stat"><div className="k">{tr("stat.tra.animo")}</div><div className="v">{animo !== null ? `${moodEmoji(Math.round(animo))} ${animo}` : "sin datos"}</div></div>
           </div>
 
           <MetasDeArea area="trabajo" />
@@ -333,11 +336,12 @@ function ChecklistProyecto({ projectId, tasks, onChanged }: { projectId: string;
 }
 
 function Head() {
+  const { t: tr } = useIdioma();
   return (
     <div className="page-head">
-      <div className="eyebrow"><Briefcase size={13} /> Mi vida</div>
-      <h1>Trabajo</h1>
-      <p>Tus proyectos personales, tu empleo, tus horas y cómo te sientes.</p>
+      <div className="eyebrow"><Briefcase size={13} /> {tr("sec.mivida")}</div>
+      <h1>{tr("area.trabajo")}</h1>
+      <p>{tr("head.sub.trabajo")}</p>
     </div>
   );
 }

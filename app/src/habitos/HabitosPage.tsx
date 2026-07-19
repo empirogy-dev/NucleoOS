@@ -1,4 +1,5 @@
 import { IconField } from "../components/IconField";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Link } from "react-router-dom";
 import { fechaRegistro, fmtFechaLocal } from "../lib/fechas";
 import { useFechaActiva } from "../fecha/FechaActiva";
@@ -42,6 +43,8 @@ function isoDaysAgo(n: number): string {
 }
 
 export function HabitosPage() {
+  const { t: tr } = useIdioma();
+
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
   const [routine, setRoutine] = useState<RoutineLog[]>([]);
@@ -94,9 +97,9 @@ export function HabitosPage() {
       <Head />
 
       <div className="ftabs">
-        <button className={"ftab" + (tabH === "habitos" ? " active" : "")} onClick={() => setTabH("habitos")}>Hábitos</button>
-        <button className={"ftab" + (tabH === "retos" ? " active" : "")} onClick={() => setTabH("retos")}>Retos</button>
-        <button className={"ftab" + (tabH === "rutinas" ? " active" : "")} onClick={() => setTabH("rutinas")}>Rutinas</button>
+        <button className={"ftab" + (tabH === "habitos" ? " active" : "")} onClick={() => setTabH("habitos")}>{tr("tab.hab.habitos")}</button>
+        <button className={"ftab" + (tabH === "retos" ? " active" : "")} onClick={() => setTabH("retos")}>{tr("tab.hab.retos")}</button>
+        <button className={"ftab" + (tabH === "rutinas" ? " active" : "")} onClick={() => setTabH("rutinas")}>{tr("tab.hab.rutinas")}</button>
       </div>
 
       {tabH === "rutinas" ? (
@@ -116,7 +119,7 @@ export function HabitosPage() {
         <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
-        <p style={{ color: "var(--muted)" }}>Cargando…</p>
+        <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>
       ) : (
         <>
           <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
@@ -286,11 +289,12 @@ export function HabitosPage() {
 }
 
 function Head() {
+  const { t: tr } = useIdioma();
   return (
     <div className="page-head">
-      <div className="eyebrow"><Repeat size={13} /> Núcleo</div>
-      <h1>Hábitos</h1>
-      <p>Sueño, ejercicio y las rutinas que construyen tu día, un check a la vez.</p>
+      <div className="eyebrow"><Repeat size={13} /> {tr("sec.nucleo")}</div>
+      <h1>{tr("area.habitos")}</h1>
+      <p>{tr("head.sub.habitos")}</p>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Brain } from "lucide-react";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
 import { faseLunar, proximasLunas, proximosEventosCielo } from "./lunar";
@@ -33,6 +34,8 @@ const TABS: Array<{ key: Tab; label: string }> = [
 ];
 
 export function MentePage() {
+  const { t: tr } = useIdioma();
+
   const [tab, setTab] = useState<Tab>("practicas");
   const [categoria, setCategoria] = useState<CategoriaMente>("regulacion");
   const [sesion, setSesion] = useState<{ practica: Practica; minutos: number } | null>(null);
@@ -56,9 +59,9 @@ export function MentePage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow"><Brain size={13} /> Núcleo</div>
-        <h1>Mente</h1>
-        <p>Regulación, presencia, corazón y mentalidad. Elige la vía que necesitas hoy y cuántos minutos tienes.</p>
+        <div className="eyebrow"><Brain size={13} /> {tr("sec.nucleo")}</div>
+        <h1>{tr("nav.mente")}</h1>
+        <p>{tr("head.sub.mente")}</p>
       </div>
 
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
@@ -70,7 +73,7 @@ export function MentePage() {
 
       <div className="ftabs">
         {TABS.map((t) => (
-          <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{t.label}</button>
+          <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{tr("tab.men." + t.key)}</button>
         ))}
       </div>
 

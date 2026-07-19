@@ -1,4 +1,5 @@
 import { IconField } from "../components/IconField";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -72,6 +73,8 @@ export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
   // El ojito: con el modo privado activo, todos los montos se enmascaran.
   const [privado, setPrivado] = useState(modoPrivado());
+  const { t: tr } = useIdioma();
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -234,9 +237,9 @@ export function FinanzasPage() {
             ["categorias", "Categorías"],
             ["reporte", "Reporte"],
           ] as Array<[TabKey, string]>
-        ).map(([k, label]) => (
+        ).map(([k]) => (
           <button key={k} className={"ftab" + (tab === k ? " active" : "")} onClick={() => setTab(k)}>
-            {label}
+            {tr("tab.fin." + k)}
           </button>
         ))}
         <span style={{ flex: 1 }} />
@@ -245,26 +248,26 @@ export function FinanzasPage() {
           onClick={() => { setModoPrivado(!privado); setPrivado(!privado); }}>
           {privado ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
-        <button className="btn ghost" onClick={() => setModal("import")}>Importar cartola</button>
+        <button className="btn ghost" onClick={() => setModal("import")}>{tr("btn.importarcartola")}</button>
         <button className="btn primary" onClick={() => setModal("tx")}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          Registrar
+          {tr("btn.registrar")}
         </button>
       </div>
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
-        <p style={{ color: "var(--muted)" }}>Cargando…</p>
+        <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>
       ) : (
         <>
           {tab === "resumen" && (
             <>
               <div className="statrow" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
-                <div className="card stat"><div className="k">Balance en cuentas</div><div className="v tnum">{fmtMoney(balanceTotal, currency)}</div></div>
-                <div className="card stat"><div className="k">Deuda total</div><div className="v tnum" style={deudaTotal > 0 ? { color: "var(--err)" } : undefined}>{fmtMoney(deudaTotal, currency)}</div></div>
-                <div className="card stat"><div className="k">Patrimonio neto</div><div className="v tnum" style={{ color: patrimonio >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(patrimonio, currency)}</div></div>
-                <div className="card stat"><div className="k">Ingresos del mes</div><div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(ingresos, currency)}</div></div>
-                <div className="card stat"><div className="k">Gastos del mes</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(gastos, currency)}</div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.balance")}</div><div className="v tnum">{fmtMoney(balanceTotal, currency)}</div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.deuda")}</div><div className="v tnum" style={deudaTotal > 0 ? { color: "var(--err)" } : undefined}>{fmtMoney(deudaTotal, currency)}</div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.patrimonio")}</div><div className="v tnum" style={{ color: patrimonio >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(patrimonio, currency)}</div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.ingresos")}</div><div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(ingresos, currency)}</div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.gastos")}</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(gastos, currency)}</div></div>
               </div>
               <div className="panelgrid">
                 <div className="card panel">
@@ -1235,13 +1238,14 @@ function BudgetModal({ cat, currency, onClose, onSaved }: {
 }
 
 function Head() {
+  const { t: tr } = useIdioma();
   return (
     <div className="page-head">
       <div className="eyebrow">
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fin)", display: "inline-block" }} /> Mi vida
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fin)", display: "inline-block" }} /> {tr("sec.mivida")}
       </div>
-      <h1>Finanzas</h1>
-      <p>Gastos, presupuestos, deudas y metas de ahorro.</p>
+      <h1>{tr("area.finanzas")}</h1>
+      <p>{tr("head.sub.finanzas")}</p>
     </div>
   );
 }
@@ -1654,6 +1658,7 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
 }
 
 function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCard[]; currency: string }) {
+  const { t: tr } = useIdioma();
   const [estrategia, setEstrategia] = useState<Estrategia>("avalanche");
   const [extra, setExtra] = useState("");
 
@@ -1694,7 +1699,7 @@ function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCa
   return (
     <>
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">Deuda total</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(totalDeuda, currency)}</div></div>
+        <div className="card stat"><div className="k">{tr("stat.fin.deuda")}</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(totalDeuda, currency)}</div></div>
         <div className="card stat"><div className="k">Mínimo mensual</div><div className="v tnum">{fmtMoney(minimoMensual, currency)}</div></div>
         <div className="card stat"><div className="k">Interés del mes</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes), currency)}</div></div>
         <div className="card stat"><div className="k">Interés anual estimado</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes * 12), currency)}</div></div>

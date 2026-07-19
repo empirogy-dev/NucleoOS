@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Sparkles } from "lucide-react";
 import { CollageTab } from "./CollageTab";
 import { SuenosTab } from "./SuenosTab";
@@ -18,19 +19,21 @@ const TABS: Array<{ key: Tab; label: string }> = [
 ];
 
 export function VisionPage() {
+  const { t: tr } = useIdioma();
+
   const [tab, setTab] = useState<Tab>("suenos");
 
   return (
     <div className="page" style={{ maxWidth: 1320 }}>
       <div className="page-head">
-        <div className="eyebrow"><Sparkles size={13} /> Inspiración</div>
-        <h1>Visión</h1>
-        <p>Lo que imaginas, deseas y quieres vivir. Aquí nada es obligación: cuando un sueño madura, lo conviertes en meta y pasa a Dirección.</p>
+        <div className="eyebrow"><Sparkles size={13} /> {tr("sec.inspiracion")}</div>
+        <h1>{tr("nav.vision")}</h1>
+        <p>{tr("head.sub.vision")}</p>
       </div>
 
       <div className="ftabs">
         {TABS.map((t) => (
-          <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{t.label}</button>
+          <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{tr("tab.vis." + t.key)}</button>
         ))}
       </div>
 

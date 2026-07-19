@@ -1,4 +1,5 @@
 import { OrdenGrid } from "../components/OrdenGrid";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { librosDe } from "../aprendizaje/biblioteca";
@@ -37,6 +38,8 @@ const GUIA_TIPOS: Array<{ key: TipoVinculo; label: string }> = [
 ];
 
 export function RelacionesPage() {
+  const { t: tr } = useIdioma();
+
   const [rels, setRels] = useState<Relationship[]>([]);
   const [logs, setLogs] = useState<RelLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +107,7 @@ export function RelacionesPage() {
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
-        <p style={{ color: "var(--muted)" }}>Cargando…</p>
+        <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>
       ) : (
         <>
           <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
@@ -208,11 +211,12 @@ export function RelacionesPage() {
 }
 
 function Head() {
+  const { t: tr } = useIdioma();
   return (
     <div className="page-head">
-      <div className="eyebrow"><Users size={13} /> Mi vida</div>
-      <h1>Relaciones</h1>
-      <p>Las personas que quieres, con recordatorios amables para no perder el hilo.</p>
+      <div className="eyebrow"><Users size={13} /> {tr("sec.mivida")}</div>
+      <h1>{tr("area.relaciones")}</h1>
+      <p>{tr("head.sub.relaciones")}</p>
     </div>
   );
 }

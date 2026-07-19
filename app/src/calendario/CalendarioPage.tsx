@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { AREAS } from "../areas";
@@ -45,6 +46,8 @@ function celdasDelMes(ym: string): Array<{ fecha: string; delMes: boolean }> {
 }
 
 export function CalendarioPage() {
+  const { t: tr } = useIdioma();
+
   const [ym, setYm] = useState(mesActualLocal());
   const [fuentes, setFuentes] = useState<FuentesCal | null>(null);
   const [diaAbierto, setDiaAbierto] = useState<string | null>(null);
@@ -78,9 +81,9 @@ export function CalendarioPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow"><CalendarDays size={13} /> Transversal</div>
-        <h1>Calendario</h1>
-        <p>Todo lo que está pasando en tu vida, en un solo lugar: pagos, citas, cumpleaños, jornadas y avances.</p>
+        <div className="eyebrow"><CalendarDays size={13} /> {tr("sec.transversal")}</div>
+        <h1>{tr("nav.calendario")}</h1>
+        <p>{tr("head.sub.calendario")}</p>
       </div>
 
       <div className="cal-head">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { Link } from "react-router-dom";
 import { Pencil, PersonStanding, Plus, Trash2 } from "lucide-react";
@@ -36,21 +37,23 @@ type Tab = "suave" | "entrenamiento" | "programas";
 const NIVEL_LABEL = { suave: "🌿 suave", medio: "💪 medio", intenso: "🔥 intenso" } as const;
 
 export function MovimientoPage() {
+  const { t: tr } = useIdioma();
+
   const [tab, setTab] = useState<Tab>("suave");
   const [rutina, setRutina] = useState<Rutina | null>(null);
 
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow"><PersonStanding size={13} /> Núcleo</div>
-        <h1>Movimiento</h1>
-        <p>Tu cuerpo en acción: práctica suave para soltar, entrenamiento para fortalecer, y retos para sostenerlo en el tiempo.</p>
+        <div className="eyebrow"><PersonStanding size={13} /> {tr("sec.nucleo")}</div>
+        <h1>{tr("nav.movimiento")}</h1>
+        <p>{tr("head.sub.movimiento")}</p>
       </div>
 
       <div className="ftabs">
-        <button className={"ftab" + (tab === "suave" ? " active" : "")} onClick={() => setTab("suave")}>Práctica suave</button>
-        <button className={"ftab" + (tab === "entrenamiento" ? " active" : "")} onClick={() => setTab("entrenamiento")}>Entrenamiento</button>
-        <button className={"ftab" + (tab === "programas" ? " active" : "")} onClick={() => setTab("programas")}>Programas</button>
+        <button className={"ftab" + (tab === "suave" ? " active" : "")} onClick={() => setTab("suave")}>{tr("tab.mov.suave")}</button>
+        <button className={"ftab" + (tab === "entrenamiento" ? " active" : "")} onClick={() => setTab("entrenamiento")}>{tr("tab.mov.entrenamiento")}</button>
+        <button className={"ftab" + (tab === "programas" ? " active" : "")} onClick={() => setTab("programas")}>{tr("tab.mov.programas")}</button>
       </div>
 
       {tab === "entrenamiento" && <WorkoutLibre />}

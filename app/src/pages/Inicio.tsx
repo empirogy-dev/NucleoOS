@@ -1,4 +1,5 @@
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Sparkles } from "lucide-react";
@@ -148,6 +149,8 @@ export function Inicio() {
   }, [reload]);
 
   const nombre = displayName || (session?.user?.email ?? "").split("@")[0] || "Hola";
+  const { t: tr } = useIdioma();
+
 
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
@@ -228,8 +231,8 @@ export function Inicio() {
           </>
         ) : (
           <>
-            <h1>Hola, {nombre}</h1>
-            <p>Tu día de un vistazo: el pulso del cuerpo, tu brújula y tus áreas.</p>
+            <h1>{tr("inicio.hola")}, {nombre}</h1>
+            <p>{tr("head.sub.inicio")}</p>
           </>
         )}
       </div>

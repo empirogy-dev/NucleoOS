@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ClipboardCopy, LineChart, Sparkles } from "lucide-react";
 import { iaConfigured, resumenRevision } from "../lib/ia";
@@ -20,6 +21,8 @@ import {
 type Tab = "dia" | "semana" | "mes" | "patrones";
 
 export function RevisionPage() {
+  const { t: tr } = useIdioma();
+
   const [tab, setTab] = useState<Tab>("semana");
   const [offset, setOffset] = useState(0);
   const [modulos, setModulos] = useState<ModuloResumen[]>([]);
@@ -87,16 +90,16 @@ export function RevisionPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow"><LineChart size={13} /> Panorama</div>
-        <h1>Revisión</h1>
-        <p>Lo que registras, convertido en claridad: tu día como agenda, tu semana, tu mes y los patrones entre módulos.</p>
+        <div className="eyebrow"><LineChart size={13} /> {tr("sec.panorama")}</div>
+        <h1>{tr("nav.revision")}</h1>
+        <p>{tr("head.sub.revision")}</p>
       </div>
 
       <div className="ftabs">
-        <button className={"ftab" + (tab === "dia" ? " active" : "")} onClick={() => { setTab("dia"); setOffset(0); }}>Día</button>
-        <button className={"ftab" + (tab === "semana" ? " active" : "")} onClick={() => { setTab("semana"); setOffset(0); }}>Semana</button>
-        <button className={"ftab" + (tab === "mes" ? " active" : "")} onClick={() => { setTab("mes"); setOffset(0); }}>Mes</button>
-        <button className={"ftab" + (tab === "patrones" ? " active" : "")} onClick={() => setTab("patrones")}>Patrones</button>
+        <button className={"ftab" + (tab === "dia" ? " active" : "")} onClick={() => { setTab("dia"); setOffset(0); }}>{tr("tab.rev.dia")}</button>
+        <button className={"ftab" + (tab === "semana" ? " active" : "")} onClick={() => { setTab("semana"); setOffset(0); }}>{tr("tab.rev.semana")}</button>
+        <button className={"ftab" + (tab === "mes" ? " active" : "")} onClick={() => { setTab("mes"); setOffset(0); }}>{tr("tab.rev.mes")}</button>
+        <button className={"ftab" + (tab === "patrones" ? " active" : "")} onClick={() => setTab("patrones")}>{tr("tab.rev.patrones")}</button>
       </div>
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}

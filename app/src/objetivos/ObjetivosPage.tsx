@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { CampoFecha } from "../components/CampoFecha";
 import { hoyLocal } from "../lib/fechas";
@@ -89,6 +90,8 @@ export function ObjetivosPage() {
   const [needsMigration, setNeedsMigration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<"objective" | "avance" | null>(null);
+  const { t: tr } = useIdioma();
+
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -198,29 +201,29 @@ export function ObjetivosPage() {
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
 
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">Metas activas</div><div className="v tnum">{activas.length}</div></div>
-        <div className="card stat"><div className="k">Progreso promedio</div><div className="v tnum">{promedio}%</div></div>
-        <div className="card stat"><div className="k">En riesgo</div><div className="v tnum" style={enRiesgo > 0 ? { color: "var(--warn)" } : undefined}>{enRiesgo}</div></div>
-        <div className="card stat"><div className="k">Logradas</div><div className="v tnum" style={{ color: "var(--ok)" }}>{logradas.length}</div></div>
+        <div className="card stat"><div className="k">{tr("stat.obj.activas")}</div><div className="v tnum">{activas.length}</div></div>
+        <div className="card stat"><div className="k">{tr("stat.obj.promedio")}</div><div className="v tnum">{promedio}%</div></div>
+        <div className="card stat"><div className="k">{tr("stat.obj.riesgo")}</div><div className="v tnum" style={enRiesgo > 0 ? { color: "var(--warn)" } : undefined}>{enRiesgo}</div></div>
+        <div className="card stat"><div className="k">{tr("stat.obj.logradas")}</div><div className="v tnum" style={{ color: "var(--ok)" }}>{logradas.length}</div></div>
       </div>
 
       <div className="ftabs">
-        <button className={"ftab" + (tab === "metas" ? " active" : "")} onClick={() => setTab("metas")}>Metas activas</button>
+        <button className={"ftab" + (tab === "metas" ? " active" : "")} onClick={() => setTab("metas")}>{tr("tab.obj.metas")}</button>
         <button className={"ftab" + (tab === "pasos" ? " active" : "")} onClick={() => setTab("pasos")}>
-          Próximos pasos{pasosPendientes.length > 0 ? ` (${pasosPendientes.length})` : ""}
+          {tr("tab.obj.pasos")}{pasosPendientes.length > 0 ? ` (${pasosPendientes.length})` : ""}
         </button>
-        <button className={"ftab" + (tab === "avances" ? " active" : "")} onClick={() => setTab("avances")}>Avances</button>
-        <button className={"ftab" + (tab === "logradas" ? " active" : "")} onClick={() => setTab("logradas")}>Logradas</button>
+        <button className={"ftab" + (tab === "avances" ? " active" : "")} onClick={() => setTab("avances")}>{tr("tab.obj.avances")}</button>
+        <button className={"ftab" + (tab === "logradas" ? " active" : "")} onClick={() => setTab("logradas")}>{tr("tab.obj.logradas")}</button>
         <span style={{ flex: 1 }} />
-        <button className="btn ghost" onClick={() => setModal("avance")}>Registrar avance</button>
+        <button className="btn ghost" onClick={() => setModal("avance")}>{tr("btn.registraravance")}</button>
         <button className="btn primary" onClick={() => setModal("objective")}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          Nueva meta
+          {tr("btn.nuevameta")}
         </button>
       </div>
 
       {loading ? (
-        <p style={{ color: "var(--muted)" }}>Cargando…</p>
+        <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>
       ) : (
         <>
           {tab === "metas" && (
@@ -347,13 +350,14 @@ export function ObjetivosPage() {
 }
 
 function Head() {
+  const { t: tr } = useIdioma();
   return (
     <div className="page-head">
       <div className="eyebrow">
-        <Compass size={13} /> Mi vida
+        <Compass size={13} /> {tr("sec.mivida")}
       </div>
-      <h1>Dirección</h1>
-      <p>Lo que ya decidiste: metas activas, próximos pasos y avances. La inspiración vive en Visión, aquí se mueve.</p>
+      <h1>{tr("area.objetivos")}</h1>
+      <p>{tr("head.sub.objetivos")}</p>
     </div>
   );
 }

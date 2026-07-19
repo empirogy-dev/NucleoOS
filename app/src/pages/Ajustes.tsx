@@ -22,6 +22,8 @@ const CURRENCY_NAMES: Record<string, string> = {
 };
 
 export function Ajustes() {
+  const { t: tr } = useIdioma();
+
   const { currency, setCurrency, profileTableMissing } = useSettings();
   const { session } = useAuth();
   const { palette } = useTheme();
@@ -39,9 +41,9 @@ export function Ajustes() {
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow"><Settings size={13} /> Ajustes</div>
-        <h1>Ajustes</h1>
-        <p>Tu espacio, a tu manera.</p>
+        <div className="eyebrow"><Settings size={13} /> {tr("nav.ajustes")}</div>
+        <h1>{tr("nav.ajustes")}</h1>
+        <p>{tr("head.sub.ajustes")}</p>
       </div>
 
       {profileTableMissing && (

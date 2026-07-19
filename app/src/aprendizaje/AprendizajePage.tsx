@@ -1,4 +1,5 @@
 import { IconField } from "../components/IconField";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, FileUp, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -28,6 +29,8 @@ import { BibliotecaTab } from "./BibliotecaTab";
 import { MetasDeArea } from "../components/MetasDeArea";
 
 export function AprendizajePage() {
+  const { t: tr } = useIdioma();
+
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedNb, setSelectedNb] = useState<string | null>(null);
@@ -166,8 +169,8 @@ export function AprendizajePage() {
       <Head />
 
       <div className="ftabs">
-        <button className={"ftab" + (vista === "notas" ? " active" : "")} onClick={() => setVista("notas")}>Mis notas</button>
-        <button className={"ftab" + (vista === "biblioteca" ? " active" : "")} onClick={() => setVista("biblioteca")}>Biblioteca</button>
+        <button className={"ftab" + (vista === "notas" ? " active" : "")} onClick={() => setVista("notas")}>{tr("tab.apr.notas")}</button>
+        <button className={"ftab" + (vista === "biblioteca" ? " active" : "")} onClick={() => setVista("biblioteca")}>{tr("tab.apr.biblioteca")}</button>
         {vista === "notas" && (
           <>
             <div className="searchbox">
@@ -195,7 +198,7 @@ export function AprendizajePage() {
       <MetasDeArea area="aprendizaje" />
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       {loading ? (
-        <p style={{ color: "var(--muted)" }}>Cargando…</p>
+        <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>
       ) : (
         <div className="apr-grid">
           {/* Cuadernos */}
@@ -380,11 +383,12 @@ function MaterialSection({ notebookId, summarizing, onResumir }: {
 }
 
 function Head() {
+  const { t: tr } = useIdioma();
   return (
     <div className="page-head">
-      <div className="eyebrow"><BookOpen size={13} /> Mi vida</div>
-      <h1>Aprendizaje</h1>
-      <p>Tus cuadernos y notas. Lo que aprendes, guardado y buscable.</p>
+      <div className="eyebrow"><BookOpen size={13} /> {tr("sec.mivida")}</div>
+      <h1>{tr("area.aprendizaje")}</h1>
+      <p>{tr("head.sub.aprendizaje")}</p>
     </div>
   );
 }

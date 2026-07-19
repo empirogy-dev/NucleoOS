@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { OrdenGrid } from "../components/OrdenGrid";
@@ -61,6 +62,8 @@ const TABS: Array<{ key: Tab; label: string }> = [
 ];
 
 export function SaludPage() {
+  const { t: tr } = useIdioma();
+
   const { birthday } = useSettings();
   const [tab, setTab] = useState<Tab>("hoy");
   const [energy, setEnergy] = useState<EnergyLog[]>([]);
@@ -193,9 +196,9 @@ export function SaludPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow"><HeartPulse size={13} /> Núcleo</div>
-        <h1>Energía</h1>
-        <p>El combustible de tu día: sueño, agua, proteína y movimiento. Lo médico te espera en Salud clínica.</p>
+        <div className="eyebrow"><HeartPulse size={13} /> {tr("sec.nucleo")}</div>
+        <h1>{tr("area.salud")}</h1>
+        <p>{tr("head.sub.salud")}</p>
       </div>
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
@@ -213,7 +216,7 @@ export function SaludPage() {
 
       <div className="ftabs">
         {TABS.filter((t) => t.key !== "ciclo" || profile?.sex !== "masculino").map((t) => (
-          <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{t.label}</button>
+          <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{tr("tab.sal." + t.key)}</button>
         ))}
       </div>
 
