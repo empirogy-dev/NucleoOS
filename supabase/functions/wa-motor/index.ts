@@ -83,7 +83,19 @@ async function bajarMedia(fileId: string): Promise<{ b64: string; mime: string }
     if (!path || path.includes("..")) return null;
     const res = await fetch(`https://api.telegram.org/file/bot${token}/${path}`, { redirect: "error" });
     if (!res.ok) return null;
-    const mime = res.headers.get("content-type") ?? (path.endsWith(".oga") || path.endsWith(".ogg") ? "audio/ogg" : "application/octet-stream");
+    // El tipo se deduce de la EXTENSION, no del content-type: Telegram sirve
+    // las notas de voz como binario generico y Gemini rechaza lo que no
+    // reconoce como audio o imagen.
+    const ext = path.toLowerCase().split(".").pop() ?? "";
+    const porExtension: Record<string, string> = {
+      oga: "audio/ogg", ogg: "audio/ogg", opus: "audio/ogg",
+      mp3: "audio/mp3", m4a: "audio/mp4", mp4: "audio/mp4",
+      wav: "audio/wav", aac: "audio/aac", flac: "audio/flac",
+      jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
+    };
+    const delServidor = res.headers.get("content-type") ?? "";
+    const mime = porExtension[ext]
+      ?? (delServidor.startsWith("audio/") || delServidor.startsWith("image/") ? delServidor : "audio/ogg");
     const buf = new Uint8Array(await res.arrayBuffer());
     if (buf.length > 8 * 1024 * 1024) return null; // 8 MB de tope
     let bin = "";
