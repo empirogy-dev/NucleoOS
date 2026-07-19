@@ -249,6 +249,42 @@ Estado actual:
 ${resumen}` }]);
 }
 
+// ---------- Radar antiprocrastinación ----------
+// Ordena pendientes reales del MÁS FÁCIL de empezar al más pesado,
+// pensando en energía de activación: para un cerebro TDAH, las victorias
+// rápidas primero crean el impulso que las tareas grandes necesitan.
+
+export interface OrdenRadar {
+  orden: Array<{ id: string; min: number }>;
+  primer_paso: string;
+}
+
+const PROMPT_RADAR =
+  "Eres el radar antiprocrastinación de NucleoOS, un sistema para personas con TDAH. Te paso pendientes reales " +
+  "y los ordenas del MÁS FÁCIL de empezar al más pesado, pensando en energía de activación: lo corto, concreto " +
+  "y físico va primero; lo ambiguo, largo o emocionalmente pesado va al final. Estima minutos realistas para " +
+  "cada uno. Además, para el PRIMERO de tu orden, escribe un primer paso ridículamente pequeño: menos de dos " +
+  "minutos, físico, en español y sin guiones largos. " +
+  'Responde SOLO un JSON válido: {"orden": [{"id": "...", "min": entero}], "primer_paso": "..."}. ' +
+  "Usa exactamente los id que te di, inclúyelos todos y no inventes ninguno.";
+
+/** Ordena los pendientes por facilidad de empezar, con minutos estimados. */
+export async function radarFacilidad(items: Array<{ id: string; texto: string }>): Promise<OrdenRadar> {
+  const lista = items.map((i) => `- id: ${i.id} | ${i.texto}`).join("\n");
+  const texto = await generate([{ text: `${PROMPT_RADAR}\n\nPendientes:\n${lista}` }]);
+  const limpio = texto.replace(/```json|```/g, "").trim();
+  const inicio = limpio.indexOf("{");
+  const fin = limpio.lastIndexOf("}");
+  if (inicio === -1 || fin === -1) throw new Error("El radar no devolvió un orden legible. Intenta de nuevo.");
+  const json = JSON.parse(limpio.slice(inicio, fin + 1)) as OrdenRadar;
+  const validos = new Set(items.map((i) => i.id));
+  const orden = (Array.isArray(json.orden) ? json.orden : [])
+    .filter((o) => o && validos.has(String(o.id)))
+    .map((o) => ({ id: String(o.id), min: Math.max(1, Math.round(Number(o.min) || 5)) }));
+  if (orden.length === 0) throw new Error("El radar no devolvió un orden legible. Intenta de nuevo.");
+  return { orden, primer_paso: String(json.primer_paso ?? "") };
+}
+
 // ---------- Ficha de un libro para la Biblioteca ----------
 export interface FichaLibro {
   emoji: string;
