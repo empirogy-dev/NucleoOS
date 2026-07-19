@@ -403,7 +403,6 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     decl: {
       name: "marcar_ayuno",
       description: "Marca que la usuaria acaba de comer o empieza su ayuno ahora (reinicia el contador de ayuno).",
-      parameters: { type: "OBJECT", properties: {}, required: [] },
     },
     run: async (_args, ctx) => {
       const ahora = new Date().toISOString();
@@ -421,7 +420,6 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     decl: {
       name: "ver_dia",
       description: "Lee el día de la usuaria: tareas de hoy, hábitos pendientes y próximo pago. Úsala para responder '¿qué me toca hoy?'.",
-      parameters: { type: "OBJECT", properties: {}, required: [] },
     },
     run: async (_args, ctx) => {
       const fecha = hoyEn(ctx.timezone);
@@ -540,7 +538,25 @@ async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: str
       }),
     });
     const j = await res.json();
+
+    // Si la IA falla, hay que ENTERARSE. Antes un error aqui se veia como una
+    // respuesta vacia y el bot contestaba "Listo" sin haber hecho nada.
+    if (!res.ok || j?.error) {
+      await ctx.db.from("wa_eventos").insert({
+        user_id: ctx.userId, lote_id: ctx.loteId, tipo: "error",
+        detalle: { donde: "gemini", status: res.status, mensaje: String(j?.error?.message ?? "sin detalle").slice(0, 400) },
+      });
+      return "Se me trabo la conexion con la IA y no pude registrarlo. Intentalo de nuevo en un momento.";
+    }
+
     const partes: Record<string, unknown>[] = j?.candidates?.[0]?.content?.parts ?? [];
+    if (partes.length === 0) {
+      await ctx.db.from("wa_eventos").insert({
+        user_id: ctx.userId, lote_id: ctx.loteId, tipo: "error",
+        detalle: { donde: "gemini", motivo: "respuesta sin contenido", razon: String(j?.candidates?.[0]?.finishReason ?? "") },
+      });
+      return "No pude entender ese mensaje. Cuentamelo de otra forma y lo registro.";
+    }
     const llamadas = partes.filter((p) => p.functionCall) as { functionCall: { name: string; args: Record<string, unknown> } }[];
 
     if (llamadas.length === 0) {
