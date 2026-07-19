@@ -40,13 +40,13 @@ La pasada de verificación, módulo por módulo. Si algo falla o pide migración
 ## 3. Publicar en Vercel
 
 - [x] Subir el repo a GitHub como **privado** (`git push`).
-- [ ] En vercel.com: New Project → importar el repo.
-- [ ] Configuración del proyecto:
+- [x] En vercel.com: New Project → importar el repo.
+- [x] Configuración del proyecto:
   - Root Directory: `app`
   - Framework preset: Vite
   - Build command: `npm run build`
   - Output directory: `dist`
-- [ ] Variables de entorno (las mismas de `app/.env`):
+- [x] Variables de entorno (las mismas de `app/.env`):
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
   - `VITE_GEMINI_API_KEY`
@@ -54,11 +54,11 @@ La pasada de verificación, módulo por módulo. Si algo falla o pide migración
   ```json
   { "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
   ```
-- [ ] Deploy, y anotar la URL que entrega Vercel.
+- [x] Deploy hecho. **URL: https://www.nucleoos.app** (dominio propio).
 
 ## 4. Después de publicar
 
-- [ ] Entrar desde la URL nueva, iniciar sesión y hacer la prueba de oro: registrar algo y verlo en Revisión → Día.
+- [x] Prueba de oro EN PRODUCCIÓN: tarea registrada en el Inicio de nucleoos.app y vista en Revisión → Día (2026-07-18).
 - [ ] Probar desde el celular (ahí brillan la foto del plato y la captura rápida).
 - [ ] Volver a poner la URL final en Supabase si cambió (paso 2).
 - [ ] Activar los avisos del navegador en Ajustes.
