@@ -53,6 +53,11 @@ button{font-family:inherit}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-sm)}
 .pad{padding:18px 20px}
 .grid{display:grid;gap:14px}
+/* Los hijos de un grid no pueden encoger por defecto (min-width:auto): un
+   texto largo sin corte infla la columna y la página entera se desborda
+   hacia el lado en celular. Con min-width:0, los recortes con puntos
+   suspensivos y los saltos de línea internos vuelven a funcionar. */
+.grid>*,.panelgrid>*,.statrow>*{min-width:0}
 .btn{font-weight:600;font-size:13.5px;border-radius:var(--r-full);padding:9px 18px;cursor:pointer;border:1px solid transparent}
 .btn.primary{background:var(--accent);color:#fff}
 .btn.ghost{background:transparent;color:var(--ink-soft);border-color:var(--line)}
@@ -102,7 +107,9 @@ button{font-family:inherit}
 
 /* ================= THEME PICKER ================= */
 .tp-overlay{position:fixed;inset:0;background:rgba(20,18,12,.28);backdrop-filter:blur(2px);display:grid;place-items:center;z-index:50;padding:20px}
-.tp{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);width:100%;max-width:520px;padding:22px}
+/* max-height + scroll: en celular un modal largo (temas, nueva meta) debe
+   poder recorrerse entero, con sus botones de salida siempre alcanzables. */
+.tp{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);width:100%;max-width:520px;padding:22px;max-height:calc(100dvh - 40px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .tp h3{font-size:19px;margin-bottom:4px}
 .tp p{color:var(--muted);font-size:13px;margin-bottom:16px}
 .tp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -138,7 +145,7 @@ button{font-family:inherit}
 .area-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:9px;font-size:13.5px;color:var(--ink-soft)}
 .area-row:hover{background:var(--line-soft);color:var(--ink)}
 .area-row .area-name{font-weight:500}
-.input-inline{flex:1;font-family:var(--sans);font-size:14px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.input-inline{flex:1;min-width:0;font-family:var(--sans);font-size:14px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .input-inline:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 
 /* ================= OBJETIVOS ================= */

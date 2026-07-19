@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { PALETTES } from "../theme/palettes";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -6,7 +7,10 @@ export function ThemePicker({ onClose }: { onClose: () => void }) {
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()}>
-        <h3>Elige tu tema</h3>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <h3>Elige tu tema</h3>
+          <button className="xdel" aria-label="Cerrar" onClick={onClose}><X size={14} /></button>
+        </div>
         <p>Tu espacio, tu color. Toda la app se adapta al instante.</p>
         <div className="tp-grid">
           {PALETTES.map((p) => (
