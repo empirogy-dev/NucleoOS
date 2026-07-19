@@ -305,7 +305,7 @@ const PROMPT_LIBRO =
   "en español, cálida y sin guiones largos. El campo por_que son 2 o 3 frases: qué es el libro y cómo toca las áreas " +
   "de la vida de quien lo lee (relaciones, finanzas, hábitos, emociones, propósito, foco). Las ideas son 3 frases " +
   "cortas y accionables con lo mejor del libro. La via es UNA de estas palabras exactas según el tema central: " +
-  "tdah, habitos, emociones, relaciones, finanzas, proposito, espiritualidad. " +
+  "tdah, habitos, emociones, psicologia, relaciones, finanzas, proposito, espiritualidad. " +
   'Responde SOLO un JSON válido: {"emoji": "un emoji que capture el libro", "por_que": "...", "ideas": ["...", "...", "..."], "via": "..."}. ' +
   "Si no conoces el libro, dilo honestamente en por_que y arma la ficha con lo que el título sugiere.";
 
@@ -322,7 +322,7 @@ export async function fichaLibro(titulo: string, autor: string): Promise<FichaLi
   } catch {
     throw new Error("No pude leer la ficha de la IA. Intenta de nuevo.");
   }
-  const VIAS = ["tdah", "habitos", "emociones", "relaciones", "finanzas", "proposito", "espiritualidad"];
+  const VIAS = ["tdah", "habitos", "emociones", "psicologia", "relaciones", "finanzas", "proposito", "espiritualidad"];
   const ideas = Array.isArray(crudo.ideas) ? crudo.ideas.filter((i): i is string => typeof i === "string" && i.trim().length > 0).slice(0, 3) : [];
   return {
     emoji: String(crudo.emoji ?? "📕").slice(0, 4) || "📕",

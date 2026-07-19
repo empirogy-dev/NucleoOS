@@ -5,12 +5,13 @@
 
 import { hoyLocal } from "../lib/fechas";
 
-export type ViaLibro = "tdah" | "habitos" | "emociones" | "relaciones" | "finanzas" | "proposito" | "espiritualidad";
+export type ViaLibro = "tdah" | "habitos" | "emociones" | "psicologia" | "relaciones" | "finanzas" | "proposito" | "espiritualidad";
 
 export const VIAS_LIBRO: Array<{ key: ViaLibro; label: string }> = [
   { key: "tdah", label: "TDAH y foco" },
   { key: "habitos", label: "Hábitos" },
   { key: "emociones", label: "Emociones" },
+  { key: "psicologia", label: "Psicología" },
   { key: "relaciones", label: "Relaciones" },
   { key: "finanzas", label: "Finanzas" },
   { key: "proposito", label: "Propósito" },
@@ -382,6 +383,125 @@ export const LIBROS: Libro[] = [
       "Cierra el ciclo del estrés con cuerpo: movimiento, llanto, abrazo largo, risa.",
       "El descanso no se gana, se necesita: 42% del día entre sueño y pausas.",
       "El síndrome de la dadora agota: no naciste para darlo todo.",
+    ],
+  },
+
+  // ---------- Psicología ----------
+  {
+    id: "kahneman",
+    titulo: "Pensar rápido, pensar despacio",
+    autor: "Daniel Kahneman",
+    via: "psicologia",
+    emoji: "🧠",
+    porQue: "El premio Nobel que mapeó los dos sistemas de tu mente: el rápido que decide en automático y el lento que razona. Entenderlos es entender por qué haces lo que haces.",
+    ideas: [
+      "Casi todas tus decisiones las toma el sistema rápido: dale buenos atajos.",
+      "Los sesgos no se apagan sabiendo que existen: se diseña alrededor de ellos.",
+      "Cansada decides peor: las decisiones importantes van con energía, no de noche.",
+    ],
+  },
+  {
+    id: "flow",
+    titulo: "Fluir (Flow)",
+    autor: "Mihaly Csikszentmihalyi",
+    via: "psicologia",
+    emoji: "🌊",
+    porQue: "La ciencia del estado donde el tiempo desaparece y todo sale solo. Para un cerebro TDAH es lectura clave: el hiperfoco es tu flow, y se puede invitar en vez de esperar.",
+    ideas: [
+      "El flow aparece cuando el desafío calza justo con tu habilidad: ni aburrimiento ni angustia.",
+      "Metas claras y feedback inmediato son la puerta de entrada.",
+      "La felicidad no se persigue: se construye haciendo cosas que te absorben.",
+    ],
+  },
+  {
+    id: "gottlieb",
+    titulo: "Quizás deberías hablar con alguien",
+    autor: "Lori Gottlieb",
+    via: "psicologia",
+    emoji: "🛋",
+    porQue: "Una terapeuta cuenta la terapia desde los dos sillones: el de ella y el de su propia terapeuta. El libro que le quita el miedo y el estigma a pedir ayuda.",
+    ideas: [
+      "Todos cargamos algo: ir a terapia es mantención, no emergencia.",
+      "La historia que te cuentas sobre tu vida se puede editar.",
+      "El cambio duele antes de aliviar, y aún así vale la pena.",
+    ],
+  },
+  {
+    id: "seligman",
+    titulo: "Aprenda optimismo",
+    autor: "Martin Seligman",
+    via: "psicologia",
+    emoji: "☀️",
+    porQue: "El padre de la psicología positiva y su hallazgo central: el pesimismo se aprende, así que también se desaprende. Ciencia dura sobre cómo te explicas lo que te pasa.",
+    ideas: [
+      "Lo que te hunde no es el evento, es tu explicación: permanente y personal hunde, temporal y externa levanta.",
+      "Discute tus pensamientos catastróficos como si fueran de otra persona.",
+      "El optimismo aprendido se entrena igual que un músculo.",
+    ],
+  },
+  {
+    id: "ariely",
+    titulo: "Las trampas del deseo",
+    autor: "Dan Ariely",
+    via: "psicologia",
+    emoji: "🎲",
+    porQue: "Somos irracionales, pero de forma predecible: eso es una buena noticia, porque lo predecible se puede diseñar. Experimentos divertidos que explican tus compras, tus gratis y tus postergaciones.",
+    ideas: [
+      "Lo gratis te hace decidir peor que cualquier descuento.",
+      "Comparas todo con lo que tienes al lado: elige bien tus comparaciones.",
+      "Las fechas límite autoimpuestas funcionan, sobre todo si son públicas.",
+    ],
+  },
+  {
+    id: "drive",
+    titulo: "La sorprendente verdad sobre qué nos motiva (Drive)",
+    autor: "Daniel Pink",
+    via: "psicologia",
+    emoji: "🔋",
+    porQue: "Los premios y castigos funcionan para tareas mecánicas y matan las creativas. La motivación real tiene tres nombres: autonomía, maestría y propósito.",
+    ideas: [
+      "El palo y la zanahoria apagan la motivación intrínseca: cuídala.",
+      "La maestría engancha: busca tareas apenas por encima de tu nivel.",
+      "Sin un porqué, ninguna zanahoria alcanza.",
+    ],
+  },
+  {
+    id: "brene",
+    titulo: "Los dones de la imperfección",
+    autor: "Brené Brown",
+    via: "psicologia",
+    emoji: "💛",
+    porQue: "Veinte años investigando la vergüenza para llegar a esto: la conexión y el coraje nacen de mostrarse imperfecta. El antídoto científico al perfeccionismo que paraliza.",
+    ideas: [
+      "El perfeccionismo no es excelencia: es miedo con buena ropa.",
+      "La vergüenza crece en el secreto y muere al nombrarla.",
+      "Ser suficiente no se logra: se decide.",
+    ],
+  },
+  {
+    id: "dyer",
+    titulo: "Tus zonas erróneas",
+    autor: "Wayne Dyer",
+    via: "psicologia",
+    emoji: "🪞",
+    porQue: "El clásico de los clásicos del autoconocimiento: las zonas donde te saboteas (culpa, preocupación, aprobación ajena) y cómo salir de ellas. Ha acompañado a millones por algo.",
+    ideas: [
+      "La culpa mira al pasado y la preocupación al futuro: ninguna cambia nada.",
+      "Necesitar aprobación de todos es rentarle tu valor a extraños.",
+      "Eres la suma de tus elecciones de hoy, no de tus etiquetas de ayer.",
+    ],
+  },
+  {
+    id: "cialdini",
+    titulo: "Influencia (Influence)",
+    autor: "Robert Cialdini",
+    via: "psicologia",
+    emoji: "🧲",
+    porQue: "Los seis resortes que mueven a las personas a decir que sí, escritos por quien los estudió toda su vida. Sirve doble: para persuadir con ética y para detectar cuándo te están apretando los resortes a ti.",
+    ideas: [
+      "Reciprocidad: quien da primero, recibe. Úsalo para bien.",
+      "La escasez apura decisiones: cuando sientas urgencia, sospecha.",
+      "El compromiso chico de hoy abre el grande de mañana.",
     ],
   },
 
