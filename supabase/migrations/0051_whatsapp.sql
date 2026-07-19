@@ -18,11 +18,15 @@
 -- 5) wa_avisos_enviados: la memoria del cartero (como correos_enviados).
 -- 6) wa_eventos: observabilidad con lote_id como hilo conductor.
 --
--- ⚠️ ANTES DE CORRER: reemplaza PEGA_AQUI_TU_SERVICE_ROLE_KEY (al final,
---    en el cron) por tu service role key (Dashboard → Settings → API →
---    service_role). Esa llave nunca sale de Supabase: vive en la tarea
---    programada.
--- Ejecutar en: Supabase → SQL Editor → pegar → Run
+-- ⚠️ CÓMO CORRERLA SIN QUE LA LLAVE TOQUE ESTE ARCHIVO:
+--    1. Copia TODO este archivo y pégalo en el SQL Editor de Supabase.
+--    2. AHÍ, dentro del editor de Supabase, busca el marcador de la última
+--       línea del cron y reemplázalo por tu service role key
+--       (Dashboard → Settings → API → service_role).
+--    3. Run. La llave queda guardada dentro de la tarea programada de tu
+--       base de datos y jamás pasa por este repositorio.
+--    NUNCA guardes este archivo con la llave escrita adentro: se sube a
+--    GitHub y habría que rotarla. Este archivo vive con el marcador puesto.
 -- ============================================================
 
 -- ---------- 1) Vínculos ----------
