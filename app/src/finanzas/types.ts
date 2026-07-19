@@ -1,4 +1,5 @@
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
+import { idiomaActual } from "../idioma/actual";
 
 export type TxType = "income" | "expense" | "transfer";
 export type TxSource = "manual" | "voz" | "recibo" | "cartola" | "banco";
@@ -107,12 +108,19 @@ export function daysUntil(dateStr: string): number {
   return Math.round((d.getTime() - today.getTime()) / 86400000);
 }
 
+const DUE_TEXTOS = {
+  es: { vencido: (n: number) => `vencido hace ${n} día${n === 1 ? "" : "s"}`, hoy: "¡hoy!", manana: "mañana", en: (n: number) => `en ${n} días` },
+  en: { vencido: (n: number) => `overdue by ${n} day${n === 1 ? "" : "s"}`, hoy: "today!", manana: "tomorrow", en: (n: number) => `in ${n} days` },
+  pt: { vencido: (n: number) => `vencido há ${n} dia${n === 1 ? "" : "s"}`, hoy: "hoje!", manana: "amanhã", en: (n: number) => `em ${n} dias` },
+} as const;
+
 export function dueLabel(days: number): { text: string; tone: "err" | "warn" | "ok" } {
-  if (days < 0) return { text: `vencido hace ${-days} día${days === -1 ? "" : "s"}`, tone: "err" };
-  if (days === 0) return { text: "¡hoy!", tone: "warn" };
-  if (days === 1) return { text: "mañana", tone: "warn" };
-  if (days <= 7) return { text: `en ${days} días`, tone: "warn" };
-  return { text: `en ${days} días`, tone: "ok" };
+  const d = DUE_TEXTOS[idiomaActual()] ?? DUE_TEXTOS.es;
+  if (days < 0) return { text: d.vencido(-days), tone: "err" };
+  if (days === 0) return { text: d.hoy, tone: "warn" };
+  if (days === 1) return { text: d.manana, tone: "warn" };
+  if (days <= 7) return { text: d.en(days), tone: "warn" };
+  return { text: d.en(days), tone: "ok" };
 }
 
 /** Destino de una transferencia: cuenta, tarjeta, deuda o meta de ahorro. */

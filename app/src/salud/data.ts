@@ -1,4 +1,5 @@
 import { hoyLocal } from "../lib/fechas";
+import { idiomaActual } from "../idioma/actual";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
 
@@ -82,16 +83,23 @@ export function daysSince(dateStr: string): number {
 }
 
 /** "1 año y 4 meses", "3 meses y 12 días", "18 días". */
+const UNIDADES_DIAS = {
+  es: { anio: "año", anios: "años", mes: "mes", meses: "meses", dia: "día", dias: "días", primero: "primer día", y: "y" },
+  en: { anio: "year", anios: "years", mes: "month", meses: "months", dia: "day", dias: "days", primero: "first day", y: "and" },
+  pt: { anio: "ano", anios: "anos", mes: "mês", meses: "meses", dia: "dia", dias: "dias", primero: "primeiro dia", y: "e" },
+} as const;
+
 export function humanizeDays(days: number): string {
+  const u = UNIDADES_DIAS[idiomaActual()] ?? UNIDADES_DIAS.es;
   const years = Math.floor(days / 365);
   const months = Math.floor((days % 365) / 30);
   const rest = days - years * 365 - months * 30;
   const parts: string[] = [];
-  if (years > 0) parts.push(years === 1 ? "1 año" : `${years} años`);
-  if (months > 0) parts.push(months === 1 ? "1 mes" : `${months} meses`);
-  if (years === 0 && rest > 0) parts.push(rest === 1 ? "1 día" : `${rest} días`);
-  if (parts.length === 0) return "primer día";
-  return parts.length === 2 ? `${parts[0]} y ${parts[1]}` : parts[0];
+  if (years > 0) parts.push(years === 1 ? `1 ${u.anio}` : `${years} ${u.anios}`);
+  if (months > 0) parts.push(months === 1 ? `1 ${u.mes}` : `${months} ${u.meses}`);
+  if (years === 0 && rest > 0) parts.push(rest === 1 ? `1 ${u.dia}` : `${rest} ${u.dias}`);
+  if (parts.length === 0) return u.primero;
+  return parts.length === 2 ? `${parts[0]} ${u.y} ${parts[1]}` : parts[0];
 }
 
 function check(error: { code?: string; message: string } | null) {

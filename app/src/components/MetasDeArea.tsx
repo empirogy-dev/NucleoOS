@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { cargarFuentes, listObjectives, progresoDe, type Fuentes, type Objective } from "../objetivos/data";
 import { AREAS } from "../areas";
 
@@ -7,6 +8,7 @@ import { AREAS } from "../areas";
 // Finanzas, la ves en Finanzas avanzando, no solo en Dirección.
 
 export function MetasDeArea({ area }: { area: string }) {
+  const { t: tr } = useIdioma();
   const [metas, setMetas] = useState<Objective[]>([]);
   const [fuentes, setFuentes] = useState<Fuentes | null>(null);
 
@@ -27,8 +29,8 @@ export function MetasDeArea({ area }: { area: string }) {
     <div className="card panel" style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 17 }}>🧭</span>
-        <h3 style={{ margin: 0, flex: 1 }}>{metas.length === 1 ? "Tu meta de esta área" : "Tus metas de esta área"}</h3>
-        <Link to="/objetivos" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>abrir en Dirección</Link>
+        <h3 style={{ margin: 0, flex: 1 }}>{metas.length === 1 ? tr("Tu meta de esta área") : tr("Tus metas de esta área")}</h3>
+        <Link to="/objetivos" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>{tr("abrir en Dirección")}</Link>
       </div>
       <div style={{ display: "grid", gap: 10 }}>
         {metas.map((o) => {

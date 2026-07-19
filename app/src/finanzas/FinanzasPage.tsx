@@ -271,12 +271,12 @@ export function FinanzasPage() {
               </div>
               <div className="panelgrid">
                 <div className="card panel">
-                  <h3>Gasto por categoría (este mes)</h3>
+                  <h3>{tr("Gasto por categoría (este mes)")}</h3>
                   {gastoPorCategoria.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Aún no hay gastos este mes. Usa "Registrar" para empezar.</p>}
                   {gastoPorCategoria.map(({ cat, total }) => (
                     <div className="bar" key={cat?.id ?? "otros"}>
                       <div className="top">
-                        <span className="lbl">{cat?.icon} {cat?.name ?? "Sin categoría"}</span>
+                        <span className="lbl">{cat?.icon} {cat?.name ?? tr("Sin categoría")}</span>
                         <b className="tnum">{fmtMoney(total, currency)}</b>
                       </div>
                       <div className="track">
@@ -286,7 +286,7 @@ export function FinanzasPage() {
                   ))}
                 </div>
                 <div className="card panel">
-                  <h3>Últimos movimientos</h3>
+                  <h3>{tr("Últimos movimientos")}</h3>
                   {txs.slice(0, 6).map((t) => (
                     <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest} />
                   ))}
@@ -295,10 +295,10 @@ export function FinanzasPage() {
               </div>
 
               <div className="card panel" style={{ marginTop: 14 }}>
-                <h3>Presupuestos del mes</h3>
+                <h3>{tr("Presupuestos del mes")}</h3>
                 {budgetCats.length === 0 && (
                   <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                    Aún no defines presupuestos. Ve a <b>Categorías</b> y asigna un tope mensual con el lápiz ✎.
+                    {tr("Aún no defines presupuestos. Ve a")} <b>{tr("tab.fin.categorias")}</b> {tr("y asigna un tope mensual con el lápiz ✎.")}
                   </p>
                 )}
                 {budgetCats.map((c) => {
@@ -582,7 +582,7 @@ export function FinanzasPage() {
                       <span style={{ fontSize: 18 }}>🏦</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <b style={{ fontSize: 14 }}>{d.name}</b>
-                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d.institution ?? ""}{d.interest_rate ? `, ${d.interest_rate}% de interés` : ""}</div>
+                        <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d.institution ?? ""}{d.interest_rate ? `, ${d.interest_rate}% ${tr("de interés")}` : ""}</div>
                       </div>
                       <button className="xdel" aria-label="Editar deuda" title="Editar" onClick={() => setEditDebt(d)}><Pencil size={14} /></button>
                       <button className="xdel" aria-label="Eliminar deuda" onClick={async () => { if (!window.confirm(`¿Eliminar la deuda ${d.name}? También se borra su recordatorio de pago.`)) return; await deleteDebt(d.id); void reload(); }}><Trash2 size={14} /></button>
@@ -636,23 +636,23 @@ export function FinanzasPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <b style={{ fontSize: 13.5 }}>{c.name}</b>
                       <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                        {c.type === "income" ? "Ingreso" : c.type === "savings" ? "Ahorro" : "Gasto"}
-                        {c.type === "expense" && Number(c.budget) > 0 ? `, presupuesto ${fmtMoney(Number(c.budget), currency)}` : ""}
-                        {c.budget_mode ? `, ${BUDGET_MODE_LABELS[modoDe(c)].toLowerCase()}` : ""}
-                        {c.rollover_fund ? ", con arrastre" : ""}
-                        {c.exclude_from_budget ? ", fuera del presupuesto" : ""}
+                        {c.type === "income" ? tr("Ingreso") : c.type === "savings" ? tr("Ahorro") : tr("Gasto")}
+                        {c.type === "expense" && Number(c.budget) > 0 ? `, ${tr("presupuesto")} ${fmtMoney(Number(c.budget), currency)}` : ""}
+                        {c.budget_mode ? `, ${tr(BUDGET_MODE_LABELS[modoDe(c)]).toLowerCase()}` : ""}
+                        {c.rollover_fund ? `, ${tr("con arrastre")}` : ""}
+                        {c.exclude_from_budget ? `, ${tr("fuera del presupuesto")}` : ""}
                       </div>
                     </div>
                     {c.type === "expense" && (
                       <button className="xdel" aria-label="Editar presupuesto" title="Presupuesto mensual" onClick={() => setBudgetCat(c)}><Wallet size={14} /></button>
                     )}
                     <button className="xdel" aria-label="Editar categoría" title="Editar" onClick={() => setEditCat(c)}><Pencil size={14} /></button>
-                    <button className="xdel" aria-label="Eliminar categoría" onClick={async () => { if (!window.confirm(`¿Eliminar la categoría ${c.name}?`)) return; await deleteCategory(c.id); void reload(); }}><Trash2 size={14} /></button>
+                    <button className="xdel" aria-label="Eliminar categoría" onClick={async () => { if (!window.confirm(`${tr("¿Eliminar la categoría")} ${c.name}?`)) return; await deleteCategory(c.id); void reload(); }}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
               <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => setModal("category")}>
-                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Agregar categoría
+                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> {tr("Agregar categoría")}
               </button>
             </>
           )}
@@ -721,6 +721,7 @@ function monthAdd(ym: string, delta: number): string {
 }
 
 function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categories: Category[]; currency: string; balance: number }) {
+  const { t: tr } = useIdioma();
   const [ym, setYm] = useState(mesActualLocal());
   const prev = monthAdd(ym, -1);
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
@@ -781,28 +782,28 @@ function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categor
       </div>
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
         <div className="card stat">
-          <div className="k">Ingresos</div>
+          <div className="k">{tr("Ingresos")}</div>
           <div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(actual.ingresos, currency)}</div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.ingresos, anterior.ingresos)}</div>
         </div>
         <div className="card stat">
-          <div className="k">Gastos</div>
+          <div className="k">{tr("Gastos")}</div>
           <div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(actual.gastos, currency)}</div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.gastos, anterior.gastos)}</div>
         </div>
         <div className="card stat">
-          <div className="k">Resultado del mes</div>
+          <div className="k">{tr("Resultado del mes")}</div>
           <div className="v tnum" style={{ color: actual.neto >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(actual.neto, currency)}</div>
-          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{actual.rows.length} movimientos</div>
+          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{actual.rows.length} {tr("movimientos")}</div>
         </div>
       </div>
       <div className="card panel">
-        <h3>Gasto por categoría</h3>
-        {porCategoria.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin gastos en este mes.</p>}
+        <h3>{tr("Gasto por categoría")}</h3>
+        {porCategoria.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>{tr("Sin gastos en este mes.")}</p>}
         {porCategoria.map(({ cat, total }) => (
           <div className="bar" key={cat?.id ?? "sin"}>
             <div className="top">
-              <span className="lbl">{cat?.icon} {cat?.name ?? "Sin categoría"}</span>
+              <span className="lbl">{cat?.icon} {cat?.name ?? tr("Sin categoría")}</span>
               <b className="tnum">{fmtMoney(total, currency)}</b>
             </div>
             <div className="track">
@@ -1704,24 +1705,24 @@ function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCa
     <>
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
         <div className="card stat"><div className="k">{tr("stat.fin.deuda")}</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(totalDeuda, currency)}</div></div>
-        <div className="card stat"><div className="k">Mínimo mensual</div><div className="v tnum">{fmtMoney(minimoMensual, currency)}</div></div>
-        <div className="card stat"><div className="k">Interés del mes</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes), currency)}</div></div>
-        <div className="card stat"><div className="k">Interés anual estimado</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes * 12), currency)}</div></div>
+        <div className="card stat"><div className="k">{tr("Mínimo mensual")}</div><div className="v tnum">{fmtMoney(minimoMensual, currency)}</div></div>
+        <div className="card stat"><div className="k">{tr("Interés del mes")}</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes), currency)}</div></div>
+        <div className="card stat"><div className="k">{tr("Interés anual estimado")}</div><div className="v tnum" style={{ color: "var(--warn)" }}>{fmtMoney(Math.round(interesMes * 12), currency)}</div></div>
       </div>
 
       <div className="card panel" style={{ marginBottom: 14 }}>
-        <h3>🧭 Plan para salir de deudas</h3>
+        <h3>{tr("🧭 Plan para salir de deudas")}</h3>
         <div className="seg" style={{ maxWidth: 520 }}>
-          <button type="button" className={"segbtn" + (estrategia === "avalanche" ? " active" : "")} onClick={() => setEstrategia("avalanche")}>Avalancha</button>
-          <button type="button" className={"segbtn" + (estrategia === "snowball" ? " active" : "")} onClick={() => setEstrategia("snowball")}>Bola de nieve</button>
+          <button type="button" className={"segbtn" + (estrategia === "avalanche" ? " active" : "")} onClick={() => setEstrategia("avalanche")}>{tr("Avalancha")}</button>
+          <button type="button" className={"segbtn" + (estrategia === "snowball" ? " active" : "")} onClick={() => setEstrategia("snowball")}>{tr("Bola de nieve")}</button>
         </div>
         <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 12px" }}>
           {estrategia === "avalanche"
-            ? "Avalancha: ataca primero la deuda con mayor interés. Pagas menos intereses en total."
-            : "Bola de nieve: ataca primero la deuda más chica. Ganas motivación con cada deuda saldada."}
+            ? tr("Avalancha: ataca primero la deuda con mayor interés. Pagas menos intereses en total.")
+            : tr("Bola de nieve: ataca primero la deuda más chica. Ganas motivación con cada deuda saldada.")}
         </p>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-          <label style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 500 }}>Dinero extra al mes:</label>
+          <label style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 500 }}>{tr("Dinero extra al mes:")}</label>
           <input className="input-inline" style={{ maxWidth: 140, flex: "none" }} type="number" min="0" step="any"
             value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="100" aria-label="Dinero extra mensual" />
         </div>
@@ -1732,7 +1733,7 @@ function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCa
               <b>{d.name}{i === 0 && extraNum > 0 ? " ← aplica aquí el extra" : ""}</b>
               <small>
                 {fmtMoney(Number(d.balance), currency)}
-                {d.interest_rate ? `, ${d.interest_rate}% de interés, ${fmtMoney(Math.round(interesMensual(d)), currency)} al mes en intereses` : ", sin interés registrado"}
+                {d.interest_rate ? `, ${d.interest_rate}% ${tr("de interés")}, ${fmtMoney(Math.round(interesMensual(d)), currency)} ${tr("al mes en intereses")}` : `, ${tr("sin interés registrado")}`}
               </small>
             </div>
           </div>

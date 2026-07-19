@@ -34,7 +34,8 @@ const TABS: Array<{ key: Tab; label: string }> = [
 ];
 
 export function MentePage() {
-  const { t: tr } = useIdioma();
+  const { t: tr, idioma } = useIdioma();
+  const loc = idioma === "en" ? "en-US" : idioma === "pt" ? "pt-BR" : "es-CL";
 
   const [tab, setTab] = useState<Tab>("practicas");
   const [categoria, setCategoria] = useState<CategoriaMente>("regulacion");
@@ -45,7 +46,7 @@ export function MentePage() {
   const hoy = hoyLocal();
   const fase = faseLunar(new Date());
   const lunas = proximasLunas(new Date());
-  const fmt = (d: Date) => d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+  const fmt = (d: Date) => d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
 
   const hace7 = new Date();
   hace7.setDate(hace7.getDate() - 6);
@@ -65,10 +66,10 @@ export function MentePage() {
       </div>
 
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">Sesiones hoy</div><div className="v tnum">{sesionesHoy}</div></div>
-        <div className="card stat"><div className="k">Minutos (7 días)</div><div className="v tnum">{minutosSemana}</div></div>
-        <div className="card stat"><div className="k">Fase lunar</div><div className="v" style={{ fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><LunaFase nombre={fase.nombre} size={24} /> {fase.nombre}</div></div>
-        <div className="card stat"><div className="k">Próxima luna llena</div><div className="v" style={{ fontSize: 17 }}>{lunas.llena.toLocaleDateString("es-CL", { day: "numeric", month: "long" })}</div></div>
+        <div className="card stat"><div className="k">{tr("Sesiones hoy")}</div><div className="v tnum">{sesionesHoy}</div></div>
+        <div className="card stat"><div className="k">{tr("Minutos (7 días)")}</div><div className="v tnum">{minutosSemana}</div></div>
+        <div className="card stat"><div className="k">{tr("Fase lunar")}</div><div className="v" style={{ fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><LunaFase nombre={fase.nombre} size={24} /> {tr(fase.nombre)}</div></div>
+        <div className="card stat"><div className="k">{tr("Próxima luna llena")}</div><div className="v" style={{ fontSize: 17 }}>{lunas.llena.toLocaleDateString(loc, { day: "numeric", month: "long" })}</div></div>
       </div>
 
       <div className="ftabs">
@@ -82,12 +83,12 @@ export function MentePage() {
           <div className="ftabs" style={{ marginBottom: 12 }}>
             {CATEGORIAS_MENTE.map((c) => (
               <button key={c.key} className={"ftab" + (categoria === c.key ? " active" : "")} onClick={() => setCategoria(c.key)}>
-                {c.label}
+                {tr(c.label)}
               </button>
             ))}
           </div>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            {CATEGORIAS_MENTE.find((c) => c.key === categoria)?.descripcion}
+            {tr(CATEGORIAS_MENTE.find((c) => c.key === categoria)?.descripcion ?? "")}
           </p>
           <div className="panelgrid">
             <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
@@ -111,45 +112,45 @@ export function MentePage() {
 
             <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
               <div className="card panel">
-                <h3>Calendario lunar</h3>
+                <h3>{tr("Calendario lunar")}</h3>
                 <div style={{ textAlign: "center", padding: "10px 0 14px" }}>
                   <div style={{ display: "flex", justifyContent: "center" }}><LunaFase nombre={fase.nombre} size={64} dots /></div>
-                  <div style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, marginTop: 10 }}>{fase.nombre}</div>
-                  <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>{fase.consejo}</p>
+                  <div style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, marginTop: 10 }}>{tr(fase.nombre)}</div>
+                  <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 6, lineHeight: 1.5 }}>{tr(fase.consejo)}</p>
                 </div>
                 <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 10, display: "grid", gap: 6 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink-soft)" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}><LunaFase nombre="Luna llena" size={16} /> Próxima luna llena</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.llena)}</b>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}><LunaFase nombre="Luna llena" size={16} /> {tr("Próxima luna llena")}</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.llena)}</b>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--ink-soft)" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}><LunaFase nombre="Luna nueva" size={16} /> Próxima luna nueva</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.nueva)}</b>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7 }}><LunaFase nombre="Luna nueva" size={16} /> {tr("Próxima luna nueva")}</span><b style={{ fontSize: 12.5 }}>{fmt(lunas.nueva)}</b>
                   </div>
                 </div>
               </div>
 
               <div className="card panel">
-                <h3>Cielo próximo</h3>
+                <h3>{tr("Cielo próximo")}</h3>
                 {proximosEventosCielo(hoy).map((e) => {
                   const [y, m, d] = e.fecha.split("-").map(Number);
-                  const f = new Date(y, m - 1, d).toLocaleDateString("es-CL", { day: "numeric", month: "short" });
+                  const f = new Date(y, m - 1, d).toLocaleDateString(loc, { day: "numeric", month: "short" });
                   return (
                     <div key={e.fecha + e.nombre} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: "1px solid var(--line-soft)", alignItems: "baseline" }}>
                       <span style={{ color: "var(--muted)", fontSize: 12 }}>✦</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <b style={{ fontSize: 13 }}>{e.nombre}</b>
-                        <p style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.45 }}>{e.detalle}</p>
+                        <b style={{ fontSize: 13 }}>{tr(e.nombre)}</b>
+                        <p style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.45 }}>{tr(e.detalle)}</p>
                       </div>
                       <b className="tnum" style={{ fontSize: 12, color: "var(--ink-soft)", whiteSpace: "nowrap" }}>{f}</b>
                     </div>
                   );
                 })}
                 <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
-                  Fechas aproximadas para el hemisferio norte.
+                  {tr("Fechas aproximadas para el hemisferio norte.")}
                 </p>
               </div>
 
               <div className="tip-destacado">
-                💡 ¿No sabes cuál elegir? Si el cuerpo está acelerado, Regulación. Si la mente está lejos, Mindfulness. Si el corazón pesa, Corazón. Si la voz interna castiga, Mentalidad.
+                {tr("💡 ¿No sabes cuál elegir? Si el cuerpo está acelerado, Regulación. Si la mente está lejos, Mindfulness. Si el corazón pesa, Corazón. Si la voz interna castiga, Mentalidad.")}
               </div>
             </div>
           </div>
@@ -159,11 +160,10 @@ export function MentePage() {
       {tab === "sadhana" && (
         <>
           <p style={{ fontSize: 13.5, color: "var(--ink-soft)", maxWidth: "64ch", marginBottom: 16 }}>
-            La sadhana es tu práctica interior diaria: una secuencia guiada de respiración, sonido, presencia y silencio
-            que avanza sola, paso a paso, con una campana suave entre cada uno. No necesitas experiencia, tu único trabajo es quedarte.
+            {tr("La sadhana es tu práctica interior diaria: una secuencia guiada de respiración, sonido, presencia y silencio que avanza sola, paso a paso, con una campana suave entre cada uno. No necesitas experiencia, tu único trabajo es quedarte.")}
             {(() => {
               const sadhanasSemana = historial.filter((h) => h.id.startsWith("sadhana") && h.fecha >= desde).length;
-              return sadhanasSemana > 0 ? ` Esta semana la has practicado ${sadhanasSemana} ${sadhanasSemana === 1 ? "vez" : "veces"}. 🌱` : "";
+              return sadhanasSemana > 0 ? ` ${tr("Esta semana la has practicado")} ${sadhanasSemana} ${sadhanasSemana === 1 ? tr("vez") : tr("veces")}. 🌱` : "";
             })()}
           </p>
 
@@ -172,15 +172,15 @@ export function MentePage() {
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 34 }}>{s.emoji}</span>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <b style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 500 }}>{s.nombre}</b>
-                  <p style={{ fontSize: 12.5, color: "var(--muted)", fontStyle: "italic" }}>“{s.intencion}”</p>
+                  <b style={{ fontFamily: "var(--serif)", fontSize: 18, fontWeight: 500 }}>{tr(s.nombre)}</b>
+                  <p style={{ fontSize: 12.5, color: "var(--muted)", fontStyle: "italic" }}>“{tr(s.intencion)}”</p>
                 </div>
                 <span className="chip">{minutosSadhana(s)} min</span>
-                <button className="btn primary" onClick={() => setSadhana(s)}>Comenzar</button>
+                <button className="btn primary" onClick={() => setSadhana(s)}>{tr("Comenzar")}</button>
               </div>
-              <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "10px 0 6px", lineHeight: 1.55 }}>{s.descripcion}</p>
+              <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "10px 0 6px", lineHeight: 1.55 }}>{tr(s.descripcion)}</p>
               <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>
-                {s.pasos.map((p) => `${p.emoji} ${p.titulo}`).join(", ")}
+                {s.pasos.map((p) => `${p.emoji} ${tr(p.titulo)}`).join(", ")}
               </div>
             </div>
           ))}
@@ -192,15 +192,15 @@ export function MentePage() {
                   <span className="dc-emoji">{s.emoji}</span>
                   <span className="chip">{minutosSadhana(s)} min</span>
                 </div>
-                <b className="dc-title">{s.nombre}</b>
-                <p className="dc-why">“{s.intencion}”</p>
-                <p className="dc-notes">{s.descripcion}</p>
+                <b className="dc-title">{tr(s.nombre)}</b>
+                <p className="dc-why">“{tr(s.intencion)}”</p>
+                <p className="dc-notes">{tr(s.descripcion)}</p>
                 <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>
-                  {s.pasos.map((p) => `${p.emoji} ${p.titulo}`).join(", ")}
+                  {s.pasos.map((p) => `${p.emoji} ${tr(p.titulo)}`).join(", ")}
                 </div>
                 <div className="dc-foot">
                   <span style={{ flex: 1 }} />
-                  <button className="btn primary" onClick={() => setSadhana(s)}>Comenzar</button>
+                  <button className="btn primary" onClick={() => setSadhana(s)}>{tr("Comenzar")}</button>
                 </div>
               </div>
             ))}
@@ -212,24 +212,24 @@ export function MentePage() {
 
       {tab === "historial" && (
         <div className="card panel" style={{ maxWidth: 640 }}>
-          <h3>📖 Tus sesiones</h3>
+          <h3>{tr("📖 Tus sesiones")}</h3>
           {historial.length === 0 && (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-              Aún no hay sesiones. La primera puede ser de dos minutos, eso ya cuenta.
+              {tr("Aún no hay sesiones. La primera puede ser de dos minutos, eso ya cuenta.")}
             </p>
           )}
           {historial.slice(0, 30).map((s, i) => (
             <div className="txrow" key={`${s.fecha}-${s.id}-${i}`}>
               <span className="txicon">{s.id.startsWith("sadhana") ? "🕉" : s.fecha === hoy ? "✨" : "🕊"}</span>
               <div className="txmeta">
-                <b>{s.nombre}</b>
-                <small>{s.minutos} min, {s.fecha === hoy ? "hoy" : s.fecha}</small>
+                <b>{tr(s.nombre)}</b>
+                <small>{s.minutos} min, {s.fecha === hoy ? tr("hoy") : s.fecha}</small>
               </div>
             </div>
           ))}
           {historial.length > 0 && (
             <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-              Tu historial vive en este navegador por ahora. Pronto se guardará también en la nube.
+              {tr("Tu historial vive en este navegador por ahora. Pronto se guardará también en la nube.")}
             </p>
           )}
         </div>
@@ -262,19 +262,20 @@ function ListaPracticas({ titulo, intro, practicas, onComenzar }: {
   practicas: Practica[];
   onComenzar: (p: Practica, minutos: number) => void;
 }) {
+  const { t: tr } = useIdioma();
   const [minutos, setMinutos] = useState<Record<string, number>>({});
   return (
     <div className="card panel">
-      <h3>{titulo}</h3>
-      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>{intro}</p>
+      <h3>{tr(titulo)}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>{tr(intro)}</p>
       {practicas.map((p) => {
         const min = minutos[p.id] ?? p.duraciones[0];
         return (
           <div className="txrow" key={p.id}>
             <span className="txicon">{p.emoji}</span>
             <div className="txmeta">
-              <b>{p.nombre}</b>
-              <small>{p.descripcion}</small>
+              <b>{tr(p.nombre)}</b>
+              <small>{tr(p.descripcion)}</small>
             </div>
             <div style={{ width: 92, flex: "none" }}>
               <Selector
@@ -285,7 +286,7 @@ function ListaPracticas({ titulo, intro, practicas, onComenzar }: {
                 onChange={(v) => setMinutos((m) => ({ ...m, [p.id]: Number(v) }))}
               />
             </div>
-            <button className="btn ghost" onClick={() => onComenzar(p, min)}>Comenzar</button>
+            <button className="btn ghost" onClick={() => onComenzar(p, min)}>{tr("Comenzar")}</button>
           </div>
         );
       })}

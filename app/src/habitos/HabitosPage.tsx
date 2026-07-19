@@ -123,10 +123,10 @@ export function HabitosPage() {
       ) : (
         <>
           <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-            <div className="card stat"><div className="k">Hábitos de hoy</div><div className="v tnum">{doneToday.size} / {habits.length}</div></div>
-            <div className="card stat"><div className="k">Mejor racha</div><div className="v tnum">{mejorRacha > 0 ? `🔥 ${mejorRacha}` : "0"}</div></div>
-            <div className="card stat"><div className="k">Ejercicio (7 días)</div><div className="v tnum">{minutosSemana} min</div></div>
-            <div className="card stat"><div className="k">Sueño promedio</div><div className="v tnum">{promedioSueno !== null ? `${promedioSueno} h` : "sin datos"}</div></div>
+            <div className="card stat"><div className="k">{tr("Hábitos de hoy")}</div><div className="v tnum">{doneToday.size} / {habits.length}</div></div>
+            <div className="card stat"><div className="k">{tr("Mejor racha")}</div><div className="v tnum">{mejorRacha > 0 ? `🔥 ${mejorRacha}` : "0"}</div></div>
+            <div className="card stat"><div className="k">{tr("Ejercicio (7 días)")}</div><div className="v tnum">{minutosSemana} min</div></div>
+            <div className="card stat"><div className="k">{tr("Sueño promedio")}</div><div className="v tnum">{promedioSueno !== null ? `${promedioSueno} h` : "sin datos"}</div></div>
           </div>
 
           <MetasDeArea area="habitos" />
@@ -134,13 +134,13 @@ export function HabitosPage() {
           <div className="panelgrid">
             {/* Checklist de hábitos */}
             <div className="card panel">
-              <h3>Hábitos de hoy</h3>
+              <h3>{tr("Hábitos de hoy")}</h3>
               <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>
-                El cuadrado grande marca el día de hoy. Los chiquitos son tu calendario: un día cada uno, y puedes tocar cualquiera para marcarlo o desmarcarlo, incluso días pasados.
+                {tr("El cuadrado grande marca el día de hoy. Los chiquitos son tu calendario: un día cada uno, y puedes tocar cualquiera para marcarlo o desmarcarlo, incluso días pasados.")}
               </p>
               {habits.length === 0 && (
                 <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                  Crea tu primer hábito: meditar, leer, tomar agua, salir a caminar. Lo que quieras cultivar.
+                  {tr("Crea tu primer hábito: meditar, leer, tomar agua, salir a caminar. Lo que quieras cultivar.")}
                 </p>
               )}
               {habits.map((h) => {
@@ -180,8 +180,8 @@ export function HabitosPage() {
                       <div className="txmeta">
                         <b style={{ color: done ? "var(--muted)" : "var(--ink)" }}>{h.icon} {h.name}</b>
                         <small>
-                          {racha > 0 ? `racha de ${racha} día${racha === 1 ? "" : "s"} 🔥, ` : ""}
-                          desafío de {objetivo} días acumulados{h.daily_minutes ? `, ${h.daily_minutes} min al día` : ""}. Las pausas no borran nada.
+                          {racha > 0 ? `${tr("racha de")} ${racha} ${racha === 1 ? tr("día") : tr("días")} 🔥, ` : ""}
+                          {tr("desafío de")} {objetivo} {tr("días acumulados")}{h.daily_minutes ? `, ${h.daily_minutes} ${tr("min al día")}` : ""}. {tr("Las pausas no borran nada.")}
                         </small>
                       </div>
                       {logrado
@@ -211,19 +211,19 @@ export function HabitosPage() {
                 );
               })}
               <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => setHabitModal({})}>
-                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo hábito
+                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> {tr("Nuevo hábito")}
               </button>
               {sugeridos.length > 0 && (
                 <div style={{ marginTop: 14 }}>
                   <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>
-                    Sugeridos para tu paz
+                    {tr("Sugeridos para tu paz")}
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {sugeridos.map((x) => (
                       <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
                         title={`Crear el hábito ${x.name}`}
                         onClick={() => setHabitModal({ base: x })}>
-                        {x.icon} {x.name}
+                        {x.icon} {tr(x.name)}
                       </button>
                     ))}
                   </div>
@@ -234,27 +234,27 @@ export function HabitosPage() {
             <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
               {/* Sueño: también es un hábito */}
               <div className="card panel">
-                <h3><Moon size={14} style={{ verticalAlign: "-2px" }} /> Sueño</h3>
+                <h3><Moon size={14} style={{ verticalAlign: "-2px" }} /> {tr("Sueño")}</h3>
                 <div className="frow">
                   <div className="field">
-                    <label>Anoche me acosté</label>
+                    <label>{tr("Anoche me acosté")}</label>
                     <CampoHora value={rutinaHoy?.bed_time?.slice(0, 5) ?? ""} ariaLabel="Hora de acostarse"
                       onChange={async (v) => { if (v) { await saveRoutine(hoy, { bed_time: v }); void reload(); } }} />
                   </div>
                   <div className="field">
-                    <label>Hoy me levanté</label>
+                    <label>{tr("Hoy me levanté")}</label>
                     <CampoHora value={rutinaHoy?.wake_time?.slice(0, 5) ?? ""} ariaLabel="Hora de despertar"
                       onChange={async (v) => { if (v) { await saveRoutine(hoy, { wake_time: v }); void reload(); } }} />
                   </div>
                 </div>
                 {rutinaHoy && sleepHours(rutinaHoy) !== null && (
-                  <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>Anoche dormiste <b className="tnum">{sleepHours(rutinaHoy)} horas</b>.</p>
+                  <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>{tr("Anoche dormiste")} <b className="tnum">{sleepHours(rutinaHoy)} {tr("horas")}</b>.</p>
                 )}
               </div>
 
               {/* Ejercicio: también es un hábito */}
               <div className="card panel">
-                <h3>Ejercicio</h3>
+                <h3>{tr("Ejercicio")}</h3>
                 <ExerciseForm onSaved={() => void reload()} />
                 {exercise.slice(0, 4).map((e) => (
                   <div className="txrow" key={e.id} style={{ padding: "7px 0" }}>
@@ -269,7 +269,7 @@ export function HabitosPage() {
                   </div>
                 ))}
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>
-                  El detalle completo (calorías, semana, rutinas) vive en <Link to="/salud" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Energía</Link> y <Link to="/movimiento" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Movimiento</Link>. Aquí se registra igual de rápido.
+                  {tr("El detalle completo (calorías, semana, rutinas) vive en")} <Link to="/salud" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>{tr("area.salud")}</Link> {tr("y")} <Link to="/movimiento" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>{tr("nav.movimiento")}</Link>. {tr("Aquí se registra igual de rápido.")}
                 </p>
               </div>
             </div>
@@ -300,6 +300,7 @@ function Head() {
 }
 
 function ExerciseForm({ onSaved }: { onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
   const [minutes, setMinutes] = useState("");
   const [busy, setBusy] = useState(false);
@@ -320,7 +321,7 @@ function ExerciseForm({ onSaved }: { onSaved: () => void }) {
         opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} />
       <input className="input-inline" style={{ width: 90, flex: "none" }} type="number" min="1" placeholder="min"
         value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label="Minutos" />
-      <button className="btn ghost" type="submit" disabled={busy}>Anotar</button>
+      <button className="btn ghost" type="submit" disabled={busy}>{tr("Anotar")}</button>
     </form>
   );
 }
@@ -392,20 +393,20 @@ function HabitModal({ base, habit, onClose, onSaved }: {
             <IconField value={icon} onChange={setIcon} />
           </div>
           <div className="frow">
-            <div className="field"><label>¿Por cuánto tiempo?</label>
+            <div className="field"><label>{tr("¿Por cuánto tiempo?")}</label>
               <Selector value={dias} ariaLabel="Duración del desafío" onChange={setDias}
                 opciones={[
-                  { value: "7", label: "7 días" },
-                  { value: "14", label: "14 días" },
-                  { value: "21", label: "21 días" },
-                  { value: "28", label: "28 días" },
-                  { value: "66", label: "66 días (hábito instalado)" },
-                  { value: "90", label: "90 días" },
+                  { value: "7", label: `7 ${tr("días")}` },
+                  { value: "14", label: `14 ${tr("días")}` },
+                  { value: "21", label: `21 ${tr("días")}` },
+                  { value: "28", label: `28 ${tr("días")}` },
+                  { value: "66", label: `66 ${tr("días")} (${tr("hábito instalado")})` },
+                  { value: "90", label: `90 ${tr("días")}` },
                 ]} /></div>
-            <div className="field" style={{ maxWidth: 130 }}><label>Minutos al día</label>
+            <div className="field" style={{ maxWidth: 130 }}><label>{tr("Minutos al día")}</label>
               <input type="number" min={1} max={600} value={minutos} onChange={(e) => setMinutos(e.target.value)} placeholder="10" /></div>
           </div>
-          <div className="field"><label>Color de la cuadrícula</label>
+          <div className="field"><label>{tr("Color de la cuadrícula")}</label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {["var(--hab)", ...COLORES_HABITO.filter((c) => c !== "var(--hab)")].map((c) => (
                 <button key={c} type="button" className="color-swatch"
@@ -421,16 +422,16 @@ function HabitModal({ base, habit, onClose, onSaved }: {
                 opciones={[{ value: "", label: "Ninguna meta por ahora" }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
-                  Este hábito será el motor diario de esa meta: cada marca empuja visiblemente su barra, sin cambiar a qué está conectada la meta.
+                  {tr("Este hábito será el motor diario de esa meta: cada marca empuja visiblemente su barra, sin cambiar a qué está conectada la meta.")}
                 </p>
               )}
             </div>
           )}
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-            Verás una cuadrícula con cada día del desafío, pintada con tu color. Tocas un día y queda marcado.
+            {tr("Verás una cuadrícula con cada día del desafío, pintada con tu color. Tocas un día y queda marcado.")}
           </p>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>
-            {busy ? "Guardando…" : habit ? "Guardar cambios" : "Crear hábito"}
+            {busy ? tr("com.guardando") : habit ? tr("m.meta.cambios") : tr("Crear hábito")}
           </button>
         </form>
       </div>

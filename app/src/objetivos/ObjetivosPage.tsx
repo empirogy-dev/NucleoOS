@@ -245,10 +245,10 @@ export function ObjetivosPage() {
 
           {tab === "pasos" && (
             <div className="card panel" style={{ maxWidth: 780 }}>
-              <h3>👣 Lo próximo que mueve tus metas</h3>
+              <h3>{tr("👣 Lo próximo que mueve tus metas")}</h3>
               {pasosPendientes.length === 0 && (
                 <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                  No hay pasos pendientes. Abre una meta y agrégale sus próximos pasos: acciones chicas y concretas, de esas que sí se hacen.
+                  {tr("No hay pasos pendientes. Abre una meta y agrégale sus próximos pasos: acciones chicas y concretas, de esas que sí se hacen.")}
                 </p>
               )}
               {pasosPendientes.map(({ o, m }) => (
@@ -280,7 +280,7 @@ export function ObjetivosPage() {
 
           {tab === "avances" && (
             <div className="card panel" style={{ maxWidth: 780 }}>
-              <h3>📈 Tu historia de progreso</h3>
+              <h3>{tr("📈 Tu historia de progreso")}</h3>
               {activity.length === 0 && (
                 <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
                   Cada vez que avances en algo, regístralo. Entrenar 30 minutos, ahorrar 100 dólares, terminar una lección: todo cuenta.
@@ -309,7 +309,7 @@ export function ObjetivosPage() {
               {logradas.length === 0 && (
                 <div className="card pad">
                   <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                    Aquí se celebran los ciclos cerrados. Cuando una meta llegue a su fin, márcala como lograda y quedará en esta vitrina.
+                    {tr("Aquí se celebran los ciclos cerrados. Cuando una meta llegue a su fin, márcala como lograda y quedará en esta vitrina.")}
                   </p>
                 </div>
               )}
@@ -462,15 +462,15 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
               ? o.auto_metric === "ahorro_meta"
                 ? (() => {
                     const g = fuentes.goals.find((x) => x.id === o.auto_ref);
-                    if (!g) return "⚡ conectada a una meta de ahorro (revisa la conexión)";
+                    if (!g) return "⚡ " + tr("conectada a una meta de ahorro (revisa la conexión)");
                     // Con el ojito de Finanzas cerrado, aquí tampoco se ve la plata.
-                    if (modoPrivado()) return `⚡ ${MONTO_OCULTO} aportados en ${g.icon ?? "🎯"} ${g.name}`;
-                    return `⚡ ${Math.round(Number(g.current_amount)).toLocaleString("es-CL")} de ${Math.round(Number(g.target_amount)).toLocaleString("es-CL")} aportados en ${g.icon ?? "🎯"} ${g.name}`;
+                    if (modoPrivado()) return `⚡ ${MONTO_OCULTO} ${tr("aportados en")} ${g.icon ?? "🎯"} ${g.name}`;
+                    return `⚡ ${Math.round(Number(g.current_amount)).toLocaleString("es-CL")} ${tr("de")} ${Math.round(Number(g.target_amount)).toLocaleString("es-CL")} ${tr("aportados en")} ${g.icon ?? "🎯"} ${g.name}`;
                   })()
                 : o.auto_metric === "libros_leidos"
-                  ? `⚡ ${valor} de ${esperado} ${metrica.unidad}${habitoDe ? ` de ${habitoDe.icon} ${habitoDe.name}` : ""}`
-                  : `⚡ ${valor} de ≈${esperado} ${metrica.unidad}${habitoDe ? ` ${o.auto_metric === "rel_momentos" ? "con" : "de"} ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, a ${o.auto_target} por semana`
-              : hasMs ? (o.milestones.length === 1 ? "1 paso" : `${o.milestones.length} pasos`) : "progreso manual"}
+                  ? `⚡ ${valor} ${tr("de")} ${esperado} ${tr(metrica.unidad)}${habitoDe ? ` ${tr("de")} ${habitoDe.icon} ${habitoDe.name}` : ""}`
+                  : `⚡ ${valor} ${tr("de")} ≈${esperado} ${tr(metrica.unidad)}${habitoDe ? ` ${o.auto_metric === "rel_momentos" ? tr("con") : tr("de")} ${habitoDe.icon ?? ""} ${habitoDe.name}` : ""}, ${tr("a")} ${o.auto_target} ${tr("por semana")}`
+              : hasMs ? (o.milestones.length === 1 ? tr("1 paso") : `${o.milestones.length} ${tr("pasos")}`) : tr("progreso manual")}
           </span>
           <b className="tnum">{pct}%</b>
         </div>
@@ -521,7 +521,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
       {open && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
           <AutoConfig o={o} cx={{ habitos, retos, proyectos, goals: fuentes.goals, personas, libros }}
-            activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${metrica.label}${o.auto_metric === "libros_leidos" && o.auto_target ? `, ${o.auto_target} en total` : o.auto_metric !== "ahorro_meta" && o.auto_target ? `, a ${o.auto_target} por semana` : ""}` : null}
+            activaLabel={esAuto && metrica ? `${habitoDe ? `${habitoDe.icon} ${habitoDe.name}, ` : ""}${tr(metrica.label)}${o.auto_metric === "libros_leidos" && o.auto_target ? `, ${o.auto_target} ${tr("en total")}` : o.auto_metric !== "ahorro_meta" && o.auto_target ? `, ${tr("a")} ${o.auto_target} ${tr("por semana")}` : ""}` : null}
             onChanged={onChanged} />
           {o.milestones.map((m) => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
@@ -626,6 +626,7 @@ interface Conexiones {
  *  proyecto, meta de ahorro o persona se liga. El mismo en el modal de
  *  Nueva meta y en el Progreso automático, para que nada quede distinto. */
 function SelectorDeRef({ metric, refVal, onRef, cx, compacto }: { metric: string; refVal: string; onRef: (v: string) => void; cx: Conexiones; compacto?: boolean }) {
+  const { t: tr } = useIdioma();
   const props = { compacto, value: refVal, onChange: onRef };
   if (metric === "habito_marcas") {
     return <Selector {...props} ariaLabel="Hábito que alimenta la meta" placeholder="¿Qué hábito?"
@@ -658,7 +659,7 @@ function SelectorDeRef({ metric, refVal, onRef, cx, compacto }: { metric: string
       opciones={[
         { value: "l:", label: "🎯 Elegir los libros exactos" },
         { value: "", label: "📚 Cualquier libro de la biblioteca" },
-        ...VIAS_LIBRO.map((v) => ({ value: `v:${v.key}`, label: `📚 Los de ${v.label}` })),
+        ...VIAS_LIBRO.map((v) => ({ value: `v:${v.key}`, label: `📚 ${tr("Los de")} ${tr(v.label)}` })),
       ]} />;
   }
   return null;
@@ -732,6 +733,7 @@ const METRICAS_CON_REF = ["habito_marcas", "reto_dias", "trabajo_horas", "foco_m
 
 /** Configuración del progreso automático de una meta, dentro de sus detalles. */
 function AutoConfig({ o, cx, activaLabel, onChanged }: { o: Objective; cx: Conexiones; activaLabel: string | null; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const [metric, setMetric] = useState(o.auto_metric ?? "");
   const [target, setTarget] = useState(o.auto_target != null ? String(o.auto_target) : "");
   const [ref, setRef] = useState(o.auto_ref ?? "");
@@ -775,7 +777,7 @@ function AutoConfig({ o, cx, activaLabel, onChanged }: { o: Objective; cx: Conex
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: "1 1 210px", minWidth: 190 }}>
           <Selector compacto value={metric} ariaLabel="Métrica automática" placeholder="Sin conexión automática"
-            opciones={[{ value: "", label: "Sin conexión automática" }, ...metricasParaArea(o.area).map((m) => ({ value: m.key, label: m.label }))]}
+            opciones={[{ value: "", label: "Sin conexión automática" }, ...metricasParaArea(o.area).map((m) => ({ value: m.key, label: tr(m.label) }))]}
             onChange={(v) => { setMetric(v); setRef(v === "libros_leidos" ? "l:" : ""); }} />
         </div>
         {METRICAS_CON_REF.includes(metric) && (
@@ -818,8 +820,8 @@ function AutoConfig({ o, cx, activaLabel, onChanged }: { o: Objective; cx: Conex
         }
         return (
           <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6, lineHeight: 1.5 }}>
-            Con tu plazo{o.deadline ? ` hasta el ${o.deadline}` : ` (${PLAZO_DEFECTO_DIAS} días por defecto, edita la meta y ponle fecha límite para afinarlo)`},
-            son ≈{esperado} {m.unidad} en total: cada {m.singular} avanza ≈{Math.max(0.1, Math.round((100 / esperado) * 10) / 10)}%. Un día a la vez.
+            {tr("Con tu plazo")}{o.deadline ? ` ${tr("hasta el")} ${o.deadline}` : ` (${PLAZO_DEFECTO_DIAS} ${tr("días por defecto, edita la meta y ponle fecha límite para afinarlo")})`},
+            {tr("son")} ≈{esperado} {tr(m.unidad)} {tr("en total: cada")} {tr(m.singular)} {tr("avanza")} ≈{Math.max(0.1, Math.round((100 / esperado) * 10) / 10)}%. {tr("Un día a la vez.")}
           </p>
         );
       })()}
@@ -925,7 +927,7 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
         <div className="frow">
           <div className="field"><label>{tr("m.meta.alimenta")}</label>
             <Selector value={metric} ariaLabel="Métrica que alimenta la meta" placeholder={tr("m.meta.nada")}
-              opciones={[{ value: "", label: tr("m.meta.nada") }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: m.label }))]}
+              opciones={[{ value: "", label: tr("m.meta.nada") }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: tr(m.label) }))]}
               onChange={(v) => { setMetric(v); setRef(v === "libros_leidos" ? "l:" : ""); }} /></div>
           {metric && metric !== "ahorro_meta" && !(metric === "libros_leidos" && ref.startsWith("l:")) && (
             <div className="field" style={{ maxWidth: 120 }}><label>{metric === "libros_leidos" ? tr("m.meta.libros") : tr("m.meta.porsemana")}</label>

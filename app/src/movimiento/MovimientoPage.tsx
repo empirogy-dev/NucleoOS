@@ -70,14 +70,15 @@ export function MovimientoPage() {
 
 // ---------- Catálogo de rutinas ----------
 function Catalogo({ tipo, onAbrir }: { tipo: TipoRutina; onAbrir: (r: Rutina) => void }) {
+  const { t: tr } = useIdioma();
   const lista = RUTINAS.filter((r) => r.tipo === tipo);
 
   return (
     <>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
         {tipo === "suave"
-          ? "Yoga, movilidad y estiramientos. Nada que exija, todo que suelta. La duración la eliges al abrir cada rutina."
-          : "Fuerza, cardio y core con lo que tienes en casa. Al completar una rutina, queda registrada en Energía."}
+          ? tr("Yoga, movilidad y estiramientos. Nada que exija, todo que suelta. La duración la eliges al abrir cada rutina.")
+          : tr("Fuerza, cardio y core con lo que tienes en casa. Al completar una rutina, queda registrada en Energía.")}
       </p>
       <div className="dream-grid rut-grid">
         {lista.map((r) => (
@@ -86,10 +87,10 @@ function Catalogo({ tipo, onAbrir }: { tipo: TipoRutina; onAbrir: (r: Rutina) =>
               <span className="dc-emoji">{r.emoji}</span>
               <span className="chip">{r.minutos} min</span>
             </div>
-            <b className="dc-title">{r.nombre}</b>
-            <p className="dc-notes">{r.descripcion}</p>
+            <b className="dc-title">{tr(r.nombre)}</b>
+            <p className="dc-notes">{tr(r.descripcion)}</p>
             <div className="dc-foot">
-              <small style={{ fontSize: 11.5, color: "var(--muted)" }}>{NIVEL_LABEL[r.nivel]}</small>
+              <small style={{ fontSize: 11.5, color: "var(--muted)" }}>{tr(NIVEL_LABEL[r.nivel])}</small>
             </div>
           </button>
         ))}
@@ -100,6 +101,7 @@ function Catalogo({ tipo, onAbrir }: { tipo: TipoRutina; onAbrir: (r: Rutina) =>
 
 // ---------- Registro de workout libre ----------
 function WorkoutLibre() {
+  const { t: tr } = useIdioma();
   const [kind, setKind] = useState<string>("Gimnasio");
   const [min, setMin] = useState("");
   const [peso, setPeso] = useState<number | null>(null);
@@ -124,13 +126,13 @@ function WorkoutLibre() {
       // Si ese día ya tiene una sesión igual, avisamos antes de duplicar:
       // puede que ya la hayas anotado desde Energía sin recordarlo.
       const previo = await sesionPrevia(kind, fechaRegistro());
-      if (previo !== null && !window.confirm(`Este día ya tiene ${kind} registrado (${previo} min), quizás desde Energía. ¿Fue OTRA sesión distinta? Acepta para sumarla igual.`)) {
+      if (previo !== null && !window.confirm(`${tr("Este día ya tiene")} ${kind} (${previo} min). ${tr("¿Fue OTRA sesión distinta? Acepta para sumarla igual.")}`)) {
         setBusy(false);
         return;
       }
       await addExercise(fechaRegistro(), kind, Number(min));
       const kcal = estimarKcal(kind, Number(min), peso);
-      setHecho(`✓ ${kind}, ${min} min, ≈${kcal} kcal. Quedó en Energía y alimenta tus metas conectadas.`);
+      setHecho(`✓ ${kind}, ${min} min, ≈${kcal} kcal. ${tr("Quedó en Energía y alimenta tus metas conectadas.")}`);
       setMin("");
       setTimeout(() => setHecho(null), 6000);
     } catch (ex) {
@@ -142,9 +144,9 @@ function WorkoutLibre() {
 
   return (
     <div className="card panel" style={{ marginBottom: 14 }}>
-      <h3>🏋️ Mi workout libre</h3>
+      <h3>{tr("🏋️ Mi workout libre")}</h3>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-        ¿Entrenaste por tu cuenta, fuera de un programa? Regístralo aquí y queda logueado con sus calorías estimadas.
+        {tr("¿Entrenaste por tu cuenta, fuera de un programa? Regístralo aquí y queda logueado con sus calorías estimadas.")}
       </p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: "1 1 130px", minWidth: 120 }}>
@@ -152,9 +154,9 @@ function WorkoutLibre() {
             opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: k }))} />
         </div>
         <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)}
-          placeholder="minutos" style={{ maxWidth: 110, flex: "none" }} aria-label="Minutos" />
+          placeholder={tr("minutos")} style={{ maxWidth: 110, flex: "none" }} aria-label="Minutos" />
         {min && <span style={{ fontSize: 12, color: "var(--muted)" }}>≈{estimarKcal(kind, Number(min), peso)} kcal</span>}
-        <button className="btn primary" disabled={busy || !min}>{busy ? "Guardando…" : "Registrar"}</button>
+        <button className="btn primary" disabled={busy || !min}>{busy ? tr("com.guardando") : tr("btn.registrar")}</button>
       </form>
       {hecho && <span className="chip" style={{ marginTop: 10, background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>{hecho}</span>}
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
@@ -164,6 +166,7 @@ function WorkoutLibre() {
 
 // ---------- Reproductor de rutina ----------
 function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void }) {
+  const { t: tr } = useIdioma();
   const [minutos, setMinutos] = useState(rutina.minutos);
   const total = minutos * 60;
   const [restante, setRestante] = useState(rutina.minutos * 60);
@@ -199,7 +202,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
     setErr(null);
     try {
       const previo = await sesionPrevia(rutina.categoria, fechaRegistro());
-      if (previo !== null && !window.confirm(`Este día ya tiene ${rutina.categoria} registrado (${previo} min), quizás desde Energía. ¿Fue OTRA sesión distinta? Acepta para sumarla igual.`)) {
+      if (previo !== null && !window.confirm(`${tr("Este día ya tiene")} ${rutina.categoria} (${previo} min). ${tr("¿Fue OTRA sesión distinta? Acepta para sumarla igual.")}`)) {
         setGuardando(false);
         return;
       }
@@ -216,16 +219,16 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-        <h3 style={{ marginBottom: 4 }}>{rutina.emoji} {rutina.nombre}</h3>
+        <h3 style={{ marginBottom: 4 }}>{rutina.emoji} {tr(rutina.nombre)}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>
-          {NIVEL_LABEL[rutina.nivel]}. {rutina.descripcion}
+          {tr(NIVEL_LABEL[rutina.nivel])}. {tr(rutina.descripcion)}
         </p>
         {!iniciado && !completada && (
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12.5, color: "var(--muted)" }}>¿Cuánto tiempo tienes?</span>
+            <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{tr("¿Cuánto tiempo tienes?")}</span>
             <div style={{ width: 150 }}>
               <Selector compacto value={String(minutos)} ariaLabel="Duración de la rutina"
-                opciones={duraciones.map((d) => ({ value: String(d), label: `${d} min${d === rutina.minutos ? " (sugerido)" : ""}` }))}
+                opciones={duraciones.map((d) => ({ value: String(d), label: `${d} min${d === rutina.minutos ? ` (${tr("sugerido")})` : ""}` }))}
                 onChange={(v) => { const m = Number(v); setMinutos(m); setRestante(m * 60); }} />
             </div>
             <span style={{ fontSize: 12, color: "var(--muted)" }}>≈{estimarKcal(rutina.categoria, minutos, peso)} kcal</span>
@@ -243,7 +246,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
 
         <ol style={{ paddingLeft: 20, display: "grid", gap: 6, margin: "12px 0 16px" }}>
           {rutina.pasos.map((p) => (
-            <li key={p} style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{p}</li>
+            <li key={p} style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{tr(p)}</li>
           ))}
         </ol>
 
@@ -251,20 +254,20 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {!completada && restante > 0 && (
             <button className="btn ghost" onClick={() => setCorriendo(!corriendo)}>
-              {corriendo ? "Pausar" : restante === total ? "Iniciar temporizador" : "Continuar"}
+              {corriendo ? tr("Pausar") : restante === total ? tr("Iniciar temporizador") : tr("Continuar")}
             </button>
           )}
           {completada ? (
             <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>
-              🎉 Registrada: {rutina.categoria}, {minutos} min, ≈{estimarKcal(rutina.categoria, minutos, peso)} kcal
+              🎉 {tr("Registrada:")} {rutina.categoria}, {minutos} min, ≈{estimarKcal(rutina.categoria, minutos, peso)} kcal
             </span>
           ) : (
             <button className="btn primary" disabled={guardando} onClick={() => void completar()}>
-              {guardando ? "Guardando…" : "Marcar completada"}
+              {guardando ? tr("com.guardando") : tr("Marcar completada")}
             </button>
           )}
           <span style={{ flex: 1 }} />
-          <button className="btn ghost" onClick={onClose}>Cerrar</button>
+          <button className="btn ghost" onClick={onClose}>{tr("com.cerrar")}</button>
         </div>
       </div>
     </div>
@@ -273,6 +276,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
 
 // ---------- Programas ----------
 function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void }) {
+  const { t: tr } = useIdioma();
   const [hechos, setHechos] = useState<ProgramDay[]>([]);
   const [propios, setPropios] = useState<UserProgram[]>([]);
   const [propiosFaltan, setPropiosFaltan] = useState(false);
@@ -319,10 +323,10 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
         <p style={{ fontSize: 13, color: "var(--muted)", flex: 1, minWidth: 240 }}>
-          Programas de movimiento con su rutina de cada día: los sugeridos, y los tuyos propios. Para retos personales (agua, meditar, dormir temprano) está <Link to="/habitos" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>Hábitos, pestaña Retos</Link>.
+          {tr("Programas de movimiento con su rutina de cada día: los sugeridos, y los tuyos propios. Para retos personales (agua, meditar, dormir temprano) está")} <Link to="/habitos" style={{ color: "var(--accent-ink)", fontWeight: 600 }}>{tr("Hábitos, pestaña Retos")}</Link>.
         </p>
         <button className="btn primary" onClick={() => setModal({})}>
-          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} /> Crear mi programa
+          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} /> {tr("Crear mi programa")}
         </button>
       </div>
       {propiosFaltan && (
@@ -339,7 +343,7 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
             hechos={hechos} onChanged={() => void reload()} onAbrirRutina={onAbrirRutina}
             onEditar={() => setModal({ up })}
             onEliminar={async () => {
-              if (!window.confirm(`¿Eliminar el programa ${up.nombre}? Se pierde su progreso.`)) return;
+              if (!window.confirm(`${tr("¿Eliminar el programa")} ${up.nombre}? ${tr("Se pierde su progreso.")}`)) return;
               await deleteUserProgram(up.id);
               void reload();
             }}
@@ -358,6 +362,7 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
 
 /** Crear o editar un programa propio: nombre, días y rutinas que se ciclan. */
 function ProgramModal({ up, onClose, onSaved }: { up: UserProgram | null; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [nombre, setNombre] = useState(up?.nombre ?? "");
   const [emoji, setEmoji] = useState(up?.emoji ?? "🌱");
   const [objetivo, setObjetivo] = useState(up?.objetivo ?? "");
@@ -395,24 +400,24 @@ function ProgramModal({ up, onClose, onSaved }: { up: UserProgram | null; onClos
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-        <h3 style={{ marginBottom: 4 }}>{up ? "Editar programa" : "Mi programa"}</h3>
+        <h3 style={{ marginBottom: 4 }}>{up ? tr("Editar programa") : tr("Mi programa")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
-          Elige las rutinas que quieres y se reparten en los días del programa, en orden y ciclando.
+          {tr("Elige las rutinas que quieres y se reparten en los días del programa, en orden y ciclando.")}
         </p>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
           <div className="frow">
-            <div className="field" style={{ flex: 1 }}><label>Nombre</label>
-              <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Mi semana de yoga" autoFocus /></div>
+            <div className="field" style={{ flex: 1 }}><label>{tr("com.nombre")}</label>
+              <input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={tr("Mi semana de yoga")} autoFocus /></div>
             <IconField value={emoji} onChange={setEmoji} />
           </div>
           <div className="frow">
-            <div className="field" style={{ flex: 1 }}><label>Objetivo</label>
-              <input value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder="Para qué es este programa" /></div>
-            <div className="field" style={{ maxWidth: 100 }}><label>Días</label>
+            <div className="field" style={{ flex: 1 }}><label>{tr("Objetivo")}</label>
+              <input value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder={tr("Para qué es este programa")} /></div>
+            <div className="field" style={{ maxWidth: 100 }}><label>{tr("Días")}</label>
               <input type="number" min={3} max={60} value={dias} onChange={(e) => setDias(e.target.value)} /></div>
           </div>
-          <div className="field"><label>Rutinas del programa</label>
+          <div className="field"><label>{tr("Rutinas del programa")}</label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {RUTINAS.map((r) => {
                 const on = elegidas.includes(r.id);
@@ -421,17 +426,17 @@ function ProgramModal({ up, onClose, onSaved }: { up: UserProgram | null; onClos
                     style={{ border: "none", cursor: "pointer", ...(on ? {} : { background: "var(--surface)", color: "var(--muted)" }) }}
                     aria-pressed={on}
                     onClick={() => setElegidas((prev) => (on ? prev.filter((x) => x !== r.id) : [...prev, r.id]))}>
-                    {r.emoji} {r.nombre}
+                    {r.emoji} {tr(r.nombre)}
                   </button>
                 );
               })}
             </div>
             <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-              Si no eliges ninguna, los días quedan libres para lo que tú quieras hacer.
+              {tr("Si no eliges ninguna, los días quedan libres para lo que tú quieras hacer.")}
             </p>
           </div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>
-            {busy ? "Guardando…" : up ? "Guardar cambios" : "Crear programa"}
+            {busy ? tr("com.guardando") : up ? tr("m.meta.cambios") : tr("Crear programa")}
           </button>
         </form>
       </div>
@@ -448,6 +453,7 @@ function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina, onEditar, on
   onEliminar?: () => void;
   sugerido?: boolean;
 }) {
+  const { t: tr } = useIdioma();
   const marcados = new Set(hechos.filter((h) => h.program_key === programa.key).map((h) => h.day));
   const total = programa.dias.length;
   const done = marcados.size;
@@ -459,13 +465,13 @@ function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina, onEditar, on
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <span style={{ fontSize: 24 }}>{programa.emoji}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <b style={{ fontSize: 15 }}>{programa.nombre}</b>
-          <div style={{ fontSize: 12, color: "var(--muted)" }}>{programa.objetivo}</div>
+          <b style={{ fontSize: 15 }}>{tr(programa.nombre)}</b>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>{tr(programa.objetivo)}</div>
         </div>
-        {sugerido && <span className="chip" style={{ background: "var(--surface)", color: "var(--muted)" }}>sugerido</span>}
+        {sugerido && <span className="chip" style={{ background: "var(--surface)", color: "var(--muted)" }}>{tr("sugerido")}</span>}
         {done === total
-          ? <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🏆 Programa completo</span>
-          : <span className="chip">{done} / {total} días</span>}
+          ? <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🏆 {tr("Programa completo")}</span>
+          : <span className="chip">{done} / {total} {tr("días")}</span>}
         {onEditar && (
           <button className="xdel" title="Editar programa" aria-label="Editar programa" onClick={onEditar}>
             <Pencil size={13} />
@@ -482,11 +488,11 @@ function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina, onEditar, on
       </div>
       {siguiente >= 0 && (
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 10 }}>
-          Hoy te toca el día {siguiente + 1}: <b>{programa.dias[siguiente].titulo}</b>
+          {tr("Hoy te toca el día")} {siguiente + 1}: <b>{tr(programa.dias[siguiente].titulo)}</b>
           {programa.dias[siguiente].rutinaId && (
             <button className="linklike" style={{ display: "inline", marginLeft: 8 }}
               onClick={() => { const r = rutinaPor(programa.dias[siguiente].rutinaId as string); if (r) onAbrirRutina(r); }}>
-              ver rutina
+              {tr("ver rutina")}
             </button>
           )}
         </p>

@@ -61,8 +61,7 @@ export function CoachCard({ resumen }: { resumen: string }) {
         <>
           {charla.length === 0 && !busy && (
             <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-              Cuéntale cómo te sientes o pregúntale lo que quieras: conoce tus metas, hábitos, avances y pagos.
-              O pídele un consejo general con el botón.
+              {tr("Cuéntale cómo te sientes o pregúntale lo que quieras: conoce tus metas, hábitos, avances y pagos. O pídele un consejo general con el botón.")}
             </p>
           )}
           {charla.map((m, i) => (

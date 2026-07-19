@@ -99,7 +99,7 @@ export function DopaminaCard() {
       ) : (
         <>
           {muestra.map((m) => (
-            <p key={m} style={{ fontSize: 13.5, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>{m}</p>
+            <p key={m} style={{ fontSize: 13.5, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>{tr(m)}</p>
           ))}
           <button className="linklike" style={{ marginTop: 8 }} onClick={otraMuestra}>
             {tr("Muéstrame otras")}

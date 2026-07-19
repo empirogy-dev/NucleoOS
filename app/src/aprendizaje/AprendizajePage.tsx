@@ -175,17 +175,17 @@ export function AprendizajePage() {
           <>
             <div className="searchbox">
               <Search size={14} />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar en todas tus notas…" aria-label="Buscar notas" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("Buscar en todas tus notas...")} aria-label="Buscar notas" />
             </div>
             <span style={{ flex: 1 }} />
             <button className="btn ghost" title="Un bloque de foco para estudiar"
               onClick={() => abrirPomodoro({ area: "aprendizaje" })}>
-              🎯 Foco de estudio
+              🎯 {tr("Foco de estudio")}
             </button>
-            <button className="btn ghost" onClick={() => setNbModal(true)}>Nuevo cuaderno</button>
+            <button className="btn ghost" onClick={() => setNbModal(true)}>{tr("Nuevo cuaderno")}</button>
             <button className="btn primary" onClick={() => void nuevaNota()}>
               <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-              Nueva nota
+              {tr("Nueva nota")}
             </button>
           </>
         )}
@@ -203,9 +203,9 @@ export function AprendizajePage() {
         <div className="apr-grid">
           {/* Cuadernos */}
           <div className="card panel" style={{ alignSelf: "start" }}>
-            <h3>Cuadernos</h3>
+            <h3>{tr("Cuadernos")}</h3>
             <button className={"nb-row" + (selectedNb === null ? " active" : "")} onClick={() => { setSelectedNb(null); setQuery(""); }}>
-              <span>📚 Todas las notas</span>
+              <span>📚 {tr("Todas las notas")}</span>
               <small>{entries.length}</small>
             </button>
             {notebooks.map((nb) => {
@@ -218,14 +218,14 @@ export function AprendizajePage() {
                     <small>{n}</small>
                   </button>
                   <button className="xdel" aria-label="Eliminar cuaderno"
-                    onClick={async () => { if (!window.confirm(`¿Eliminar el cuaderno ${nb.name}? Se borran todas sus notas.`)) return; await deleteNotebook(nb.id); if (selectedNb === nb.id) setSelectedNb(null); void reload(); }}>
+                    onClick={async () => { if (!window.confirm(`${tr("¿Eliminar el cuaderno")} ${nb.name}? ${tr("Se borran todas sus notas.")}`)) return; await deleteNotebook(nb.id); if (selectedNb === nb.id) setSelectedNb(null); void reload(); }}>
                     <Trash2 size={13} />
                   </button>
                 </div>
               );
             })}
             {notebooks.length === 0 && (
-              <p style={{ color: "var(--muted)", fontSize: 13 }}>Crea tu primer cuaderno: inglés, programación, recetas, lo que estés aprendiendo.</p>
+              <p style={{ color: "var(--muted)", fontSize: 13 }}>{tr("Crea tu primer cuaderno: inglés, programación, recetas, lo que estés aprendiendo.")}</p>
             )}
 
             {selectedNb && (
@@ -235,17 +235,17 @@ export function AprendizajePage() {
 
           {/* Lista de notas */}
           <div className="card panel" style={{ alignSelf: "start" }}>
-            <h3>{query ? `Resultados para "${query}"` : "Notas"}</h3>
-            {visibles.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>{query ? "Nada por aquí." : "Sin notas todavía."}</p>}
+            <h3>{query ? `${tr("Resultados para")} "${query}"` : tr("Notas")}</h3>
+            {visibles.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>{query ? tr("Nada por aquí.") : tr("Sin notas todavía.")}</p>}
             {visibles.map((e) => (
               <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <button className={"nb-row" + (selectedEntry === e.id ? " active" : "")} style={{ flex: 1 }}
                   onClick={() => setSelectedEntry(e.id)}>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title || "Sin título"}</span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title || tr("Sin título")}</span>
                   <small>{e.updated_at.slice(0, 10)}</small>
                 </button>
                 <button className="xdel" aria-label="Eliminar nota"
-                  onClick={async () => { if (!window.confirm(`¿Eliminar la nota ${e.title || "sin título"}?`)) return; await deleteEntry(e.id); if (selectedEntry === e.id) setSelectedEntry(null); void reload(); }}>
+                  onClick={async () => { if (!window.confirm(`${tr("¿Eliminar la nota")} ${e.title || tr("sin título")}?`)) return; await deleteEntry(e.id); if (selectedEntry === e.id) setSelectedEntry(null); void reload(); }}>
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -263,7 +263,7 @@ export function AprendizajePage() {
                 resumiendo={summarizing === `nota-${entry.id}`} />
             ) : (
               <p style={{ color: "var(--muted)", fontSize: 13.5, padding: "20px 0", textAlign: "center" }}>
-                Elige una nota de la lista, o crea una nueva. ✍️
+                {tr("Elige una nota de la lista, o crea una nueva.")} ✍️
               </p>
             )}
           </div>
@@ -279,7 +279,7 @@ export function AprendizajePage() {
             <h3 style={{ marginBottom: 12 }}>✨ {summary.title}</h3>
             <div className="summary-body">{summary.text}</div>
             <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-              <button className="btn primary" onClick={() => void guardarResumenComoNota()}>Guardar como nota</button>
+              <button className="btn primary" onClick={() => void guardarResumenComoNota()}>{tr("Guardar como nota")}</button>
               <button className="btn ghost" onClick={() => setSummary(null)}>Cerrar</button>
             </div>
           </div>
@@ -294,6 +294,7 @@ function MaterialSection({ notebookId, summarizing, onResumir }: {
   summarizing: string | null;
   onResumir: (f: MaterialFile) => void;
 }) {
+  const { t: tr } = useIdioma();
   const [files, setFiles] = useState<MaterialFile[]>([]);
   const [bucketMissing, setBucketMissing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -359,10 +360,10 @@ function MaterialSection({ notebookId, summarizing, onResumir }: {
                   title={iaConfigured ? "Resumir con IA" : "Configura tu llave de Gemini en app/.env"}
                   disabled={!iaConfigured || summarizing === `file-${f.path}`}
                   onClick={() => onResumir(f)}>
-                  {summarizing === `file-${f.path}` ? "…" : "✨ Resumir"}
+                  {summarizing === `file-${f.path}` ? "…" : "✨ " + tr("Resumir")}
                 </button>
               )}
-              <button className="xdel" aria-label="Eliminar archivo" onClick={async () => { if (!window.confirm(`¿Eliminar el archivo ${f.name}?`)) return; await deleteFile(f.path); void reload(); }}>
+              <button className="xdel" aria-label="Eliminar archivo" onClick={async () => { if (!window.confirm(`${tr("¿Eliminar el archivo")} ${f.name}?`)) return; await deleteFile(f.path); void reload(); }}>
                 <Trash2 size={12} />
               </button>
             </div>
@@ -399,6 +400,7 @@ function EntryEditor({ entry, onSaved, onResumir, resumiendo }: {
   onResumir: () => void;
   resumiendo: boolean;
 }) {
+  const { t: tr } = useIdioma();
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content);
   const [saved, setSaved] = useState(false);
@@ -415,25 +417,26 @@ function EntryEditor({ entry, onSaved, onResumir, resumiendo }: {
 
   return (
     <div>
-      <input className="entry-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título de la nota" aria-label="Título" />
+      <input className="entry-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Título de la nota")} aria-label="Título" />
       <textarea className="entry-body" rows={14} value={content} onChange={(e) => setContent(e.target.value)}
-        placeholder="Escribe aquí lo que aprendiste…" aria-label="Contenido" />
+        placeholder={tr("Escribe aquí lo que aprendiste...")} aria-label="Contenido" />
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
-        <button className="btn primary" disabled={busy} onClick={() => void save()}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" disabled={busy} onClick={() => void save()}>{busy ? tr("com.guardando") : tr("com.guardar")}</button>
         <button className="btn ghost" disabled={!iaConfigured || resumiendo || !content.trim()}
           title={iaConfigured ? "Resumir esta nota con IA" : "Configura tu llave de Gemini en app/.env"}
           onClick={onResumir}>
           <Sparkles size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          {resumiendo ? "Resumiendo…" : "Resumir con IA"}
+          {resumiendo ? tr("Resumiendo…") : tr("Resumir con IA")}
         </button>
         {saved && <span className="chip">✓ Guardada</span>}
-        <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>última edición {entry.updated_at.slice(0, 10)}</span>
+        <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>{tr("última edición")} {entry.updated_at.slice(0, 10)}</span>
       </div>
     </div>
   );
 }
 
 function NotebookModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("📓");
   const [busy, setBusy] = useState(false);
@@ -448,11 +451,11 @@ function NotebookModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
-        <h3 style={{ marginBottom: 14 }}>Nuevo cuaderno</h3>
+        <h3 style={{ marginBottom: 14 }}>{tr("Nuevo cuaderno")}</h3>
         <form onSubmit={save}>
           <div className="frow">
             <div className="field" style={{ flex: 1 }}><label>Nombre</label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Inglés, programación, recetas…" autoFocus /></div>
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Inglés, programación, recetas…")} autoFocus /></div>
             <IconField value={icon} onChange={setIcon} />
           </div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear cuaderno"}</button>

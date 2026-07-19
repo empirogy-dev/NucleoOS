@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { TablesMissingError } from "../finanzas/data";
 import { SECCIONES_VIDA, getIdealLife, saveIdealSection } from "./suenos";
 
@@ -6,6 +7,7 @@ import { SECCIONES_VIDA, getIdealLife, saveIdealSection } from "./suenos";
 // Se guardan solos al salir de cada bloque.
 
 export function VidaIdealTab() {
+  const { t: tr } = useIdioma();
   const [contenido, setContenido] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -62,32 +64,32 @@ export function VidaIdealTab() {
     );
   }
 
-  if (loading) return <p style={{ color: "var(--muted)" }}>Cargando…</p>;
+  if (loading) return <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>;
 
   return (
     <>
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
       <p style={{ fontSize: 13.5, color: "var(--ink-soft)", maxWidth: "62ch", marginBottom: 16 }}>
-        Escribe en presente, como si ya vivieras así. No hay respuestas correctas y puedes volver a editarlo cuando quieras: tu vida ideal también evoluciona.
+        {tr("Escribe en presente, como si ya vivieras así. No hay respuestas correctas y puedes volver a editarlo cuando quieras: tu vida ideal también evoluciona.")}
       </p>
       <div className="ideal-grid">
         {SECCIONES_VIDA.map((s) => (
           <div className="card panel" key={s.key}>
-            <h3 style={{ marginBottom: 4 }}>{s.emoji} {s.titulo}</h3>
-            <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>{s.pregunta}</p>
+            <h3 style={{ marginBottom: 4 }}>{s.emoji} {tr(s.titulo)}</h3>
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>{tr(s.pregunta)}</p>
             <textarea
               className="vision-edit"
               rows={4}
               ref={(el) => { cajas.current[s.key] = el; }}
               defaultValue={contenido[s.key] ?? ""}
-              placeholder="Escríbelo con calma…"
+              placeholder={tr("Escríbelo con calma…")}
               onBlur={(e) => void guardar(s.key, e.target.value)}
             />
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
               <button className="btn ghost" onClick={() => void guardar(s.key, cajas.current[s.key]?.value ?? "")}>
-                Guardar
+                {tr("com.guardar")}
               </button>
-              {guardada === s.key && <span className="chip">✓ Guardado</span>}
+              {guardada === s.key && <span className="chip">✓ {tr("Guardado")}</span>}
             </div>
           </div>
         ))}

@@ -92,7 +92,7 @@ export function TareasHoy() {
 
       {deHoy.length === 0 && pendientesAyer.length === 0 && (
         <p style={{ fontSize: 13, color: "var(--muted)" }}>
-          Anota lo suelto del día para sacarlo de tu cabeza. No es rutina ni meta, es solo hoy.
+          {tr("Anota lo suelto del día para sacarlo de tu cabeza. No es rutina ni meta, es solo hoy.")}
         </p>
       )}
 

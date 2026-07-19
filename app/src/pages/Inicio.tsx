@@ -149,7 +149,8 @@ export function Inicio() {
   }, [reload]);
 
   const nombre = displayName || (session?.user?.email ?? "").split("@")[0] || "Hola";
-  const { t: tr } = useIdioma();
+  const { t: tr, idioma } = useIdioma();
+  const loc = idioma === "en" ? "en-US" : idioma === "pt" ? "pt-BR" : "es-CL";
 
 
   const month = mesActualLocal();
@@ -188,7 +189,7 @@ export function Inicio() {
   const brujulaPaso = brujula?.milestones.find((m) => m.progress < 100) ?? null;
   const brujulaMetrica = brujula?.auto_metric ? METRICAS_AUTO.find((m) => m.key === brujula.auto_metric) : null;
   const fechaLarga = (() => {
-    const f = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+    const f = new Date().toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
     return f.charAt(0).toUpperCase() + f.slice(1);
   })();
 
@@ -226,8 +227,8 @@ export function Inicio() {
         <div className="eyebrow"><Sparkles size={13} /> {fechaLarga}</div>
         {birthday && birthday.slice(5) === hoyStr.slice(5) ? (
           <>
-            <h1>¡Feliz cumpleaños, {nombre}! 🎂</h1>
-            <p>Hoy el sistema celebra a su núcleo: tú. Regálate algo lindo y un día a tu ritmo.</p>
+            <h1>{tr("¡Feliz cumpleaños,")} {nombre}! 🎂</h1>
+            <p>{tr("Hoy el sistema celebra a su núcleo: tú. Regálate algo lindo y un día a tu ritmo.")}</p>
           </>
         ) : (
           <>
@@ -240,7 +241,7 @@ export function Inicio() {
       {/* Visión de vida (real, editable) */}
       <div className="card vision">
         <div className="lb" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          Visión de vida
+          {tr("Visión de vida")}
           {!editingVision && (
             <button className="xdel" aria-label="Editar visión" style={{ width: 24, height: 24 }}
               onClick={() => { setVisionDraft(lifeVision); setEditingVision(true); }}>
@@ -251,35 +252,35 @@ export function Inicio() {
         {editingVision ? (
           <div>
             <textarea className="vision-edit" rows={3} value={visionDraft} autoFocus
-              placeholder="¿Cómo quieres que sea tu vida? Escríbelo con tus palabras…"
+              placeholder={tr("¿Cómo quieres que sea tu vida? Escríbelo con tus palabras…")}
               onChange={(e) => setVisionDraft(e.target.value)} />
             {visionErr && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 6 }}>{visionErr}</p>}
             <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <button className="btn primary" onClick={() => void saveVision()}>Guardar</button>
-              <button className="btn ghost" onClick={() => setEditingVision(false)}>Cancelar</button>
+              <button className="btn primary" onClick={() => void saveVision()}>{tr("com.guardar")}</button>
+              <button className="btn ghost" onClick={() => setEditingVision(false)}>{tr("Cancelar")}</button>
             </div>
           </div>
         ) : lifeVision ? (
           <q>{lifeVision}</q>
         ) : (
           <p style={{ color: "var(--muted)", fontSize: 14 }}>
-            Aún no escribes tu visión de vida. Es el norte de todo el sistema. Escríbela con el lápiz. ✏️
+            {tr("Aún no escribes tu visión de vida. Es el norte de todo el sistema. Escríbela con el lápiz. ✏️")}
           </p>
         )}
       </div>
 
       {/* Pulso del día: señales vivas, cada una te lleva a su módulo */}
       <div className="pulso">
-        <Link to="/salud" className="card stat"><div className="k">😴 Sueño</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></Link>
-        <Link to="/salud" className="card stat"><div className="k">💧 Agua</div><div className="v tnum">{agua}<small style={{ fontSize: 12, color: "var(--muted)" }}> de {META_AGUA_VASOS}</small></div></Link>
-        <Link to="/salud" className="card stat"><div className="k">🍗 Proteína</div><div className="v tnum">{proteinaHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> de {metaProt} g</small></div></Link>
-        <Link to="/movimiento" className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> min</small></div></Link>
-        <Link to="/mente" className="card stat"><div className="k">🕊 Mente</div><div className="v tnum">{sesionesMenteHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> {sesionesMenteHoy === 1 ? "sesión" : "sesiones"}</small></div></Link>
-        <Link to="/habitos" className="card stat"><div className="k">✓ Hábitos</div><div className="v tnum">{habReady ? `${hechosHoy}/${habits.length}` : "…"}</div></Link>
+        <Link to="/salud" className="card stat"><div className="k">{tr("😴 Sueño")}</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></Link>
+        <Link to="/salud" className="card stat"><div className="k">{tr("💧 Agua")}</div><div className="v tnum">{agua}<small style={{ fontSize: 12, color: "var(--muted)" }}> {tr("de")} {META_AGUA_VASOS}</small></div></Link>
+        <Link to="/salud" className="card stat"><div className="k">{tr("🍗 Proteína")}</div><div className="v tnum">{proteinaHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> {tr("de")} {metaProt} g</small></div></Link>
+        <Link to="/movimiento" className="card stat"><div className="k">{tr("🏃 Movimiento")}</div><div className="v tnum">{movHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> min</small></div></Link>
+        <Link to="/mente" className="card stat"><div className="k">{tr("🕊 Mente")}</div><div className="v tnum">{sesionesMenteHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> {sesionesMenteHoy === 1 ? tr("sesión") : tr("sesiones")}</small></div></Link>
+        <Link to="/habitos" className="card stat"><div className="k">{tr("✓ Hábitos")}</div><div className="v tnum">{habReady ? `${hechosHoy}/${habits.length}` : "…"}</div></Link>
         <button className="card stat" style={{ textAlign: "left", cursor: "pointer", border: "1px solid var(--line)", font: "inherit" }}
           onClick={() => abrirPomodoro()} title="Abrir el pomodoro">
-          <div className="k">🎯 Foco</div>
-          <div className="v tnum">{bloquesHoyLocal()}<small style={{ fontSize: 12, color: "var(--muted)" }}> {bloquesHoyLocal() === 1 ? "bloque" : "bloques"}</small></div>
+          <div className="k">{tr("🎯 Foco")}</div>
+          <div className="v tnum">{bloquesHoyLocal()}<small style={{ fontSize: 12, color: "var(--muted)" }}> {bloquesHoyLocal() === 1 ? tr("bloque") : tr("bloques")}</small></div>
         </button>
       </div>
 
@@ -291,27 +292,27 @@ export function Inicio() {
         <div className="card panel" style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             <span style={{ fontSize: 20 }}>🧭</span>
-            <h3 style={{ margin: 0, flex: 1 }}>Tu brújula</h3>
+            <h3 style={{ margin: 0, flex: 1 }}>{tr("Tu brújula")}</h3>
             {activasOrdenadas.length > 1 && (
               <>
                 <button className="xdel" aria-label="Meta anterior" style={{ width: 26, height: 26 }}
                   onClick={() => setBrujulaSel(brujulaSel - 1)}>‹</button>
                 <span style={{ fontSize: 11.5, color: "var(--muted)" }} className="tnum">
-                  {brujulaIdx + 1} de {activasOrdenadas.length}
+                  {brujulaIdx + 1} {tr("de")} {activasOrdenadas.length}
                 </span>
                 <button className="xdel" aria-label="Meta siguiente" style={{ width: 26, height: 26 }}
                   onClick={() => setBrujulaSel(brujulaSel + 1)}>›</button>
               </>
             )}
-            <Link to="/objetivos" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>ver todas</Link>
+            <Link to="/objetivos" style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>{tr("ver todas")}</Link>
           </div>
           <b style={{ fontSize: 15 }}>{brujula.title}</b>
           <div className="bar" style={{ margin: "8px 0 0" }}>
             <div className="top">
               <span>
                 {brujulaMetrica && brujula.auto_target
-                  ? `⚡ ${valorAuto(brujula, fuentes)} de ≈${metaAutoEsperado(brujula)} ${brujulaMetrica.unidad}`
-                  : brujula.deadline ? `para el ${brujula.deadline}` : "en camino"}
+                  ? `⚡ ${valorAuto(brujula, fuentes)} ${tr("de")} ≈${metaAutoEsperado(brujula)} ${tr(brujulaMetrica.unidad)}`
+                  : brujula.deadline ? `${tr("para el")} ${brujula.deadline}` : tr("en camino")}
               </span>
               <b className="tnum">{brujulaPct}%</b>
             </div>
@@ -319,10 +320,10 @@ export function Inicio() {
           </div>
           <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 8 }}>
             {brujulaPaso
-              ? `Siguiente paso: ${brujulaPaso.title}`
+              ? `${tr("Siguiente paso:")} ${brujulaPaso.title}`
               : brujulaMetrica
-                ? `Se alimenta de ${brujulaMetrica.fuente}: un registro de hoy ya la empuja.`
-                : "Ábrela en Dirección y ponle pasos o una conexión automática."}
+                ? `${tr("Se alimenta de")} ${tr(brujulaMetrica.fuente)}: ${tr("un registro de hoy ya la empuja.")}`
+                : tr("Ábrela en Dirección y ponle pasos o una conexión automática.")}
           </p>
         </div>
       )}
@@ -337,7 +338,7 @@ export function Inicio() {
         { id: "dopamina", el: <DopaminaCard /> },
         ...(reminders.length > 0 ? [{ id: "pagos", el: (
         <div className="card panel">
-          <h3>🔔 Próximo pago</h3>
+          <h3>{tr("🔔 Próximo pago")}</h3>
           {[...reminders]
             .map((r) => ({ r, next: nextOccurrence(r) }))
             .sort((a, b) => a.next.localeCompare(b.next))
@@ -354,12 +355,12 @@ export function Inicio() {
                   <span className="chip" style={{
                     background: lbl.tone === "err" ? "color-mix(in srgb,var(--err) 16%,var(--paper))" : lbl.tone === "warn" ? "color-mix(in srgb,var(--warn) 16%,var(--paper))" : "var(--accent-wash)",
                     color: lbl.tone === "err" ? "var(--err)" : lbl.tone === "warn" ? "var(--warn)" : "var(--accent-ink)",
-                  }}>{lbl.text}</span>
+                  }}>{tr(lbl.text)}</span>
                 </div>
               );
             })}
           <Link to="/finanzas" style={{ fontSize: 12.5, color: "var(--accent-ink)", textDecoration: "underline", display: "inline-block", marginTop: 8 }}>
-            Ver todos en Finanzas, pestaña Deudas y tarjetas
+            {tr("Ver todos en Finanzas, pestaña Deudas y tarjetas")}
           </Link>
         </div>
         ) }] : []),
@@ -367,37 +368,37 @@ export function Inicio() {
         <div className="card panel">
           <h3>{tr("Tus áreas")}</h3>
           {AREAS.map((a) => {
-            let badge: React.ReactNode = <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>próximamente</span>;
+            let badge: React.ReactNode = <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>{tr("próximamente")}</span>;
             if (a.key === "finanzas" && finReady) {
-              badge = <span className="chip" style={{ marginLeft: "auto" }}>{monthTxs.length} mov. este mes</span>;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{monthTxs.length} {tr("mov. este mes")}</span>;
             } else if (a.key === "objetivos" && objReady) {
               const n = objectives.length;
-              badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 meta" : `${n} metas`}</span>;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? tr("1 meta") : `${n} ${tr("metas")}`}</span>;
             } else if (a.key === "habitos" && habReady) {
               const hoyStr = hoyLocal();
               const hechos = new Set(habitLogs.filter((l) => l.date === hoyStr).map((l) => l.habit_id)).size;
-              badge = <span className="chip" style={{ marginLeft: "auto" }}>{hechos} / {habits.length} hoy</span>;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{hechos} / {habits.length} {tr("hoy")}</span>;
             } else if (a.key === "trabajo" && traReady) {
               const n = projects.filter((p) => p.status === "activo").length;
-              badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? "1 proyecto activo" : `${n} proyectos activos`}</span>;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{n === 1 ? tr("1 proyecto activo") : `${n} ${tr("proyectos activos")}`}</span>;
             } else if (a.key === "salud" && salReady) {
               const hoyStr = hoyLocal();
               const prox = citas.filter((c) => c.date >= hoyStr).length;
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{prox === 1 ? tr("1 cita próxima") : `${prox} ${tr("citas próximas")}`}</span>;
             } else if (a.key === "aprendizaje" && aprReady) {
-              badge = <span className="chip" style={{ marginLeft: "auto" }}>{notas.length === 1 ? "1 nota" : `${notas.length} notas`}</span>;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{notas.length === 1 ? tr("1 nota") : `${notas.length} ${tr("notas")}`}</span>;
             } else if (a.key === "relaciones" && relReady) {
               const n = rels.filter((r) => needsReconnect(r, relLogs)).length;
               badge = n > 0
                 ? <span className="chip" style={{ marginLeft: "auto", background: "color-mix(in srgb,var(--rel) 20%,var(--paper))", color: "color-mix(in srgb,var(--rel) 75%,var(--ink))" }}>💌 {n} {tr("por reconectar")}</span>
-                : <span className="chip" style={{ marginLeft: "auto" }}>{rels.length === 1 ? "1 vínculo" : `${rels.length} vínculos`}</span>;
+                : <span className="chip" style={{ marginLeft: "auto" }}>{rels.length === 1 ? tr("1 vínculo") : `${rels.length} ${tr("vínculos")}`}</span>;
             }
             const pct = avanceArea(a.key);
             return (
               <Link to={a.path} key={a.key} className="area-row" style={{ display: "block" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span className="adot" style={{ width: 9, height: 9, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
-                  <span className="area-name">{a.name}</span>
+                  <span className="area-name">{tr("area." + a.key)}</span>
                   {pct !== null
                     ? <b className="tnum" style={{ marginLeft: "auto", fontSize: 13 }}>{pct}%</b>
                     : badge}
@@ -415,7 +416,7 @@ export function Inicio() {
           <h3>{tr("Avances recientes")}</h3>
           {activity.length === 0 ? (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-              Cada avance que registres en <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Dirección</Link> o en cualquier área aparecerá aquí: tu historia hacia tu mejor versión.
+              {tr("Cada avance que registres en")} <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>{tr("area.objetivos")}</Link> {tr("o en cualquier área aparecerá aquí: tu historia hacia tu mejor versión.")}
             </p>
           ) : (
             activity.slice(0, 6).map((a) => {
@@ -425,7 +426,7 @@ export function Inicio() {
                   <div className="row">
                     <span className="tdot" style={{ background: area?.color ?? "var(--accent)" }} />
                     <div className="tx">
-                      <b>{area?.name ?? "Dirección"}, {a.date}</b>
+                      <b>{area ? tr("area." + area.key) : tr("area.objetivos")}, {a.date}</b>
                       {a.description}
                     </div>
                   </div>
@@ -445,12 +446,12 @@ export function Inicio() {
           <div className="card sob" key={s.id}>
             <span className="seed">🌱</span>
             <div>
-              <div className="t1">Libre de {s.substance}</div>
+              <div className="t1">{tr("Libre de")} {s.substance}</div>
               <div className="t2 tnum">{humanizeDays(dias)}</div>
             </div>
             <div className="hitos">
-              {logrados.slice(-2).map((m) => <span className="hito" key={m.days}>✓ {m.label}</span>)}
-              {proximo ? <span className="hito next">Próximo: {proximo.label}</span> : <span className="hito">🎉 Más de 2 años</span>}
+              {logrados.slice(-2).map((m) => <span className="hito" key={m.days}>✓ {tr(m.label)}</span>)}
+              {proximo ? <span className="hito next">{tr("Próximo:")} {tr(proximo.label)}</span> : <span className="hito">🎉 {tr("Más de 2 años")}</span>}
             </div>
           </div>
         );

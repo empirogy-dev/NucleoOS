@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { Pencil, Plus, Rocket, Trash2 } from "lucide-react";
@@ -24,6 +25,7 @@ import {
 type Filtro = "todos" | DreamStatus;
 
 export function SuenosTab() {
+  const { t: tr } = useIdioma();
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [objetivos, setObjetivos] = useState<Objective[]>([]);
   const [filtro, setFiltro] = useState<Filtro>("todos");
@@ -75,12 +77,12 @@ export function SuenosTab() {
       <div className="ftabs">
         {(["todos", "idea", "importante", "meta"] as Filtro[]).map((f) => (
           <button key={f} className={"ftab" + (filtro === f ? " active" : "")} onClick={() => setFiltro(f)}>
-            {f === "todos" ? "Todos" : STATUS_SUENO[f]}
+            {f === "todos" ? tr("Todos") : tr(STATUS_SUENO[f])}
           </button>
         ))}
         <span style={{ flex: 1 }} />
         <button className="btn primary" onClick={() => setModal({ tipo: "nuevo" })}>
-          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} /> Nuevo sueño
+          <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} /> {tr("Nuevo sueño")}
         </button>
       </div>
 
@@ -113,13 +115,13 @@ export function SuenosTab() {
                 <div className="dc-foot">
                   {meta ? (
                     <Link to="/objetivos" className="chip" style={{ background: "color-mix(in srgb,var(--ok) 16%,var(--paper))", color: "var(--ok)" }}>
-                      🚀 En ejecución, {objectiveProgress(meta)}%
+                      🚀 {tr("En ejecución")}, {objectiveProgress(meta)}%
                     </Link>
                   ) : d.status === "meta" ? (
-                    <span className="chip">🚀 {STATUS_SUENO[d.status]}</span>
+                    <span className="chip">🚀 {tr(STATUS_SUENO[d.status])}</span>
                   ) : (
                     <span className="chip" style={d.status === "importante" ? { background: "color-mix(in srgb,var(--acc) 26%,var(--paper))", color: "var(--ink-soft)" } : undefined}>
-                      {STATUS_SUENO[d.status]}
+                      {tr(STATUS_SUENO[d.status])}
                     </span>
                   )}
                   <span style={{ flex: 1 }} />
@@ -157,6 +159,7 @@ export function SuenosTab() {
 }
 
 function DreamModal({ dream, onClose, onSaved }: { dream: Dream | null; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [title, setTitle] = useState(dream?.title ?? "");
   const [category, setCategory] = useState(dream?.category ?? "viajes");
   const [why, setWhy] = useState(dream?.why ?? "");
@@ -184,26 +187,26 @@ function DreamModal({ dream, onClose, onSaved }: { dream: Dream | null; onClose:
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
-        <h3 style={{ marginBottom: 4 }}>{dream ? "Editar sueño" : "Nuevo sueño"}</h3>
+        <h3 style={{ marginBottom: 4 }}>{dream ? tr("Editar sueño") : tr("Nuevo sueño")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
           Sin presión: esto es deseo, no compromiso. Convertirlo en meta es otro paso.
         </p>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
-          <div className="field"><label>¿Qué quieres vivir?</label>
+          <div className="field"><label>{tr("¿Qué quieres vivir?")}</label>
             <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Viajar a Japón, escribir un libro…" autoFocus /></div>
           <div className="frow">
-            <div className="field"><label>Categoría</label>
+            <div className="field"><label>{tr("Categoría")}</label>
               <Selector value={category} ariaLabel="Categoría del sueño" onChange={setCategory}
-                opciones={CATEGORIAS_SUENO.map((c) => ({ value: c.key, label: `${c.emoji} ${c.label}` }))} /></div>
-            <div className="field"><label>Estado</label>
+                opciones={CATEGORIAS_SUENO.map((c) => ({ value: c.key, label: `${c.emoji} ${tr(c.label)}` }))} /></div>
+            <div className="field"><label>{tr("Estado")}</label>
               <Selector value={status} ariaLabel="Estado del sueño"
-                opciones={[{ value: "idea", label: "Idea" }, { value: "importante", label: "Importante" }]}
+                opciones={[{ value: "idea", label: tr("Idea") }, { value: "importante", label: tr("Importante") }]}
                 onChange={(v) => setStatus(v as DreamStatus)} /></div>
           </div>
-          <div className="field"><label>¿Por qué lo quieres?</label>
+          <div className="field"><label>{tr("¿Por qué lo quieres?")}</label>
             <input value={why} onChange={(e) => setWhy(e.target.value)} placeholder="Lo que ese sueño te haría sentir" /></div>
-          <div className="field"><label>Prioridad emocional</label>
+          <div className="field"><label>{tr("Prioridad emocional")}</label>
             <div style={{ display: "flex", gap: 6 }}>
               {[1, 2, 3].map((p) => (
                 <button key={p} type="button" className={"moodbtn" + (priority === p ? " active" : "")}
@@ -214,7 +217,7 @@ function DreamModal({ dream, onClose, onSaved }: { dream: Dream | null; onClose:
               ))}
             </div>
           </div>
-          <div className="field"><label>Notas (opcional)</label>
+          <div className="field"><label>{tr("Notas (opcional)")}</label>
             <textarea className="vision-edit" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ideas, links, detalles…" /></div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar sueño"}</button>
         </form>

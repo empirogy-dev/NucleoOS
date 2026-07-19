@@ -130,7 +130,7 @@ export function TrabajoPage() {
             <div className="card stat"><div className="k">{tr("stat.tra.activos")}</div><div className="v tnum">{activos}</div></div>
             <div className="card stat"><div className="k">{tr("stat.tra.horas7")}</div><div className="v tnum">{Math.round(horasSemana * 10) / 10} h</div></div>
             <div className="card stat"><div className="k">{tr("stat.tra.registros")}</div><div className="v tnum">{logs.length}</div></div>
-            <div className="card stat"><div className="k">{tr("stat.tra.animo")}</div><div className="v">{animo !== null ? `${moodEmoji(Math.round(animo))} ${animo}` : "sin datos"}</div></div>
+            <div className="card stat"><div className="k">{tr("stat.tra.animo")}</div><div className="v">{animo !== null ? `${moodEmoji(Math.round(animo))} ${animo}` : tr("sin datos")}</div></div>
           </div>
 
           <MetasDeArea area="trabajo" />
@@ -143,7 +143,7 @@ export function TrabajoPage() {
               {projects.length === 0 && (
                 <div className="card pad">
                   <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                    Sin proyectos todavía. Crea el primero: esa idea que quieres desarrollar merece un lugar.
+                    {tr("Sin proyectos todavía. Crea el primero: esa idea que quieres desarrollar merece un lugar.")}
                   </p>
                 </div>
               )}
@@ -158,8 +158,8 @@ export function TrabajoPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <b style={{ fontSize: 14.5 }}>{p.name}</b>
                         <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
-                          {horas > 0 ? `${Math.round(horas * 10) / 10} horas dedicadas` : "sin horas registradas"}
-                          {bloques.length > 0 ? `, 🎯 ${bloques.length} ${bloques.length === 1 ? "bloque" : "bloques"} de foco (${minFoco} min) esta semana` : ""}
+                          {horas > 0 ? `${Math.round(horas * 10) / 10} ${tr("horas dedicadas")}` : tr("sin horas registradas")}
+                          {bloques.length > 0 ? `, 🎯 ${bloques.length} ${bloques.length === 1 ? tr("bloque") : tr("bloques")} ${tr("de foco")} (${minFoco} min) ${tr("esta semana")}` : ""}
                           {p.description ? `, ${p.description}` : ""}
                         </div>
                       </div>
@@ -167,7 +167,7 @@ export function TrabajoPage() {
                         <button className="chip" style={{ border: "none", cursor: "pointer" }}
                           title="Arrancar un bloque de foco para este proyecto"
                           onClick={() => abrirPomodoro({ projectId: p.id, projectName: p.name })}>
-                          🎯 Foco
+                          {tr("🎯 Foco")}
                         </button>
                       )}
                       <button className="chip" style={{ background: tone.bg, color: tone.fg, border: "none", cursor: "pointer" }}
@@ -178,7 +178,7 @@ export function TrabajoPage() {
                           await updateProject(p.id, { status: next });
                           void reload();
                         }}>
-                        {STATUS_LABELS[p.status]}
+                        {tr(STATUS_LABELS[p.status])}
                       </button>
                       <button className="xdel" aria-label="Eliminar proyecto" onClick={async () => { await deleteProject(p.id); void reload(); }}>
                         <Trash2 size={14} />
@@ -187,14 +187,14 @@ export function TrabajoPage() {
                     {ptasks.some((t) => t.project_id === p.id) || p.progress > 0 ? (
                       <div className="bar" style={{ margin: "12px 0 0" }}>
                         <div className="top">
-                          <span>{ptasks.some((t) => t.project_id === p.id) ? "avance por checklist" : "avance"}</span>
+                          <span>{ptasks.some((t) => t.project_id === p.id) ? tr("avance por checklist") : tr("avance")}</span>
                           <b className="tnum">{p.progress}%</b>
                         </div>
                         <div className="track"><div className="fill" style={{ width: `${p.progress}%`, background: "var(--tra)" }} /></div>
                       </div>
                     ) : (
                       <p style={{ fontSize: 12, color: "var(--muted)", margin: "10px 0 0" }}>
-                        El porcentaje de un proyecto se mide con su checklist de pasos (créalo abajo). Tus horas y bloques de foco ya quedan contados arriba, y empujan la meta conectada en Dirección.
+                        {tr("El porcentaje de un proyecto se mide con su checklist de pasos (créalo abajo). Tus horas y bloques de foco ya quedan contados arriba, y empujan la meta conectada en Dirección.")}
                       </p>
                     )}
                     {!ptasks.some((t) => t.project_id === p.id) && p.progress > 0 && (
@@ -211,10 +211,10 @@ export function TrabajoPage() {
 
             {/* Bitácora */}
             <div className="card panel" style={{ alignSelf: "start" }}>
-              <h3>Bitácora de trabajo</h3>
+              <h3>{tr("Bitácora de trabajo")}</h3>
               {logs.length === 0 && (
                 <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                  Registra tu jornada: qué hiciste, cuántas horas y cómo te sentiste.
+                  {tr("Registra tu jornada: qué hiciste, cuántas horas y cómo te sentiste.")}
                 </p>
               )}
               {logs.slice(0, 8).map((l) => {
@@ -249,6 +249,7 @@ export function TrabajoPage() {
 
 /** El checklist del proyecto: los pasos marcados calculan el avance solos. */
 function ChecklistProyecto({ projectId, tasks, onChanged }: { projectId: string; tasks: ProjectTask[]; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const [abierto, setAbierto] = useState(false);
   const [nueva, setNueva] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -295,7 +296,7 @@ function ChecklistProyecto({ projectId, tasks, onChanged }: { projectId: string;
   return (
     <div style={{ marginTop: 10 }}>
       <button className="linklike" onClick={() => setAbierto(!abierto)}>
-        {abierto ? "Ocultar checklist" : del.length > 0 ? `Checklist: ${listas} de ${del.length} pasos` : "＋ Agregar checklist de pasos"}
+        {abierto ? tr("Ocultar checklist") : del.length > 0 ? `Checklist: ${listas} ${tr("de")} ${del.length} ${tr("pasos")}` : tr("＋ Agregar checklist de pasos")}
       </button>
       {abierto && (
         <div style={{ marginTop: 8 }}>
@@ -322,7 +323,7 @@ function ChecklistProyecto({ projectId, tasks, onChanged }: { projectId: string;
           ))}
           <form onSubmit={agregar} style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <input className="input-inline" style={{ flex: 1 }} value={nueva} onChange={(e) => setNueva(e.target.value)}
-              placeholder="Un paso concreto: armar el pitch, estudiar el capítulo 2…" />
+              placeholder={tr("Un paso concreto: armar el pitch, estudiar el capítulo 2…")} />
             <button className="btn ghost" type="submit" disabled={!nueva.trim()}>Anotar</button>
           </form>
           <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
@@ -347,6 +348,7 @@ function Head() {
 }
 
 function ProjectModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
@@ -359,19 +361,20 @@ function ProjectModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   }
 
   return (
-    <ModalShell title="Nuevo proyecto" onClose={onClose}>
+    <ModalShell title={tr("btn.nuevoproyecto")} onClose={onClose}>
       <form onSubmit={save}>
-        <div className="field"><label>Nombre</label>
+        <div className="field"><label>{tr("com.nombre")}</label>
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="NucleoOS" autoFocus /></div>
-        <div className="field"><label>Descripción (opcional)</label>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mi sistema de vida" /></div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Crear proyecto"}</button>
+        <div className="field"><label>{tr("Descripción (opcional)")}</label>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={tr("Mi sistema de vida")} /></div>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("Crear proyecto")}</button>
       </form>
     </ModalShell>
   );
 }
 
 function WorkLogModal({ projects, onClose, onSaved }: { projects: Project[]; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [kind, setKind] = useState<"empleo" | "proyecto">("empleo");
   const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
   const [description, setDescription] = useState("");
@@ -395,32 +398,32 @@ function WorkLogModal({ projects, onClose, onSaved }: { projects: Project[]; onC
   }
 
   return (
-    <ModalShell title="Registrar jornada" onClose={onClose}>
+    <ModalShell title={tr("btn.registrarjornada")} onClose={onClose}>
       <div className="seg">
-        <button type="button" className={"segbtn" + (kind === "empleo" ? " active" : "")} onClick={() => setKind("empleo")}>Mi empleo</button>
-        <button type="button" className={"segbtn" + (kind === "proyecto" ? " active" : "")} onClick={() => setKind("proyecto")}>Un proyecto</button>
+        <button type="button" className={"segbtn" + (kind === "empleo" ? " active" : "")} onClick={() => setKind("empleo")}>{tr("Mi empleo")}</button>
+        <button type="button" className={"segbtn" + (kind === "proyecto" ? " active" : "")} onClick={() => setKind("proyecto")}>{tr("Un proyecto")}</button>
       </div>
       <form onSubmit={save}>
         {kind === "proyecto" && (
           <div className="field"><label>Proyecto</label>
             <Selector value={projectId} ariaLabel="Proyecto de la jornada"
-              placeholder={projects.length === 0 ? "Primero crea un proyecto" : "Elige el proyecto"}
+              placeholder={projects.length === 0 ? tr("Primero crea un proyecto") : tr("Elige el proyecto")}
               opciones={projects.map((p) => ({ value: p.id, label: `💼 ${p.name}` }))}
               onChange={setProjectId} /></div>
         )}
-        <div className="field"><label>¿Qué hiciste?</label>
+        <div className="field"><label>{tr("¿Qué hiciste?")}</label>
           <textarea className="vision-edit" rows={2} value={description} autoFocus
-            placeholder={kind === "empleo" ? "Por ejemplo: turno normal, cerré dos reportes." : "Por ejemplo: avancé en el módulo de finanzas."}
+            placeholder={kind === "empleo" ? tr("Por ejemplo: turno normal, cerré dos reportes.") : tr("Por ejemplo: avancé en el módulo de finanzas.")}
             onChange={(e) => setDescription(e.target.value)} /></div>
         <div className="frow">
-          <div className="field"><label>Horas</label>
+          <div className="field"><label>{tr("Horas")}</label>
             <input type="number" min="0" step="0.5" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="8" /></div>
           <div className="field"><label>Fecha</label>
             <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
         </div>
         {kind === "empleo" && (
           <div className="field">
-            <label>¿Cómo te sentiste en el trabajo?</label>
+            <label>{tr("¿Cómo te sentiste en el trabajo?")}</label>
             <div className="moods">
               {MOODS.map((m) => (
                 <button key={m.value} type="button" title={m.label}
@@ -432,7 +435,7 @@ function WorkLogModal({ projects, onClose, onSaved }: { projects: Project[]; onC
             </div>
           </div>
         )}
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("com.guardar")}</button>
       </form>
     </ModalShell>
   );
