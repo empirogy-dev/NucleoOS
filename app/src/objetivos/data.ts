@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { fmtFechaLocal } from "../lib/fechas";
 import { TablesMissingError, listGoals } from "../finanzas/data";
 import type { Goal } from "../finanzas/types";
 import { listExercise, listHabitLogs, type ExerciseLog, type HabitLog } from "../habitos/data";
@@ -121,7 +122,10 @@ export async function cargarFuentes(): Promise<Fuentes> {
 
 /** Valor real de una métrica automática, contado desde que la meta nació. */
 export function valorAuto(o: Objective, f: Fuentes): number {
-  const desde = o.created_at ? o.created_at.slice(0, 10) : "0000-00-00";
+  // La fecha de nacimiento de la meta se mira en TU día, no en UTC: una
+  // meta creada de tarde en Vancouver ya era "de mañana" en hora universal
+  // y no contaba los registros de su propio primer día.
+  const desde = o.created_at ? fmtFechaLocal(new Date(o.created_at)) : "0000-00-00";
   if (o.auto_metric === "mov_sesiones") return f.ejercicio.filter((e) => e.date >= desde).length;
   if (o.auto_metric === "mov_minutos") return f.ejercicio.filter((e) => e.date >= desde).reduce((s, e) => s + e.minutes, 0);
   if (o.auto_metric === "mente_sesiones") return f.sesiones.filter((s) => s.fecha >= desde).length;
