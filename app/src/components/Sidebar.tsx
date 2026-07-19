@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Brain, CalendarDays, Home, LineChart, LogOut, PersonStanding, Sparkles, type LucideIcon } from "lucide-react";
+import { Brain, CalendarDays, Home, LineChart, LogOut, PersonStanding, Sparkles, X, type LucideIcon } from "lucide-react";
 import { areaPor } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { LogoAtomo } from "./LogoAtomo";
@@ -69,6 +69,9 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
           <b>NucleoOS</b>
           <small>Un sistema para cambiar el rumbo de tu vida</small>
         </div>
+        <button className="side-close" aria-label="Cerrar menú" onClick={onNavigate}>
+          <X size={15} />
+        </button>
       </div>
       <nav className="nav">
         <Seccion label="Panorama" items={PANORAMA} onNavigate={onNavigate} />

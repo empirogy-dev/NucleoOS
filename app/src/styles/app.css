@@ -122,10 +122,15 @@ button{font-family:inherit}
 .tp-close{margin-top:18px;display:flex;justify-content:flex-end}
 
 /* ================= RESPONSIVE ================= */
+/* Con el menú (u otro panel) abierto, el fondo no se mueve: en celular,
+   scrollear detrás colapsa la barra del navegador y todo baila. */
+.no-scroll{overflow:hidden}
+.side-close{display:none;width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);place-items:center;cursor:pointer;margin-left:auto;flex:none}
 @media (max-width:860px){
-  .sidebar{position:fixed;left:0;top:0;z-index:40;transform:translateX(-100%);box-shadow:var(--sh)}
+  .sidebar{position:fixed;left:0;top:0;height:100dvh;z-index:40;transform:translateX(-100%);box-shadow:var(--sh)}
   .sidebar.open{transform:translateX(0)}
   .hamb{display:grid}
+  .side-close{display:grid}
   /* !important porque varias páginas fijan gridTemplateColumns en línea
      (más específico que esta clase) para lograr columnas iguales en
      escritorio; en celular esa regla debe ganar sí o sí. */
@@ -488,5 +493,10 @@ button{font-family:inherit}
 .notif-badge.urgente{background:var(--err)}
 .iconbtn{position:relative}
 .notif-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:60;width:300px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh);padding:10px}
+/* En celular la campana es un panel fijo a lo ancho, con su propio scroll:
+   anclada al ícono se salía de la pantalla. */
+@media (max-width:860px){
+  .notif-pop{position:fixed;top:62px;left:12px;right:12px;width:auto;max-height:calc(100dvh - 84px);overflow-y:auto}
+}
 .notif-item{display:flex;gap:10px;align-items:center;padding:8px 6px;border-radius:9px}
 .notif-item:hover{background:var(--line-soft)}

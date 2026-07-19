@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Menu, Palette, Settings } from "lucide-react";
 import { Sidebar } from "./Sidebar";
@@ -30,6 +30,13 @@ export function Layout() {
   const { fecha, esHoy, volverAHoy } = useFechaActiva();
   const inicial = (displayName || session?.user?.email || "?").trim().charAt(0).toUpperCase();
   const current = NOMBRES[loc.pathname] ?? AREAS.find((a) => a.path === loc.pathname)?.name ?? "";
+
+  // Con el menú abierto, el fondo queda quieto: en celular, scrollear
+  // detrás mueve la barra del navegador y desarma el panel.
+  useEffect(() => {
+    document.body.classList.toggle("no-scroll", navOpen);
+    return () => document.body.classList.remove("no-scroll");
+  }, [navOpen]);
 
   return (
     <div className="app">
