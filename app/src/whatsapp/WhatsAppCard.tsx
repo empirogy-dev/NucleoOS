@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { Send } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useIdioma } from "../idioma/IdiomaProvider";
 
-// Núcleo WhatsApp (docs/whatsapp/): la tarjeta del vínculo en Ajustes.
+// Núcleo por chat (docs/whatsapp/): la tarjeta del vínculo de Telegram en Ajustes.
+// Las tablas wa_* sirven igual: la columna telefono guarda el chat_id.
 // Genera el código de 6 dígitos, muestra el estado del vínculo, los
 // switches de avisos y permite desvincular. Todo lo demás vive en el chat.
 
@@ -80,7 +81,7 @@ export function WhatsAppCard() {
 
   async function desvincular() {
     if (!supabase || !vinculo) return;
-    if (!window.confirm(tr("¿Desvincular tu WhatsApp? Tus datos en la app quedan intactos."))) return;
+    if (!window.confirm(tr("¿Desvincular tu Telegram? Tus datos en la app quedan intactos."))) return;
     await supabase.from("wa_vinculos").delete().neq("telefono", "");
     setVinculo(null);
     setCodigo(null);
@@ -89,9 +90,9 @@ export function WhatsAppCard() {
   if (faltaMigracion) {
     return (
       <div className="card pad">
-        <h3 style={{ fontSize: 15, marginBottom: 4 }}><MessageCircle size={14} style={{ verticalAlign: "-2px" }} /> WhatsApp</h3>
+        <h3 style={{ fontSize: 15, marginBottom: 4 }}><Send size={14} style={{ verticalAlign: "-2px" }} /> Telegram</h3>
         <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-          {tr("Para conectar tu WhatsApp, corre")} <code>supabase/migrations/0051_whatsapp.sql</code> {tr("en el SQL Editor de Supabase.")}
+          {tr("Para conectar tu Telegram, corre")} <code>supabase/migrations/0051_whatsapp.sql</code> {tr("en el SQL Editor de Supabase.")}
         </p>
       </div>
     );
@@ -99,12 +100,12 @@ export function WhatsAppCard() {
 
   return (
     <div className="card pad">
-      <h3 style={{ fontSize: 15, marginBottom: 4 }}><MessageCircle size={14} style={{ verticalAlign: "-2px" }} /> WhatsApp</h3>
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}><Send size={14} style={{ verticalAlign: "-2px" }} /> Telegram</h3>
 
       {vinculo ? (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-            {tr("Vinculado al")} <b style={{ color: "var(--ink)" }}>{vinculo.telefono}</b>.{" "}
+            {tr("Tu Telegram está vinculado.")}{" "}
             {tr("Cuéntale lo que hiciste y él lo registra en la app. Escríbele \"silencio\" para pausar sus avisos.")}
           </p>
           {!vinculo.avisos_activos && (
@@ -129,12 +130,12 @@ export function WhatsAppCard() {
       ) : (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            {tr("Vincula tu número y regístralo todo por chat o audio: \"hice 30 min de gimnasio\", \"tomé 2 vasos de agua\", \"recuérdame comprar pan\". El bot escribe en tu app por ti.")}
+            {tr("Vincula tu Telegram y regístralo todo por chat o audio: \"hice 30 min de gimnasio\", \"tomé 2 vasos de agua\", \"recuérdame comprar pan\". El bot escribe en tu app por ti.")}
           </p>
           {codigo ? (
             <>
               <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 6 }}>
-                {tr("Mándale este mensaje al bot por WhatsApp (el código dura 10 minutos):")}
+                {tr("Ábrele un chat al bot de NucleoOS en Telegram y mándale este mensaje (el código dura 10 minutos):")}
               </p>
               <p className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 26, fontWeight: 600, letterSpacing: ".04em", marginBottom: 10 }}>
                 vincular {codigo}

@@ -1,5 +1,9 @@
 # Templates de Meta — Núcleo WhatsApp
 
+> ⏸ **Con Telegram (canal v1) esto NO se necesita**: Telegram no tiene ventana de 24 h
+> ni templates, el Cartero escribe gratis cuando quiera. Este archivo queda guardado para
+> cuando se active WhatsApp como canal premium del SaaS.
+
 > Los 6 templates que el Cartero necesita para avisarte cuando la ventana de 24 horas está
 > cerrada. **Se mandan a aprobación el día 1** (demoran de horas a días). Se crean en
 > WhatsApp Manager de Meta (business.facebook.com → Message templates), categoría **Utility**, un template por idioma.

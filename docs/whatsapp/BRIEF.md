@@ -30,7 +30,7 @@ relacionado: ARQUITECTURA-OBJETIVO.md
 ## Decisiones fijas (NO re-discutir en el plan)
 | Tema | Decisión |
 |------|----------|
-| Proveedor WhatsApp | **Meta WhatsApp Cloud API (directa)**. YCloud no acepta cuentas del país de Bárbara; la API oficial funciona en Canadá, es gratis para responder dentro de la ventana y trae número de prueba. Mismos conceptos del curso (webhook, ventana 24 h, templates) |
+| Canal v1 | **Telegram Bot API**: gratis e ilimitado, sin templates ni ventana de 24 h, bot en 5 minutos con BotFather. El Cartero escribe proactivo sin costo. **WhatsApp (Meta Cloud API) queda como canal premium futuro del SaaS**: YCloud rechazó el país y Meta cobra los avisos; su código vive en el historial git y solo cambia entrada/salida |
 | LLM | **Gemini vía Edge Function** (el mismo motor seguro del coach de la app, con tope diario en `ia_uso`). OpenRouter queda como opción v2 si se quiere rutear modelos |
 | Transcripción de audio | **Gemini nativo** (recibe audio directamente, sin servicio aparte) |
 | Stack | **Supabase Edge Functions** (webhook + cron) + la app Vite existente. **Sin Next.js**: NucleoOS ya tiene su frontend |

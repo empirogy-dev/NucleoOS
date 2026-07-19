@@ -11,21 +11,18 @@
 //   SEC-N5: solo se descargan medios cuyo host sea de Meta/WhatsApp.
 //   COST-N1: comparte el tope diario de ia_uso con la app.
 //
-// Secretos: GEMINI_API_KEY · WHATSAPP_TOKEN · WHATSAPP_PHONE_ID
-// (proveedor: Meta WhatsApp Cloud API, directo)
+// Secretos: GEMINI_API_KEY · TELEGRAM_BOT_TOKEN
+// (proveedor: Telegram Bot API, gratis y sin ventana de 24 h)
 // Esta función se protege sola: exige el service role key en Authorization.
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
-const GRAPH = "https://graph.facebook.com/v23.0";
 const MODEL = "gemini-flash-latest";
 const TOPE_DIARIO_IA = 80;        // compartido con la Edge Function "ia" (tabla ia_uso)
 const MAX_TOOLS_POR_TURNO = 5;
 const MAX_ESCRITURAS_DIA = 50;
 const LEASE_MS = 5 * 60_000;
 const MAX_INTENTOS = 3;
-// Dónde viven los medios de WhatsApp que Meta nos entrega (SEC-N5):
-const HOSTS_MEDIA = ["lookaside.fbsbx.com", ".fbcdn.net", ".whatsapp.net", "graph.facebook.com"];
 
 function admin(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -42,38 +39,31 @@ function ayerEn(timezone: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(d);
 }
 
-async function enviarTexto(telefono: string, texto: string): Promise<void> {
-  const token = Deno.env.get("WHATSAPP_TOKEN");
-  const phoneId = Deno.env.get("WHATSAPP_PHONE_ID");
-  if (!token || !phoneId) return;
-  await fetch(`${GRAPH}/${phoneId}/messages`, {
+async function enviarTexto(chatId: string, texto: string): Promise<void> {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  if (!token) return;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: telefono.replace("+", ""),
-      type: "text",
-      text: { body: texto },
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: Number(chatId), text: texto }),
   }).catch(() => undefined);
 }
 
-/** Meta entrega los medios en dos pasos: el media ID se cambia por una URL
- *  temporal (Graph API) y esa URL se descarga con el mismo token. El host
- *  de la URL se valida contra la allowlist (SEC-N5). */
-async function bajarMedia(mediaId: string): Promise<{ b64: string; mime: string } | null> {
+/** Telegram entrega los medios en dos pasos: getFile cambia el file_id por
+ *  un file_path, y ese path se descarga del host oficial de Telegram
+ *  (api.telegram.org, cumpliendo SEC-N5 por construcción). */
+async function bajarMedia(fileId: string): Promise<{ b64: string; mime: string } | null> {
   try {
-    const token = Deno.env.get("WHATSAPP_TOKEN");
-    if (!token || !/^[\w-]+$/.test(mediaId)) return null;
-    const meta = await fetch(`${GRAPH}/${mediaId}`, { headers: { Authorization: `Bearer ${token}` } });
+    const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    if (!token || !/^[\w-]+$/.test(fileId)) return null;
+    const meta = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
     if (!meta.ok) return null;
     const info = await meta.json();
-    const url = new URL(String(info?.url ?? ""));
-    if (url.protocol !== "https:") return null;
-    if (!HOSTS_MEDIA.some((h) => url.hostname === h || url.hostname.endsWith(h))) return null;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, redirect: "error" });
+    const path = String(info?.result?.file_path ?? "");
+    if (!path || path.includes("..")) return null;
+    const res = await fetch(`https://api.telegram.org/file/bot${token}/${path}`, { redirect: "error" });
     if (!res.ok) return null;
-    const mime = info?.mime_type ?? res.headers.get("content-type") ?? "application/octet-stream";
+    const mime = res.headers.get("content-type") ?? (path.endsWith(".oga") || path.endsWith(".ogg") ? "audio/ogg" : "application/octet-stream");
     const buf = new Uint8Array(await res.arrayBuffer());
     if (buf.length > 8 * 1024 * 1024) return null; // 8 MB de tope
     let bin = "";
@@ -557,7 +547,7 @@ Deno.serve(async (req: Request) => {
           try {
             const info = JSON.parse(m.contenido ?? "{}");
             if (info.caption) bloque.push({ text: `[caption de ${m.tipo}] ${info.caption}` });
-            const media = info.mediaId ? await bajarMedia(String(info.mediaId)) : null;
+            const media = info.fileId ? await bajarMedia(String(info.fileId)) : null;
             if (media) bloque.push({ inlineData: { mimeType: media.mime, data: media.b64 } });
             else bloque.push({ text: `[${m.tipo} que no se pudo leer]` });
           } catch {
