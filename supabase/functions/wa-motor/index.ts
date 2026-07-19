@@ -492,16 +492,30 @@ async function contextoDe(db: SupabaseClient, userId: string, timezone: string):
 function promptSistema(idioma: string, timezone: string): string {
   const idiomaTxt = idioma === "en" ? "inglés" : idioma === "pt" ? "portugués" : "español";
   return (
-    "Eres el asistente de WhatsApp de NucleoOS, la app de vida de la usuaria. Tu trabajo es el de un ESCRIBA: " +
-    "cuando ella cuenta algo que hizo (ejercicio, comida, agua, sueño, tareas, hábitos, contactos con personas, " +
-    "trabajo, avances, diario), lo registras con las tools. Reglas de oro:\n" +
+    "Eres el asistente de chat de NucleoOS, la app de vida de la usuaria. Tu trabajo es el de un ESCRIBA: " +
+    "cuando ella cuenta algo que hizo, lo REGISTRAS en su app llamando a las tools.\n\n" +
+    "REGLA NÚMERO UNO, LA MÁS IMPORTANTE: si el mensaje cuenta algo que ya pasó (ejercicio, comida, agua, " +
+    "sueño, una tarea, un hábito, un contacto con alguien, trabajo, un avance, algo del diario), TIENES QUE " +
+    "llamar la tool correspondiente. Está TERMINANTEMENTE PROHIBIDO responder \"listo\", \"registrado\" o " +
+    "\"anotado\" sin haber llamado antes a la tool: eso sería mentirle a la usuaria sobre sus propios datos.\n\n" +
+    "Ejemplos de lo que se espera de ti:\n" +
+    "· \"hice 30 minutos de gimnasio\" → llama registrar_ejercicio con tipo \"Gimnasio\" y minutos 30.\n" +
+    "· \"salí a caminar media hora\" → registrar_ejercicio con tipo \"Caminata\" y minutos 30.\n" +
+    "· \"tomé dos vasos de agua\" → registrar_agua con vasos 2.\n" +
+    "· \"recuérdame comprar pan\" → crear_tarea con titulo \"comprar pan\".\n" +
+    "· \"me comí un yogur con granola\" → registrar_plato con esa descripción.\n" +
+    "· \"llamé a mi mamá\" → registrar_interaccion con persona \"mamá\".\n" +
+    "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n\n" +
+    "Resto de las reglas:\n" +
     "1. NUNCA inventes montos, fechas ni horas: si algo es ambiguo, pregunta en una línea.\n" +
-    "2. Un mensaje puede traer VARIAS cosas: registra todas.\n" +
-    "3. Confirma SIEMPRE en pocas líneas lo que registraste, cálido y breve, estilo coach consciente del TDAH. Celebra los logros.\n" +
-    "4. Si la usuaria solo conversa o pregunta cómo va, usa ver_dia y responde con sus datos, sin registrar nada.\n" +
-    "5. No des consejo médico ni financiero profesional. No escribas código ni hagas tareas ajenas a la vida de la usuaria: " +
-    "redirige con cariño a lo que sí haces.\n" +
-    "6. No uses guiones como puntuación. Emojis con moderación.\n" +
+    "2. Un mensaje puede traer VARIAS cosas: llama a todas las tools que hagan falta.\n" +
+    "3. Después de registrar, confirma en pocas líneas lo que quedó guardado, cálido y breve, estilo coach " +
+    "consciente del TDAH. Celebra los logros.\n" +
+    "4. Si el mensaje es una nota de voz, entiende lo que dice y actúa igual que si te lo hubieran escrito.\n" +
+    "5. Si solo conversa o pregunta cómo va, usa ver_dia y responde con sus datos, sin registrar nada.\n" +
+    "6. No des consejo médico ni financiero profesional. No escribas código ni hagas tareas ajenas a la vida " +
+    "de la usuaria: redirige con cariño a lo que sí haces.\n" +
+    "7. No uses guiones como puntuación. Emojis con moderación.\n" +
     `Responde SIEMPRE en ${idiomaTxt}. La fecha de hoy para la usuaria (timezone ${timezone}) es ${hoyEn(timezone)}.`
   );
 }
@@ -622,7 +636,16 @@ Deno.serve(async (req: Request) => {
             const info = JSON.parse(m.contenido ?? "{}");
             if (info.caption) bloque.push({ text: `[caption de ${m.tipo}] ${info.caption}` });
             const media = info.fileId ? await bajarMedia(String(info.fileId)) : null;
-            if (media) bloque.push({ inlineData: { mimeType: media.mime, data: media.b64 } });
+            if (media) {
+              // Una guía antes del medio: sin esto el modelo a veces solo
+              // describe el audio en vez de actuar sobre lo que dice.
+              bloque.push({
+                text: m.tipo === "audio"
+                  ? "[nota de voz de la usuaria: entiende lo que dice y REGISTRA con las tools lo que cuenta que hizo]"
+                  : "[foto de la usuaria: si es comida, regístrala con registrar_plato]",
+              });
+              bloque.push({ inlineData: { mimeType: media.mime, data: media.b64 } });
+            }
             else bloque.push({ text: `[${m.tipo} que no se pudo leer]` });
           } catch {
             bloque.push({ text: `[${m.tipo} ilegible]` });
@@ -656,7 +679,21 @@ Deno.serve(async (req: Request) => {
 
       const ctx: Ctx = { db, userId: lote.user_id, timezone: vinculo.timezone, loteId: lote.id, escrituras: [] };
       const contexto = await contextoDe(db, lote.user_id, vinculo.timezone);
-      const respuesta = await turnoGemini(bloque, ctx, idioma, contexto);
+      let respuesta = await turnoGemini(bloque, ctx, idioma, contexto);
+
+      // Red de seguridad: si el modelo dijo que guardó algo pero ninguna tool
+      // escribió, se lo avisamos. Prefiero admitir el fallo antes que dejar a
+      // la usuaria creyendo que su registro quedó hecho.
+      const suenaAConfirmacion = /(list[oa]|registr|anot|guard|apunt)/i.test(respuesta);
+      if (ctx.escrituras.length === 0 && suenaAConfirmacion) {
+        respuesta += "
+
+⚠️ Ojo: no alcancé a guardarlo en la app. ¿Me lo cuentas de nuevo con el detalle (qué hiciste y cuánto)?";
+        await db.from("wa_eventos").insert({
+          user_id: lote.user_id, lote_id: lote.id, tipo: "error",
+          detalle: { motivo: "confirmo sin registrar" },
+        });
+      }
 
       await enviarTexto(vinculo.telefono, respuesta.slice(0, 3000));
       await db.from("wa_mensajes").insert({
