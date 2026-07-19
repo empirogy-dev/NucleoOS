@@ -19,8 +19,8 @@
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
-const GRACIA_TEXTO_MS = 20_000; // silencio antes de procesar
-const GRACIA_AUDIO_MS = 35_000; // los audios suelen venir con un "ah y también"
+const GRACIA_TEXTO_MS = 12_000; // silencio antes de procesar
+const GRACIA_AUDIO_MS = 22_000; // los audios suelen venir con un "ah y también"
 
 // Las tablas de las que `deshacer` puede borrar (solo registros del agente, <24 h).
 const TABLAS_DESHACER = new Set([
@@ -239,6 +239,22 @@ Deno.serve(async (req: Request) => {
       contenido: media ?? texto, wamid: updateId, lote_id: loteId ?? null,
     });
     await evento(db, { user_id: vinculo.user_id, lote_id: loteId ?? null, tipo: "inbound", detalle: { tipo } });
+
+    // Despertamos al motor apenas se cumpla el silencio, en vez de esperar al
+    // cron: así la respuesta llega en segundos y no en un minuto largo. Si
+    // esta llamada no prospera, el cron lo recoge igual un momento después.
+    const llaveMotor = (Deno.env.get("WA_CRON_SECRET") ?? "").trim();
+    const enSegundoPlano = (globalThis as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime;
+    if (llaveMotor && enSegundoPlano) {
+      enSegundoPlano.waitUntil((async () => {
+        await new Promise((r) => setTimeout(r, gracia + 1500));
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-motor`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${llaveMotor}` },
+          body: "{}",
+        }).catch(() => undefined);
+      })());
+    }
     return ok();
   } catch (e) {
     await evento(db, { tipo: "error", detalle: { donde: "wa-entrada", error: String(e).slice(0, 300) } }).catch(() => undefined);
