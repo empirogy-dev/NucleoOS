@@ -67,7 +67,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         <div className="logo"><LogoAtomo size={22} /></div>
         <div>
           <b>NucleoOS</b>
-          <small>El sistema operativo de tu vida</small>
+          <small>Un sistema para cambiar el rumbo de tu vida</small>
         </div>
       </div>
       <nav className="nav">

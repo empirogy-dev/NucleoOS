@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CampoFecha } from "../components/CampoFecha";
+import { CampoHora } from "../components/CampoHora";
 import { Plus, Trash2 } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
 import { daysUntil, dueLabel } from "../finanzas/types";
@@ -315,7 +316,7 @@ function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <div className="field"><label>Fecha</label>
             <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha de la cita" conBorrar={false} /></div>
           <div className="field"><label>Hora (opcional)</label>
-            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
+            <CampoHora value={time} onChange={setTime} ariaLabel="Hora de la cita" /></div>
         </div>
         <div className="field"><label>Lugar (opcional)</label>
           <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Clínica, en línea…" /></div>

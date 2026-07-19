@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { bajarDeLaNube } from "../lib/nube";
 
 interface AuthCtx {
   session: Session | null;
@@ -27,11 +28,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      // Antes de mostrar la app, el espejo de la nube baja tus datos del
+      // navegador (Mente, libros, rutinas...) para que cualquier
+      // dispositivo parta con lo mismo.
+      if (data.session) await bajarDeLaNube();
       setSession(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "SIGNED_IN" && s) {
+        // Login recién hecho: bajar el espejo antes de soltar las páginas.
+        setLoading(true);
+        void bajarDeLaNube().finally(() => {
+          setSession(s);
+          setLoading(false);
+        });
+        return;
+      }
       setSession(s);
     });
     return () => sub.subscription.unsubscribe();

@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { CampoFecha } from "../components/CampoFecha";
+import { CampoHora } from "../components/CampoHora";
+import { hoyLocal } from "../lib/fechas";
 import { ultimoBocado, type Meal } from "./comidas";
 
 // Contador de ayuno: horas desde tu última comida, con una meta que eliges.
@@ -32,6 +35,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   const [meta, setMeta] = useState(metaGuardada);
   const [ahora, setAhora] = useState(() => Date.now());
   const [editandoHora, setEditandoHora] = useState(false);
+  const [fechaManual, setFechaManual] = useState(hoyLocal());
   const [horaManual, setHoraManual] = useState("");
 
   // Late un minuto: el contador avanza mientras la miras.
@@ -47,8 +51,8 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   }
 
   function guardarHoraManual() {
-    if (!horaManual) return;
-    const d = new Date(horaManual);
+    if (!horaManual || !fechaManual) return;
+    const d = new Date(`${fechaManual}T${horaManual}`);
     if (isNaN(d.getTime()) || d.getTime() > Date.now()) return;
     localStorage.setItem(LS_MANUAL, d.toISOString());
     setAhora(Date.now());
@@ -67,10 +71,14 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
         Los dos botones hacen lo mismo por dentro: el ayuno siempre parte en tu último bocado. Si comes dentro de tu ventana, el contador se reinicia, así funciona el ayuno de verdad.
       </p>
       {editandoHora && (
-        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-          <input type="datetime-local" className="input-inline" style={{ flex: "1 1 170px" }}
-            value={horaManual} onChange={(e) => setHoraManual(e.target.value)}
-            aria-label="Hora de tu última comida" />
+        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ flex: "1 1 150px" }}>
+            <CampoFecha compacto value={fechaManual} onChange={setFechaManual}
+              ariaLabel="Día de tu última comida" max={hoyLocal()} conBorrar={false} />
+          </div>
+          <div style={{ flex: "1 1 150px" }}>
+            <CampoHora value={horaManual} onChange={setHoraManual} ariaLabel="Hora de tu última comida" />
+          </div>
           <button type="button" className="btn primary" disabled={!horaManual} onClick={guardarHoraManual}>Guardar</button>
         </div>
       )}

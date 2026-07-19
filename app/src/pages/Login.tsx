@@ -31,7 +31,7 @@ export function Login() {
           <div className="logo"><LogoAtomo size={24} /></div>
           <div>
             <b>NucleoOS</b>
-            <small>El sistema operativo de tu vida</small>
+            <small>Un sistema para cambiar el rumbo de tu vida</small>
           </div>
         </div>
 
