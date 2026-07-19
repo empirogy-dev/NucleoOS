@@ -67,5 +67,5 @@ La pasada de verificación, módulo por módulo. Si algo falla o pide migración
 
 - [ ] Correos automáticos: recordatorios del ciclo a la pareja y recorditos del lazo a quienes aceptaron.
 - [ ] Notion API (export automático de Revisión) y Google Calendar (OAuth).
-- [ ] Llave de Gemini al servidor (si se abre a más usuarios).
+- [x] Llave de Gemini al servidor: Edge Function "ia" desplegada con el secreto GEMINI_API_KEY, la app la usa con sesión obligatoria, app/.env fuera del repo y variables de Supabase en Vercel. Verificado en producción (2026-07-18).
 - [ ] Más adelante: app móvil (Capacitor) y escritorio (Tauri), como define el roadmap.
