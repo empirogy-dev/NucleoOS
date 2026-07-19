@@ -24,6 +24,7 @@ import {
   deleteTransaction,
   importStatementRows,
   patronDesde,
+  sugerenciaComercio,
   saveMerchantRule,
   splitTransaction,
   listAccounts,
@@ -158,6 +159,7 @@ export function FinanzasPage() {
         const texto = [
           t.description,
           t.merchant,
+          t.bank_ref,
           t.category_id ? catById.get(t.category_id)?.name : "",
           t.account_id ? accById.get(t.account_id)?.name : "",
         ].filter(Boolean).join(" ").toLowerCase();
@@ -1254,7 +1256,7 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
     <div className="txrow">
       <span className="txicon">{esTransfer ? "🔁" : cat?.icon ?? (neg ? "💸" : "💰")}</span>
       <div className="txmeta">
-        <b>{t.merchant || t.description || cat?.name || (esTransfer ? "Transferencia" : neg ? "Gasto" : "Ingreso")}</b>
+        <b>{t.merchant || t.description || t.bank_ref || cat?.name || (esTransfer ? "Transferencia" : neg ? "Gasto" : "Ingreso")}</b>
         <small>
           {t.merchant && t.description ? `${t.description}, ` : ""}{t.date}
           {esTransfer
@@ -1375,11 +1377,17 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
     : "";
   const [type, setType] = useState<Tx["type"]>(edit?.type ?? "expense");
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
-  const [description, setDescription] = useState(edit?.description ?? "");
-  const [merchant, setMerchant] = useState(edit?.merchant ?? "");
-  const [recordar, setRecordar] = useState(true);
   const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
-  const textoOriginal = edit?.description ?? "";
+  // La firma del banco: bank_ref (0043), o la descripción en filas antiguas.
+  const textoOriginal = edit ? (edit.bank_ref ?? edit.description ?? "") : "";
+  // El texto crudo del banco NO es la descripción: en movimientos del banco
+  // la descripción parte vacía (o con lo que tú escribiste) y el comercio
+  // parte con la sugerencia limpia ("[PR]SEPHORA KELOWNA BC" → "Sephora Kelowna").
+  const [description, setDescription] = useState(() =>
+    edit ? (esDelBanco && edit.description === textoOriginal ? "" : edit.description ?? "") : "");
+  const [merchant, setMerchant] = useState(() =>
+    edit?.merchant ? edit.merchant : esDelBanco ? sugerenciaComercio(textoOriginal) : "");
+  const [recordar, setRecordar] = useState(true);
   const [categoryId, setCategoryId] = useState(edit?.category_id ?? "");
   const [accountId, setAccountId] = useState(edit ? (edit.account_id ?? "") : (accounts[0]?.id ?? ""));
   const [destino, setDestino] = useState(destinoInicial);
@@ -1405,6 +1413,9 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
         type,
         description,
         merchant: merchant.trim() || null,
+        // Filas importadas antes de la 0043: sellamos su firma del banco
+        // en bank_ref para que los duplicados y las reglas sigan funcionando.
+        ...(esDelBanco && edit && !edit.bank_ref && textoOriginal ? { bank_ref: textoOriginal } : {}),
         category_id: type === "transfer" ? null : (categoryId || null),
         account_id: accountId || null,
         destination_kind: type === "transfer" ? destKind : null,
@@ -1425,9 +1436,11 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
       const msg = ex instanceof Error ? ex.message : String(ex);
       setErr(/destination_kind|destination_ref/.test(msg)
         ? "Falta la migración 0011 en Supabase (supabase/migrations/0011_transferencias.sql)."
-        : /merchant/.test(msg)
-          ? "Falta la migración 0013 en Supabase (supabase/migrations/0013_comercios.sql)."
-          : msg);
+        : /bank_ref/.test(msg)
+          ? "Falta la migración 0043 en Supabase (supabase/migrations/0043_texto_banco.sql)."
+          : /merchant/.test(msg)
+            ? "Falta la migración 0013 en Supabase (supabase/migrations/0013_comercios.sql)."
+            : msg);
       setBusy(false);
     }
   }

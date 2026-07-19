@@ -125,6 +125,9 @@ export interface Tx {
   type: TxType;
   description: string;
   merchant: string | null;
+  /** El texto crudo del banco (migración 0043): la firma del movimiento
+   *  para duplicados y reglas. La descripción queda para uso humano. */
+  bank_ref?: string | null;
   category_id: string | null;
   account_id: string | null;
   destination_account_id: string | null;
