@@ -472,6 +472,21 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
           <div className="fill" style={{ width: `${pct}%`, background: areaColor(o.area) }} />
         </div>
       </div>
+      {o.auto_metric === "libros_leidos" && (o.auto_ref ?? "").startsWith("l:") && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6, lineHeight: 1.5 }}>
+          {(() => {
+            const estados = estadosLibros();
+            const ids = (o.auto_ref ?? "").slice(2).split(",").filter(Boolean);
+            return ids.map((id) => {
+              const l = libros.find((x) => x.id === id);
+              return `${estados[id] === "leido" ? "✓" : "☐"} ${l ? `${l.emoji} ${l.titulo}` : id}`;
+            }).join("  ·  ");
+          })()}
+          <span style={{ display: "block", marginTop: 2 }}>
+            La meta avanza cuando marcas un libro como leído en Aprendizaje → Biblioteca. Tu lectura diaria vive en su hábito.
+          </span>
+        </p>
+      )}
       {!hasMs && !esAuto && (
         <input type="range" min={0} max={100} step={5} defaultValue={o.progress} className="slider"
           aria-label="Progreso de la meta"
