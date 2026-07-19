@@ -23,10 +23,10 @@ nueva, no hay frontend nuevo (solo una tarjeta en Ajustes).
 ### Runtime (de la entrada del mensaje a la respuesta)
 
 ```
-WhatsApp (YCloud)
+WhatsApp (Meta Cloud API)
         │  webhook inbound
         ▼
-[1] Edge Function `wa-entrada`   → valida firma YCloud, normaliza a evento único
+[1] Edge Function `wa-entrada`   → valida firma de Meta (X-Hub-Signature-256), normaliza a evento único
         │                          {telefono, user_id (por wa_vinculos), type, text|audio|imagen, wamid, ts}
         │                          audio → se descarga y se guarda la referencia para Gemini
         ▼
@@ -49,7 +49,7 @@ WhatsApp (YCloud)
         │                          crear_tarea → day_tasks · marcar_habito → habit_logs ·
         │                          registrar_gasto → transactions · marcar_ayuno → user_kv · …
         ▼
-[7] Salida YCloud                 → texto libre (ventana <24 h) | template aprobado (fuera de ventana)
+[7] Salida Meta Cloud API                 → texto libre (ventana <24 h) | template aprobado (fuera de ventana)
         ▼
 [8] Persistencia + Observabilidad → `wa_eventos` (batch, decisión, tools, respuesta, errores)
 

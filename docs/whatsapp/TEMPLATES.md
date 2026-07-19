@@ -2,8 +2,8 @@
 
 > Los 6 templates que el Cartero necesita para avisarte cuando la ventana de 24 horas está
 > cerrada. **Se mandan a aprobación el día 1** (demoran de horas a días). Se crean en
-> YCloud → WhatsApp → Templates, categoría **Utility**, un template por idioma.
-> Regla del curso: idioma `es` y `en` (NO `es_CL`), las variables `{{1}}`, `{{2}}` deben
+> WhatsApp Manager de Meta (business.facebook.com → Message templates), categoría **Utility**, un template por idioma.
+> Regla: idioma `es` y `en`, las variables `{{1}}`, `{{2}}` deben
 > calzar EXACTO entre el template y el envío.
 
 ## aviso_ayuno
@@ -34,8 +34,8 @@
 - Todos invitan a **responder**: la respuesta abre la ventana de 24 horas y ahí el agente
   conversa libre (el truco de producto del BRIEF §8).
 - Sin guiones como puntuación, tono NucleoOS.
-- Cuando Meta apruebe cada uno, se anota aquí su estado y su nombre exacto en YCloud
-  (el código de `despachar()` usa estos mismos nombres).
+- Cuando Meta apruebe cada uno, se anota aquí su estado
+  (el código de `despachar()` usa estos mismos nombres tal como queden en WhatsApp Manager).
 
 | Template | es | en |
 |----------|----|----|

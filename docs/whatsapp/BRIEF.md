@@ -30,7 +30,7 @@ relacionado: ARQUITECTURA-OBJETIVO.md
 ## Decisiones fijas (NO re-discutir en el plan)
 | Tema | Decisión |
 |------|----------|
-| Proveedor WhatsApp | **YCloud (único)**, igual que el curso: webhook inbound, send message, templates |
+| Proveedor WhatsApp | **Meta WhatsApp Cloud API (directa)**. YCloud no acepta cuentas del país de Bárbara; la API oficial funciona en Canadá, es gratis para responder dentro de la ventana y trae número de prueba. Mismos conceptos del curso (webhook, ventana 24 h, templates) |
 | LLM | **Gemini vía Edge Function** (el mismo motor seguro del coach de la app, con tope diario en `ia_uso`). OpenRouter queda como opción v2 si se quiere rutear modelos |
 | Transcripción de audio | **Gemini nativo** (recibe audio directamente, sin servicio aparte) |
 | Stack | **Supabase Edge Functions** (webhook + cron) + la app Vite existente. **Sin Next.js**: NucleoOS ya tiene su frontend |

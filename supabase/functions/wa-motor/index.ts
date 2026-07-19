@@ -11,18 +11,21 @@
 //   SEC-N5: solo se descargan medios cuyo host sea de YCloud.
 //   COST-N1: comparte el tope diario de ia_uso con la app.
 //
-// Secretos: GEMINI_API_KEY · YCLOUD_API_KEY · YCLOUD_NUMERO
+// Secretos: GEMINI_API_KEY · WHATSAPP_TOKEN · WHATSAPP_PHONE_ID
+// (proveedor: Meta WhatsApp Cloud API, directo)
 // Esta función se protege sola: exige el service role key en Authorization.
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
+const GRAPH = "https://graph.facebook.com/v23.0";
 const MODEL = "gemini-flash-latest";
 const TOPE_DIARIO_IA = 80;        // compartido con la Edge Function "ia" (tabla ia_uso)
 const MAX_TOOLS_POR_TURNO = 5;
 const MAX_ESCRITURAS_DIA = 50;
 const LEASE_MS = 5 * 60_000;
 const MAX_INTENTOS = 3;
-const HOSTS_MEDIA = [".ycloud.com", ".whatsapp.net", ".fbsbx.com"]; // dónde viven los medios de WhatsApp
+// Dónde viven los medios de WhatsApp que Meta nos entrega (SEC-N5):
+const HOSTS_MEDIA = ["lookaside.fbsbx.com", ".fbcdn.net", ".whatsapp.net", "graph.facebook.com"];
 
 function admin(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -40,25 +43,37 @@ function ayerEn(timezone: string): string {
 }
 
 async function enviarTexto(telefono: string, texto: string): Promise<void> {
-  const key = Deno.env.get("YCLOUD_API_KEY");
-  const desde = Deno.env.get("YCLOUD_NUMERO");
-  if (!key || !desde) return;
-  await fetch("https://api.ycloud.com/v2/whatsapp/messages", {
+  const token = Deno.env.get("WHATSAPP_TOKEN");
+  const phoneId = Deno.env.get("WHATSAPP_PHONE_ID");
+  if (!token || !phoneId) return;
+  await fetch(`${GRAPH}/${phoneId}/messages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-API-Key": key },
-    body: JSON.stringify({ from: desde, to: telefono, type: "text", text: { body: texto } }),
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: telefono.replace("+", ""),
+      type: "text",
+      text: { body: texto },
+    }),
   }).catch(() => undefined);
 }
 
-async function bajarMedia(link: string): Promise<{ b64: string; mime: string } | null> {
+/** Meta entrega los medios en dos pasos: el media ID se cambia por una URL
+ *  temporal (Graph API) y esa URL se descarga con el mismo token. El host
+ *  de la URL se valida contra la allowlist (SEC-N5). */
+async function bajarMedia(mediaId: string): Promise<{ b64: string; mime: string } | null> {
   try {
-    const url = new URL(link);
+    const token = Deno.env.get("WHATSAPP_TOKEN");
+    if (!token || !/^[\w-]+$/.test(mediaId)) return null;
+    const meta = await fetch(`${GRAPH}/${mediaId}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!meta.ok) return null;
+    const info = await meta.json();
+    const url = new URL(String(info?.url ?? ""));
     if (url.protocol !== "https:") return null;
-    if (!HOSTS_MEDIA.some((h) => url.hostname.endsWith(h))) return null; // SEC-N5
-    const key = Deno.env.get("YCLOUD_API_KEY") ?? "";
-    const res = await fetch(link, { headers: { "X-API-Key": key }, redirect: "error" });
+    if (!HOSTS_MEDIA.some((h) => url.hostname === h || url.hostname.endsWith(h))) return null;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, redirect: "error" });
     if (!res.ok) return null;
-    const mime = res.headers.get("content-type") ?? "application/octet-stream";
+    const mime = info?.mime_type ?? res.headers.get("content-type") ?? "application/octet-stream";
     const buf = new Uint8Array(await res.arrayBuffer());
     if (buf.length > 8 * 1024 * 1024) return null; // 8 MB de tope
     let bin = "";
@@ -542,7 +557,7 @@ Deno.serve(async (req: Request) => {
           try {
             const info = JSON.parse(m.contenido ?? "{}");
             if (info.caption) bloque.push({ text: `[caption de ${m.tipo}] ${info.caption}` });
-            const media = info.link ? await bajarMedia(info.link) : null;
+            const media = info.mediaId ? await bajarMedia(String(info.mediaId)) : null;
             if (media) bloque.push({ inlineData: { mimeType: media.mime, data: media.b64 } });
             else bloque.push({ text: `[${m.tipo} que no se pudo leer]` });
           } catch {

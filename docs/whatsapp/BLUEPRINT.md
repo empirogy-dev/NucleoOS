@@ -13,10 +13,10 @@ El agente son **dos Edge Functions y dos crons** sobre el Supabase que ya existe
 
 | Pieza | Qué hace |
 |-------|----------|
-| `wa-entrada` (Edge Function, webhook) | Valida firma YCloud, normaliza, dedupe por wamid, comandos bypass, encola en el buffer |
+| `wa-entrada` (Edge Function, webhook) | Valida firma de Meta (X-Hub-Signature-256), verificación GET del webhook, normaliza, dedupe por wamid, comandos bypass, encola en el buffer |
 | `wa-motor` (Edge Function, cron cada minuto) | Drena lotes vencidos, decide, llama a Gemini con tools, escribe en la app, responde |
 | `wa-cartero` (Edge Function, cron cada 15 min) | Lee las tablas de la app, calcula avisos, dedupe, despacha con ventana/templates |
-| `despachar()` (módulo compartido) | ÚNICO punto de salida a YCloud: texto si ventana abierta, template si cerrada |
+| `despachar()` (módulo compartido) | ÚNICO punto de salida a Meta: texto si ventana abierta, template si cerrada |
 
 **Estrategia:** camino feliz primero (F1 vínculo → F2 Escriba texto), después audio, buffer,
 cartero, coach y panel. Los templates de Meta se mandan a aprobar en F1 porque demoran.
@@ -24,7 +24,7 @@ cartero, coach y panel. Los templates de Meta se mandan a aprobar en F1 porque d
 ## 2. Decisiones fijas
 
 Las del `BRIEF.md` §Decisiones fijas. Recordatorio de las tres que definen el código:
-**YCloud único** · **Gemini vía Edge Function con `ia_uso` compartido** · **cero tablas espejo**
+**Meta Cloud API directa** (YCloud no acepta el país; solo cambiaron [1] entrada y [7] salida, tal como estaba diseñado) · **Gemini vía Edge Function con `ia_uso` compartido** · **cero tablas espejo**
 (las tools escriben en las tablas reales de la app).
 
 ---
