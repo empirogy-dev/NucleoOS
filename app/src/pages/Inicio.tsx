@@ -365,7 +365,7 @@ export function Inicio() {
         ) }] : []),
         { id: "areas", el: (
         <div className="card panel">
-          <h3>Tus áreas</h3>
+          <h3>{tr("Tus áreas")}</h3>
           {AREAS.map((a) => {
             let badge: React.ReactNode = <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--muted)" }}>próximamente</span>;
             if (a.key === "finanzas" && finReady) {
@@ -383,13 +383,13 @@ export function Inicio() {
             } else if (a.key === "salud" && salReady) {
               const hoyStr = hoyLocal();
               const prox = citas.filter((c) => c.date >= hoyStr).length;
-              badge = <span className="chip" style={{ marginLeft: "auto" }}>{prox === 1 ? "1 cita próxima" : `${prox} citas próximas`}</span>;
+              badge = <span className="chip" style={{ marginLeft: "auto" }}>{prox === 1 ? tr("1 cita próxima") : `${prox} ${tr("citas próximas")}`}</span>;
             } else if (a.key === "aprendizaje" && aprReady) {
               badge = <span className="chip" style={{ marginLeft: "auto" }}>{notas.length === 1 ? "1 nota" : `${notas.length} notas`}</span>;
             } else if (a.key === "relaciones" && relReady) {
               const n = rels.filter((r) => needsReconnect(r, relLogs)).length;
               badge = n > 0
-                ? <span className="chip" style={{ marginLeft: "auto", background: "color-mix(in srgb,var(--rel) 20%,var(--paper))", color: "color-mix(in srgb,var(--rel) 75%,var(--ink))" }}>💌 {n} por reconectar</span>
+                ? <span className="chip" style={{ marginLeft: "auto", background: "color-mix(in srgb,var(--rel) 20%,var(--paper))", color: "color-mix(in srgb,var(--rel) 75%,var(--ink))" }}>💌 {n} {tr("por reconectar")}</span>
                 : <span className="chip" style={{ marginLeft: "auto" }}>{rels.length === 1 ? "1 vínculo" : `${rels.length} vínculos`}</span>;
             }
             const pct = avanceArea(a.key);
@@ -412,7 +412,7 @@ export function Inicio() {
         ) },
         { id: "avances", el: (
         <div className="card panel">
-          <h3>Avances recientes</h3>
+          <h3>{tr("Avances recientes")}</h3>
           {activity.length === 0 ? (
             <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
               Cada avance que registres en <Link to="/objetivos" style={{ color: "var(--accent-ink)", textDecoration: "underline" }}>Dirección</Link> o en cualquier área aparecerá aquí: tu historia hacia tu mejor versión.

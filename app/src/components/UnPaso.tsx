@@ -86,20 +86,20 @@ export function UnPaso() {
       {paso && (
         <>
           <p style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.4, margin: "2px 0 12px" }}>
-            {hecha ? "Hecho. Eso ya cuenta. 🌱" : paso.texto}
+            {hecha ? tr("Hecho. Eso ya cuenta. 🌱") : tr(paso.texto)}
           </p>
           {!hecha ? (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn primary" onClick={() => void marcarHecha()}>La hice ✓</button>
-              <button className="btn ghost" onClick={() => void elegir()}>Otra cosa</button>
+              <button className="btn primary" onClick={() => void marcarHecha()}>{tr("La hice ✓")}</button>
+              <button className="btn ghost" onClick={() => void elegir()}>{tr("Otra cosa")}</button>
               {paso.tipo !== "micro" && (
-                <button className="btn ghost" onClick={() => abrirPomodoro()}>Dale un bloque de foco</button>
+                <button className="btn ghost" onClick={() => abrirPomodoro()}>{tr("Dale un bloque de foco")}</button>
               )}
             </div>
           ) : (
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn primary" onClick={() => void elegir()}>¿Y ahora qué?</button>
-              <button className="btn ghost" onClick={() => { setPaso(null); setHecha(false); }}>Cerrar</button>
+              <button className="btn primary" onClick={() => void elegir()}>{tr("¿Y ahora qué?")}</button>
+              <button className="btn ghost" onClick={() => { setPaso(null); setHecha(false); }}>{tr("com.cerrar")}</button>
             </div>
           )}
         </>

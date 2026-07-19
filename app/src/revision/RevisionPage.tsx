@@ -154,12 +154,12 @@ export function RevisionPage() {
                 <div className="card panel" key={m.titulo}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                     <span style={{ fontSize: 20 }}>{m.emoji}</span>
-                    <h3 style={{ margin: 0, flex: 1 }}>{m.titulo}</h3>
-                    <Link to={m.to} style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>abrir</Link>
+                    <h3 style={{ margin: 0, flex: 1 }}>{tr(m.titulo)}</h3>
+                    <Link to={m.to} style={{ fontSize: 12, color: "var(--accent-ink)", fontWeight: 600 }}>{tr("abrir")}</Link>
                   </div>
                   {m.lineas.map((l) => (
                     <div key={l.k} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "5px 0", borderBottom: "1px solid var(--line-soft)", fontSize: 13 }}>
-                      <span style={{ color: "var(--muted)" }}>{l.k}</span>
+                      <span style={{ color: "var(--muted)" }}>{tr(l.k)}</span>
                       <b className="tnum" style={{ textAlign: "right" }}>{l.v}</b>
                     </div>
                   ))}

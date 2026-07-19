@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { Pause, Play, RotateCcw, Timer, X } from "lucide-react";
 import { bloquesHoyLocal, saveFocusBlock, sumarBloqueLocal, type PomodoroPreset } from "../foco/data";
@@ -70,6 +71,7 @@ function mmss(seg: number): string {
 }
 
 export function Pomodoro() {
+  const { t: tr } = useIdioma();
   const [e, setE] = useState<Estado>(cargar);
   const [abierto, setAbierto] = useState(false);
   const [hechos, setHechos] = useState(bloquesHoyLocal);
@@ -190,7 +192,7 @@ export function Pomodoro() {
       {abierto && (
         <div className="pomo-panel" role="dialog" aria-label="Temporizador pomodoro">
           <div className="pomo-head">
-            <b>{e.modo === "focus" ? "Enfoque" : "Respiro"}</b>
+            <b>{e.modo === "focus" ? tr("Enfoque") : tr("Respiro")}</b>
             <button className="xdel" aria-label="Cerrar" style={{ width: 26, height: 26 }} onClick={() => setAbierto(false)}>
               <X size={14} />
             </button>
@@ -200,15 +202,15 @@ export function Pomodoro() {
             className="input-inline pomo-label"
             value={e.etiqueta}
             onChange={(ev) => setE((s) => ({ ...s, etiqueta: ev.target.value }))}
-            placeholder="¿En qué te enfocas ahora?"
+            placeholder={tr("¿En qué te enfocas ahora?")}
           />
 
           <div style={{ marginBottom: 12 }}>
             <Selector compacto value={destino} ariaLabel="A qué empuja este bloque"
               opciones={[
-                { value: "libre", label: "Bloque libre, sin proyecto" },
+                { value: "libre", label: tr("Bloque libre, sin proyecto") },
                 ...proyectos.map((p) => ({ value: `p:${p.id}`, label: `💼 ${p.name}` })),
-                { value: "a:aprendizaje", label: "📚 Aprendizaje" },
+                { value: "a:aprendizaje", label: tr("📚 Aprendizaje") },
               ]}
               onChange={setDestino} />
           </div>
@@ -218,16 +220,16 @@ export function Pomodoro() {
 
           <div className="pomo-controls">
             {e.corriendo ? (
-              <button className="btn primary" onClick={pausar}><Pause size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />Pausa</button>
+              <button className="btn primary" onClick={pausar}><Pause size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />{tr("Pausa")}</button>
             ) : (
-              <button className="btn primary" onClick={iniciar}><Play size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />{e.restante < total ? "Seguir" : "Empezar"}</button>
+              <button className="btn primary" onClick={iniciar}><Play size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />{e.restante < total ? tr("Seguir") : tr("Empezar")}</button>
             )}
             <button className="btn ghost" onClick={reiniciar} aria-label="Reiniciar"><RotateCcw size={15} /></button>
           </div>
 
           {e.modo === "focus" && (
             <div className="pomo-presets">
-              <span className="pomo-presets-lb">Minutos de foco</span>
+              <span className="pomo-presets-lb">{tr("Minutos de foco")}</span>
               <div style={{ display: "flex", gap: 6 }}>
                 {PRESETS.map((m) => (
                   <button key={m} className={"pomo-chip" + (e.focoMin === m ? " on" : "")} onClick={() => elegirFoco(m)}>{m}</button>
@@ -238,10 +240,10 @@ export function Pomodoro() {
 
           <p className="pomo-hechos">
             {festejo
-              ? "Bloque completo. Respira, te lo ganaste. 🌱"
+              ? tr("Bloque completo. Respira, te lo ganaste. 🌱")
               : hechos > 0
                 ? `Llevas ${hechos} ${hechos === 1 ? "bloque" : "bloques"} de foco hoy. Un paso a la vez.`
-                : "Un bloque corto ya es empezar. Sin presión."}
+                : tr("Un bloque corto ya es empezar. Sin presión.")}
           </p>
         </div>
       )}

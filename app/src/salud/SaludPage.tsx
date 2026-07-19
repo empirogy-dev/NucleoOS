@@ -206,8 +206,8 @@ export function SaludPage() {
       {/* Lectura rápida del estado corporal, siempre visible */}
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
         <div className="card stat"><div className="k">😴 Sueño anoche</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></div>
-        <div className="card stat"><div className="k">💧 Agua</div><div className="v tnum">{agua} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {META_AGUA_VASOS}</small></div></div>
-        <div className="card stat"><div className="k">🍗 Proteína</div><div className="v tnum">{Math.round(Number(proteina))} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {metaProt} g</small></div></div>
+        <div className="card stat"><div className="k">{tr("💧 Agua")}</div><div className="v tnum">{agua} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {META_AGUA_VASOS}</small></div></div>
+        <div className="card stat"><div className="k">{tr("🍗 Proteína")}</div><div className="v tnum">{Math.round(Number(proteina))} <small style={{ fontSize: 13, color: "var(--muted)" }}>de {metaProt} g</small></div></div>
         <div className="card stat"><div className="k">🏃 Movimiento</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min{kcalHoy > 0 ? `, ≈${kcalHoy} kcal` : ""}</small></div></div>
       </div>
       <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{ESTADOS[señales]}</p>
@@ -293,13 +293,14 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
   onNivel: (n: number) => void;
   onChanged: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const pctProt = Math.min(100, Math.round((proteina / metaProt) * 100));
 
   const bloqueAgua = (
         <div className="card panel">
-          <h3>💧 Agua</h3>
+          <h3>{tr("💧 Agua")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Toca un vaso para registrar. La meta son {META_AGUA_VASOS} vasos, unos dos litros.
+            {tr("agua.hint")}
           </p>
           <div className="agua-fila">
             {Array.from({ length: META_AGUA_VASOS }, (_, i) => (
@@ -316,14 +317,14 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
           </div>
           {agua >= META_AGUA_VASOS && <span className="chip" style={{ marginTop: 10 }}>✓ Meta de agua cumplida</span>}
           <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
-            El agua vive aquí, independiente de tus retos. Eso sí, si tienes un reto de agua activo, al llegar a los {META_AGUA_VASOS} vasos se marca solo. 💧
+            {tr("agua.nota")}
           </p>
         </div>
   );
 
   const bloqueProteina = (
         <div className="card panel">
-          <h3>🍗 Proteína</h3>
+          <h3>{tr("🍗 Proteína")}</h3>
           <div className="bar" style={{ marginBottom: 10 }}>
             <div className="top">
               <span>{Math.round(proteina)} g de {metaProt} g</span>
@@ -349,7 +350,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
 
   const bloqueNivel = (
         <div className="card panel">
-          <h3>⚡ ¿Cómo está tu energía?</h3>
+          <h3>{tr("⚡ ¿Cómo está tu energía?")}</h3>
           <div className="moods">
             {NIVELES_ENERGIA.map((n) => (
               <button
@@ -365,7 +366,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
           </div>
           {nivel !== null && (
             <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>
-              Hoy: {NIVELES_ENERGIA.find((n) => n.nivel === nivel)?.label}
+              {tr("com.hoy")}: {tr(NIVELES_ENERGIA.find((n) => n.nivel === nivel)?.label ?? "")}
             </p>
           )}
         </div>
@@ -374,7 +375,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
   return (
     <>
       <p style={{ fontSize: 12, color: "var(--muted)", margin: "-4px 0 12px" }}>
-        Ordena las tarjetas a tu gusto: pasa el mouse por una y arrastra desde el agarre ⋮ de la esquina.
+        {tr("Ordena las tarjetas a tu gusto: pasa el mouse por una y arrastra desde el agarre ⋮ de la esquina.")}
       </p>
       <OrdenGrid
         clave="energia-hoy"
@@ -392,6 +393,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
 }
 
 function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: ExerciseLog[]; pesoKg: number | null; fecha: string; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
   const [min, setMin] = useState("");
   const [busy, setBusy] = useState(false);
@@ -408,7 +410,7 @@ function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: Ex
 
   return (
     <div className="card panel">
-      <h3>🏃 Movimiento de hoy</h3>
+      <h3>{tr("🏃 Movimiento de hoy")}</h3>
       {exercise.map((e) => (
         <div className="txrow" key={e.id}>
           <span className="txicon">🏃</span>
@@ -433,6 +435,7 @@ function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: Ex
 }
 
 function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: RoutineLog | null; fecha?: string; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const [bed, setBed] = useState(rutinaHoy?.bed_time?.slice(0, 5) ?? "");
   const [wake, setWake] = useState(rutinaHoy?.wake_time?.slice(0, 5) ?? "");
   const [busy, setBusy] = useState(false);
@@ -454,7 +457,7 @@ function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: 
 
   return (
     <div className="card panel">
-      <h3>😴 Sueño de anoche</h3>
+      <h3>{tr("😴 Sueño de anoche")}</h3>
       {horas !== null && (
         <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 10 }}>
           Dormiste <b className="tnum">{horas} horas</b>{horas >= 7 ? ", muy bien. 🌙" : ". Intenta acostarte más temprano hoy."}
@@ -462,12 +465,12 @@ function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: 
       )}
       <form onSubmit={save}>
         <div className="frow">
-          <div className="field"><label>Me acosté a las</label>
+          <div className="field"><label>{tr("Me acosté a las")}</label>
             <CampoHora value={bed} onChange={setBed} ariaLabel="Hora de acostarse" /></div>
-          <div className="field"><label>Desperté a las</label>
+          <div className="field"><label>{tr("Desperté a las")}</label>
             <CampoHora value={wake} onChange={setWake} ariaLabel="Hora de despertar" /></div>
         </div>
-        <button className="btn ghost" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn ghost" disabled={busy} style={{ width: "100%" }}>{busy ? tr("com.guardando") : tr("com.guardar")}</button>
       </form>
     </div>
   );
@@ -770,6 +773,7 @@ function MovimientoTab({ exercise, pesoKg, onChanged }: { exercise: ExerciseLog[
 }
 
 function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const [kind, setKind] = useState<string>(EXERCISE_KINDS[0]);
   const [min, setMin] = useState("");
   const [date, setDate] = useState(hoyLocal());
@@ -798,7 +802,7 @@ function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
           <div className="field"><label>Fecha</label>
             <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
         </div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? tr("com.guardando") : tr("com.guardar")}</button>
       </form>
     </div>
   );

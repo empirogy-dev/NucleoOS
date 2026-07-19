@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { Mail, Trash2 } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
@@ -24,6 +25,7 @@ import {
 // de la próxima regla y el aviso para tu pareja.
 
 export function CicloTab() {
+  const { t: tr } = useIdioma();
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [cfg, setCfg] = useState<CicloConfig>(CONFIG_DEFECTO);
   const [needsMigration, setNeedsMigration] = useState(false);
@@ -126,7 +128,7 @@ export function CicloTab() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                   <span style={{ fontSize: 26 }}>{fase.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0 }}>Día {dia}, fase {fase.nombre.toLowerCase()}</h3>
+                    <h3 style={{ margin: 0 }}>Día {dia}, fase {tr(fase.nombre).toLowerCase()}</h3>
                     <p style={{ fontSize: 12, color: "var(--muted)" }}>ciclo de ≈{largo} días{cycles.length >= 2 ? ", calculado con tu historial" : ""}</p>
                   </div>
                 </div>
@@ -142,9 +144,9 @@ export function CicloTab() {
                   <span style={{ position: "absolute", left: `${Math.min(99, (((dia - 1) % largo) / largo) * 100)}%`, transform: "translateX(-50%)", fontSize: 11 }}>▲</span>
                 </div>
 
-                <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 8 }}>{fase.descripcion}</p>
+                <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 8 }}>{tr(fase.descripcion)}</p>
                 <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-                  <b>Qué te hace bien ahora:</b> {fase.paraTi}
+                  <b>Qué te hace bien ahora:</b> {tr(fase.paraTi)}
                 </p>
                 {proxima && (
                   <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>

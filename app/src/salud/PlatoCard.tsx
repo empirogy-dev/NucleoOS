@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Camera, ImagePlus, Sparkles } from "lucide-react";
 import { analizarComidaTexto, analizarPlato, blobToBase64, iaConfigured, type AnalisisPlato } from "../lib/ia";
 import { TablesMissingError } from "../finanzas/data";
@@ -9,6 +10,7 @@ import { addMeal, MOMENTOS, momentoSugerido } from "./comidas";
 // Es una estimación amable para acompañar hábitos, no un diagnóstico.
 
 export function PlatoCard({ fecha, esHoy = true, onSaved }: { fecha?: string; esHoy?: boolean; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [analizando, setAnalizando] = useState(false);
   const [resultado, setResultado] = useState<AnalisisPlato | null>(null);
   const [texto, setTexto] = useState("");
@@ -87,7 +89,7 @@ export function PlatoCard({ fecha, esHoy = true, onSaved }: { fecha?: string; es
 
   return (
     <div className="card panel">
-      <h3>📸 Tu plato</h3>
+      <h3>{tr("📸 Tu plato")}</h3>
       {!iaConfigured ? (
         <p style={{ fontSize: 13, color: "var(--muted)" }}>
           Para estimar los macros de una foto necesito la llave de Gemini: agrega <code>VITE_GEMINI_API_KEY</code> en <code>app/.env</code>.
@@ -95,17 +97,17 @@ export function PlatoCard({ fecha, esHoy = true, onSaved }: { fecha?: string; es
       ) : (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Fotografía tu comida o escríbela, y te estimo calorías, proteína, carbohidratos y grasas. Es una guía, no una balanza.
+            {tr("Fotografía tu comida o escríbela, y te estimo calorías, proteína, carbohidratos y grasas. Es una guía, no una balanza.")}
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <label className="btn primary" style={{ cursor: "pointer" }}>
               <Camera size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-              {analizando ? "Analizando…" : "Tomar foto del plato"}
+              {analizando ? tr("Analizando…") : tr("Tomar foto del plato")}
               <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={onFile} disabled={analizando} />
             </label>
             <label className="btn ghost" style={{ cursor: "pointer" }}>
               <ImagePlus size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-              Subir foto
+              {tr("Subir foto")}
               <input type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} disabled={analizando} />
             </label>
           </div>
@@ -120,7 +122,7 @@ export function PlatoCard({ fecha, esHoy = true, onSaved }: { fecha?: string; es
             />
             <button className="btn ghost" disabled={analizando || !texto.trim()}>
               <Sparkles size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-              Estimar
+              {tr("Estimar")}
             </button>
           </form>
           {analizando && (

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { Pencil } from "lucide-react";
 
 // Menú de dopamina: tu lista personal de recompensas sanas y rápidas.
@@ -53,6 +54,7 @@ function sacarDeLaBolsa(bolsa: string[], lista: string[]): { muestra: string[]; 
 /** Bolsa barajada: no repite ninguna hasta mostrar todas, así "Muéstrame otras"
  *  no se siente en loop tan rápido con listas cortas. */
 export function DopaminaCard() {
+  const { t: tr } = useIdioma();
   const [lista, setLista] = useState<string[]>(cargarLista);
   const [{ muestra, bolsa }, setEstado] = useState(() => sacarDeLaBolsa(barajar(cargarLista()), cargarLista()));
   const [editando, setEditando] = useState(false);
@@ -74,14 +76,14 @@ export function DopaminaCard() {
   return (
     <div className="card panel">
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <h3 style={{ flex: 1, margin: 0 }}>🍬 Menú de dopamina</h3>
+        <h3 style={{ flex: 1, margin: 0 }}>{tr("🍬 Menú de dopamina")}</h3>
         <button className="xdel" aria-label="Editar mi menú" style={{ width: 26, height: 26 }}
           onClick={() => { setBorrador(lista.join("\n")); setEditando(!editando); }}>
           <Pencil size={13} />
         </button>
       </div>
       <p style={{ fontSize: 12, color: "var(--muted)", margin: "6px 0 10px" }}>
-        ¿El cerebro pide estímulo? Elige de tu menú, no del scroll.
+        {tr("¿El cerebro pide estímulo? Elige de tu menú, no del scroll.")}
       </p>
 
       {editando ? (
@@ -100,7 +102,7 @@ export function DopaminaCard() {
             <p key={m} style={{ fontSize: 13.5, padding: "7px 0", borderBottom: "1px solid var(--line-soft)" }}>{m}</p>
           ))}
           <button className="linklike" style={{ marginTop: 8 }} onClick={otraMuestra}>
-            Muéstrame otras
+            {tr("Muéstrame otras")}
           </button>
         </>
       )}

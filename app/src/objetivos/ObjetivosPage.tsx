@@ -373,6 +373,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
   libros: Libro[];
   onChanged: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState(false);
   const [newMs, setNewMs] = useState("");
@@ -443,7 +444,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
         </div>
         <button className="chip" style={{ background: tone.bg, color: tone.fg, border: "none", cursor: "pointer" }}
           title="Cambiar estado" onClick={() => void cycleStatus()}>
-          {STATUS_LABELS[o.status]}
+          {tr(STATUS_LABELS[o.status])}
         </button>
         <button className="xdel" title="Editar meta" aria-label="Editar meta" onClick={() => setEditando(true)}>
           <Pencil size={13} />

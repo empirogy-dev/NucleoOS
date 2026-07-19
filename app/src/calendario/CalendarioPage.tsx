@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
+import { CALENDARIO } from "../idioma/textos";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { AREAS } from "../areas";
@@ -15,9 +16,10 @@ function nombreArea(key: string): string {
   return AREAS.find((a) => a.key === key)?.name ?? "General";
 }
 
-function nombreMes(ym: string): string {
+function nombreMes(ym: string, idioma: "es" | "en" | "pt"): string {
   const [y, m] = ym.split("-").map(Number);
-  const nombre = new Date(y, m - 1, 1).toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+  const mesNombre = CALENDARIO[idioma].meses[m - 1];
+  const nombre = idioma === "en" ? `${mesNombre} ${y}` : `${mesNombre} de ${y}`;
   return nombre.charAt(0).toUpperCase() + nombre.slice(1);
 }
 
@@ -46,7 +48,7 @@ function celdasDelMes(ym: string): Array<{ fecha: string; delMes: boolean }> {
 }
 
 export function CalendarioPage() {
-  const { t: tr } = useIdioma();
+  const { t: tr, idioma } = useIdioma();
 
   const [ym, setYm] = useState(mesActualLocal());
   const [fuentes, setFuentes] = useState<FuentesCal | null>(null);
@@ -88,14 +90,14 @@ export function CalendarioPage() {
 
       <div className="cal-head">
         <button className="iconbtn" aria-label="Mes anterior" onClick={() => setYm(sumarMes(ym, -1))}><ChevronLeft size={16} /></button>
-        <h2 style={{ fontSize: 19 }}>{nombreMes(ym)}</h2>
+        <h2 style={{ fontSize: 19 }}>{nombreMes(ym, idioma)}</h2>
         <button className="iconbtn" aria-label="Mes siguiente" onClick={() => setYm(sumarMes(ym, 1))}><ChevronRight size={16} /></button>
         {ym !== mesActualLocal() && (
           <button className="btn ghost" onClick={() => setYm(mesActualLocal())}>Hoy</button>
         )}
         <span style={{ flex: 1 }} />
         <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
-          {eventos.length === 0 ? "sin eventos este mes" : eventos.length === 1 ? "1 evento" : `${eventos.length} eventos`}
+          {eventos.length === 0 ? tr("sin eventos este mes") : eventos.length === 1 ? tr("1 evento") : `${eventos.length} ${tr("eventos")}`}
         </span>
       </div>
 
