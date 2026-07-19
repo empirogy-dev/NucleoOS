@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { celebrar } from "../lib/celebrar";
 import { hoyLocal } from "../lib/fechas";
 import { listDayTasks, toggleDayTask, type DayTask } from "../tareas/data";
 import { listHabitLogs, listHabits, toggleHabit, type Habit } from "../habitos/data";
@@ -64,6 +65,7 @@ export function UnPaso() {
       if (paso.tipo === "habito") await toggleHabit(paso.habito.id, hoyLocal(), true);
     } catch { /* si no se pudo marcar, el logro igual fue tuyo */ }
     setHecha(true);
+    celebrar("chica");
   }
 
   return (

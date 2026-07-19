@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { celebrar } from "../lib/celebrar";
 import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { Flag, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
@@ -202,7 +203,7 @@ function RetoCard({ reto, logs, onChanged, onEditar }: {
           {pausado ? <Play size={13} /> : <Pause size={13} />}
         </button>
         <button className="xdel" title="Terminar reto" aria-label="Terminar reto"
-          onClick={async () => { if (!window.confirm(`¿Cerrar el reto ${reto.title}? Quedará en tus terminados.`)) return; await updateReto(reto.id, { status: "terminado" }); onChanged(); }}>
+          onClick={async () => { if (!window.confirm(`¿Cerrar el reto ${reto.title}? Quedará en tus terminados.`)) return; await updateReto(reto.id, { status: "terminado" }); celebrar("grande"); onChanged(); }}>
           <Flag size={13} />
         </button>
         <button className="xdel" aria-label="Eliminar reto"
@@ -236,7 +237,7 @@ function RetoCard({ reto, logs, onChanged, onEditar }: {
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
         {!pausado && hoyProgramado && !hoyHecho && (
-          <button className="btn primary" onClick={async () => { await toggleRetoDay(reto.id, hoy, true); onChanged(); }}>
+          <button className="btn primary" onClick={async () => { await toggleRetoDay(reto.id, hoy, true); celebrar("chica"); onChanged(); }}>
             ✓ Marcar hoy
           </button>
         )}

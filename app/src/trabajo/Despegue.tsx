@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check, Crosshair, RotateCcw } from "lucide-react";
+import { celebrar } from "../lib/celebrar";
+import { Check, Rocket, RotateCcw } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
 import { radarFacilidad } from "../lib/ia";
 import { abrirPomodoro } from "../foco/data";
@@ -7,7 +8,7 @@ import { listDayTasks, toggleDayTask } from "../tareas/data";
 import { listObjectives, updateMilestoneProgress } from "../objetivos/data";
 import { listProjectTasks, listProjects, toggleProjectTask } from "./data";
 
-// Radar antiprocrastinación: escanea TODO lo pendiente (checklists de
+// Despegue antiprocrastinación: escanea TODO lo pendiente (checklists de
 // proyectos, próximos pasos de metas y tareas de hoy) y lo ordena del más
 // fácil al más pesado. Las victorias rápidas primero: cada pendiente chico
 // completado le regala impulso al siguiente. Eso es diseñar para el TDAH.
@@ -22,7 +23,7 @@ interface ItemRadar {
   min?: number;
 }
 
-export function Radar() {
+export function Despegue() {
   const [items, setItems] = useState<ItemRadar[] | null>(null);
   const [primerPaso, setPrimerPaso] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -90,6 +91,9 @@ export function Radar() {
       if (item.tipo === "meta") await updateMilestoneProgress(item.refId, 100);
       if (item.tipo === "tarea") await toggleDayTask(item.refId, true);
     } catch { /* si no se pudo marcar allá, el logro igual fue tuyo */ }
+    const quedan = (items ?? []).filter((x) => x.id !== item.id).length;
+    // Vaciar la lista completa merece lluvia de año nuevo.
+    celebrar(quedan === 0 ? "grande" : "chica");
     setItems((arr) => (arr ?? []).filter((x) => x.id !== item.id));
     setHechas((n) => n + 1);
   }
@@ -97,21 +101,21 @@ export function Radar() {
   return (
     <div className="card panel" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <Crosshair size={18} style={{ color: "var(--accent-ink)", flex: "none" }} />
+        <Rocket size={18} style={{ color: "var(--accent-ink)", flex: "none" }} />
         <div style={{ flex: 1, minWidth: 180 }}>
-          <h3 style={{ margin: 0 }}>Radar: por dónde empezar</h3>
+          <h3 style={{ margin: 0 }}>Despegue: por dónde empezar</h3>
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "2px 0 0" }}>
-            Escanea tus pendientes y los ordena del más fácil al más pesado. Las victorias rápidas crean el impulso.
+            Lo más difícil es dejar el suelo: tus pendientes, del más liviano al más pesado. Las victorias rápidas crean el impulso.
           </p>
         </div>
         {items === null ? (
           <button className="btn primary" disabled={cargando} onClick={() => void escanear()}>
-            {cargando ? "Escaneando…" : "Escanear"}
+            {cargando ? "Preparando…" : "Despegar 🚀"}
           </button>
         ) : (
           <button className="btn ghost" disabled={cargando} onClick={() => void escanear()} aria-label="Volver a escanear">
             <RotateCcw size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-            {cargando ? "Escaneando…" : "De nuevo"}
+            {cargando ? "Preparando…" : "Otra pasada"}
           </button>
         )}
       </div>

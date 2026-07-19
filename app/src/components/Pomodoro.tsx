@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { celebrar } from "../lib/celebrar";
 import { Pause, Play, RotateCcw, Timer, X } from "lucide-react";
 import { bloquesHoyLocal, saveFocusBlock, sumarBloqueLocal, type PomodoroPreset } from "../foco/data";
 import { listProjects, type Project } from "../trabajo/data";
@@ -114,6 +115,7 @@ export function Pomodoro() {
     if (prev.modo === "focus") {
       setHechos(sumarBloqueLocal());
       setFestejo(true);
+      celebrar("chica");
       setTimeout(() => setFestejo(false), 6000);
       // El bloque queda registrado con su destino (proyecto o área).
       const d = destinoRef.current;

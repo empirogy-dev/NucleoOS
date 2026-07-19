@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { celebrar } from "../lib/celebrar";
 import { CampoFecha } from "../components/CampoFecha";
 import { hoyLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
@@ -409,6 +410,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
     const order: ObjectiveStatus[] = ["en_camino", "en_riesgo", "lograda", "pausada"];
     const next = order[(order.indexOf(o.status) + 1) % order.length];
     await updateObjective(o.id, { status: next });
+    if (next === "lograda") celebrar("grande");
     onChanged();
   }
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { celebrar } from "../lib/celebrar";
 import { Link } from "react-router-dom";
 import { Pencil, PersonStanding, Plus, Trash2 } from "lucide-react";
 import { IconField } from "../components/IconField";
@@ -201,6 +202,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
       }
       await addExercise(fechaRegistro(), rutina.categoria, minutos);
       setCompletada(true);
+      celebrar("chica");
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {

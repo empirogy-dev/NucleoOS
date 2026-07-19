@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { celebrar } from "../lib/celebrar";
 import { Scissors, Trash2 } from "lucide-react";
 import { hoyLocal } from "../lib/fechas";
 import { TablesMissingError } from "../finanzas/data";
@@ -138,7 +139,7 @@ function TareaFila({ t, deOtroDia = false, onChanged }: { t: DayTask; deOtroDia?
       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
         <button
           aria-label={t.done ? "Desmarcar tarea" : "Marcar tarea lista"}
-          onClick={async () => { await toggleDayTask(t.id, !t.done); onChanged(); }}
+          onClick={async () => { await toggleDayTask(t.id, !t.done); if (!t.done) celebrar("chica"); onChanged(); }}
           style={{
             width: 19, height: 19, borderRadius: 6, cursor: "pointer", flex: "none",
             border: `1.5px solid ${t.done ? "var(--accent)" : "var(--line)"}`,

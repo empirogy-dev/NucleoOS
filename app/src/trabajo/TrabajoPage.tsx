@@ -26,7 +26,7 @@ import {
 } from "./data";
 import { abrirPomodoro, listFocusBlocks, type FocusBlock } from "../foco/data";
 import { MetasDeArea } from "../components/MetasDeArea";
-import { Radar } from "./Radar";
+import { Despegue } from "./Despegue";
 import { Selector } from "../components/Selector";
 
 const STATUS_TONES: Record<ProjectStatus, { bg: string; fg: string }> = {
@@ -132,7 +132,7 @@ export function TrabajoPage() {
 
           <MetasDeArea area="trabajo" />
 
-          <Radar />
+          <Despegue />
 
           <div className="panelgrid" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
             {/* Proyectos */}
