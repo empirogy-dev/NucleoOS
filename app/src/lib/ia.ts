@@ -1,11 +1,13 @@
 // Capa de IA de NucleoOS.
-// Por ahora usa Gemini (nivel gratis de Google AI Studio) directo desde el
-// navegador con la llave de la usuaria en .env. Antes de vender la app, esta
-// llamada se mueve a una Edge Function para que la llave nunca viaje al cliente.
+// En producción, la llamada viaja por la Edge Function "ia" de Supabase:
+// la llave de Gemini vive en el servidor (secreto GEMINI_API_KEY) y nunca
+// en el navegador. La llave local en .env queda como respaldo de desarrollo.
+
+import { supabase } from "./supabase";
 
 const key = import.meta.env.VITE_GEMINI_API_KEY;
 
-export const iaConfigured = Boolean(key);
+export const iaConfigured = Boolean(supabase) || Boolean(key);
 
 // Alias que siempre apunta al flash más nuevo del nivel gratis,
 // así no vuelve a quedar obsoleto cuando Google rote los modelos.
@@ -16,7 +18,47 @@ interface Part {
   inlineData?: { mimeType: string; data: string };
 }
 
+interface RespuestaGemini {
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  error?: { message?: string } | string;
+}
+
+function extraerTexto(json: RespuestaGemini): string {
+  const text = json?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("");
+  if (!text) throw new Error("La IA no devolvió texto. Intenta de nuevo.");
+  return text.trim();
+}
+
+/** El camino seguro: la Edge Function "ia" llama a Gemini con el secreto del servidor. */
+async function generarViaServidor(parts: Part[]): Promise<string> {
+  if (!supabase) throw new Error("Supabase no está configurado.");
+  const { data, error } = await supabase.functions.invoke("ia", { body: { parts } });
+  if (error) {
+    let msg = "";
+    try {
+      const ctx = (error as unknown as { context?: Response }).context;
+      const j = ctx ? await ctx.json() : null;
+      msg = typeof j?.error === "string" ? j.error : j?.error?.message ?? "";
+    } catch { /* cuerpo no legible */ }
+    if (/429|quota|resource.*exhausted/i.test(msg)) {
+      throw new Error("Se alcanzó el límite gratuito de Gemini por ahora. Intenta de nuevo en unos minutos.");
+    }
+    throw new Error(msg || "La IA no está disponible en este momento. Intenta de nuevo.");
+  }
+  const j = data as RespuestaGemini;
+  if (j?.error) throw new Error(typeof j.error === "string" ? j.error : j.error.message ?? "La IA respondió con un error.");
+  return extraerTexto(j);
+}
+
 async function generate(parts: Part[]): Promise<string> {
+  if (supabase) {
+    try {
+      return await generarViaServidor(parts);
+    } catch (e) {
+      // Sin llave local no hay respaldo: el error del servidor manda.
+      if (!key) throw e;
+    }
+  }
   if (!key) throw new Error("Falta configurar la llave de Gemini.");
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
@@ -36,12 +78,7 @@ async function generate(parts: Part[]): Promise<string> {
     }
     throw new Error(`La IA respondió con un error (${res.status}).`);
   }
-  const json = await res.json();
-  const text: string | undefined = json?.candidates?.[0]?.content?.parts
-    ?.map((p: { text?: string }) => p.text ?? "")
-    .join("");
-  if (!text) throw new Error("La IA no devolvió texto. Intenta de nuevo.");
-  return text.trim();
+  return extraerTexto(await res.json() as RespuestaGemini);
 }
 
 const PROMPT_RESUMEN =
