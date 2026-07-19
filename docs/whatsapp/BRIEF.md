@@ -155,9 +155,23 @@ Los avisos salen de un **cron** que lee las mismas tablas de la app. Cada aviso 
 - Últimos 10 registros hechos por WhatsApp (con enlace a su módulo).
 - NO hay inbox: la conversación vive en WhatsApp, los datos viven en la app.
 
-### 13. Límites y costos
+### 13. Límites y costos (tarifas Meta vigentes, julio 2026)
+- **El Escriba y el Coach son GRATIS siempre**: cuando la usuaria escribe se abre la ventana
+  de servicio de 24 h y toda respuesta del bot dentro de ella cuesta $0, sin template. Es el
+  95% del uso del producto.
+- **El Cartero es lo único que paga**: un aviso fuera de ventana va como template *utility*,
+  que cuesta centavos (80 a 90% más barato que marketing; del orden de US$0.005 por mensaje
+  en Norteamérica). Ojo: desde el **1 de octubre de 2026** Meta cobrará los utility también
+  DENTRO de la ventana, así que presupuestar como si todo aviso costara.
+- **Cuenta de servilleta por usuaria activa**: tope de 5 avisos/día ya agrupados ≈ 150
+  templates/mes ≈ **US$0.50 a 1.50/mes**. Para Bárbara sola: ronda un dólar al mes. Para el
+  SaaS: va dentro del precio de la suscripción (o los avisos por WhatsApp son feature premium).
+- **Por qué directo y no un BSP**: cualquier proveedor tipo YCloud/360dialog/Twilio paga estas
+  MISMAS tarifas de Meta y les suma su margen o mensualidad (360dialog ~€49/mes, Twilio
+  ~$0.005 extra por mensaje). Directo con Meta no hay mensualidad ni margen: es el piso.
+- Mitigaciones ya diseñadas: tope diario de avisos, agrupación en un mensaje, switches por
+  tipo, y el truco de "responde para ver el detalle" que reabre la ventana gratuita.
 - IA: comparte `ia_uso` (80/día). El buffer ahorra llamadas: una ráfaga de 4 mensajes = 1 llamada.
-- YCloud/Meta: las conversaciones iniciadas por la usuaria son las baratas; los templates del Cartero son "utility". Presupuestar por usuaria activa (~30 conversaciones/mes).
 - Fallar en silencio jamás: si el registro falla, el bot lo dice y sugiere hacerlo en la app.
 
 ---
