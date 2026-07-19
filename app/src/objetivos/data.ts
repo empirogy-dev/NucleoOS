@@ -289,6 +289,9 @@ export async function addObjective(o: { title: string; area: string | null; dead
   if (error && /invalid input syntax for type uuid/.test(error.message)) {
     throw new Error("Para esta conexión falta la migración 0047 (supabase/migrations/0047_auto_ref_texto.sql).");
   }
+  if (error && /auto_metric_check/.test(error.message)) {
+    throw new Error("Para esta métrica falta la migración 0049 (supabase/migrations/0049_metricas_completas.sql), que actualiza la lista de métricas permitidas.");
+  }
   if (error && /dream_id/.test(error.message)) {
     throw new Error("Para convertir sueños en metas falta la migración 0019 (supabase/migrations/0019_suenos_vida_ideal.sql).");
   }
@@ -304,7 +307,7 @@ export async function updateObjective(id: string, patch: { title?: string; area?
     throw new Error("Para esta conexión falta la migración 0047 (supabase/migrations/0047_auto_ref_texto.sql).");
   }
   if (error && /auto_metric_check/.test(error.message)) {
-    throw new Error("Para esta conexión falta la migración 0028 (supabase/migrations/0028_meta_avances.sql).");
+    throw new Error("Para esta métrica falta la migración 0049 (supabase/migrations/0049_metricas_completas.sql), que actualiza la lista de métricas permitidas.");
   }
   if (error && /auto_metric|auto_target|auto_ref/.test(error.message)) {
     throw new Error("Para el progreso automático falta la migración 0024 (supabase/migrations/0024_metas_automaticas.sql).");
