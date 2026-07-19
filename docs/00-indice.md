@@ -18,6 +18,7 @@
 | 05 | [Roadmap y fases](05-roadmap-fases.md) | Fases del ciclo de vida, hitos, MVP → v1 → v2 |
 | 06 | [IA por módulo](06-ia-por-modulo.md) | Investigación 2026: qué funciones de IA agregar a cada área (coach) |
 | 07 | [Costos y servicios de IA](07-costos-servicios-ia.md) | Proveedores económicos de voz/IA, almacenamiento local-first, WhatsApp, costo estimado |
+| WA | [Agente de WhatsApp: brief](whatsapp/BRIEF.md) y [arquitectura](whatsapp/ARQUITECTURA-OBJETIVO.md) | El escriba y el cartero de NucleoOS por WhatsApp: registrar por chat y avisos proactivos |
 
 ## Cómo usamos gstack junto a estos docs
 - `/spec` → convierte una historia de usuario de este doc en una especificación ejecutable antes de programar.
