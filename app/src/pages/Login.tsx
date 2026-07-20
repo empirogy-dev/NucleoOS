@@ -50,7 +50,7 @@ export function Login() {
               <button className={"tab" + (mode === "up" ? " active" : "")} onClick={() => { setMode("up"); setMsg(null); }}>{t("login.crearcuenta")}</button>
             </div>
 
-            {msg && <div className={"msg " + msg.kind}>{msg.text}</div>}
+            {msg && <div className={"msg " + msg.kind}>{t(msg.text)}</div>}
 
             <form onSubmit={submit}>
               <div className="field">

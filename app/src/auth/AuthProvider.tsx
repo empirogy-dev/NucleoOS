@@ -51,16 +51,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  /** Convierte los errores técnicos de Supabase en mensajes humanos.
+   *  Sin esto, un fallo del servidor se mostraba como "{}" en el banner. */
+  function textoDeError(mensaje: string | undefined): string {
+    const m = (mensaje ?? "").trim();
+    if (/confirmation email|error sending/i.test(m)) return "No pudimos enviarte el correo de confirmación. No es culpa tuya: inténtalo de nuevo en unos minutos.";
+    if (/rate limit/i.test(m)) return "Hay mucha gente registrándose ahora mismo. Espera unos minutos e inténtalo de nuevo.";
+    if (/invalid login credentials/i.test(m)) return "Correo o contraseña incorrectos.";
+    if (/already registered|already been registered/i.test(m)) return "Ese correo ya tiene una cuenta. Prueba con Entrar.";
+    if (/password.*(6|characters)/i.test(m)) return "La contraseña necesita al menos 6 caracteres.";
+    if (!m || m === "{}" || m.startsWith("{")) return "Algo falló de nuestro lado. Inténtalo de nuevo en un momento.";
+    return m;
+  }
+
   async function signIn(email: string, password: string) {
     if (!supabase) return { error: "Supabase no está configurado." };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message };
+    return { error: error ? textoDeError(error.message) : undefined };
   }
 
   async function signUp(email: string, password: string) {
     if (!supabase) return { error: "Supabase no está configurado." };
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
+    if (error) return { error: textoDeError(error.message) };
     // Si Supabase pide confirmación por correo, no hay sesión todavía.
     return { needsConfirm: !data.session };
   }
