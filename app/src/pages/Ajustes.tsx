@@ -27,20 +27,7 @@ const CURRENCY_NAMES: Record<string, string> = {
 
 export function Ajustes() {
   const { t: tr } = useIdioma();
-
-  const { currency, setCurrency, profileTableMissing } = useSettings();
-  const { session } = useAuth();
-  const { palette } = useTheme();
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const paletteName = PALETTES.find((p) => p.key === palette)?.name ?? palette;
-
-  async function onCurrency(c: string) {
-    await setCurrency(c);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  const { profileTableMissing } = useSettings();
 
   return (
     <div className="page">
@@ -61,66 +48,111 @@ export function Ajustes() {
         </div>
       )}
 
+      {/* El orden cuenta una historia: primero quién eres, después cómo
+          trabaja la app contigo, luego por dónde te habla, y al final tu
+          cuenta. */}
       <div className="grid" style={{ maxWidth: 640 }}>
-        <IdiomaCard />
-        <ModulosCard />
-        <WhatsAppCard />
         <NameCard />
         <CumpleCard />
+        <MonedaCard />
+        <IdiomaCard />
+        <ModulosCard />
         <DiaPasadoCard />
-        <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Moneda predeterminada")}</h3>
-          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            {tr("Se usa en los totales y como moneda inicial de tus cuentas nuevas.")}
-          </p>
-          <div className="field" style={{ maxWidth: 320 }}>
-            <Selector value={currency} ariaLabel="Moneda predeterminada"
-              opciones={CURRENCIES.map((c) => ({ value: c, label: `${tr(CURRENCY_NAMES[c])} (${c})` }))}
-              onChange={(v) => void onCurrency(v)} />
-          </div>
-          {saved && <span className="chip" style={{ marginTop: 4 }}>✓ {tr("Guardado")}</span>}
-        </div>
-
-        <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Tema")}</h3>
-          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            {tr("Tema actual:")} <b style={{ color: "var(--ink)" }}>{paletteName}</b>
-          </p>
-          <button className="btn ghost" onClick={() => setPickerOpen(true)}>
-            <Palette size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-            {tr("Cambiar tema")}
-          </button>
-        </div>
-
-        <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Avisos del navegador")}</h3>
-          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            {tr("Una vez al día, si hay algo urgente (un pago que vence, una cita), el navegador te avisa aunque tengas otra pestaña abierta.")}
-          </p>
-          <NotifPermiso />
-        </div>
-
-        <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Conexiones")}</h3>
-          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>
-            <b style={{ color: "var(--ink)" }}>Notion</b>: {tr("llegará como integración directa cuando la app tenga su capa de servidor, para exportar reportes, journaling y notas a tu espacio.")}
-
-          </p>
-          <p style={{ fontSize: 13, color: "var(--muted)" }}>
-            {tr("Mientras tanto, en")} <b style={{ color: "var(--ink)" }}>{tr("nav.revision")}</b> {tr("puedes copiar cualquier reporte semanal o mensual como Markdown y pegarlo en Notion tal cual.")}
-
-          </p>
-        </div>
-
-        <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Cuenta")}</h3>
-          <p style={{ fontSize: 13, color: "var(--muted)" }}>
-            {tr("Sesión iniciada como")} <b style={{ color: "var(--ink)" }}>{session?.user?.email}</b>
-          </p>
-        </div>
+        <WhatsAppCard />
+        <TemaCard />
+        <AvisosNavegadorCard />
+        <ConexionesCard />
+        <CuentaCard />
       </div>
+    </div>
+  );
+}
 
+function MonedaCard() {
+  const { t: tr } = useIdioma();
+  const { currency, setCurrency } = useSettings();
+  const [saved, setSaved] = useState(false);
+
+  async function onCurrency(c: string) {
+    await setCurrency(c);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Moneda predeterminada")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        {tr("Se usa en los totales y como moneda inicial de tus cuentas nuevas.")}
+      </p>
+      <div className="field" style={{ maxWidth: 320 }}>
+        <Selector value={currency} ariaLabel="Moneda predeterminada"
+          opciones={CURRENCIES.map((c) => ({ value: c, label: `${tr(CURRENCY_NAMES[c])} (${c})` }))}
+          onChange={(v) => void onCurrency(v)} />
+      </div>
+      {saved && <span className="chip" style={{ marginTop: 4 }}>✓ {tr("Guardado")}</span>}
+    </div>
+  );
+}
+
+function TemaCard() {
+  const { t: tr } = useIdioma();
+  const { palette } = useTheme();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const paletteName = PALETTES.find((p) => p.key === palette)?.name ?? palette;
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Tema")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        {tr("Tema actual:")} <b style={{ color: "var(--ink)" }}>{paletteName}</b>
+      </p>
+      <button className="btn ghost" onClick={() => setPickerOpen(true)}>
+        <Palette size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+        {tr("Cambiar tema")}
+      </button>
       {pickerOpen && <ThemePicker onClose={() => setPickerOpen(false)} />}
+    </div>
+  );
+}
+
+function AvisosNavegadorCard() {
+  const { t: tr } = useIdioma();
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Avisos del navegador")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        {tr("Una vez al día, si hay algo urgente (un pago que vence, una cita), el navegador te avisa aunque tengas otra pestaña abierta.")}
+      </p>
+      <NotifPermiso />
+    </div>
+  );
+}
+
+function ConexionesCard() {
+  const { t: tr } = useIdioma();
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Conexiones")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>
+        <b style={{ color: "var(--ink)" }}>Notion</b>: {tr("llegará como integración directa cuando la app tenga su capa de servidor, para exportar reportes, journaling y notas a tu espacio.")}
+      </p>
+      <p style={{ fontSize: 13, color: "var(--muted)" }}>
+        {tr("Mientras tanto, en")} <b style={{ color: "var(--ink)" }}>{tr("nav.revision")}</b> {tr("puedes copiar cualquier reporte semanal o mensual como Markdown y pegarlo en Notion tal cual.")}
+      </p>
+    </div>
+  );
+}
+
+function CuentaCard() {
+  const { t: tr } = useIdioma();
+  const { session } = useAuth();
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Cuenta")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)" }}>
+        {tr("Sesión iniciada como")} <b style={{ color: "var(--ink)" }}>{session?.user?.email}</b>
+      </p>
     </div>
   );
 }
