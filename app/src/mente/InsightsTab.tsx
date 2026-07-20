@@ -79,9 +79,9 @@ export function InsightsTab() {
   return (
     <>
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">Minutos esta semana</div><div className="v tnum">{minSemana}</div></div>
-        <div className="card stat"><div className="k">Semana anterior</div><div className="v tnum">{minAnterior}</div></div>
-        <div className="card stat"><div className="k">{tr("Racha de práctica")}</div><div className="v tnum">{racha > 0 ? `🔥 ${racha}` : "0"} <small style={{ fontSize: 13, color: "var(--muted)" }}>días</small></div></div>
+        <div className="card stat"><div className="k">{tr("Minutos esta semana")}</div><div className="v tnum">{minSemana}</div></div>
+        <div className="card stat"><div className="k">{tr("Semana anterior")}</div><div className="v tnum">{minAnterior}</div></div>
+        <div className="card stat"><div className="k">{tr("Racha de práctica")}</div><div className="v tnum">{racha > 0 ? `🔥 ${racha}` : "0"} <small style={{ fontSize: 13, color: "var(--muted)" }}>{tr("días")}</small></div></div>
         <div className="card stat"><div className="k">{tr("Tu favorita")}</div><div className="v" style={{ fontSize: 17 }}>{favorita ? tr(favorita) : tr("aún ninguna")}</div></div>
       </div>
 

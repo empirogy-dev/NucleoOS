@@ -1,6 +1,7 @@
 import { hoyLocal } from "../lib/fechas";
 import { supabase } from "../lib/supabase";
 import { TablesMissingError } from "../finanzas/data";
+import { idiomaActual } from "../idioma/actual";
 
 // Ciclo menstrual (migración 0036): cada regla registrada permite saber
 // en qué fase hormonal vas, qué necesitas, y cuándo se estima la próxima.
@@ -94,7 +95,9 @@ export function largoPromedio(cycles: Cycle[], porDefecto: number): number {
 export function proximaRegla(ultimoInicio: string, largo: number): string {
   const d = new Date(`${ultimoInicio}T00:00:00`);
   d.setDate(d.getDate() + largo);
-  return d.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+  const i = idiomaActual();
+  const loc = i === "en" ? "en-US" : i === "pt" ? "pt-BR" : "es-CL";
+  return d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
 }
 
 function check(error: { code?: string; message: string } | null) {

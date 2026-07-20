@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
@@ -29,6 +30,7 @@ const IDEAS_DESCANSO = [
 ];
 
 export function RecuperacionTab() {
+  const { t: tr } = useIdioma();
   const [sobriety, setSobriety] = useState<Sobriety[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,10 +63,10 @@ export function RecuperacionTab() {
       <OrdenGrid clave="energia-recuperacion" bloques={[
         { id: "sobriedad", el: (
           <div className="card panel">
-            <h3>🌱 Sobriedad</h3>
+            <h3>🌱 {tr("Sobriedad")}</h3>
             {sobriety.length === 0 && (
               <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                Si estás dejando algo (marihuana, alcohol, cigarro), créale un tracker. Cada día limpio cuenta y aquí se celebra.
+                {tr("Si estás dejando algo (marihuana, alcohol, cigarro), créale un tracker. Cada día limpio cuenta y aquí se celebra.")}
               </p>
             )}
             {sobriety.map((s) => {
@@ -75,14 +77,14 @@ export function RecuperacionTab() {
                 <div className="sob" key={s.id} style={{ marginTop: 0, padding: "10px 0", borderBottom: "1px solid var(--line-soft)" }}>
                   <span className="seed">🌱</span>
                   <div>
-                    <div className="t1">Libre de {s.substance}</div>
+                    <div className="t1">{tr("Libre de")} {s.substance}</div>
                     <div className="t2 tnum">{humanizeDays(dias)}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{dias} días desde el {s.start_date}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{dias} {tr("días desde el")} {s.start_date}</div>
                   </div>
                   <div className="hitos">
-                    {logrados.slice(-2).map((m) => <span className="hito" key={m.days}>✓ {m.label}</span>)}
-                    {proximo && <span className="hito next">Próximo: {proximo.label}</span>}
-                    {!proximo && <span className="hito">🎉 Más de 2 años</span>}
+                    {logrados.slice(-2).map((m) => <span className="hito" key={m.days}>✓ {tr(m.label)}</span>)}
+                    {proximo && <span className="hito next">{tr("Próximo:")} {tr(proximo.label)}</span>}
+                    {!proximo && <span className="hito">🎉 {tr("Más de 2 años")}</span>}
                   </div>
                   <button className="xdel" aria-label="Eliminar tracker" onClick={async () => { if (!window.confirm(`¿Eliminar el tracker de ${s.substance}? Se pierde el conteo de días.`)) return; await deleteSobriety(s.id); void reload(); }}>
                     <Trash2 size={14} />
@@ -91,24 +93,24 @@ export function RecuperacionTab() {
               );
             })}
             <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setModal(true)}>
-              <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Nuevo tracker
+              <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> {tr("Nuevo tracker")}
             </button>
           </div>
         ) },
         { id: "pausas", el: (
           <div className="card panel">
-            <h3>🕊 Tus pausas de hoy</h3>
+            <h3>🕊 {tr("Tus pausas de hoy")}</h3>
             {sesionesHoy.length === 0 ? (
               <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                Aún no hay sesiones de calma hoy. Una respiración de dos minutos en <Link to="/mente" style={{ color: "var(--accent-ink)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>Mente</Link> ya recarga.
+                {tr("Aún no hay sesiones de calma hoy. Una respiración de dos minutos en")} <Link to="/mente" style={{ color: "var(--accent-ink)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>Mente</Link> {tr("ya recarga.")}
               </p>
             ) : (
               sesionesHoy.map((s, i) => (
                 <div className="txrow" key={`${s.id}-${i}`}>
                   <span className="txicon">✨</span>
                   <div className="txmeta">
-                    <b>{s.nombre}</b>
-                    <small>{s.minutos} minutos de recuperación</small>
+                    <b>{tr(s.nombre)}</b>
+                    <small>{s.minutos} {tr("minutos de recuperación")}</small>
                   </div>
                 </div>
               ))
@@ -117,15 +119,15 @@ export function RecuperacionTab() {
         ) },
         { id: "ideas", el: (
         <div className="card panel">
-          <h3>🌙 Ideas para recuperar energía</h3>
+          <h3>{tr("🌙 Ideas para recuperar energía")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
-            El descanso también es productivo. Elige una y regálatela hoy.
+            {tr("El descanso también es productivo. Elige una y regálatela hoy.")}
           </p>
           {IDEAS_DESCANSO.map((d) => (
             <div className="txrow" key={d.texto}>
               <span className="txicon">{d.emoji}</span>
               <div className="txmeta" style={{ whiteSpace: "normal" }}>
-                <small style={{ fontSize: 13, color: "var(--ink-soft)" }}>{d.texto}</small>
+                <small style={{ fontSize: 13, color: "var(--ink-soft)" }}>{tr(d.texto)}</small>
               </div>
             </div>
           ))}
@@ -139,6 +141,7 @@ export function RecuperacionTab() {
 }
 
 function SobModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [substance, setSubstance] = useState("");
   const [start, setStart] = useState("");
   const [busy, setBusy] = useState(false);
@@ -152,13 +155,13 @@ function SobModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
   }
 
   return (
-    <ModalShell title="Nuevo tracker de sobriedad" onClose={onClose}>
+    <ModalShell title={tr("Nuevo tracker de sobriedad")} onClose={onClose}>
       <form onSubmit={save}>
-        <div className="field"><label>¿Qué estás dejando?</label>
+        <div className="field"><label>{tr("¿Qué estás dejando?")}</label>
           <input required value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder="marihuana, alcohol, cigarro…" autoFocus /></div>
-        <div className="field"><label>¿Desde cuándo estás limpia?</label>
+        <div className="field"><label>{tr("¿Desde cuándo estás limpia?")}</label>
           <CampoFecha value={start} onChange={setStart} ariaLabel="Desde cuándo estás limpia" conBorrar={false} /></div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Empezar a contar"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("Empezar a contar")}</button>
       </form>
     </ModalShell>
   );

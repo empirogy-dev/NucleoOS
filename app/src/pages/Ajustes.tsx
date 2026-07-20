@@ -65,53 +65,53 @@ export function Ajustes() {
         <CumpleCard />
         <DiaPasadoCard />
         <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Moneda predeterminada</h3>
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Moneda predeterminada")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Se usa en los totales y como moneda inicial de tus cuentas nuevas.
+            {tr("Se usa en los totales y como moneda inicial de tus cuentas nuevas.")}
           </p>
           <div className="field" style={{ maxWidth: 320 }}>
             <Selector value={currency} ariaLabel="Moneda predeterminada"
-              opciones={CURRENCIES.map((c) => ({ value: c, label: `${CURRENCY_NAMES[c]} (${c})` }))}
+              opciones={CURRENCIES.map((c) => ({ value: c, label: `${tr(CURRENCY_NAMES[c])} (${c})` }))}
               onChange={(v) => void onCurrency(v)} />
           </div>
-          {saved && <span className="chip" style={{ marginTop: 4 }}>✓ Guardado</span>}
+          {saved && <span className="chip" style={{ marginTop: 4 }}>✓ {tr("Guardado")}</span>}
         </div>
 
         <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Tema</h3>
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Tema")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Tema actual: <b style={{ color: "var(--ink)" }}>{paletteName}</b>
+            {tr("Tema actual:")} <b style={{ color: "var(--ink)" }}>{paletteName}</b>
           </p>
           <button className="btn ghost" onClick={() => setPickerOpen(true)}>
             <Palette size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-            Cambiar tema
+            {tr("Cambiar tema")}
           </button>
         </div>
 
         <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Avisos del navegador</h3>
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Avisos del navegador")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Una vez al día, si hay algo urgente (un pago que vence, una cita), el navegador te avisa aunque tengas otra pestaña abierta.
+            {tr("Una vez al día, si hay algo urgente (un pago que vence, una cita), el navegador te avisa aunque tengas otra pestaña abierta.")}
           </p>
           <NotifPermiso />
         </div>
 
         <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Conexiones</h3>
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Conexiones")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>
-            <b style={{ color: "var(--ink)" }}>Notion</b>: llegará como integración directa cuando la app tenga su capa de servidor (Fase 4),
-            para exportar reportes, journaling y notas a tu espacio.
+            <b style={{ color: "var(--ink)" }}>Notion</b>: {tr("llegará como integración directa cuando la app tenga su capa de servidor, para exportar reportes, journaling y notas a tu espacio.")}
+
           </p>
           <p style={{ fontSize: 13, color: "var(--muted)" }}>
-            Mientras tanto, en <b style={{ color: "var(--ink)" }}>Revisión</b> puedes copiar cualquier reporte semanal o mensual
-            como Markdown y pegarlo en Notion tal cual.
+            {tr("Mientras tanto, en")} <b style={{ color: "var(--ink)" }}>{tr("nav.revision")}</b> {tr("puedes copiar cualquier reporte semanal o mensual como Markdown y pegarlo en Notion tal cual.")}
+
           </p>
         </div>
 
         <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Cuenta</h3>
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Cuenta")}</h3>
           <p style={{ fontSize: 13, color: "var(--muted)" }}>
-            Sesión iniciada como <b style={{ color: "var(--ink)" }}>{session?.user?.email}</b>
+            {tr("Sesión iniciada como")} <b style={{ color: "var(--ink)" }}>{session?.user?.email}</b>
           </p>
         </div>
       </div>
@@ -122,6 +122,7 @@ export function Ajustes() {
 }
 
 function NameCard() {
+  const { t: tr } = useIdioma();
   const { displayName, updateProfile } = useSettings();
   const [value, setValue] = useState(displayName);
   const [saved, setSaved] = useState(false);
@@ -142,40 +143,41 @@ function NameCard() {
 
   return (
     <div className="card pad">
-      <h3 style={{ fontSize: 15, marginBottom: 4 }}>Tu nombre</h3>
-      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>Cómo quieres que te salude la app.</p>
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Tu nombre")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>{tr("Cómo quieres que te salude la app.")}</p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
         <input className="input-inline" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Bárbara" />
-        <button className="btn primary" type="submit">Guardar</button>
+        <button className="btn primary" type="submit">{tr("com.guardar")}</button>
       </form>
-      {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
+      {saved && <span className="chip" style={{ marginTop: 8 }}>✓ {tr("Guardado")}</span>}
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
     </div>
   );
 }
 
 function DiaPasadoCard() {
+  const { t: tr } = useIdioma();
   const { fecha, esHoy, setFecha, volverAHoy } = useFechaActiva();
   const hoy = hoyLocal();
   const min = diasAtrasLocal(13);
 
   return (
     <div className="card pad">
-      <h3 style={{ fontSize: 15, marginBottom: 4 }}>🕰 Registrar un día pasado</h3>
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("🕰 Registrar un día pasado")}</h3>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-        ¿Desapareciste unos días pero igual entrenaste, tomaste agua o marcaste hábitos? Elige el día y toda la app registra ahí: Energía, Hábitos, Movimiento, Mente, Tareas y más. Un aviso te acompaña hasta que vuelvas a hoy.
+        {tr("¿Desapareciste unos días pero igual entrenaste, tomaste agua o marcaste hábitos? Elige el día y toda la app registra ahí: Energía, Hábitos, comidas y estados. Al terminar, vuelve a hoy.")}
       </p>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ width: 200, flex: "none" }}>
           <CampoFecha value={fecha} onChange={(v) => { if (v) setFecha(v); }} ariaLabel="Día que quieres registrar" min={min} max={hoy} conBorrar={false} />
         </div>
         {!esHoy && (
-          <button className="btn ghost" onClick={volverAHoy}>Volver a hoy</button>
+          <button className="btn ghost" onClick={volverAHoy}>{tr("Volver a hoy")}</button>
         )}
-        {!esHoy && <span className="chip">registrando el {fechaLarga(fecha)}</span>}
+        {!esHoy && <span className="chip">{tr("registrando el")} {fechaLarga(fecha)}</span>}
       </div>
       <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>
-        Hasta dos semanas atrás. Lo registrado suma a tus metas igual que si lo hubieras anotado ese día.
+        {tr("Hasta dos semanas atrás. Lo registrado suma a tus metas igual que si lo hubieras anotado ese día.")}
       </p>
     </div>
   );
@@ -199,6 +201,7 @@ function IdiomaCard() {
 }
 
 function CumpleCard() {
+  const { t: tr } = useIdioma();
   const { birthday, updateProfile } = useSettings();
   const [value, setValue] = useState(birthday);
   const [saved, setSaved] = useState(false);
@@ -219,30 +222,31 @@ function CumpleCard() {
 
   return (
     <div className="card pad">
-      <h3 style={{ fontSize: 15, marginBottom: 4 }}>Tu cumpleaños 🎂</h3>
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Tu cumpleaños 🎂")}</h3>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-        Amor propio: la app también te celebra a ti. El día de tu cumpleaños, el Inicio se pone de fiesta.
+        {tr("Amor propio: la app también te celebra a ti. El día de tu cumpleaños, el Inicio se pone de fiesta.")}
       </p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
         <div style={{ flex: 1 }}><CampoFecha value={value} onChange={setValue} ariaLabel="Tu fecha de cumpleaños" /></div>
-        <button className="btn primary" type="submit">Guardar</button>
+        <button className="btn primary" type="submit">{tr("com.guardar")}</button>
       </form>
-      {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardado</span>}
+      {saved && <span className="chip" style={{ marginTop: 8 }}>✓ {tr("Guardado")}</span>}
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
     </div>
   );
 }
 
 function NotifPermiso() {
+  const { t: tr } = useIdioma();
   const soporta = "Notification" in window;
   const [estado, setEstado] = useState(soporta ? Notification.permission : "unsupported");
 
-  if (!soporta) return <p style={{ fontSize: 12.5, color: "var(--muted)" }}>Este navegador no soporta avisos.</p>;
-  if (estado === "granted") return <span className="chip">✓ Avisos activados</span>;
-  if (estado === "denied") return <p style={{ fontSize: 12.5, color: "var(--muted)" }}>Los bloqueaste en el navegador. Puedes reactivarlos desde el candado de la barra de direcciones.</p>;
+  if (!soporta) return <p style={{ fontSize: 12.5, color: "var(--muted)" }}>{tr("Este navegador no soporta avisos.")}</p>;
+  if (estado === "granted") return <span className="chip">✓ {tr("Avisos activados")}</span>;
+  if (estado === "denied") return <p style={{ fontSize: 12.5, color: "var(--muted)" }}>{tr("Los bloqueaste en el navegador. Puedes reactivarlos desde el candado de la barra de direcciones.")}</p>;
   return (
     <button className="btn ghost" onClick={async () => setEstado(await Notification.requestPermission())}>
-      Activar avisos
+      {tr("Activar avisos")}
     </button>
   );
 }

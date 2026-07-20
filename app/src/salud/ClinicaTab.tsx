@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { CampoHora } from "../components/CampoHora";
 import { Plus, Trash2 } from "lucide-react";
@@ -32,6 +33,7 @@ import { Selector } from "../components/Selector";
 // Es el archivo médico; lo diario vive en las otras pestañas de Energía.
 
 export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } = {}) {
+  const { t: tr } = useIdioma();
   const [profile, setProfile] = useState<HealthProfile | null>(null);
   const [meds, setMeds] = useState<Medication[]>([]);
   const [citas, setCitas] = useState<Appointment[]>([]);
@@ -91,7 +93,7 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
         <div style={{ display: "grid", gap: 14, alignSelf: "start" }}>
           <div className="card panel">
             <h3>🩺 Citas</h3>
-            {proximas.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin citas próximas.</p>}
+            {proximas.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>{tr("Sin citas próximas.")}</p>}
             {proximas.map((c) => {
               const lbl = dueLabel(daysUntil(c.date));
               return (
@@ -117,10 +119,10 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
           </div>
 
           <div className="card panel">
-            <h3>🧪 Exámenes</h3>
+            <h3>{tr("🧪 Exámenes")}</h3>
             {exams.length === 0 && (
               <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                Anota tus exámenes pendientes (sangre, vitaminas, chequeos) y registra el resultado cuando llegue.
+                {tr("Anota tus exámenes pendientes (sangre, vitaminas, chequeos) y registra el resultado cuando llegue.")}
               </p>
             )}
             {exams.map((e) => (
@@ -155,7 +157,7 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
             <h3>🌿 Suplementos</h3>
             {meds.filter((m) => m.kind === "suplemento").length === 0 && (
               <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                Magnesio, vitamina D, omega 3, creatina: registra lo que tomas y cuándo.
+                {tr("Magnesio, vitamina D, omega 3, creatina: registra lo que tomas y cuándo.")}
               </p>
             )}
             {meds.filter((m) => m.kind === "suplemento").map((m) => (
@@ -192,6 +194,7 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
 }
 
 function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [blood, setBlood] = useState(profile.blood_type ?? "");
   const [allergies, setAllergies] = useState(profile.allergies ?? "");
   const [conditions, setConditions] = useState(profile.conditions ?? "");
@@ -240,52 +243,52 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
     <div className="card panel">
       <h3>📋 Mi ficha</h3>
       <form onSubmit={save}>
-        <div className="field"><label>Tipo de sangre</label>
-          <Selector value={blood} ariaLabel="Tipo de sangre" placeholder="No lo sé" onChange={setBlood}
-            opciones={[{ value: "", label: "No lo sé" }, ...BLOOD_TYPES.map((b) => ({ value: b, label: b }))]} /></div>
+        <div className="field"><label>{tr("Tipo de sangre")}</label>
+          <Selector value={blood} ariaLabel="Tipo de sangre" placeholder={tr("No lo sé")} onChange={setBlood}
+            opciones={[{ value: "", label: tr("No lo sé") }, ...BLOOD_TYPES.map((b) => ({ value: b, label: b }))]} /></div>
         <div className="field"><label>Alergias</label>
-          <input value={allergies} onChange={(e) => setAllergies(e.target.value)} placeholder="Penicilina, maní…" /></div>
+          <input value={allergies} onChange={(e) => setAllergies(e.target.value)} placeholder={tr("Penicilina, maní…")} /></div>
         <div className="field"><label>Condiciones</label>
           <input value={conditions} onChange={(e) => setConditions(e.target.value)} placeholder="ADHD, hipotiroidismo…" /></div>
         <div className="field"><label>Operaciones</label>
-          <input value={surgeries} onChange={(e) => setSurgeries(e.target.value)} placeholder="Apendicectomía (2019)…" /></div>
+          <input value={surgeries} onChange={(e) => setSurgeries(e.target.value)} placeholder={tr("Apendicectomía (2019)…")} /></div>
         <div className="frow">
-          <div className="field"><label>Peso (kg)</label>
+          <div className="field"><label>{tr("Peso (kg)")}</label>
             <input type="number" min="0" step="0.1" value={peso} onChange={(e) => setPeso(e.target.value)} placeholder="62" /></div>
-          <div className="field"><label>Estatura (cm)</label>
+          <div className="field"><label>{tr("Estatura (cm)")}</label>
             <input type="number" min="0" step="1" value={estatura} onChange={(e) => setEstatura(e.target.value)} placeholder="165" /></div>
         </div>
         <div className="frow">
-          <div className="field"><label>Alimentación</label>
-            <Selector value={dieta} ariaLabel="Tipo de alimentación" placeholder="Sin definir" onChange={setDieta}
-              opciones={[{ value: "", label: "Sin definir" }, ...DIETAS.map((d) => ({ value: d, label: d }))]} /></div>
-          <div className="field"><label>Color de ojos</label>
-            <input value={ojos} onChange={(e) => setOjos(e.target.value)} placeholder="café, verdes…" /></div>
+          <div className="field"><label>{tr("Alimentación")}</label>
+            <Selector value={dieta} ariaLabel="Tipo de alimentación" placeholder={tr("Sin definir")} onChange={setDieta}
+              opciones={[{ value: "", label: tr("Sin definir") }, ...DIETAS.map((d) => ({ value: d, label: tr(d) }))]} /></div>
+          <div className="field"><label>{tr("Color de ojos")}</label>
+            <input value={ojos} onChange={(e) => setOjos(e.target.value)} placeholder={tr("café, verdes…")} /></div>
         </div>
         <div className="frow">
-          <div className="field" style={{ flex: 1.4 }}><label>¿Qué tan activa es tu vida?</label>
-            <Selector value={actividad} ariaLabel="Nivel de actividad" placeholder="Sin definir" onChange={setActividad}
-              opciones={[{ value: "", label: "Sin definir" }, ...NIVELES_ACTIVIDAD.map((n) => ({ value: n.key, label: n.label }))]} /></div>
-          <div className="field"><label>Sexo (para las calorías)</label>
-            <Selector value={sexo} ariaLabel="Sexo" placeholder="Sin definir" onChange={setSexo}
+          <div className="field" style={{ flex: 1.4 }}><label>{tr("¿Qué tan activa es tu vida?")}</label>
+            <Selector value={actividad} ariaLabel="Nivel de actividad" placeholder={tr("Sin definir")} onChange={setActividad}
+              opciones={[{ value: "", label: tr("Sin definir") }, ...NIVELES_ACTIVIDAD.map((n) => ({ value: n.key, label: tr(n.label) }))]} /></div>
+          <div className="field"><label>{tr("Sexo (para las calorías)")}</label>
+            <Selector value={sexo} ariaLabel="Sexo" placeholder={tr("Sin definir")} onChange={setSexo}
               opciones={[
                 { value: "", label: "Sin definir" },
-                { value: "femenino", label: "Femenino" },
-                { value: "masculino", label: "Masculino" },
+                { value: "femenino", label: tr("Femenino") },
+                { value: "masculino", label: tr("Masculino") },
               ]} /></div>
-          <div className="field"><label>Estado civil</label>
-            <Selector value={civil} ariaLabel="Estado civil" placeholder="Sin definir" onChange={setCivil}
+          <div className="field"><label>{tr("Estado civil")}</label>
+            <Selector value={civil} ariaLabel="Estado civil" placeholder={tr("Sin definir")} onChange={setCivil}
               opciones={[
                 { value: "", label: "Sin definir" },
-                { value: "soltera", label: "Soltera o soltero" },
-                { value: "en_pareja", label: "En pareja" },
+                { value: "soltera", label: tr("Soltera o soltero") },
+                { value: "en_pareja", label: tr("En pareja") },
               ]} /></div>
         </div>
         <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>
-          Con peso, estatura, actividad y sexo, la meta de proteína y las calorías del día se calculan solas en Nutrición.
+          {tr("Con peso, estatura, actividad y sexo, la meta de proteína y las calorías del día se calculan solas en Nutrición.")}
         </p>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 8 }}>{err}</p>}
-        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar ficha"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? tr("com.guardando") : tr("Guardar ficha")}</button>
         {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardada</span>}
       </form>
     </div>
@@ -293,6 +296,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
 }
 
 function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -308,18 +312,18 @@ function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   }
 
   return (
-    <ModalShell title="Nueva cita" onClose={onClose}>
+    <ModalShell title={tr("Nueva cita")} onClose={onClose}>
       <form onSubmit={save}>
-        <div className="field"><label>¿Con quién?</label>
-          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Psicóloga, dentista, médica general…" autoFocus /></div>
+        <div className="field"><label>{tr("¿Con quién?")}</label>
+          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Psicóloga, dentista, médica general…")} autoFocus /></div>
         <div className="frow">
-          <div className="field"><label>Fecha</label>
+          <div className="field"><label>{tr("Fecha")}</label>
             <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha de la cita" conBorrar={false} /></div>
-          <div className="field"><label>Hora (opcional)</label>
+          <div className="field"><label>{tr("Hora (opcional)")}</label>
             <CampoHora value={time} onChange={setTime} ariaLabel="Hora de la cita" /></div>
         </div>
-        <div className="field"><label>Lugar (opcional)</label>
-          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Clínica, en línea…" /></div>
+        <div className="field"><label>{tr("Lugar (opcional)")}</label>
+          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={tr("Clínica, en línea…")} /></div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar cita"}</button>
       </form>
     </ModalShell>
@@ -327,6 +331,7 @@ function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
 }
 
 function ExamModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [name, setName] = useState("");
   const [due, setDue] = useState("");
   const [result, setResult] = useState("");
@@ -340,15 +345,15 @@ function ExamModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   }
 
   return (
-    <ModalShell title="Nuevo examen" onClose={onClose}>
+    <ModalShell title={tr("Nuevo examen")} onClose={onClose}>
       <form onSubmit={save}>
-        <div className="field"><label>Examen</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Examen de sangre, hierro, vitamina D…" autoFocus /></div>
+        <div className="field"><label>{tr("Examen")}</label>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Examen de sangre, hierro, vitamina D…")} autoFocus /></div>
         <div className="frow">
-          <div className="field"><label>Para cuándo (opcional)</label>
+          <div className="field"><label>{tr("Para cuándo (opcional)")}</label>
             <CampoFecha value={due} onChange={setDue} ariaLabel="Para cuándo" /></div>
-          <div className="field"><label>Resultado (si ya lo tienes)</label>
-            <input value={result} onChange={(e) => setResult(e.target.value)} placeholder="normal, hierro bajo…" /></div>
+          <div className="field"><label>{tr("Resultado (si ya lo tienes)")}</label>
+            <input value={result} onChange={(e) => setResult(e.target.value)} placeholder={tr("normal, hierro bajo…")} /></div>
         </div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar examen"}</button>
       </form>
@@ -357,6 +362,7 @@ function ExamModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
 }
 
 function MedModal({ kind, onClose, onSaved }: { kind: "medicamento" | "suplemento"; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [name, setName] = useState("");
   const [dose, setDose] = useState("");
   const [schedule, setSchedule] = useState("");
@@ -377,18 +383,18 @@ function MedModal({ kind, onClose, onSaved }: { kind: "medicamento" | "suplement
   }
 
   return (
-    <ModalShell title={kind === "suplemento" ? "Nuevo suplemento" : "Nuevo medicamento"} onClose={onClose}>
+    <ModalShell title={kind === "suplemento" ? tr("Nuevo suplemento") : tr("Nuevo medicamento")} onClose={onClose}>
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
       <form onSubmit={save}>
-        <div className="field"><label>Nombre</label>
+        <div className="field"><label>{tr("com.nombre")}</label>
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={kind === "suplemento" ? "Magnesio" : "Levotiroxina"} autoFocus /></div>
         <div className="frow">
-          <div className="field"><label>Dosis (opcional)</label>
+          <div className="field"><label>{tr("Dosis (opcional)")}</label>
             <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="50 mg" /></div>
-          <div className="field"><label>Horario (opcional)</label>
-            <input value={schedule} onChange={(e) => setSchedule(e.target.value)} placeholder="08:00 en ayunas" /></div>
+          <div className="field"><label>{tr("Horario (opcional)")}</label>
+            <input value={schedule} onChange={(e) => setSchedule(e.target.value)} placeholder={tr("08:00 en ayunas")} /></div>
         </div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("com.guardar")}</button>
       </form>
     </ModalShell>
   );
