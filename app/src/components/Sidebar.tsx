@@ -3,6 +3,7 @@ import { Brain, CalendarDays, Home, LineChart, LogOut, PersonStanding, Sparkles,
 import { areaPor } from "../areas";
 import { useAuth } from "../auth/AuthProvider";
 import { useIdioma } from "../idioma/IdiomaProvider";
+import { useModulos } from "../modulos/ModulosProvider";
 import { LogoAtomo } from "./LogoAtomo";
 
 interface Item {
@@ -36,10 +37,13 @@ const INSPIRACION: Item[] = [
 
 function Seccion({ label, items, onNavigate }: { label: string; items: Item[]; onNavigate: () => void }) {
   const { t } = useIdioma();
+  const { esVisible } = useModulos();
+  const visibles = items.filter((it) => esVisible(it.path));
+  if (visibles.length === 0) return null; // sección entera escondida: ni el título
   return (
     <>
       <div className="nav-label">{label}</div>
-      {items.map((it) => {
+      {visibles.map((it) => {
         const Icon = it.icon;
         return (
           <NavLink

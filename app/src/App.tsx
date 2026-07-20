@@ -18,6 +18,7 @@ import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
 import { SettingsProvider } from "./settings/SettingsProvider";
 import { FechaActivaProvider } from "./fecha/FechaActiva";
+import { ModulosProvider } from "./modulos/ModulosProvider";
 
 export default function App() {
   const { session, loading } = useAuth();
@@ -35,6 +36,7 @@ export default function App() {
   return (
     <SettingsProvider>
       <FechaActivaProvider>
+      <ModulosProvider>
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
@@ -56,6 +58,7 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      </ModulosProvider>
       </FechaActivaProvider>
     </SettingsProvider>
   );

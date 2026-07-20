@@ -18,6 +18,7 @@ export const CLAVES_NUBE: string[] = [
   "nucleoos-ciclo-config", // configuración del ciclo
   "nucleoos-objetivo-cal", // objetivo calórico
   "nucleoos-idioma", // el idioma elegido para la app
+  "nucleoos-modulos-ocultos", // qué módulos escondió la persona del menú
 ];
 
 // Guardamos los métodos originales para leer y escribir sin eco:

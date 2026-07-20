@@ -12,6 +12,8 @@ import { Selector } from "../components/Selector";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
+import { useModulos } from "../modulos/ModulosProvider";
+import { GRUPOS_MODULOS } from "../modulos/modulos";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -60,6 +62,7 @@ export function Ajustes() {
 
       <div className="grid" style={{ maxWidth: 640 }}>
         <IdiomaCard />
+        <ModulosCard />
         <WhatsAppCard />
         <NameCard />
         <CumpleCard />
@@ -196,6 +199,42 @@ function IdiomaCard() {
           opciones={IDIOMAS.map((i) => ({ value: i.key, label: i.label }))}
           onChange={(v) => setIdioma(v as Idioma)} />
       </div>
+    </div>
+  );
+}
+
+function ModulosCard() {
+  const { t: tr } = useIdioma();
+  const { esVisible, alternar } = useModulos();
+  const total = GRUPOS_MODULOS.reduce((n, g) => n + g.modulos.length, 0);
+  const visibles = GRUPOS_MODULOS.reduce((n, g) => n + g.modulos.filter((m) => esVisible(m.id)).length, 0);
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>🧩 {tr("Tus módulos")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+        {tr("Deja en el menú solo lo que de verdad usas. Lo que apagues desaparece de la barra lateral; tus datos quedan guardados y puedes volver a encenderlo cuando quieras. Inicio y Ajustes siempre están.")}
+      </p>
+      <div style={{ display: "grid", gap: 14 }}>
+        {GRUPOS_MODULOS.map((g) => (
+          <div key={g.seccionTkey}>
+            <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
+              {tr(g.seccionTkey)}
+            </p>
+            <div style={{ display: "grid", gap: 6 }}>
+              {g.modulos.map((m) => (
+                <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer" }}>
+                  <input type="checkbox" checked={esVisible(m.id)} onChange={() => alternar(m.id)} />
+                  {tr(m.tkey)}
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 12 }}>
+        {visibles} {tr("de")} {total} {tr("módulos a la vista")}
+      </p>
     </div>
   );
 }
