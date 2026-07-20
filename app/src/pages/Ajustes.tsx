@@ -14,6 +14,7 @@ import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
 import { useModulos } from "../modulos/ModulosProvider";
 import { GRUPOS_MODULOS } from "../modulos/modulos";
+import { Toggle } from "../components/Toggle";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -215,18 +216,18 @@ function ModulosCard() {
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
         {tr("Deja en el menú solo lo que de verdad usas. Lo que apagues desaparece de la barra lateral; tus datos quedan guardados y puedes volver a encenderlo cuando quieras. Inicio y Ajustes siempre están.")}
       </p>
-      <div style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "grid", gap: 12 }}>
         {GRUPOS_MODULOS.map((g) => (
           <div key={g.seccionTkey}>
-            <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
+            <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 2 }}>
               {tr(g.seccionTkey)}
             </p>
-            <div style={{ display: "grid", gap: 6 }}>
+            <div className="mod-lista">
               {g.modulos.map((m) => (
-                <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer" }}>
-                  <input type="checkbox" checked={esVisible(m.id)} onChange={() => alternar(m.id)} />
-                  {tr(m.tkey)}
-                </label>
+                <div className="swrow" key={m.id}>
+                  <span>{tr(m.tkey)}</span>
+                  <Toggle checked={esVisible(m.id)} onChange={() => alternar(m.id)} ariaLabel={tr(m.tkey)} />
+                </div>
               ))}
             </div>
           </div>

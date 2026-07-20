@@ -3,6 +3,7 @@ import { Send } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
+import { Toggle } from "../components/Toggle";
 
 // Núcleo por chat (docs/whatsapp/): la tarjeta del vínculo de Telegram en Ajustes.
 // Las tablas wa_* sirven igual: la columna telefono guarda el chat_id.
@@ -186,16 +187,16 @@ export function WhatsAppCard() {
               🤫 {tr("Avisos en pausa (los apagaste desde el chat).")}
             </p>
           )}
-          <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
+          <div style={{ display: "grid", gap: 2, marginBottom: 12 }}>
             {TIPOS_AVISO.map((t) => (
-              <label key={t.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
+              <div className="swrow" key={t.key}>
+                <span>{tr(t.label)}</span>
+                <Toggle
                   checked={vinculo.avisos?.[t.key] !== false}
-                  onChange={(e) => void cambiarAviso(t.key, e.target.checked)}
+                  onChange={(v) => void cambiarAviso(t.key, v)}
+                  ariaLabel={tr(t.label)}
                 />
-                {tr(t.label)}
-              </label>
+              </div>
             ))}
           </div>
           {/* Zona horaria: de esto dependen "hoy", "ayer" y las horas de silencio. */}
