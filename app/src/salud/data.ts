@@ -134,11 +134,26 @@ export async function getHealthProfile(): Promise<HealthProfile | null> {
   check(error);
   const p = data as HealthProfile | null;
   if (p) {
-    if (!p.activity_level) p.activity_level = localStorage.getItem(LS_ACTIVIDAD);
-    if (!p.sex) p.sex = localStorage.getItem(LS_SEXO);
-    if (!p.civil_status) p.civil_status = localStorage.getItem(LS_CIVIL);
+    // Si la nube todavía no tiene estos campos pero este navegador sí los
+    // guardó, los recuperamos y de paso los subimos a la nube para que
+    // aparezcan también en el teléfono y no haya que escribirlos de nuevo.
+    const rescatados: Partial<HealthProfile> = {};
+    if (!p.activity_level) { const v = localStorage.getItem(LS_ACTIVIDAD); if (v) { p.activity_level = v; rescatados.activity_level = v; } }
+    if (!p.sex) { const v = localStorage.getItem(LS_SEXO); if (v) { p.sex = v; rescatados.sex = v; } }
+    if (!p.civil_status) { const v = localStorage.getItem(LS_CIVIL); if (v) { p.civil_status = v; rescatados.civil_status = v; } }
+    if (Object.keys(rescatados).length > 0) void subirRescatados(rescatados);
   }
   return p;
+}
+
+// Empuja a la nube los campos que solo estaban en el respaldo local.
+// Silencioso: si las columnas aún no existen en Supabase, no molesta.
+async function subirRescatados(campos: Partial<HealthProfile>): Promise<void> {
+  try {
+    const { data } = await sb().auth.getUser();
+    if (!data.user) return;
+    await sb().from("health_profile").update(campos).eq("user_id", data.user.id);
+  } catch { /* la próxima vez que se guarde la ficha se sincroniza igual */ }
 }
 
 export async function saveHealthProfile(p: HealthProfile): Promise<void> {
