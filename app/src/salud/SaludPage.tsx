@@ -333,7 +333,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
           <h3>{tr("🍗 Proteína")}</h3>
           <div className="bar" style={{ marginBottom: 10 }}>
             <div className="top">
-              <span>{Math.round(proteina)} g de {metaProt} g</span>
+              <span>{Math.round(proteina)} g {tr("de")} {metaProt} g</span>
               <b className="tnum">{pctProt}%</b>
             </div>
             <div className="track">
