@@ -320,7 +320,7 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
             {r.reminders_status === "acepta" ? (
               <>
                 <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 8 }}>
-                  {r.name} {tr("aceptó recibir recorditos para cuidar el lazo. 💛 Cuando la app esté en internet le llegarán solos; por ahora se los mandas tú con un clic.")}
+                  {r.name} {tr("aceptó recibir recorditos para cuidar el lazo. 💛 Se los mandas tú con un clic, el mensaje se abre listo en tu correo.")}
                 </p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <a className="btn primary" style={{ textDecoration: "none" }} href={recordito}>

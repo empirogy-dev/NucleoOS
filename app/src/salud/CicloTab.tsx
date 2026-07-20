@@ -194,7 +194,7 @@ export function CicloTab() {
             <div className="card panel">
               <h3>{tr("💌 Tu pareja, tu equipo")}</h3>
               <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 10 }}>
-                {tr("Guarda su correo y mándale un aviso con tu fase actual y cómo apoyarte. Cuando la app esté en internet, estos avisos le llegarán solos.")}
+                {tr("Guarda su correo y prepárale un mensaje con tu fase actual y cómo acompañarte. Se abre listo en tu correo para que solo lo envíes.")}
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input className="input-inline" type="email" style={{ flex: "1 1 170px" }}
