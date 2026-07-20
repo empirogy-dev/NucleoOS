@@ -3,28 +3,19 @@ import { Send } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
-import { Toggle } from "../components/Toggle";
 
 // Núcleo por chat (docs/whatsapp/): la tarjeta del vínculo de Telegram en Ajustes.
 // Las tablas wa_* sirven igual: la columna telefono guarda el chat_id.
 // Genera el código de 6 dígitos, muestra el estado del vínculo, los
-// switches de avisos y permite desvincular. Todo lo demás vive en el chat.
+// la zona horaria y permite desvincular. Los avisos llegan todos: se pausan
+// desde el propio chat con "silencio". Todo lo demás vive en el chat.
 
 interface Vinculo {
   telefono: string;
   vinculado_en: string;
   timezone: string;
-  avisos: Record<string, boolean>;
   avisos_activos: boolean;
 }
-
-const TIPOS_AVISO: Array<{ key: string; label: string }> = [
-  { key: "ayuno", label: "⏳ Fin de ayuno" },
-  { key: "tareas", label: "📝 Tareas del día" },
-  { key: "cumples", label: "🎂 Cumpleaños" },
-  { key: "pagos", label: "🔔 Pagos próximos" },
-  { key: "habitos", label: "✓ Hábitos de la noche" },
-];
 
 // Zonas horarias frecuentes, en formato IANA. La del navegador se detecta
 // sola y se agrega a la lista si no estuviera: esto es solo para elegir a
@@ -103,7 +94,7 @@ export function WhatsAppCard() {
   const reload = useCallback(async () => {
     if (!supabase) return;
     const { data, error } = await supabase.from("wa_vinculos")
-      .select("telefono,vinculado_en,timezone,avisos,avisos_activos").maybeSingle();
+      .select("telefono,vinculado_en,timezone,avisos_activos").maybeSingle();
     if (error && /does not exist|could not find the table|PGRST205/i.test(error.message)) {
       setFaltaMigracion(true);
       return;
@@ -138,13 +129,6 @@ export function WhatsAppCard() {
     } finally {
       setBusy(false);
     }
-  }
-
-  async function cambiarAviso(key: string, valor: boolean) {
-    if (!supabase || !vinculo) return;
-    const avisos = { ...vinculo.avisos, [key]: valor };
-    setVinculo({ ...vinculo, avisos });
-    await supabase.from("wa_vinculos").update({ avisos }).neq("telefono", "");
   }
 
   async function cambiarZona(timezone: string) {
@@ -187,18 +171,6 @@ export function WhatsAppCard() {
               🤫 {tr("Avisos en pausa (los apagaste desde el chat).")}
             </p>
           )}
-          <div style={{ display: "grid", gap: 2, marginBottom: 12 }}>
-            {TIPOS_AVISO.map((t) => (
-              <div className="swrow" key={t.key}>
-                <span>{tr(t.label)}</span>
-                <Toggle
-                  checked={vinculo.avisos?.[t.key] !== false}
-                  onChange={(v) => void cambiarAviso(t.key, v)}
-                  ariaLabel={tr(t.label)}
-                />
-              </div>
-            ))}
-          </div>
           {/* Zona horaria: de esto dependen "hoy", "ayer" y las horas de silencio. */}
           <div className="field" style={{ marginBottom: 12 }}>
             <label>{tr("Tu zona horaria")}</label>
