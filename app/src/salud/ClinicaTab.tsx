@@ -84,7 +84,7 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
     );
   }
 
-  if (loading) return <p style={{ color: "var(--muted)" }}>Cargando…</p>;
+  if (loading) return <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>;
 
   return (
     <>
@@ -241,16 +241,16 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
 
   return (
     <div className="card panel">
-      <h3>📋 Mi ficha</h3>
+      <h3>📋 {tr("Mi ficha")}</h3>
       <form onSubmit={save}>
         <div className="field"><label>{tr("Tipo de sangre")}</label>
           <Selector value={blood} ariaLabel="Tipo de sangre" placeholder={tr("No lo sé")} onChange={setBlood}
             opciones={[{ value: "", label: tr("No lo sé") }, ...BLOOD_TYPES.map((b) => ({ value: b, label: b }))]} /></div>
-        <div className="field"><label>Alergias</label>
+        <div className="field"><label>{tr("Alergias")}</label>
           <input value={allergies} onChange={(e) => setAllergies(e.target.value)} placeholder={tr("Penicilina, maní…")} /></div>
-        <div className="field"><label>Condiciones</label>
+        <div className="field"><label>{tr("Condiciones")}</label>
           <input value={conditions} onChange={(e) => setConditions(e.target.value)} placeholder="ADHD, hipotiroidismo…" /></div>
-        <div className="field"><label>Operaciones</label>
+        <div className="field"><label>{tr("Operaciones")}</label>
           <input value={surgeries} onChange={(e) => setSurgeries(e.target.value)} placeholder={tr("Apendicectomía (2019)…")} /></div>
         <div className="frow">
           <div className="field"><label>{tr("Peso (kg)")}</label>
@@ -266,20 +266,20 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
             <input value={ojos} onChange={(e) => setOjos(e.target.value)} placeholder={tr("café, verdes…")} /></div>
         </div>
         <div className="frow">
-          <div className="field" style={{ flex: 1.4 }}><label>{tr("¿Qué tan activa es tu vida?")}</label>
+          <div className="field" style={{ flex: "1.4 1 150px" }}><label>{tr("¿Qué tan activa es tu vida?")}</label>
             <Selector value={actividad} ariaLabel="Nivel de actividad" placeholder={tr("Sin definir")} onChange={setActividad}
               opciones={[{ value: "", label: tr("Sin definir") }, ...NIVELES_ACTIVIDAD.map((n) => ({ value: n.key, label: tr(n.label) }))]} /></div>
           <div className="field"><label>{tr("Sexo (para las calorías)")}</label>
             <Selector value={sexo} ariaLabel="Sexo" placeholder={tr("Sin definir")} onChange={setSexo}
               opciones={[
-                { value: "", label: "Sin definir" },
+                { value: "", label: tr("Sin definir") },
                 { value: "femenino", label: tr("Femenino") },
                 { value: "masculino", label: tr("Masculino") },
               ]} /></div>
           <div className="field"><label>{tr("Estado civil")}</label>
             <Selector value={civil} ariaLabel="Estado civil" placeholder={tr("Sin definir")} onChange={setCivil}
               opciones={[
-                { value: "", label: "Sin definir" },
+                { value: "", label: tr("Sin definir") },
                 { value: "soltera", label: tr("Soltera o soltero") },
                 { value: "en_pareja", label: tr("En pareja") },
               ]} /></div>
@@ -289,7 +289,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
         </p>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 8 }}>{err}</p>}
         <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? tr("com.guardando") : tr("Guardar ficha")}</button>
-        {saved && <span className="chip" style={{ marginTop: 8 }}>✓ Guardada</span>}
+        {saved && <span className="chip" style={{ marginTop: 8 }}>✓ {tr("Guardada")}</span>}
       </form>
     </div>
   );

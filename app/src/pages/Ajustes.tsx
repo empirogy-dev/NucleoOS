@@ -146,7 +146,7 @@ function NameCard() {
       <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Tu nombre")}</h3>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>{tr("Cómo quieres que te salude la app.")}</p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
-        <input className="input-inline" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Bárbara" />
+        <input className="input-inline" value={value} onChange={(e) => setValue(e.target.value)} placeholder={tr("tu nombre")} />
         <button className="btn primary" type="submit">{tr("com.guardar")}</button>
       </form>
       {saved && <span className="chip" style={{ marginTop: 8 }}>✓ {tr("Guardado")}</span>}
