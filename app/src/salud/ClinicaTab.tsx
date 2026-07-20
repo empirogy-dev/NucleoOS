@@ -269,7 +269,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
           <div className="field" style={{ flex: "1.4 1 150px" }}><label>{tr("¿Qué tan activa es tu vida?")}</label>
             <Selector value={actividad} ariaLabel="Nivel de actividad" placeholder={tr("Sin definir")} onChange={setActividad}
               opciones={[{ value: "", label: tr("Sin definir") }, ...NIVELES_ACTIVIDAD.map((n) => ({ value: n.key, label: tr(n.label) }))]} /></div>
-          <div className="field"><label>{tr("Sexo (para las calorías)")}</label>
+          <div className="field"><label>{tr("Sexo")}</label>
             <Selector value={sexo} ariaLabel="Sexo" placeholder={tr("Sin definir")} onChange={setSexo}
               opciones={[
                 { value: "", label: tr("Sin definir") },
