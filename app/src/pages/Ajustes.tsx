@@ -224,10 +224,7 @@ function ModulosCard() {
             </p>
             <div className="mod-lista">
               {g.modulos.map((m) => (
-                <div className="swrow" key={m.id}>
-                  <span>{tr(m.tkey)}</span>
-                  <Toggle checked={esVisible(m.id)} onChange={() => alternar(m.id)} ariaLabel={tr(m.tkey)} />
-                </div>
+                <Toggle key={m.id} checked={esVisible(m.id)} onChange={() => alternar(m.id)} label={tr(m.tkey)} />
               ))}
             </div>
           </div>
