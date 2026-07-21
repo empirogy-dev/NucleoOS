@@ -3,7 +3,7 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
+import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
@@ -1685,7 +1685,9 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
   );
 }
 
-/** Boletas de una transacción: ver, adjuntar (foto o PDF) y borrar. */
+/** Boletas de una transacción: ver, adjuntar (elige foto o archivo, luego
+ *  Guarda) y borrar. El adjuntar es en dos pasos, con su botón Guardar,
+ *  para que quede claro que la boleta entró. */
 function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; onChanged: () => void }) {
   const { t: tr } = useIdioma();
   const [archivos, setArchivos] = useState<ReciboFile[]>([]);
@@ -1693,6 +1695,8 @@ function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; 
   const [subiendo, setSubiendo] = useState(false);
   const [bucketFalta, setBucketFalta] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [pendiente, setPendiente] = useState<File | null>(null);
+  const [previo, setPrevio] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -1707,8 +1711,12 @@ function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; 
   }, [tx.id]);
 
   useEffect(() => { void cargar(); }, [cargar]);
+  // La vista previa de imagen se libera cuando cambia o se cierra.
+  useEffect(() => () => { if (previo) URL.revokeObjectURL(previo); }, [previo]);
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  // Paso 1: elegir el archivo (o sacar la foto). Todavía NO sube: queda listo
+  // para que la persona apriete Guardar.
+  function elegir(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -1717,9 +1725,25 @@ function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; 
       return;
     }
     setErr(null);
+    if (previo) URL.revokeObjectURL(previo);
+    setPrevio(file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
+    setPendiente(file);
+  }
+
+  function quitarPendiente() {
+    if (previo) URL.revokeObjectURL(previo);
+    setPrevio(null);
+    setPendiente(null);
+  }
+
+  // Paso 2: Guardar sube lo elegido a la nube.
+  async function guardar() {
+    if (!pendiente) return;
     setSubiendo(true);
+    setErr(null);
     try {
-      await uploadRecibo(tx.id, file);
+      await uploadRecibo(tx.id, pendiente);
+      quitarPendiente();
       await cargar();
       onChanged();
     } catch (ex) {
@@ -1745,9 +1769,7 @@ function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; 
           </p>
           {cargando ? (
             <p style={{ fontSize: 13, color: "var(--muted)" }}>{tr("cargando")}</p>
-          ) : archivos.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12 }}>{tr("Todavía no hay boletas adjuntas.")}</p>
-          ) : (
+          ) : archivos.length > 0 && (
             <div style={{ marginBottom: 12 }}>
               {archivos.map((a) => (
                 <div key={a.path} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid var(--line-soft)" }}>
@@ -1761,10 +1783,43 @@ function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; 
             </div>
           )}
           {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
-          <label className="btn primary" style={{ cursor: "pointer" }}>
-            {subiendo ? tr("Subiendo…") : tr("📎 Adjuntar boleta (foto o PDF)")}
-            <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style={{ display: "none" }} onChange={onFile} disabled={subiendo} />
-          </label>
+
+          {pendiente ? (
+            // Paso 2: ya eligió, muestra lo que va a guardar y el botón Guardar.
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", marginBottom: 10 }}>
+                {previo
+                  ? <img src={previo} alt={tr("Vista previa de la boleta")} style={{ width: 46, height: 46, objectFit: "cover", borderRadius: "var(--r-sm)", border: "1px solid var(--line)" }} />
+                  : <span style={{ fontSize: 26 }}>📄</span>}
+                <span style={{ fontSize: 13, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pendiente.name}</span>
+                <button className="xdel" aria-label={tr("Quitar")} style={{ width: 24, height: 24 }} onClick={quitarPendiente} disabled={subiendo}><Trash2 size={12} /></button>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn primary" style={{ flex: 1 }} disabled={subiendo} onClick={() => void guardar()}>
+                  {subiendo ? tr("Guardando…") : tr("com.guardar")}
+                </button>
+                <button className="btn ghost" onClick={quitarPendiente} disabled={subiendo}>{tr("Descartar")}</button>
+              </div>
+            </div>
+          ) : (
+            // Paso 1: elegir cómo adjuntar. En el celular, "Tomar foto" abre la cámara.
+            <>
+              <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 6 }}>{tr("Adjuntar boleta")}</p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <label className="btn primary" style={{ cursor: "pointer" }}>
+                  <Camera size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+                  {tr("Tomar foto")}
+                  <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={elegir} />
+                </label>
+                <label className="btn ghost" style={{ cursor: "pointer" }}>
+                  <Paperclip size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+                  {tr("Subir archivo")}
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style={{ display: "none" }} onChange={elegir} />
+                </label>
+              </div>
+              <button className="btn ghost" style={{ width: "100%", marginTop: 14 }} onClick={onClose}>{tr("Listo")}</button>
+            </>
+          )}
         </>
       )}
     </Modal>
