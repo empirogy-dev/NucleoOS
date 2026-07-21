@@ -3,10 +3,10 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, EyeOff, Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
+import { Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
-import { ReciboCard } from "./ReciboCard";
+import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
 import {
   TablesMissingError,
   addAccount,
@@ -91,6 +91,8 @@ export function FinanzasPage() {
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const [editTx, setEditTx] = useState<Tx | null>(null);
   const [splitTx, setSplitTx] = useState<Tx | null>(null);
+  const [reciboTx, setReciboTx] = useState<Tx | null>(null);
+  const [reciboIds, setReciboIds] = useState<Set<string>>(new Set());
   const [vistaTx, setVistaTx] = useState<"revisar" | "archivo">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
@@ -127,6 +129,8 @@ export function FinanzasPage() {
     try {
       setMetasDireccion((await listObjectives()).filter((o) => o.status !== "lograda" && o.area === "finanzas"));
     } catch { /* Dirección sin migrar */ }
+    // Qué movimientos ya tienen boleta adjunta, para el clip en su fila.
+    setReciboIds(await listReciboTxIds());
   }, []);
 
   useEffect(() => {
@@ -334,7 +338,6 @@ export function FinanzasPage() {
             const archivadas = filteredTxs.filter((t) => t.type === "transfer" || Boolean(t.category_id));
             return (
             <>
-              <ReciboCard categories={categories} accounts={accounts} currency={currency} onSaved={() => void reload()} />
               <div className="seg" style={{ maxWidth: 440 }}>
                 <button className={"segbtn" + (vistaTx === "revisar" ? " active" : "")} onClick={() => setVistaTx("revisar")}>
                   📥 Por revisar{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
@@ -391,6 +394,8 @@ export function FinanzasPage() {
                         <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
                           onEdit={() => setEditTx(t)}
                           onSplit={() => setSplitTx(t)}
+                          hasRecibo={reciboIds.has(t.id)}
+                          onRecibo={() => setReciboTx(t)}
                           onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                       ))}
                     </>
@@ -436,6 +441,8 @@ export function FinanzasPage() {
                           <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
                             onEdit={() => setEditTx(t)}
                             onSplit={t.type !== "transfer" ? () => setSplitTx(t) : undefined}
+                            hasRecibo={reciboIds.has(t.id)}
+                            onRecibo={() => setReciboTx(t)}
                             onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                         ))}
                       </div>
@@ -671,6 +678,11 @@ export function FinanzasPage() {
         <SplitModal tx={splitTx} categories={categories} currency={accById.get(splitTx.account_id ?? "")?.currency ?? currency}
           onClose={() => setSplitTx(null)}
           onSaved={() => { setSplitTx(null); void reload(); }} />
+      )}
+      {reciboTx && (
+        <ReciboModal tx={reciboTx}
+          onClose={() => setReciboTx(null)}
+          onChanged={() => { void listReciboTxIds().then(setReciboIds); }} />
       )}
       {(modal === "account" || editAccount) && (
         <AccountModal key={editAccount?.id ?? "nueva"} edit={editAccount}
@@ -1255,7 +1267,7 @@ function Head() {
   );
 }
 
-function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit }: {
+function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit, hasRecibo, onRecibo }: {
   t: Tx;
   catById: Map<string, Category>;
   accById: Map<string, Account>;
@@ -1264,7 +1276,10 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
   onDelete?: () => void;
   onEdit?: () => void;
   onSplit?: () => void;
+  hasRecibo?: boolean;
+  onRecibo?: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const cat = t.category_id ? catById.get(t.category_id) : undefined;
   const acc = t.account_id ? accById.get(t.account_id) : undefined;
   const dest = resolveDest ? resolveDest(t) : null;
@@ -1284,6 +1299,12 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
         </small>
       </div>
       <b className={"tnum txamt " + (esTransfer ? "neutral" : neg ? "neg" : "pos")}>{esTransfer ? "⇄ " : neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
+      {onRecibo && (
+        <button className="xdel" aria-label={hasRecibo ? tr("Ver boleta") : tr("Adjuntar boleta")} title={hasRecibo ? tr("Ver boleta") : tr("Adjuntar boleta")}
+          style={hasRecibo ? { color: "var(--accent-ink)" } : undefined} onClick={onRecibo}>
+          <Paperclip size={13} />
+        </button>
+      )}
       {onSplit && <button className="xdel" aria-label="Dividir boleta" title="Dividir en categorías" onClick={onSplit}><Scissors size={13} /></button>}
       {onEdit && <button className="xdel" aria-label="Editar" title="Editar" onClick={onEdit}><Pencil size={14} /></button>}
       {onDelete && <button className="xdel" aria-label="Eliminar" onClick={onDelete}><Trash2 size={14} /></button>}
@@ -1661,6 +1682,92 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
         {children}
       </div>
     </div>
+  );
+}
+
+/** Boletas de una transacción: ver, adjuntar (foto o PDF) y borrar. */
+function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
+  const [archivos, setArchivos] = useState<ReciboFile[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [subiendo, setSubiendo] = useState(false);
+  const [bucketFalta, setBucketFalta] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    try {
+      setArchivos(await listRecibos(tx.id));
+    } catch (ex) {
+      if (ex instanceof Error && ex.message === "BUCKET_MISSING") setBucketFalta(true);
+      else setErr(ex instanceof Error ? ex.message : String(ex));
+    } finally {
+      setCargando(false);
+    }
+  }, [tx.id]);
+
+  useEffect(() => { void cargar(); }, [cargar]);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setErr(tr("El archivo pesa más de 10 MB. Prueba con uno más liviano."));
+      return;
+    }
+    setErr(null);
+    setSubiendo(true);
+    try {
+      await uploadRecibo(tx.id, file);
+      await cargar();
+      onChanged();
+    } catch (ex) {
+      if (ex instanceof Error && ex.message === "BUCKET_MISSING") setBucketFalta(true);
+      else setErr(ex instanceof Error ? ex.message : String(ex));
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  const titulo = tx.merchant || tx.description || tx.bank_ref || tr("Boletas");
+
+  return (
+    <Modal title={`🧾 ${titulo}`} onClose={onClose}>
+      {bucketFalta ? (
+        <p style={{ fontSize: 13, color: "var(--warn)" }}>
+          {tr("Para adjuntar boletas falta correr")} <code>supabase/migrations/0053_recibos.sql</code> {tr("en el SQL Editor de Supabase.")}
+        </p>
+      ) : (
+        <>
+          <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
+            {tr("Guarda aquí la foto o el PDF de la boleta de este movimiento, para tener el respaldo a mano.")}
+          </p>
+          {cargando ? (
+            <p style={{ fontSize: 13, color: "var(--muted)" }}>{tr("cargando")}</p>
+          ) : archivos.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12 }}>{tr("Todavía no hay boletas adjuntas.")}</p>
+          ) : (
+            <div style={{ marginBottom: 12 }}>
+              {archivos.map((a) => (
+                <div key={a.path} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid var(--line-soft)" }}>
+                  <button className="linklike" style={{ fontSize: 13, flex: 1, textAlign: "left" }} onClick={() => void openRecibo(a.path)}>📎 {a.name}</button>
+                  <button className="xdel" aria-label={tr("Eliminar boleta")} style={{ width: 24, height: 24 }}
+                    onClick={async () => { if (!window.confirm(tr("¿Eliminar esta boleta?"))) return; await deleteRecibo(a.path); await cargar(); onChanged(); }}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
+          <label className="btn primary" style={{ cursor: "pointer" }}>
+            {subiendo ? tr("Subiendo…") : tr("📎 Adjuntar boleta (foto o PDF)")}
+            <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style={{ display: "none" }} onChange={onFile} disabled={subiendo} />
+          </label>
+        </>
+      )}
+    </Modal>
   );
 }
 
