@@ -28,6 +28,22 @@ export interface Libro {
   ideas: string[];
 }
 
+// Dónde conseguir el libro, de forma legal: no alojamos PDFs (piratería), sino
+// que llevamos a comprarlo o a pedirlo prestado. Los enlaces se arman con el
+// título y el autor, así sirven para los 77 libros sin escribir uno por uno.
+export function enlacesLibro(l: { titulo: string; autor: string }): Array<{ label: string; url: string }> {
+  // El título puede venir como "Traducción (Original)": para buscar sirve mejor
+  // el nombre original si está entre paréntesis.
+  const m = l.titulo.match(/\(([^)]+)\)\s*$/);
+  const base = (m ? m[1] : l.titulo).trim();
+  const q = encodeURIComponent(`${base} ${l.autor}`.trim());
+  return [
+    { label: "Buscalibre", url: `https://www.buscalibre.com/libros/search?q=${q}` },
+    { label: "Google Books", url: `https://www.google.com/search?tbm=bks&q=${q}` },
+    { label: "Open Library", url: `https://openlibrary.org/search?q=${q}` },
+  ];
+}
+
 export const LIBROS: Libro[] = [
   // ---------- TDAH y foco ----------
   {

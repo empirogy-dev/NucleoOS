@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react"
 import {
   LIBROS,
   VIAS_LIBRO,
+  enlacesLibro,
   estadosLibros,
   librosDe,
   marcarLibro,
@@ -73,7 +74,7 @@ export function BibliotecaTab() {
     <>
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap" }}>
         <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: "62ch", flex: "1 1 300px" }}>
-          {todos.length} {tr("libros elegidos por impacto real para un cerebro TDAH, no por moda. Abre uno y llévate sus tres ideas aun")}que nunca lo compres.
+          {todos.length} {tr("libros elegidos por impacto real para un cerebro TDAH, no por moda. Abre uno y llévate sus ideas aun")}que nunca lo compres.
           {(leidos > 0 || quiero > 0) && (
             <>
               {" "}{tr("Llevas")} <b style={{ color: "var(--ink)" }}>{leidos} {leidos === 1 ? tr("leído") : tr("leídos")}</b> y <b style={{ color: "var(--ink)" }}>{quiero}</b> en tu lista.
@@ -154,16 +155,29 @@ function LibroCard({ libro, estado, onMarcar, onEliminar }: {
       <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 8 }}>
         {tr(libro.porQue)}
       </p>
-      {open && libro.ideas.length > 0 && (
+      {open && (
         <div style={{ marginTop: 8, borderTop: "1px solid var(--line-soft)", paddingTop: 8 }}>
-          <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 4 }}>
-            Tres ideas para llevarte
+          {libro.ideas.length > 0 && (
+            <>
+              <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 4 }}>
+                {tr("Ideas para llevarte")}
+              </p>
+              {libro.ideas.map((i) => (
+                <p key={i} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, padding: "5px 0", borderBottom: "1px solid var(--line-soft)" }}>
+                  💡 {tr(i)}
+                </p>
+              ))}
+            </>
+          )}
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontWeight: 600 }}>{tr("Dónde conseguirlo:")}</span>
+            {enlacesLibro(libro).map((e) => (
+              <a key={e.label} href={e.url} target="_blank" rel="noopener noreferrer"
+                style={{ color: "var(--accent-ink)", textDecoration: "underline", textUnderlineOffset: 2 }}>
+                {e.label}
+              </a>
+            ))}
           </p>
-          {libro.ideas.map((i) => (
-            <p key={i} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, padding: "5px 0", borderBottom: "1px solid var(--line-soft)" }}>
-              💡 {i}
-            </p>
-          ))}
         </div>
       )}
       <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
