@@ -26,6 +26,8 @@ import {
   deleteGoal,
   deleteReminder,
   deleteTransaction,
+  firmaMovimiento,
+  firmaTx,
   importStatementRows,
   patronDesde,
   sugerenciaComercio,
@@ -860,12 +862,17 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
-  const [rows, setRows] = useState<StatementImportRow[] | null>(null);
+  const [rows, setRows] = useState<Array<StatementImportRow & { dup: boolean }> | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<{ imported: number; excluidos: number } | null>(null);
+
+  const dups = rows ? rows.filter((r) => r.dup).length : 0;
+  const incluidas = rows ? rows.filter((r) => !excluidos.has(r.id)) : [];
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -875,15 +882,37 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
     setResult(null);
     try {
       const parsed = await parseStatementFile(file, categories);
-      setRows(parsed.rows);
+      // Lector de duplicados: marca las filas que ya están en el sistema o que
+      // se repiten dentro del mismo archivo. La firma es fecha, monto y texto.
+      const yaEstan = new Set(existing.map(firmaTx));
+      const vistas = new Set<string>();
+      const conDup = parsed.rows.map((r) => {
+        const firma = firmaMovimiento(r.date, r.amount, r.description);
+        const dup = yaEstan.has(firma) || vistas.has(firma);
+        vistas.add(firma);
+        return { ...r, dup };
+      });
+      setRows(conDup);
       setWarnings(parsed.warnings);
+      // Por defecto los duplicados quedan desmarcados: no entran salvo que ella
+      // los marque a propósito.
+      setExcluidos(new Set(conDup.filter((r) => r.dup).map((r) => r.id)));
     } catch (ex) {
       if (ex instanceof StatementImportError && ex.code === "UNRECOGNIZED_COLUMNS") {
-        setErr("No reconocí las columnas del archivo. Exporta la cartola de tu banco como CSV con columnas de fecha, descripción y monto, e intenta de nuevo.");
+        setErr(tr("No reconocí las columnas del archivo. Exporta la cartola de tu banco como CSV con columnas de fecha, descripción y monto, e intenta de nuevo."));
       } else {
-        setErr("No pude leer el archivo. Verifica que sea la cartola en formato CSV, OFX o QFX de tu banco.");
+        setErr(tr("No pude leer el archivo. Verifica que sea la cartola en formato CSV, OFX o QFX de tu banco."));
       }
     }
+  }
+
+  function alternar(id: string) {
+    setExcluidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   async function doImport() {
@@ -891,8 +920,8 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
     setBusy(true);
     setErr(null);
     try {
-      const res = await importStatementRows(rows, accountId || null, categories, existing);
-      setResult(res);
+      const res = await importStatementRows(incluidas, accountId || null, categories);
+      setResult({ imported: res.imported, excluidos: rows.length - incluidas.length });
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
     } finally {
@@ -901,49 +930,57 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
   }
 
   return (
-    <Modal title="Importar cartola" onClose={onClose}>
+    <Modal title={tr("Importar cartola")} onClose={onClose}>
       {result ? (
         <div>
           <p style={{ fontSize: 14.5, marginBottom: 6 }}>
-            Se importaron <b>{result.imported}</b> movimientos.
-            {result.skipped > 0 && <> Se omitieron {result.skipped} que ya estaban registrados.</>}
+            {tr("Se importaron")} <b>{result.imported}</b> {tr("movimientos.")}
+            {result.excluidos > 0 && <> {tr("Dejaste fuera")} {result.excluidos} {tr("repetidos.")}</>}
           </p>
-          <button className="btn primary" style={{ width: "100%", marginTop: 10 }} onClick={onSaved}>Listo</button>
+          <button className="btn primary" style={{ width: "100%", marginTop: 10 }} onClick={onSaved}>{tr("Listo")}</button>
         </div>
       ) : (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            Descarga la cartola desde tu banco (CSV, OFX o QFX) y súbela aquí. Los movimientos repetidos se omiten solos.
+            {tr("Descarga la cartola desde tu banco (CSV, OFX o QFX) y súbela aquí. Reviso cuáles ya tienes y marco los repetidos para que no entren dos veces.")}
           </p>
-          <div className="field"><label>Cuenta de destino</label>
-            <Selector value={accountId} ariaLabel="Cuenta de destino" placeholder="Sin cuenta" onChange={setAccountId}
-              opciones={[{ value: "", label: "Sin cuenta" }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
-          <div className="field"><label>Archivo</label>
+          <div className="field"><label>{tr("Cuenta de destino")}</label>
+            <Selector value={accountId} ariaLabel={tr("Cuenta de destino")} placeholder={tr("Sin cuenta")} onChange={setAccountId}
+              opciones={[{ value: "", label: tr("Sin cuenta") }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
+          <div className="field"><label>{tr("Archivo")}</label>
             <input type="file" accept=".csv,.ofx,.qfx,text/csv" onChange={onFile} /></div>
           {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
           {rows && (
             <div style={{ marginBottom: 12 }}>
-              <p style={{ fontSize: 13.5, marginBottom: 8 }}>
-                Encontré <b>{rows.length}</b> movimientos.{warnings.length > 0 && <> Hubo {warnings.length} filas que no se pudieron leer.</>}
+              <p style={{ fontSize: 13.5, marginBottom: 2 }}>
+                {tr("Encontré")} <b>{rows.length}</b> {tr("movimientos.")}
+                {warnings.length > 0 && <> {warnings.length} {tr("filas no se pudieron leer.")}</>}
               </p>
-              <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 10, padding: "4px 10px" }}>
-                {rows.slice(0, 12).map((r) => (
-                  <div className="txrow" key={r.id} style={{ padding: "7px 0" }}>
-                    <div className="txmeta">
-                      <b style={{ fontSize: 12.5 }}>{r.description || "Sin descripción"}</b>
-                      <small>{r.date}{r.category ? `, ${r.category}` : ""}</small>
+              {dups > 0 ? (
+                <p style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 8 }}>
+                  ⚠️ {dups} {dups === 1 ? tr("ya está en el sistema, lo dejé sin marcar.") : tr("ya están en el sistema, los dejé sin marcar.")} {tr("Márcalos solo si quieres importarlos igual.")}
+                </p>
+              ) : (
+                <p style={{ fontSize: 12.5, color: "var(--ok)", marginBottom: 8 }}>✓ {tr("Ninguno está repetido.")}</p>
+              )}
+              <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 10, padding: "4px 10px" }}>
+                {rows.map((r) => (
+                  <label key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", cursor: "pointer", borderBottom: "1px solid var(--line-soft)" }}>
+                    <input type="checkbox" checked={!excluidos.has(r.id)} onChange={() => alternar(r.id)} style={{ flex: "none" }} />
+                    <div className="txmeta" style={{ flex: 1, minWidth: 0 }}>
+                      <b style={{ fontSize: 12.5 }}>{r.description || tr("Sin descripción")}</b>
+                      <small>{r.date}{r.category ? `, ${r.category}` : ""}{r.dup ? ` · ${tr("ya está")}` : ""}</small>
                     </div>
-                    <b className={"tnum txamt " + (r.type === "expense" ? "neg" : "pos")} style={{ fontSize: 12.5 }}>
+                    <b className={"tnum txamt " + (r.type === "expense" ? "neg" : "pos")} style={{ fontSize: 12.5, flex: "none" }}>
                       {r.type === "expense" ? "−" : "+"}{fmtMoney(Math.abs(r.amount), currency)}
                     </b>
-                  </div>
+                  </label>
                 ))}
-                {rows.length > 12 && <p style={{ fontSize: 12, color: "var(--muted)", padding: "6px 0" }}>y {rows.length - 12} más…</p>}
               </div>
             </div>
           )}
-          <button className="btn primary" style={{ width: "100%" }} disabled={!rows || busy} onClick={() => void doImport()}>
-            {busy ? "Importando…" : rows ? `Importar ${rows.length} movimientos` : "Elige un archivo primero"}
+          <button className="btn primary" style={{ width: "100%" }} disabled={!rows || busy || incluidas.length === 0} onClick={() => void doImport()}>
+            {busy ? tr("Importando…") : rows ? `${tr("Importar")} ${incluidas.length} ${tr("movimientos")}` : tr("Elige un archivo primero")}
           </button>
         </>
       )}

@@ -437,31 +437,33 @@ export async function addTransaction(t: TxInput, source: TxSource = "manual"): P
   await aplicarEfectos(efectosMovimiento(t), 1);
 }
 
-/** Importa filas de una cartola como transacciones (source: cartola), omitiendo duplicados. */
+/** La firma de un movimiento para detectar duplicados: fecha, monto y texto.
+ *  Es la misma para una fila de cartola y para una transacción ya guardada,
+ *  así el lector de duplicados y la base hablan el mismo idioma. */
+export function firmaMovimiento(date: string, amount: number, texto: string): string {
+  return `${date}|${Math.abs(Number(amount))}|${(texto ?? "").trim().toLowerCase()}`;
+}
+
+/** La firma de una transacción ya guardada. El texto del banco (bank_ref) es
+ *  la huella; si no está, cae en la descripción. */
+export function firmaTx(t: Tx): string {
+  return firmaMovimiento(t.date, Number(t.amount), t.bank_ref ?? t.description);
+}
+
+/** Inserta filas de una cartola como transacciones (source: cartola). El
+ *  lector de duplicados del modal ya decidió cuáles entran, así que aquí se
+ *  guardan tal cual, sin volver a filtrar. */
 export async function importStatementRows(
   rows: Array<{ date: string; description: string; amount: number; type: "income" | "expense"; category: string }>,
   accountId: string | null,
   categories: Category[],
-  existing: Tx[],
-): Promise<{ imported: number; skipped: number }> {
+): Promise<{ imported: number }> {
   const user_id = await uid();
   const catByName = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
-  // La firma de un movimiento del banco es su texto crudo (bank_ref); la
-  // descripción quedó libre para uso humano, así que ya no sirve de firma.
-  const seen = new Set(
-    existing.map((t) => `${t.date}|${Number(t.amount)}|${(t.bank_ref ?? t.description).trim().toLowerCase()}`)
-  );
 
   const reglas = await listMerchantRules();
   const toInsert: Array<Record<string, unknown>> = [];
-  let skipped = 0;
   for (const r of rows) {
-    const key = `${r.date}|${Math.abs(r.amount)}|${r.description.trim().toLowerCase()}`;
-    if (seen.has(key)) {
-      skipped += 1;
-      continue;
-    }
-    seen.add(key);
     const regla = reglaPara(r.description, reglas);
     toInsert.push({
       user_id,
@@ -496,7 +498,7 @@ export async function importStatementRows(
       await ajustarSaldo(accountId, delta);
     }
   }
-  return { imported: toInsert.length, skipped };
+  return { imported: toInsert.length };
 }
 
 /** Ajusta el saldo de una cuenta en delta (positivo o negativo). */
