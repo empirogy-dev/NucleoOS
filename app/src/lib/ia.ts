@@ -195,6 +195,53 @@ function parsearAnalisis(texto: string): AnalisisPlato {
   };
 }
 
+// ---------- Lectura de un recibo o boleta ----------
+export interface AnalisisRecibo {
+  comercio: string;
+  descripcion: string;
+  monto: number;
+  fecha: string; // YYYY-MM-DD, vacío si no se ve
+  categoria: string; // nombre de categoría sugerida, vacío si ninguna calza
+}
+
+/** Lee una foto de recibo o boleta y saca el gasto. Devuelve un borrador
+ *  editable: la persona confirma antes de que entre a sus finanzas. */
+export async function analizarRecibo(base64: string, mimeType: string, categorias: string[]): Promise<AnalisisRecibo> {
+  const lista = categorias.length ? categorias.join(", ") : "(sin categorías definidas)";
+  const prompt =
+    "Eres el asistente de finanzas de NucleoOS. Mira la foto de este recibo o boleta y extrae el gasto. " +
+    "Responde SOLO con un objeto JSON válido, sin texto extra ni bloques de código, con estas llaves exactas: " +
+    '{"comercio": "nombre del local o tienda", "descripcion": "qué se compró en pocas palabras, en español", ' +
+    '"monto": número con el TOTAL pagado, solo el número sin símbolos ni separadores de miles, ' +
+    '"fecha": "la fecha del recibo en formato AAAA-MM-DD si aparece, si no vacío", ' +
+    `"categoria": "elige UNA de esta lista exacta segun lo comprado: ${lista}. Si ninguna calza, deja vacío"}. ` +
+    "El monto es el total final pagado, no un subtotal ni un producto suelto. " +
+    "Si la imagen no parece un recibo, usa monto 0 y explica en descripcion.";
+  const texto = await generate([
+    { inlineData: { mimeType, data: base64 } },
+    { text: prompt },
+  ]);
+  const limpio = texto.replace(/```json|```/g, "").trim();
+  const inicio = limpio.indexOf("{");
+  const fin = limpio.lastIndexOf("}");
+  if (inicio === -1 || fin === -1) throw new Error("La IA no pudo leer el recibo. Intenta con otra foto, más nítida.");
+  let crudo: Record<string, unknown>;
+  try {
+    crudo = JSON.parse(limpio.slice(inicio, fin + 1));
+  } catch {
+    throw new Error("No pude leer el recibo. Intenta de nuevo con una foto más clara.");
+  }
+  const monto = typeof crudo.monto === "number" ? crudo.monto : Number(String(crudo.monto ?? "").replace(/[^\d.,-]/g, "").replace(/\.(?=\d{3}\b)/g, "").replace(",", ".")) || 0;
+  const fecha = String(crudo.fecha ?? "").trim();
+  return {
+    comercio: String(crudo.comercio ?? "").trim(),
+    descripcion: String(crudo.descripcion ?? "").trim() || "Compra",
+    monto: Math.abs(Math.round(monto * 100) / 100),
+    fecha: /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha : "",
+    categoria: String(crudo.categoria ?? "").trim(),
+  };
+}
+
 const PROMPT_COACH =
   "Eres el coach personal de NucleoOS, un sistema de vida. Hablas en español cercano, cálido y directo, " +
   "sin guiones largos, con comas y puntos. Con el estado real que te paso, entrega: " +

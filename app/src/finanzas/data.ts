@@ -9,6 +9,7 @@ import {
   type Reminder,
   type ReminderRecurrence,
   type Tx,
+  type TxSource,
 } from "./types";
 
 /** Error especial cuando faltan las tablas (migración no ejecutada). */
@@ -428,10 +429,10 @@ export async function listTransactions(limit = 200): Promise<Tx[]> {
   return (data ?? []) as Tx[];
 }
 
-export async function addTransaction(t: TxInput): Promise<void> {
+export async function addTransaction(t: TxInput, source: TxSource = "manual"): Promise<void> {
   const { error } = await sb()
     .from("transactions")
-    .insert({ ...columnasTx(t), source: "manual", user_id: await uid() });
+    .insert({ ...columnasTx(t), source, user_id: await uid() });
   check(error);
   await aplicarEfectos(efectosMovimiento(t), 1);
 }

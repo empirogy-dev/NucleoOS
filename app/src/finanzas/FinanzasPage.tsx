@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Eye, EyeOff, Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
+import { ReciboCard } from "./ReciboCard";
 import {
   TablesMissingError,
   addAccount,
@@ -333,6 +334,7 @@ export function FinanzasPage() {
             const archivadas = filteredTxs.filter((t) => t.type === "transfer" || Boolean(t.category_id));
             return (
             <>
+              <ReciboCard categories={categories} accounts={accounts} currency={currency} onSaved={() => void reload()} />
               <div className="seg" style={{ maxWidth: 440 }}>
                 <button className={"segbtn" + (vistaTx === "revisar" ? " active" : "")} onClick={() => setVistaTx("revisar")}>
                   📥 Por revisar{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
