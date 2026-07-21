@@ -103,8 +103,13 @@ export function ComprobantesTab({ txs, categories, accounts, currency }: {
     a.href = url;
     const suf = fMes === "all" ? "todos" : fMes;
     a.download = `comprobantes-nucleoos-${suf}.csv`;
+    // Adjuntar al documento antes del clic: sin esto, varios navegadores no
+    // disparan la descarga. Y liberar el enlace después, no al instante, para
+    // no cancelar la descarga a medio empezar.
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
   if (cargando) return <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>;
@@ -139,7 +144,7 @@ export function ComprobantesTab({ txs, categories, accounts, currency }: {
         <span style={{ flex: 1 }} />
         <button className="btn ghost" onClick={exportarCSV} disabled={visibles.length === 0}>
           <Download size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          {tr("Exportar para taxes")}
+          {tr("Exportar para impuestos")}
         </button>
       </div>
 
