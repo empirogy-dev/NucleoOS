@@ -8,6 +8,7 @@ import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
 import { comprimirImagen } from "../lib/comprimir";
+import { ComprobantesTab } from "./ComprobantesTab";
 import {
   TablesMissingError,
   addAccount,
@@ -69,7 +70,7 @@ import {
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 
-type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "categorias" | "reporte";
+type TabKey = "resumen" | "transacciones" | "comprobantes" | "metas" | "deudas" | "cuentas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
@@ -237,6 +238,7 @@ export function FinanzasPage() {
           [
             ["resumen", "Resumen"],
             ["transacciones", "Transacciones"],
+            ["comprobantes", "Comprobantes"],
             ["metas", "Metas"],
             ["deudas", "Deudas y tarjetas"],
             ["cuentas", "Cuentas"],
@@ -455,6 +457,10 @@ export function FinanzasPage() {
             </>
             );
           })()}
+
+          {tab === "comprobantes" && (
+            <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} />
+          )}
 
           {tab === "metas" && (
             <>

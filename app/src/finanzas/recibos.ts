@@ -80,3 +80,52 @@ export async function openRecibo(path: string): Promise<void> {
   if (error || !data) throw new Error(error?.message ?? "No se pudo abrir la boleta.");
   window.open(data.signedUrl, "_blank", "noopener");
 }
+
+export interface ReciboItem {
+  txId: string;
+  path: string;
+  name: string;
+  isImage: boolean;
+}
+
+/** Todas las boletas del usuario, cada una con el id de su transacción, para
+ *  la biblioteca de comprobantes. Una llamada para las carpetas y luego una
+ *  por transacción en paralelo. Si el bucket no existe, devuelve vacío. */
+export async function listTodosRecibos(): Promise<ReciboItem[]> {
+  try {
+    const userId = await uid();
+    const { data: folders, error } = await sb().storage.from(BUCKET).list(userId, { limit: 2000 });
+    if (error) return [];
+    const txIds = (folders ?? [])
+      .filter((f) => f.id === null && f.name !== ".emptyFolderPlaceholder")
+      .map((f) => f.name);
+    const listas = await Promise.all(
+      txIds.map(async (txId) => {
+        const { data } = await sb().storage.from(BUCKET).list(`${userId}/${txId}`);
+        return (data ?? [])
+          .filter((f) => f.name !== ".emptyFolderPlaceholder")
+          .map((f) => ({
+            txId,
+            path: `${userId}/${txId}/${f.name}`,
+            name: f.name.replace(/^\d+-/, ""),
+            isImage: /\.(png|jpe?g|webp)$/i.test(f.name),
+          }));
+      }),
+    );
+    return listas.flat();
+  } catch {
+    return [];
+  }
+}
+
+/** URLs firmadas (una hora) para varias boletas de una vez: para las
+ *  miniaturas de la biblioteca sin una llamada por imagen. */
+export async function signedUrlsRecibos(paths: string[]): Promise<Map<string, string>> {
+  const mapa = new Map<string, string>();
+  if (paths.length === 0) return mapa;
+  const { data } = await sb().storage.from(BUCKET).createSignedUrls(paths, 3600);
+  for (const d of data ?? []) {
+    if (d.path && d.signedUrl) mapa.set(d.path, d.signedUrl);
+  }
+  return mapa;
+}

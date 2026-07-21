@@ -169,6 +169,14 @@ button{font-family:inherit}
 .swrow:hover .sw{border-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.sw,.sw::after{transition:none}}
 
+/* Biblioteca de comprobantes: grilla de tarjetas con miniatura de la boleta. */
+.comp-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.comp-card{display:flex;gap:12px;align-items:center;padding:12px}
+.comp-thumb{flex:none;width:56px;height:56px;border-radius:var(--r-sm);border:1px solid var(--line);overflow:hidden;cursor:pointer;background:var(--surface);padding:0;display:grid;place-items:center}
+.comp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.comp-thumb:hover{border-color:var(--accent)}
+.comp-pdf{color:var(--muted)}
+
 /* Módulos en Ajustes: tres columnas en el computador, dos en tablet,
    una en el teléfono, para no dejar aire muerto a los lados. */
 .mod-lista{display:grid;gap:2px 16px;grid-template-columns:repeat(3,minmax(0,1fr))}
