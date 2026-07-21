@@ -7,6 +7,7 @@ import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Trash2, Wallet 
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
+import { comprimirImagen } from "../lib/comprimir";
 import {
   TablesMissingError,
   addAccount,
@@ -1742,7 +1743,7 @@ function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; 
     setSubiendo(true);
     setErr(null);
     try {
-      await uploadRecibo(tx.id, pendiente);
+      await uploadRecibo(tx.id, await comprimirImagen(pendiente));
       quitarPendiente();
       await cargar();
       onChanged();
