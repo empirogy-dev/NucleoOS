@@ -72,7 +72,7 @@ import {
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 
-type TabKey = "resumen" | "transacciones" | "comprobantes" | "metas" | "deudas" | "cuentas" | "categorias" | "reporte";
+type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
@@ -97,7 +97,7 @@ export function FinanzasPage() {
   const [splitTx, setSplitTx] = useState<Tx | null>(null);
   const [reciboTx, setReciboTx] = useState<Tx | null>(null);
   const [reciboIds, setReciboIds] = useState<Set<string>>(new Set());
-  const [vistaTx, setVistaTx] = useState<"revisar" | "archivo">("revisar");
+  const [vistaTx, setVistaTx] = useState<"revisar" | "archivo" | "comprobantes">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
@@ -240,7 +240,6 @@ export function FinanzasPage() {
           [
             ["resumen", "Resumen"],
             ["transacciones", "Transacciones"],
-            ["comprobantes", "Comprobantes"],
             ["metas", "Metas"],
             ["deudas", "Deudas y tarjetas"],
             ["cuentas", "Cuentas"],
@@ -343,14 +342,18 @@ export function FinanzasPage() {
             const archivadas = filteredTxs.filter((t) => t.type === "transfer" || Boolean(t.category_id));
             return (
             <>
-              <div className="seg" style={{ maxWidth: 440 }}>
+              <div className="seg" style={{ maxWidth: 560 }}>
                 <button className={"segbtn" + (vistaTx === "revisar" ? " active" : "")} onClick={() => setVistaTx("revisar")}>
-                  📥 Por revisar{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
+                  📥 {tr("Por revisar")}{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
                 </button>
                 <button className={"segbtn" + (vistaTx === "archivo" ? " active" : "")} onClick={() => setVistaTx("archivo")}>
-                  🗂 Archivo
+                  🗂 {tr("Archivo")}
+                </button>
+                <button className={"segbtn" + (vistaTx === "comprobantes" ? " active" : "")} onClick={() => setVistaTx("comprobantes")}>
+                  🧾 {tr("Comprobantes")}
                 </button>
               </div>
+              {vistaTx !== "comprobantes" && (
               <div className="filterbar">
                 <div className="searchbox" style={{ minWidth: 200 }}>
                   <input value={fq} onChange={(e) => setFq(e.target.value)} placeholder="Buscar movimientos…" aria-label="Buscar movimientos" />
@@ -384,6 +387,10 @@ export function FinanzasPage() {
                     onChange={setFAcc} />
                 </div>
               </div>
+              )}
+              {vistaTx === "comprobantes" && (
+                <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} />
+              )}
               {vistaTx === "revisar" && (
                 <div className="card pad">
                   {pendientes.length === 0 ? (
@@ -459,10 +466,6 @@ export function FinanzasPage() {
             </>
             );
           })()}
-
-          {tab === "comprobantes" && (
-            <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} />
-          )}
 
           {tab === "metas" && (
             <>
