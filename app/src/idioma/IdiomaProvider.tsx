@@ -9,7 +9,12 @@ const LS = "nucleoos-idioma";
 function guardado(): Idioma {
   try {
     const v = localStorage.getItem(LS);
-    if (v === "en" || v === "pt") return v;
+    if (v === "en" || v === "pt" || v === "es") return v;
+    // Primera visita, sin elección guardada: adivina por el idioma del
+    // navegador, para que quien llega en inglés vea la app en inglés.
+    const nav = (navigator.language || "").toLowerCase();
+    if (nav.startsWith("en")) return "en";
+    if (nav.startsWith("pt")) return "pt";
   } catch { /* sin navegador */ }
   return "es";
 }

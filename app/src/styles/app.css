@@ -277,6 +277,11 @@ button{font-family:inherit}
 .auth .msg.err{background:color-mix(in srgb,var(--err) 12%,var(--paper));border-left:3px solid var(--err);color:var(--ink-soft)}
 .auth .msg.ok{background:color-mix(in srgb,var(--ok) 12%,var(--paper));border-left:3px solid var(--ok);color:var(--ink-soft)}
 .auth code{background:var(--surface);padding:1px 5px;border-radius:5px;font-size:11.5px}
+/* Selector de idioma del login: discreto, para quien llega y no habla español. */
+.auth-langs{display:flex;justify-content:center;gap:4px;margin-top:20px;flex-wrap:wrap}
+.auth-lang{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 9px;border-radius:var(--r-full)}
+.auth-lang:hover{color:var(--ink-soft)}
+.auth-lang.active{color:var(--accent-ink);background:var(--accent-wash);font-weight:600}
 
 /* ================= CUENTA EN SIDEBAR ================= */
 .side-acct{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:12px;margin-top:12px}

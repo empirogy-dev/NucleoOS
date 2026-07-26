@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useIdioma } from "../idioma/IdiomaProvider";
+import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { supabaseConfigured } from "../lib/supabase";
 import { LogoAtomo } from "../components/LogoAtomo";
 
 export function Login() {
   const { signIn, signUp } = useAuth();
-  const { t } = useIdioma();
+  const { t, idioma, setIdioma } = useIdioma();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,6 +68,19 @@ export function Login() {
             </form>
           </>
         )}
+
+        <div className="auth-langs">
+          {IDIOMAS.map((i) => (
+            <button
+              key={i.key}
+              type="button"
+              className={"auth-lang" + (idioma === i.key ? " active" : "")}
+              onClick={() => setIdioma(i.key as Idioma)}
+            >
+              {i.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
