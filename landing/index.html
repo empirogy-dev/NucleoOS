@@ -99,6 +99,20 @@
   .tier li{padding:6px 0 6px 26px;position:relative}
   .tier li::before{content:"🌱";position:absolute;left:0;font-size:13px}
   .chip{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--pri-deep);background:var(--wash);border-radius:999px;padding:4px 11px}
+  .price-tag{font-family:var(--title);font-size:30px;font-weight:600;margin-top:12px;color:var(--ink)}
+  .price-tag small{font-size:15px;color:var(--muted);font-weight:500}
+  .note{font-size:12.5px;color:var(--pri-deep);background:var(--wash);border-radius:999px;padding:5px 12px;display:inline-block;margin-top:12px;font-weight:600}
+  /* soporte */
+  .soporte{background:var(--white);border-top:1px solid var(--line-soft)}
+  .sup-form{max-width:480px;margin:30px auto 0;text-align:left;display:flex;flex-direction:column;gap:12px}
+  .sup-form input[type=email],.sup-form textarea{font-family:var(--body);font-size:15px;padding:13px 15px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--cream);color:var(--ink);width:100%;resize:vertical}
+  .sup-form input:focus,.sup-form textarea:focus{outline:2px solid var(--pri);outline-offset:1px;border-color:var(--pri)}
+  .sup-file{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--pri-deep);background:var(--cream);border:1px dashed var(--line);border-radius:var(--r-md);padding:12px 15px;cursor:pointer}
+  .sup-file:hover{border-color:var(--pri)}
+  .sup-form .btn{justify-content:center}
+  .sup-msg{font-size:14px;text-align:center;min-height:20px;margin-top:4px}
+  .sup-msg.ok{color:var(--pri-deep)}
+  .sup-msg.err{color:var(--acc)}
   .cierre{text-align:center;background:linear-gradient(180deg,var(--paper),var(--wash))}
   .cierre h2{max-width:18ch;margin:14px auto 0}
   .cierre .btn{margin-top:30px}
@@ -240,6 +254,7 @@
       <div class="tiers" style="text-align:left">
         <div class="tier">
           <div class="name" data-i18n="price.free.n">Gratis</div>
+          <div class="price-tag">US$0</div>
           <div class="desc" data-i18n="price.free.d">Lo esencial, para siempre.</div>
           <ul>
             <li data-i18n="price.free.1">Las diez áreas de tu vida</li>
@@ -250,7 +265,9 @@
         <div class="tier hi">
           <span class="chip" data-i18n="price.pro.chip">Premium</span>
           <div class="name" style="margin-top:10px" data-i18n="price.pro.n">Con IA</div>
-          <div class="desc" data-i18n="price.pro.d">Cuando quieras el acompañamiento completo.</div>
+          <div class="price-tag"><span data-i18n="price.pro.price">US$6,99</span> <small data-i18n="price.mo">/mes</small></div>
+          <div><span class="note" data-i18n="price.pro.note">🌱 Gratis en acceso anticipado</span></div>
+          <div class="desc" style="margin-top:12px" data-i18n="price.pro.d">Cuando quieras el acompañamiento completo.</div>
           <ul>
             <li data-i18n="price.pro.1">Coach con IA que te conoce</li>
             <li data-i18n="price.pro.2">Registro por voz y avisos por chat</li>
@@ -258,6 +275,21 @@
           </ul>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section id="soporte" class="soporte">
+    <div class="narrow center">
+      <span class="eyebrow" data-i18n="sup.eyebrow">¿Encontraste un error?</span>
+      <h2 style="margin-top:14px" data-i18n="sup.h2">Ayúdanos a mejorar NucleoOS.</h2>
+      <p class="lede" style="max-width:50ch;margin:16px auto 0" data-i18n="sup.lede">Estamos en los primeros días. Si algo no funciona como esperabas, cuéntanoslo y súbenos una captura. Lo revisamos y lo arreglamos.</p>
+      <form class="sup-form" id="supForm">
+        <input type="email" id="supEmail" placeholder="Tu correo, para responderte" data-ph="sup.ph.email">
+        <textarea id="supMsg" rows="4" placeholder="¿Qué pasó? ¿En qué parte de la app?" required data-ph="sup.ph.msg"></textarea>
+        <label class="sup-file"><span id="supFileName" data-i18n="sup.file">📎 Adjuntar captura (opcional)</span><input type="file" accept="image/*,.pdf" id="supFile" style="display:none"></label>
+        <button type="submit" class="btn primary" id="supSend" data-i18n="sup.send">Enviar reporte</button>
+        <p class="sup-msg" id="supStatus"></p>
+      </form>
     </div>
   </section>
 
@@ -327,21 +359,38 @@
     "price.free.1":"The ten areas of your life","price.free.2":"Daily logging and habits","price.free.3":"Your library and your vision",
     "price.pro.chip":"Premium","price.pro.n":"With AI","price.pro.d":"When you want the full companion.",
     "price.pro.1":"An AI coach that knows you","price.pro.2":"Voice logging and chat reminders","price.pro.3":"Smart review of your life",
+    "price.pro.price":"US$6.99","price.mo":"/mo","price.pro.note":"🌱 Free in early access",
+    "sup.eyebrow":"Found a bug?","sup.h2":"Help us make NucleoOS better.",
+    "sup.lede":"We're in the early days. If something doesn't work as expected, tell us and add a screenshot. We'll look into it and fix it.",
+    "sup.ph.email":"Your email, so we can reply","sup.ph.msg":"What happened? Where in the app?",
+    "sup.file":"📎 Attach a screenshot (optional)","sup.send":"Send report",
+    "sup.sending":"Sending…","sup.ok":"Thank you! We got your report. 🌱","sup.err":"Couldn't send it. Please try again.","sup.needmsg":"Tell us what happened first.",
     "end.eyebrow":"Your moment is now","end.h2":"Your whole life, calm and in order.",
     "end.cta":"Create my free account","end.fine":"Free to start. No card. At your own pace.",
     "foot.tag":"Made with care for your mind. 🌱","foot.link":"Go to the app →"
   };
+  var ES_JS = { "sup.sending":"Enviando…","sup.ok":"¡Gracias! Recibimos tu reporte. 🌱","sup.err":"No se pudo enviar. Intenta de nuevo.","sup.needmsg":"Cuéntanos primero qué pasó." };
+  var curLang = 'es';
   var els = document.querySelectorAll('[data-i18n]');
   var ES = {};
   els.forEach(function(el){
     var k = el.getAttribute('data-i18n');
     ES[k] = el.hasAttribute('data-html') ? el.innerHTML : el.textContent;
   });
+  var phEls = document.querySelectorAll('[data-ph]');
+  var ESph = {};
+  phEls.forEach(function(el){ ESph[el.getAttribute('data-ph')] = el.getAttribute('placeholder') || ''; });
+  function t(k){ return curLang === 'en' ? (EN[k] !== undefined ? EN[k] : (ES[k] || ES_JS[k] || k)) : (ES[k] || ES_JS[k] || ''); }
   function apply(lang){
+    curLang = lang;
     els.forEach(function(el){
       var k = el.getAttribute('data-i18n');
       var val = lang === 'en' ? (EN[k] !== undefined ? EN[k] : ES[k]) : ES[k];
       if (el.hasAttribute('data-html')) el.innerHTML = val; else el.textContent = val;
+    });
+    phEls.forEach(function(el){
+      var k = el.getAttribute('data-ph');
+      el.setAttribute('placeholder', lang === 'en' ? (EN[k] !== undefined ? EN[k] : ESph[k]) : ESph[k]);
     });
     document.querySelectorAll('.langbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-lang') === lang); });
     try { localStorage.setItem('nucleoos-landing-lang', lang); } catch(e){}
@@ -353,5 +402,43 @@
   try { saved = localStorage.getItem('nucleoos-landing-lang'); } catch(e){}
   var lang = saved || ((navigator.language || '').toLowerCase().indexOf('en') === 0 ? 'en' : 'es');
   apply(lang);
+
+  // Formulario de soporte: sube la captura y manda el reporte por correo.
+  var REPORTE_URL = 'https://devxnjumkapxqguasgaz.supabase.co/functions/v1/reporte';
+  var fileInput = document.getElementById('supFile');
+  var fileName = document.getElementById('supFileName');
+  var pendiente = null;
+  if (fileInput) fileInput.addEventListener('change', function(){
+    var f = fileInput.files && fileInput.files[0];
+    if (!f) { pendiente = null; fileName.textContent = t('sup.file'); return; }
+    if (f.size > 7 * 1024 * 1024) { pendiente = null; fileInput.value = ''; fileName.textContent = '⚠️ Máx 7 MB'; return; }
+    pendiente = f; fileName.textContent = '📎 ' + f.name;
+  });
+  var form = document.getElementById('supForm');
+  if (form) form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var msg = document.getElementById('supMsg').value.trim();
+    var email = document.getElementById('supEmail').value.trim();
+    var status = document.getElementById('supStatus');
+    var btn = document.getElementById('supSend');
+    if (!msg) { status.className = 'sup-msg err'; status.textContent = t('sup.needmsg'); return; }
+    function enviar(imagen, tipo, nombre){
+      btn.disabled = true; status.className = 'sup-msg'; status.textContent = t('sup.sending');
+      fetch(REPORTE_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, mensaje: msg, imagen: imagen, imagenTipo: tipo, imagenNombre: nombre })
+      }).then(function(r){ return r.ok; }).then(function(ok){
+        btn.disabled = false;
+        if (ok) { status.className = 'sup-msg ok'; status.textContent = t('sup.ok'); form.reset(); pendiente = null; fileName.textContent = t('sup.file'); }
+        else { status.className = 'sup-msg err'; status.textContent = t('sup.err'); }
+      }).catch(function(){ btn.disabled = false; status.className = 'sup-msg err'; status.textContent = t('sup.err'); });
+    }
+    if (pendiente) {
+      var reader = new FileReader();
+      reader.onload = function(){ var b64 = String(reader.result).split(',')[1]; enviar(b64, pendiente.type, pendiente.name); };
+      reader.onerror = function(){ enviar(null, null, null); };
+      reader.readAsDataURL(pendiente);
+    } else { enviar(null, null, null); }
+  });
 })();
 </script>
