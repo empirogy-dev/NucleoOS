@@ -3,6 +3,8 @@ import { Send } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
+import { Toggle } from "../components/Toggle";
+import { CampoHora } from "../components/CampoHora";
 
 // Núcleo por chat (docs/whatsapp/): la tarjeta del vínculo de Telegram en Ajustes.
 // Las tablas wa_* sirven igual: la columna telefono guarda el chat_id.
@@ -15,6 +17,8 @@ interface Vinculo {
   vinculado_en: string;
   timezone: string;
   avisos_activos: boolean;
+  checkin_activo: boolean;
+  checkin_hora: string;
 }
 
 // Zonas horarias frecuentes, en formato IANA. La del navegador se detecta
@@ -93,13 +97,19 @@ export function WhatsAppCard() {
 
   const reload = useCallback(async () => {
     if (!supabase) return;
-    const { data, error } = await supabase.from("wa_vinculos")
-      .select("telefono,vinculado_en,timezone,avisos_activos").maybeSingle();
-    if (error && /does not exist|could not find the table|PGRST205/i.test(error.message)) {
+    let { data, error } = await supabase.from("wa_vinculos")
+      .select("telefono,vinculado_en,timezone,avisos_activos,checkin_activo,checkin_hora").maybeSingle();
+    // Sin la 0054 todavía: leemos sin los campos del check-in y usamos valores por defecto.
+    if (error && /checkin/i.test(error.message)) {
+      ({ data, error } = await supabase.from("wa_vinculos")
+        .select("telefono,vinculado_en,timezone,avisos_activos").maybeSingle());
+    }
+    if (error && /could not find the table|PGRST205|relation .* does not exist/i.test(error.message)) {
       setFaltaMigracion(true);
       return;
     }
-    setVinculo((data as Vinculo) ?? null);
+    const d = data as (Partial<Vinculo> & Record<string, unknown>) | null;
+    setVinculo(d ? ({ ...d, checkin_activo: d.checkin_activo ?? false, checkin_hora: d.checkin_hora ?? "08:00" } as Vinculo) : null);
   }, []);
 
   useEffect(() => {
@@ -135,6 +145,18 @@ export function WhatsAppCard() {
     if (!supabase || !vinculo) return;
     setVinculo({ ...vinculo, timezone });
     await supabase.from("wa_vinculos").update({ timezone }).neq("telefono", "");
+  }
+
+  async function cambiarCheckin(activo: boolean) {
+    if (!supabase || !vinculo) return;
+    setVinculo({ ...vinculo, checkin_activo: activo });
+    await supabase.from("wa_vinculos").update({ checkin_activo: activo }).neq("telefono", "");
+  }
+
+  async function cambiarHoraCheckin(hora: string) {
+    if (!supabase || !vinculo) return;
+    setVinculo({ ...vinculo, checkin_hora: hora });
+    await supabase.from("wa_vinculos").update({ checkin_hora: hora }).neq("telefono", "");
   }
 
   async function desvincular() {
@@ -187,6 +209,20 @@ export function WhatsAppCard() {
               <button className="linklike" style={{ marginTop: 6 }} onClick={() => void cambiarZona(zonaDelNavegador())}>
                 {tr("Usar la de este dispositivo")} ({zonaDelNavegador()})
               </button>
+            )}
+          </div>
+
+          {/* Check-in de la mañana: el coach pregunta solo lo esencial. */}
+          <div className="field" style={{ marginBottom: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
+            <Toggle checked={vinculo.checkin_activo} onChange={(v) => void cambiarCheckin(v)} label={tr("☀️ Check-in de la mañana")} />
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+              {tr("Cada mañana te pregunto por Telegram a qué hora te levantaste, si tomaste agua y qué desayunaste, y lo registro por ti. Para no olvidar lo esencial.")}
+            </p>
+            {vinculo.checkin_activo && (
+              <div style={{ marginTop: 8, maxWidth: 150 }}>
+                <label>{tr("¿A qué hora?")}</label>
+                <CampoHora value={vinculo.checkin_hora} onChange={(v) => void cambiarHoraCheckin(v)} ariaLabel={tr("Hora del check-in")} />
+              </div>
             )}
           </div>
 

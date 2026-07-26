@@ -731,6 +731,40 @@ async function repartirRecordatorios(db: SupabaseClient): Promise<number> {
   return enviados;
 }
 
+// El check-in de la mañana: el coach pregunta solo lo esencial (despertar,
+// agua, desayuno) a la hora que la persona eligió. La respuesta que ella
+// mande la procesa el motor normal, que ya sabe registrar todo eso. Así un
+// cerebro con TDAH no tiene que acordarse de anotar lo básico.
+const MENSAJE_CHECKIN =
+  "🌅 Buenos días 🌱 Para arrancar el día ordenada, cuéntame en un mensaje: " +
+  "¿a qué hora te levantaste, ya tomaste agua, y qué desayunaste o vas a desayunar? " +
+  "Con eso lo dejo registrado por ti. Y si anoche cenaste, dime a qué hora, para llevarte la cuenta del ayuno.";
+
+async function repartirCheckins(db: SupabaseClient): Promise<number> {
+  let enviados = 0;
+  const { data: vinculos, error } = await db.from("wa_vinculos")
+    .select("user_id,telefono,timezone,checkin_activo,checkin_hora,checkin_ultimo")
+    .eq("avisos_activos", true).eq("checkin_activo", true);
+  if (error) return enviados; // sin la 0054 todavía, el resto del motor sigue igual
+
+  for (const v of (vinculos ?? []) as Array<{ user_id: string; telefono: string; timezone: string; checkin_hora: string; checkin_ultimo: string | null }>) {
+    const hoy = hoyEn(v.timezone);
+    if (v.checkin_ultimo === hoy) continue; // ya preguntamos hoy
+    const ahora = minutosDe(horaEn(v.timezone));
+    const cuando = minutosDe(v.checkin_hora || "08:00");
+    if (cuando < 0 || ahora < cuando || ahora - cuando > 30) continue; // ventana de 30 min
+
+    const envio = await enviarTexto(v.telefono, MENSAJE_CHECKIN);
+    await db.from("wa_vinculos").update({ checkin_ultimo: hoy }).eq("user_id", v.user_id);
+    await db.from("wa_eventos").insert({
+      user_id: v.user_id, tipo: "aviso",
+      detalle: { clase: "checkin", hora: v.checkin_hora, ok: envio.ok, error: envio.error ?? null },
+    });
+    if (envio.ok) enviados++;
+  }
+  return enviados;
+}
+
 // ---------- El drenaje del buffer ----------
 
 /** ¿Quien llama tiene derecho a despertar el motor?
@@ -886,10 +920,16 @@ Deno.serve(async (req: Request) => {
     recordatorios = await repartirRecordatorios(db);
   } catch { /* si algo falla aquí, el procesamiento de mensajes ya quedó hecho */ }
 
+  // 3b) El check-in de la mañana: el coach pregunta solo lo esencial.
+  let checkins = 0;
+  try {
+    checkins = await repartirCheckins(db);
+  } catch { /* sin la 0054 o error puntual: el resto del motor sigue igual */ }
+
   // 4) Limpieza: eventos viejos y códigos vencidos.
   const hace30d = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
   await db.from("wa_eventos").delete().lt("creado_en", hace30d);
   await db.from("wa_codigos").delete().lt("expira_en", new Date(Date.now() - 3600_000).toISOString());
 
-  return new Response(JSON.stringify({ procesados, recordatorios }), { status: 200, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ procesados, recordatorios, checkins }), { status: 200, headers: { "Content-Type": "application/json" } });
 });
