@@ -1,0 +1,357 @@
+<style>
+  :root{
+    --paper:#F7F3EA; --cream:#FBF8F0; --white:#FFFFFF;
+    --ink:#2F3A35; --ink-soft:#48544E; --muted:#8A9691;
+    --pri:#8FAF9B; --pri-deep:#5F7A6B; --sec:#C7D7C2; --acc:#D9A38F;
+    --line:#E7E1D4; --line-soft:#F0EBDE;
+    --wash:#EDF2EC;
+    --r-sm:10px; --r-md:16px; --r-lg:24px; --r-xl:32px;
+    --sh-sm:0 1px 2px rgba(47,58,53,.05), 0 6px 18px rgba(47,58,53,.05);
+    --sh:0 2px 6px rgba(47,58,53,.06), 0 20px 50px rgba(47,58,53,.09);
+    --title:"Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --body:"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box}
+  .nos{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  .narrow{max-width:760px;margin:0 auto;padding:0 24px}
+  h1,h2,h3{font-family:var(--title);font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance;color:var(--ink)}
+  h1{font-size:clamp(34px,6vw,58px)}
+  h2{font-size:clamp(27px,4.4vw,40px)}
+  h3{font-size:19px;letter-spacing:-.01em}
+  p{margin:0}
+  a{color:inherit}
+  .eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--pri-deep)}
+  .lede{font-size:clamp(17px,2.2vw,20px);line-height:1.6;color:var(--ink-soft)}
+  .muted{color:var(--muted)}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--body);font-weight:600;font-size:16px;padding:14px 26px;border-radius:999px;text-decoration:none;border:1.5px solid transparent;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, background .12s ease}
+  .btn.primary{background:var(--pri);color:#fff;box-shadow:0 8px 22px rgba(143,175,155,.4)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(143,175,155,.5)}
+  .btn.ghost{background:transparent;color:var(--pri-deep);border-color:var(--line)}
+  .btn.ghost:hover{border-color:var(--pri);background:var(--white)}
+  .nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 82%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;max-width:1080px;margin:0 auto;gap:12px}
+  .brand{display:flex;align-items:center;gap:11px;font-family:var(--title);font-weight:600;font-size:19px;letter-spacing:-.02em}
+  .badge{width:40px;height:40px;border-radius:12px;background:var(--pri);display:grid;place-items:center;flex:none;box-shadow:var(--sh-sm)}
+  .nav-r{display:flex;align-items:center;gap:12px}
+  .nav .btn{padding:10px 20px;font-size:14.5px}
+  .langs{display:flex;gap:2px;background:var(--white);border:1px solid var(--line);border-radius:999px;padding:3px}
+  .langbtn{font-family:var(--body);font-size:12.5px;font-weight:700;letter-spacing:.03em;color:var(--muted);background:none;border:none;cursor:pointer;padding:5px 11px;border-radius:999px}
+  .langbtn.active{background:var(--pri);color:#fff}
+  section{padding:clamp(56px,9vw,104px) 0}
+  .hero{padding-top:clamp(46px,7vw,84px);position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:min(880px,120%);height:620px;background:radial-gradient(ellipse at center, rgba(199,215,194,.55), rgba(247,243,234,0) 70%);z-index:0}
+  .hero-in{position:relative;z-index:1;text-align:center}
+  .hero h1{margin:18px auto 0;max-width:16ch}
+  .hero .lede{margin:22px auto 0;max-width:56ch}
+  .hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+  .hero .fine{margin-top:16px;font-size:13.5px}
+  .mock{margin:clamp(40px,6vw,64px) auto 0;max-width:940px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--sh);overflow:hidden}
+  .mock-bar{display:flex;align-items:center;gap:7px;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+  .mock-bar i{width:11px;height:11px;border-radius:50%;background:var(--line);display:block}
+  .mock-body{padding:26px}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .stat{background:var(--cream);border:1px solid var(--line-soft);border-radius:var(--r-md);padding:16px}
+  .stat .k{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-family:var(--title);font-size:24px;font-weight:600;margin-top:6px}
+  .stat .v small{font-size:13px;color:var(--muted);font-weight:500}
+  .mock-line{height:12px;border-radius:6px;background:var(--line-soft);margin-top:22px}
+  .mock-line.s{width:62%}
+  .empatia{background:var(--white);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .feels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:34px 0 30px}
+  .feel{display:flex;gap:12px;align-items:flex-start;background:var(--cream);border:1px solid var(--line-soft);border-radius:var(--r-md);padding:16px 18px}
+  .feel .d{font-size:20px;line-height:1;flex:none}
+  .feel p{font-size:15.5px;color:var(--ink-soft)}
+  .punch{font-family:var(--title);font-size:clamp(20px,3vw,27px);font-weight:600;letter-spacing:-.02em;line-height:1.3;text-align:center;max-width:24ch;margin:0 auto;color:var(--ink)}
+  .punch b{color:var(--pri-deep)}
+  .center{text-align:center}
+  .mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:44px}
+  .mod{background:var(--white);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;box-shadow:var(--sh-sm);transition:transform .12s ease}
+  .mod:hover{transform:translateY(-3px)}
+  .mod .e{font-size:24px;line-height:1}
+  .mod h3{margin-top:12px}
+  .mod p{font-size:14px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .coach{background:linear-gradient(180deg, var(--wash), var(--paper))}
+  .split{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,64px);align-items:center}
+  .chat{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);padding:20px;max-width:400px}
+  .bub{max-width:82%;padding:11px 15px;border-radius:16px;font-size:14.5px;line-height:1.5;margin-bottom:10px}
+  .bub.me{background:var(--pri);color:#fff;margin-left:auto;border-bottom-right-radius:5px}
+  .bub.co{background:var(--cream);color:var(--ink);border:1px solid var(--line-soft);border-bottom-left-radius:5px}
+  .bub .who{font-size:11px;font-weight:700;letter-spacing:.05em;opacity:.7;margin-bottom:2px;text-transform:uppercase}
+  .princ{background:var(--white);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .cards4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:44px}
+  .card{background:var(--cream);border:1px solid var(--line-soft);border-radius:var(--r-md);padding:24px}
+  .card .e{font-size:26px}
+  .card h3{margin-top:12px}
+  .card p{font-size:14.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55}
+  .revi-visual{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;box-shadow:var(--sh)}
+  .bar{margin:14px 0}
+  .bar .top{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);margin-bottom:6px}
+  .track{height:9px;border-radius:6px;background:var(--line-soft);overflow:hidden}
+  .fill{height:100%;border-radius:6px;background:var(--pri)}
+  .price{background:var(--cream)}
+  .tiers{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:720px;margin:40px auto 0}
+  .tier{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;box-shadow:var(--sh-sm)}
+  .tier.hi{border-color:var(--pri);box-shadow:0 2px 6px rgba(143,175,155,.14),0 20px 50px rgba(143,175,155,.18)}
+  .tier .name{font-family:var(--title);font-weight:600;font-size:20px}
+  .tier .desc{font-size:14px;color:var(--muted);margin-top:4px}
+  .tier ul{list-style:none;padding:0;margin:18px 0 0;font-size:14.5px;color:var(--ink-soft)}
+  .tier li{padding:6px 0 6px 26px;position:relative}
+  .tier li::before{content:"🌱";position:absolute;left:0;font-size:13px}
+  .chip{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--pri-deep);background:var(--wash);border-radius:999px;padding:4px 11px}
+  .cierre{text-align:center;background:linear-gradient(180deg,var(--paper),var(--wash))}
+  .cierre h2{max-width:18ch;margin:14px auto 0}
+  .cierre .btn{margin-top:30px}
+  footer{background:var(--white);border-top:1px solid var(--line-soft);padding:40px 0}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .foot .muted{font-size:13.5px}
+  .foot a{color:var(--pri-deep);text-decoration:none;font-size:14px;font-weight:600}
+  @media (max-width:760px){
+    .split{grid-template-columns:1fr}.feels{grid-template-columns:1fr}
+    .stat-row{grid-template-columns:1fr 1fr}.tiers{grid-template-columns:1fr}.chat{margin:0 auto}
+    .nav .btn.primary{display:none}
+  }
+</style>
+
+<div class="nos">
+  <div class="nav">
+    <div class="nav-in">
+      <div class="brand">
+        <span class="badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="2.3" fill="#fff"/><ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#fff" stroke-width="1.5"/><ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#fff" stroke-width="1.5" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#fff" stroke-width="1.5" transform="rotate(120 12 12)"/></svg></span>
+        NucleoOS
+      </div>
+      <div class="nav-r">
+        <div class="langs">
+          <button class="langbtn" data-lang="es">ES</button>
+          <button class="langbtn" data-lang="en">EN</button>
+        </div>
+        <a class="btn primary" href="https://www.nucleoos.app" data-i18n="nav.enter">Entrar</a>
+      </div>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="wrap hero-in">
+      <span class="eyebrow" data-i18n="hero.eyebrow">El sistema operativo de tu vida</span>
+      <h1 data-i18n="hero.h1">Hecho para tu cerebro, no contra él.</h1>
+      <p class="lede" data-i18n="hero.lede">NucleoOS es la app todo en uno para mentes con TDAH. Registra tu día por voz, ordena tu vida entera en un solo lugar, y deja que un coach con IA convierta el caos en claridad. Sin culpa, sin listas infinitas, a tu ritmo.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://www.nucleoos.app" data-i18n="hero.cta1">Crear mi cuenta gratis</a>
+        <a class="btn ghost" href="#como" data-i18n="hero.cta2">Ver cómo funciona</a>
+      </div>
+      <p class="fine muted" data-i18n="hero.fine">Gratis para empezar. Sin tarjeta.</p>
+      <div class="mock">
+        <div class="mock-bar"><i></i><i></i><i></i></div>
+        <div class="mock-body">
+          <div class="stat-row">
+            <div class="stat"><div class="k" data-i18n="stat.sleep">😴 Sueño</div><div class="v">7.4 <small data-i18n="stat.h">h</small></div></div>
+            <div class="stat"><div class="k" data-i18n="stat.water">💧 Agua</div><div class="v">6 <small data-i18n="stat.of8">de 8</small></div></div>
+            <div class="stat"><div class="k" data-i18n="stat.sob">🌱 Sobriedad</div><div class="v">1 <small data-i18n="stat.y">año 6 m</small></div></div>
+            <div class="stat"><div class="k" data-i18n="stat.focus">🎯 Foco</div><div class="v">3 <small data-i18n="stat.blk">bloques</small></div></div>
+          </div>
+          <div class="mock-line"></div>
+          <div class="mock-line s"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="empatia">
+    <div class="narrow center">
+      <span class="eyebrow" data-i18n="emp.eyebrow">¿Te suena?</span>
+      <div class="feels" style="text-align:left">
+        <div class="feel"><span class="d">🌀</span><p data-i18n="emp.1">Abres cinco apps y no terminas ninguna.</p></div>
+        <div class="feel"><span class="d">📋</span><p data-i18n="emp.2">Las listas de tareas te agobian más de lo que ayudan.</p></div>
+        <div class="feel"><span class="d">🔋</span><p data-i18n="emp.3">Tu energía no es igual todo el mes, pero nada lo toma en cuenta.</p></div>
+        <div class="feel"><span class="d">⏳</span><p data-i18n="emp.4">Prometes empezar mañana. Otra vez.</p></div>
+      </div>
+      <p class="punch" data-i18n="emp.punch" data-html>No es falta de voluntad. Es que las apps de productividad están hechas <b>para otro tipo de cerebro.</b></p>
+    </div>
+  </section>
+
+  <section id="como">
+    <div class="wrap center">
+      <span class="eyebrow" data-i18n="mod.eyebrow">Todo en un lugar</span>
+      <h2 style="margin-top:14px" data-i18n="mod.h2">Toda tu vida, por fin junta y en calma.</h2>
+      <p class="lede" style="max-width:52ch;margin:18px auto 0" data-i18n="mod.lede">Diez áreas que suelen vivir en diez apps distintas, aquí conversan entre sí. Registras una vez, y todo se ordena solo.</p>
+      <div class="mods" style="text-align:left">
+        <div class="mod"><div class="e">⚡</div><h3 data-i18n="mod.energia.t">Energía</h3><p data-i18n="mod.energia.d">Sueño, agua, comida y movimiento. El pulso de tu cuerpo, día a día.</p></div>
+        <div class="mod"><div class="e">🧘</div><h3 data-i18n="mod.mente.t">Mente</h3><p data-i18n="mod.mente.d">Calma, diario y prácticas para regularte cuando la cabeza va a mil.</p></div>
+        <div class="mod"><div class="e">🔁</div><h3 data-i18n="mod.habitos.t">Hábitos</h3><p data-i18n="mod.habitos.d">Rutinas con racha, pensadas para días buenos y días malos.</p></div>
+        <div class="mod"><div class="e">🧭</div><h3 data-i18n="mod.direccion.t">Dirección</h3><p data-i18n="mod.direccion.d">Tu visión de vida y las metas que la construyen, paso a paso.</p></div>
+        <div class="mod"><div class="e">💞</div><h3 data-i18n="mod.relaciones.t">Relaciones</h3><p data-i18n="mod.relaciones.d">Cuida tus vínculos con recordatorios amables, sin que se te olviden.</p></div>
+        <div class="mod"><div class="e">💰</div><h3 data-i18n="mod.finanzas.t">Finanzas</h3><p data-i18n="mod.finanzas.d">Gastos, presupuestos y recibos. Registra hasta por foto de la boleta.</p></div>
+        <div class="mod"><div class="e">📚</div><h3 data-i18n="mod.aprendizaje.t">Aprendizaje</h3><p data-i18n="mod.aprendizaje.d">Tu biblioteca de libros que de verdad ayudan a un cerebro TDAH.</p></div>
+        <div class="mod"><div class="e">✨</div><h3 data-i18n="mod.vision.t">Visión</h3><p data-i18n="mod.vision.d">Tu vision board y los sueños que te mueven, siempre a la vista.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="coach">
+    <div class="wrap split">
+      <div>
+        <span class="eyebrow" data-i18n="coach.eyebrow">Tu coach por chat</span>
+        <h2 style="margin-top:14px" data-i18n="coach.h2">Cuéntale por voz. Él lo registra por ti.</h2>
+        <p class="lede" style="margin-top:18px" data-i18n="coach.lede">"Hice 30 minutos de gimnasio." "Me tomé mis vitaminas." Le hablas por Telegram y llena la app por ti. Te avisa cuando termina tu ayuno, te recuerda tus tareas y tus cumpleaños, y te da consejos que entienden cómo funciona tu cabeza. Es tu segundo cerebro, siempre en el bolsillo.</p>
+      </div>
+      <div class="chat">
+        <div class="bub me"><div class="who" data-i18n="coach.you1">Tú · nota de voz</div><span data-i18n="coach.msg1">Hice 30 min de gimnasio y me tomé mis vitaminas 💪</span></div>
+        <div class="bub co"><div class="who">NucleoOS</div><span data-i18n="coach.msg2">¡Anotado! Registré tu ejercicio y tus suplementos de hoy. Llevas 5 días seguidos moviéndote, tu cuerpo lo está notando. 🌱</span></div>
+        <div class="bub me"><div class="who" data-i18n="coach.you2">Tú</div><span data-i18n="coach.msg3">me siento agotada</span></div>
+        <div class="bub co"><div class="who">NucleoOS</div><span data-i18n="coach.msg4">Tiene sentido, dormiste 5 horas anoche. Antes de exigirte, ¿te tomas 3 minutos para respirar? El descanso también es productivo. 💛</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="princ">
+    <div class="wrap center">
+      <span class="eyebrow" data-i18n="pr.eyebrow">Por qué es distinta</span>
+      <h2 style="margin-top:14px" data-i18n="pr.h2">Diseñada desde la lente del TDAH.</h2>
+      <div class="cards4" style="text-align:left">
+        <div class="card"><div class="e">🤍</div><h3 data-i18n="pr.1.t">Cero culpa</h3><p data-i18n="pr.1.d">Los reinicios son parte del sistema, no un fracaso. Aquí nadie te reta.</p></div>
+        <div class="card"><div class="e">🐜</div><h3 data-i18n="pr.2.t">Pasos diminutos</h3><p data-i18n="pr.2.d">La versión de dos minutos cuenta. Empezar chiquito es empezar.</p></div>
+        <div class="card"><div class="e">🧠</div><h3 data-i18n="pr.3.t">Tu segundo cerebro</h3><p data-i18n="pr.3.d">Saca todo de tu cabeza a un lugar confiable, y libera espacio mental.</p></div>
+        <div class="card"><div class="e">🎉</div><h3 data-i18n="pr.4.t">Se celebra lo hecho</h3><p data-i18n="pr.4.d">La app mira lo que lograste, no la lista de lo que falta.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="revi">
+    <div class="wrap split">
+      <div class="revi-visual">
+        <div style="font-family:var(--title);font-weight:600;font-size:16px;margin-bottom:4px" data-i18n="rev.card">Tu semana, de un vistazo</div>
+        <div class="bar"><div class="top"><span data-i18n="rev.b1">Movimiento</span><b data-i18n="rev.b1v">4 de 5 días</b></div><div class="track"><div class="fill" style="width:80%"></div></div></div>
+        <div class="bar"><div class="top"><span data-i18n="rev.b2">Sueño</span><b data-i18n="rev.b2v">6.9 h promedio</b></div><div class="track"><div class="fill" style="width:70%"></div></div></div>
+        <div class="bar"><div class="top"><span data-i18n="rev.b3">Hábitos</span><b>82%</b></div><div class="track"><div class="fill" style="width:82%"></div></div></div>
+        <div class="bar"><div class="top"><span data-i18n="rev.b4">Foco</span><b data-i18n="rev.b4v">11 bloques</b></div><div class="track"><div class="fill" style="width:60%"></div></div></div>
+      </div>
+      <div>
+        <span class="eyebrow" data-i18n="rev.eyebrow">Del caos a la claridad</span>
+        <h2 style="margin-top:14px" data-i18n="rev.h2">Ves patrones que antes se te escapaban.</h2>
+        <p class="lede" style="margin-top:18px" data-i18n="rev.lede">NucleoOS junta todo lo que registras y te lo devuelve en una revisión diaria, semanal y mensual. Entiendes tu energía, notas qué te hace bien y sabes qué cambiar. Sin planillas, sin esfuerzo, solo claridad.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="price">
+    <div class="wrap center">
+      <span class="eyebrow" data-i18n="price.eyebrow">Precio simple</span>
+      <h2 style="margin-top:14px" data-i18n="price.h2">Empieza gratis. Crece cuando quieras.</h2>
+      <div class="tiers" style="text-align:left">
+        <div class="tier">
+          <div class="name" data-i18n="price.free.n">Gratis</div>
+          <div class="desc" data-i18n="price.free.d">Lo esencial, para siempre.</div>
+          <ul>
+            <li data-i18n="price.free.1">Las diez áreas de tu vida</li>
+            <li data-i18n="price.free.2">Registro diario y hábitos</li>
+            <li data-i18n="price.free.3">Tu biblioteca y tu visión</li>
+          </ul>
+        </div>
+        <div class="tier hi">
+          <span class="chip" data-i18n="price.pro.chip">Premium</span>
+          <div class="name" style="margin-top:10px" data-i18n="price.pro.n">Con IA</div>
+          <div class="desc" data-i18n="price.pro.d">Cuando quieras el acompañamiento completo.</div>
+          <ul>
+            <li data-i18n="price.pro.1">Coach con IA que te conoce</li>
+            <li data-i18n="price.pro.2">Registro por voz y avisos por chat</li>
+            <li data-i18n="price.pro.3">Revisión inteligente de tu vida</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cierre">
+    <div class="narrow">
+      <span class="eyebrow" data-i18n="end.eyebrow">Tu momento es ahora</span>
+      <h2 data-i18n="end.h2">Tu vida entera, en calma y en orden.</h2>
+      <a class="btn primary" href="https://www.nucleoos.app" data-i18n="end.cta">Crear mi cuenta gratis</a>
+      <p class="fine muted" style="margin-top:16px" data-i18n="end.fine">Gratis para empezar. Sin tarjeta. A tu ritmo.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap foot">
+      <div class="brand" style="font-size:17px">
+        <span class="badge" style="width:34px;height:34px;border-radius:10px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="2.3" fill="#fff"/><ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#fff" stroke-width="1.5"/><ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#fff" stroke-width="1.5" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#fff" stroke-width="1.5" transform="rotate(120 12 12)"/></svg></span>
+        NucleoOS
+      </div>
+      <p class="muted" data-i18n="foot.tag">Hecho con cariño para tu mente. 🌱</p>
+      <a href="https://www.nucleoos.app" data-i18n="foot.link">Entrar a la app →</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var EN = {
+    "nav.enter":"Sign in",
+    "hero.eyebrow":"The operating system for your life",
+    "hero.h1":"Built for your brain, not against it.",
+    "hero.lede":"NucleoOS is the all-in-one app for ADHD minds. Log your day by voice, put your whole life in one place, and let an AI coach turn the chaos into clarity. No guilt, no endless lists, at your own pace.",
+    "hero.cta1":"Create my free account","hero.cta2":"See how it works",
+    "hero.fine":"Free to start. No card needed.",
+    "stat.sleep":"😴 Sleep","stat.h":"h","stat.water":"💧 Water","stat.of8":"of 8","stat.sob":"🌱 Sobriety","stat.y":"yr 6mo","stat.focus":"🎯 Focus","stat.blk":"blocks",
+    "emp.eyebrow":"Sound familiar?",
+    "emp.1":"You open five apps and finish none of them.",
+    "emp.2":"To-do lists overwhelm you more than they help.",
+    "emp.3":"Your energy isn't the same all month, but nothing accounts for it.",
+    "emp.4":"You promise to start tomorrow. Again.",
+    "emp.punch":"It's not a lack of willpower. It's that productivity apps are built <b>for a different kind of brain.</b>",
+    "mod.eyebrow":"All in one place","mod.h2":"Your whole life, finally together and calm.",
+    "mod.lede":"Ten areas that usually live in ten different apps here talk to each other. Log once, and everything sorts itself out.",
+    "mod.energia.t":"Energy","mod.energia.d":"Sleep, water, food and movement. Your body's pulse, day by day.",
+    "mod.mente.t":"Mind","mod.mente.d":"Calm, journaling and practices to regulate when your head races.",
+    "mod.habitos.t":"Habits","mod.habitos.d":"Streak-based routines, made for good days and bad days.",
+    "mod.direccion.t":"Direction","mod.direccion.d":"Your life vision and the goals that build it, step by step.",
+    "mod.relaciones.t":"Relationships","mod.relaciones.d":"Nurture your bonds with gentle reminders, so you don't forget.",
+    "mod.finanzas.t":"Finances","mod.finanzas.d":"Expenses, budgets and receipts. Log even by snapping the receipt.",
+    "mod.aprendizaje.t":"Learning","mod.aprendizaje.d":"Your library of books that truly help an ADHD brain.",
+    "mod.vision.t":"Vision","mod.vision.d":"Your vision board and the dreams that move you, always in sight.",
+    "coach.eyebrow":"Your coach by chat","coach.h2":"Just say it. It logs it for you.",
+    "coach.lede":"\"I did 30 minutes at the gym.\" \"I took my vitamins.\" You talk to it on Telegram and it fills the app for you. It tells you when your fast ends, reminds you of tasks and birthdays, and gives advice that understands how your brain works. It's your second brain, always in your pocket.",
+    "coach.you1":"You · voice note","coach.msg1":"Did 30 min at the gym and took my vitamins 💪",
+    "coach.msg2":"Got it! Logged your workout and supplements for today. That's 5 days in a row moving, your body is noticing. 🌱",
+    "coach.you2":"You","coach.msg3":"i feel exhausted",
+    "coach.msg4":"Makes sense, you slept 5 hours last night. Before pushing yourself, how about 3 minutes to breathe? Rest is productive too. 💛",
+    "pr.eyebrow":"Why it's different","pr.h2":"Designed through the ADHD lens.",
+    "pr.1.t":"Zero guilt","pr.1.d":"Restarts are part of the system, not a failure. No one scolds you here.",
+    "pr.2.t":"Tiny steps","pr.2.d":"The two-minute version counts. Starting small is starting.",
+    "pr.3.t":"Your second brain","pr.3.d":"Get everything out of your head into a trusted place, and free up mental space.",
+    "pr.4.t":"Wins get celebrated","pr.4.d":"The app looks at what you did, not the list of what's left.",
+    "rev.card":"Your week, at a glance","rev.b1":"Movement","rev.b1v":"4 of 5 days","rev.b2":"Sleep","rev.b2v":"6.9 h avg","rev.b3":"Habits","rev.b4":"Focus","rev.b4v":"11 blocks",
+    "rev.eyebrow":"From chaos to clarity","rev.h2":"You see patterns that used to slip by.",
+    "rev.lede":"NucleoOS gathers everything you log and hands it back as a daily, weekly and monthly review. You understand your energy, notice what does you good, and know what to change. No spreadsheets, no effort, just clarity.",
+    "price.eyebrow":"Simple pricing","price.h2":"Start free. Grow when you want.",
+    "price.free.n":"Free","price.free.d":"The essentials, forever.",
+    "price.free.1":"The ten areas of your life","price.free.2":"Daily logging and habits","price.free.3":"Your library and your vision",
+    "price.pro.chip":"Premium","price.pro.n":"With AI","price.pro.d":"When you want the full companion.",
+    "price.pro.1":"An AI coach that knows you","price.pro.2":"Voice logging and chat reminders","price.pro.3":"Smart review of your life",
+    "end.eyebrow":"Your moment is now","end.h2":"Your whole life, calm and in order.",
+    "end.cta":"Create my free account","end.fine":"Free to start. No card. At your own pace.",
+    "foot.tag":"Made with care for your mind. 🌱","foot.link":"Go to the app →"
+  };
+  var els = document.querySelectorAll('[data-i18n]');
+  var ES = {};
+  els.forEach(function(el){
+    var k = el.getAttribute('data-i18n');
+    ES[k] = el.hasAttribute('data-html') ? el.innerHTML : el.textContent;
+  });
+  function apply(lang){
+    els.forEach(function(el){
+      var k = el.getAttribute('data-i18n');
+      var val = lang === 'en' ? (EN[k] !== undefined ? EN[k] : ES[k]) : ES[k];
+      if (el.hasAttribute('data-html')) el.innerHTML = val; else el.textContent = val;
+    });
+    document.querySelectorAll('.langbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-lang') === lang); });
+    try { localStorage.setItem('nucleoos-landing-lang', lang); } catch(e){}
+  }
+  document.querySelectorAll('.langbtn').forEach(function(b){
+    b.addEventListener('click', function(){ apply(b.getAttribute('data-lang')); });
+  });
+  var saved = null;
+  try { saved = localStorage.getItem('nucleoos-landing-lang'); } catch(e){}
+  var lang = saved || ((navigator.language || '').toLowerCase().indexOf('en') === 0 ? 'en' : 'es');
+  apply(lang);
+})();
+</script>
