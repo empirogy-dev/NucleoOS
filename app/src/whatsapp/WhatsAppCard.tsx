@@ -19,7 +19,31 @@ interface Vinculo {
   avisos_activos: boolean;
   checkin_activo: boolean;
   checkin_hora: string;
+  almuerzo_activo: boolean;
+  almuerzo_hora: string;
+  noche_activo: boolean;
+  noche_hora: string;
 }
+
+// Los momentos del día en que el coach pregunta solo. Mismo orden que en el
+// motor (wa-motor): mañana, almuerzo y cierre del día.
+const MOMENTOS: Array<{ activo: keyof Vinculo; hora: keyof Vinculo; label: string; desc: string; porDefecto: string }> = [
+  {
+    activo: "checkin_activo", hora: "checkin_hora", porDefecto: "08:00",
+    label: "☀️ Check-in de la mañana",
+    desc: "Te pregunto a qué hora te levantaste, si tomaste agua y qué desayunaste, y lo registro por ti.",
+  },
+  {
+    activo: "almuerzo_activo", hora: "almuerzo_hora", porDefecto: "13:00",
+    label: "🍽 Check-in del almuerzo",
+    desc: "Te pregunto qué almorzaste y cuánta agua llevas, para no perder el registro del día.",
+  },
+  {
+    activo: "noche_activo", hora: "noche_hora", porDefecto: "21:00",
+    label: "🌙 Cierre del día",
+    desc: "Te pregunto tu última comida (para el ayuno) y si hubo algo especial que quieras guardar en tu diario.",
+  },
+];
 
 // Zonas horarias frecuentes, en formato IANA. La del navegador se detecta
 // sola y se agrega a la lista si no estuviera: esto es solo para elegir a
@@ -98,9 +122,10 @@ export function WhatsAppCard() {
   const reload = useCallback(async () => {
     if (!supabase) return;
     let { data, error } = await supabase.from("wa_vinculos")
-      .select("telefono,vinculado_en,timezone,avisos_activos,checkin_activo,checkin_hora").maybeSingle();
-    // Sin la 0054 todavía: leemos sin los campos del check-in y usamos valores por defecto.
-    if (error && /checkin/i.test(error.message)) {
+      .select("telefono,vinculado_en,timezone,avisos_activos,checkin_activo,checkin_hora,almuerzo_activo,almuerzo_hora,noche_activo,noche_hora")
+      .maybeSingle();
+    // Sin la 0054/0055 todavía: leemos lo básico y usamos valores por defecto.
+    if (error && /checkin|almuerzo|noche/i.test(error.message)) {
       ({ data, error } = await supabase.from("wa_vinculos")
         .select("telefono,vinculado_en,timezone,avisos_activos").maybeSingle());
     }
@@ -109,7 +134,12 @@ export function WhatsAppCard() {
       return;
     }
     const d = data as (Partial<Vinculo> & Record<string, unknown>) | null;
-    setVinculo(d ? ({ ...d, checkin_activo: d.checkin_activo ?? false, checkin_hora: d.checkin_hora ?? "08:00" } as Vinculo) : null);
+    setVinculo(d ? ({
+      ...d,
+      checkin_activo: d.checkin_activo ?? false, checkin_hora: d.checkin_hora ?? "08:00",
+      almuerzo_activo: d.almuerzo_activo ?? false, almuerzo_hora: d.almuerzo_hora ?? "13:00",
+      noche_activo: d.noche_activo ?? false, noche_hora: d.noche_hora ?? "21:00",
+    } as Vinculo) : null);
   }, []);
 
   useEffect(() => {
@@ -147,16 +177,11 @@ export function WhatsAppCard() {
     await supabase.from("wa_vinculos").update({ timezone }).neq("telefono", "");
   }
 
-  async function cambiarCheckin(activo: boolean) {
+  /** Guarda un campo del check-in (activo u hora) de cualquiera de los momentos. */
+  async function cambiarMomento(campo: keyof Vinculo, valor: boolean | string) {
     if (!supabase || !vinculo) return;
-    setVinculo({ ...vinculo, checkin_activo: activo });
-    await supabase.from("wa_vinculos").update({ checkin_activo: activo }).neq("telefono", "");
-  }
-
-  async function cambiarHoraCheckin(hora: string) {
-    if (!supabase || !vinculo) return;
-    setVinculo({ ...vinculo, checkin_hora: hora });
-    await supabase.from("wa_vinculos").update({ checkin_hora: hora }).neq("telefono", "");
+    setVinculo({ ...vinculo, [campo]: valor });
+    await supabase.from("wa_vinculos").update({ [campo]: valor }).neq("telefono", "");
   }
 
   async function desvincular() {
@@ -212,18 +237,31 @@ export function WhatsAppCard() {
             )}
           </div>
 
-          {/* Check-in de la mañana: el coach pregunta solo lo esencial. */}
-          <div className="field" style={{ marginBottom: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
-            <Toggle checked={vinculo.checkin_activo} onChange={(v) => void cambiarCheckin(v)} label={tr("☀️ Check-in de la mañana")} />
-            <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-              {tr("Cada mañana te pregunto por Telegram a qué hora te levantaste, si tomaste agua y qué desayunaste, y lo registro por ti. Para no olvidar lo esencial.")}
+          {/* Los momentos del día en que el coach pregunta solo, para no
+              tener que acordarse de registrar nada. */}
+          <div style={{ marginBottom: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 8 }}>
+              {tr("Tu coach te escribe primero y registra lo que le cuentes. Elige cuándo.")}
             </p>
-            {vinculo.checkin_activo && (
-              <div style={{ marginTop: 8, maxWidth: 150 }}>
-                <label>{tr("¿A qué hora?")}</label>
-                <CampoHora value={vinculo.checkin_hora} onChange={(v) => void cambiarHoraCheckin(v)} ariaLabel={tr("Hora del check-in")} />
+            {MOMENTOS.map((m) => (
+              <div key={String(m.activo)} className="field" style={{ marginBottom: 10 }}>
+                <Toggle
+                  checked={Boolean(vinculo[m.activo])}
+                  onChange={(v) => void cambiarMomento(m.activo, v)}
+                  label={tr(m.label)}
+                />
+                <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{tr(m.desc)}</p>
+                {Boolean(vinculo[m.activo]) && (
+                  <div style={{ marginTop: 8, maxWidth: 150 }}>
+                    <CampoHora
+                      value={String(vinculo[m.hora] ?? m.porDefecto)}
+                      onChange={(v) => void cambiarMomento(m.hora, v || m.porDefecto)}
+                      ariaLabel={tr("¿A qué hora?")}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
 
           <button className="btn ghost" onClick={() => void desvincular()}>{tr("Desvincular")}</button>

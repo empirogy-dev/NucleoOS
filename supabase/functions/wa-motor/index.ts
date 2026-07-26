@@ -735,32 +735,59 @@ async function repartirRecordatorios(db: SupabaseClient): Promise<number> {
 // agua, desayuno) a la hora que la persona eligió. La respuesta que ella
 // mande la procesa el motor normal, que ya sabe registrar todo eso. Así un
 // cerebro con TDAH no tiene que acordarse de anotar lo básico.
-const MENSAJE_CHECKIN =
-  "🌅 Buenos días 🌱 Para arrancar el día ordenada, cuéntame en un mensaje: " +
-  "¿a qué hora te levantaste, ya tomaste agua, y qué desayunaste o vas a desayunar? " +
-  "Con eso lo dejo registrado por ti. Y si anoche cenaste, dime a qué hora, para llevarte la cuenta del ayuno.";
+// Los tres momentos del día en que el coach pregunta solo. Cada uno con sus
+// columnas en wa_vinculos (activo/hora/ultimo) y su mensaje. La respuesta la
+// procesa el motor normal, que ya sabe registrar sueño, agua, platos y diario.
+const MOMENTOS = [
+  {
+    clase: "checkin", activo: "checkin_activo", hora: "checkin_hora", ultimo: "checkin_ultimo", porDefecto: "08:00",
+    mensaje:
+      "🌅 Buenos días 🌱 Para arrancar el día ordenada, cuéntame en un mensaje: " +
+      "¿a qué hora te levantaste, ya tomaste agua, y qué desayunaste o vas a desayunar? " +
+      "Con eso lo dejo registrado por ti. Y si anoche cenaste, dime a qué hora, para llevarte la cuenta del ayuno.",
+  },
+  {
+    clase: "almuerzo", activo: "almuerzo_activo", hora: "almuerzo_hora", ultimo: "almuerzo_ultimo", porDefecto: "13:00",
+    mensaje:
+      "🍽 Hora de almuerzo. ¿Ya comiste? Cuéntame qué almorzaste y a qué hora, y de paso cuántos vasos de agua llevas. " +
+      "Lo registro por ti, sin que tengas que abrir la app.",
+  },
+  {
+    clase: "noche", activo: "noche_activo", hora: "noche_hora", ultimo: "noche_ultimo", porDefecto: "21:00",
+    mensaje:
+      "🌙 Cerremos el día. Dos cosas: ¿a qué hora fue tu última comida? (así te llevo la cuenta del ayuno) " +
+      "y ¿hubo algo especial hoy que quieras guardar? Puede ser un momento lindo, algo que aprendiste o algo que quieras recordar. " +
+      "Me lo cuentas y lo dejo escrito en tu diario. 💛",
+  },
+] as const;
 
 async function repartirCheckins(db: SupabaseClient): Promise<number> {
   let enviados = 0;
+  const campos = MOMENTOS.flatMap((m) => [m.activo, m.hora, m.ultimo]).join(",");
   const { data: vinculos, error } = await db.from("wa_vinculos")
-    .select("user_id,telefono,timezone,checkin_activo,checkin_hora,checkin_ultimo")
-    .eq("avisos_activos", true).eq("checkin_activo", true);
-  if (error) return enviados; // sin la 0054 todavía, el resto del motor sigue igual
+    .select(`user_id,telefono,timezone,${campos}`)
+    .eq("avisos_activos", true);
+  if (error) return enviados; // sin la 0054/0055 todavía, el resto del motor sigue igual
 
-  for (const v of (vinculos ?? []) as Array<{ user_id: string; telefono: string; timezone: string; checkin_hora: string; checkin_ultimo: string | null }>) {
-    const hoy = hoyEn(v.timezone);
-    if (v.checkin_ultimo === hoy) continue; // ya preguntamos hoy
-    const ahora = minutosDe(horaEn(v.timezone));
-    const cuando = minutosDe(v.checkin_hora || "08:00");
-    if (cuando < 0 || ahora < cuando || ahora - cuando > 30) continue; // ventana de 30 min
+  for (const v of (vinculos ?? []) as Array<Record<string, unknown>>) {
+    const tz = String(v.timezone ?? "UTC");
+    const hoy = hoyEn(tz);
+    const ahora = minutosDe(horaEn(tz));
 
-    const envio = await enviarTexto(v.telefono, MENSAJE_CHECKIN);
-    await db.from("wa_vinculos").update({ checkin_ultimo: hoy }).eq("user_id", v.user_id);
-    await db.from("wa_eventos").insert({
-      user_id: v.user_id, tipo: "aviso",
-      detalle: { clase: "checkin", hora: v.checkin_hora, ok: envio.ok, error: envio.error ?? null },
-    });
-    if (envio.ok) enviados++;
+    for (const m of MOMENTOS) {
+      if (v[m.activo] !== true) continue;
+      if (v[m.ultimo] === hoy) continue; // ya preguntamos hoy
+      const cuando = minutosDe(String(v[m.hora] ?? m.porDefecto) || m.porDefecto);
+      if (cuando < 0 || ahora < cuando || ahora - cuando > 30) continue; // ventana de 30 min
+
+      const envio = await enviarTexto(String(v.telefono), m.mensaje);
+      await db.from("wa_vinculos").update({ [m.ultimo]: hoy }).eq("user_id", String(v.user_id));
+      await db.from("wa_eventos").insert({
+        user_id: String(v.user_id), tipo: "aviso",
+        detalle: { clase: m.clase, hora: v[m.hora], ok: envio.ok, error: envio.error ?? null },
+      });
+      if (envio.ok) enviados++;
+    }
   }
   return enviados;
 }
