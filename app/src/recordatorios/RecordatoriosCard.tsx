@@ -15,6 +15,7 @@ export function RecordatoriosCard() {
   const [texto, setTexto] = useState("");
   const [hora, setHora] = useState("");
   const [diario, setDiario] = useState(true);
+  const [pregunta, setPregunta] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -37,9 +38,10 @@ export function RecordatoriosCard() {
     setBusy(true);
     setErr(null);
     try {
-      await addRecordatorio(texto.trim(), hora, diario ? "diario" : "unico", hoyLocal());
+      await addRecordatorio(texto.trim(), hora, diario ? "diario" : "unico", hoyLocal(), pregunta);
       setTexto("");
       setHora("");
+      setPregunta(false);
       await reload();
     } catch (e2) {
       setErr(e2 instanceof Error ? e2.message : String(e2));
@@ -75,8 +77,11 @@ export function RecordatoriosCard() {
         <div className="txrow" key={r.id}>
           <span className="txicon tnum" style={{ fontSize: 12.5 }}>{r.hora}</span>
           <div className="txmeta">
-            <b>{r.texto}</b>
-            <small>{r.repite === "diario" ? tr("cada día") : tr("solo hoy")}</small>
+            <b>{r.pregunta ? `💬 ${r.texto}` : r.texto}</b>
+            <small>
+              {r.repite === "diario" ? tr("cada día") : tr("solo hoy")}
+              {r.pregunta ? `, ${tr("te pregunta y registra")}` : ""}
+            </small>
           </div>
           <button className="xdel" aria-label={tr("Apagar recordatorio")}
             onClick={async () => { await apagarRecordatorio(r.id); void reload(); }}>
@@ -96,8 +101,16 @@ export function RecordatoriosCard() {
           <input type="checkbox" checked={diario} onChange={(e) => setDiario(e.target.checked)} />
           {tr("cada día")}
         </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, cursor: "pointer" }}
+          title={tr("En vez de solo avisarte, el coach te lo pregunta y registra lo que respondas.")}>
+          <input type="checkbox" checked={pregunta} onChange={(e) => setPregunta(e.target.checked)} />
+          💬 {tr("que me pregunte")}
+        </label>
         <button className="btn ghost" disabled={busy || !texto.trim() || !hora}>{tr("Crear")}</button>
       </form>
+      <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>
+        {tr("Marca 💬 y el coach te lo pregunta por Telegram y registra tu respuesta: así armas tus propios check-ins de lo que tú quieras.")}
+      </p>
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 8 }}>{err}</p>}
     </div>
   );

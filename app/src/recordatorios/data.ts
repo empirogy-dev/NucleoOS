@@ -11,6 +11,9 @@ export interface Recordatorio {
   repite: "diario" | "unico";
   fecha: string | null;      // solo si repite = unico
   activo: boolean;
+  /** true: el coach te lo pregunta y registra tu respuesta.
+   *  false: solo te avisa. Así cada quien arma sus propios check-ins. */
+  pregunta?: boolean;
 }
 
 function sb() {
@@ -35,22 +38,43 @@ function check(error: { code?: string; message: string } | null) {
 }
 
 export async function listRecordatorios(): Promise<Recordatorio[]> {
-  const { data, error } = await sb().from("wa_recordatorios")
-    .select("id,texto,hora,repite,fecha,activo")
+  const con = await sb().from("wa_recordatorios")
+    .select("id,texto,hora,repite,fecha,activo,pregunta")
     .eq("activo", true)
     .order("hora");
-  check(error);
-  return (data ?? []) as Recordatorio[];
+  // Sin la 0056 todavía: leemos sin el campo pregunta.
+  if (con.error && /pregunta/i.test(con.error.message)) {
+    const sin = await sb().from("wa_recordatorios")
+      .select("id,texto,hora,repite,fecha,activo")
+      .eq("activo", true)
+      .order("hora");
+    check(sin.error);
+    return (sin.data ?? []) as Recordatorio[];
+  }
+  check(con.error);
+  return (con.data ?? []) as Recordatorio[];
 }
 
-export async function addRecordatorio(texto: string, hora: string, repite: "diario" | "unico", fechaHoy: string): Promise<void> {
-  const { error } = await sb().from("wa_recordatorios").insert({
+export async function addRecordatorio(
+  texto: string,
+  hora: string,
+  repite: "diario" | "unico",
+  fechaHoy: string,
+  pregunta = false,
+): Promise<void> {
+  const fila: Record<string, unknown> = {
     user_id: await uid(),
     texto: texto.slice(0, 200),
     hora,
     repite,
     fecha: repite === "unico" ? fechaHoy : null,
-  });
+  };
+  if (pregunta) fila.pregunta = true;
+  let { error } = await sb().from("wa_recordatorios").insert(fila);
+  if (error && /pregunta/i.test(error.message)) {
+    delete fila.pregunta;
+    ({ error } = await sb().from("wa_recordatorios").insert(fila));
+  }
   check(error);
 }
 

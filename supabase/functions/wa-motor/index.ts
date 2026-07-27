@@ -466,6 +466,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
           texto: { type: "STRING", description: "Que hay que recordarle, corto y en segunda persona (ej: tomar tus suplementos)" },
           hora: { type: "STRING", description: "HH:MM en 24 horas" },
           repite: { type: "STRING", description: "diario si es todos los dias, unico si es solo por hoy. Ante la duda, diario" },
+          pregunta: { type: "BOOLEAN", description: "true si ella pide que le PREGUNTES algo y lo registres (ej: preguntame si tome mis pastillas, preguntame como dormi). false si es solo un aviso (ej: recuerdame tomar agua)." },
         },
         required: ["texto", "hora"],
       },
@@ -478,14 +479,23 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
       if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return "La hora debe venir como HH:MM en formato 24 horas. Pregúntale a qué hora exacta.";
       const horaNorm = `${m[1].padStart(2, "0")}:${m[2]}`;
       const repite = args.repite === "unico" ? "unico" : "diario";
-      const { data, error } = await ctx.db.from("wa_recordatorios")
-        .insert({
-          user_id: ctx.userId, texto, hora: horaNorm, repite,
-          fecha: repite === "unico" ? hoyEn(ctx.timezone) : null,
-        }).select("id").single();
+      const pregunta = args.pregunta === true;
+      const fila: Record<string, unknown> = {
+        user_id: ctx.userId, texto, hora: horaNorm, repite,
+        fecha: repite === "unico" ? hoyEn(ctx.timezone) : null,
+      };
+      if (pregunta) fila.pregunta = true;
+      let { data, error } = await ctx.db.from("wa_recordatorios").insert(fila).select("id").single();
+      // Sin la 0056 todavía: lo guardamos como aviso normal.
+      if (error && /pregunta/i.test(error.message)) {
+        delete fila.pregunta;
+        ({ data, error } = await ctx.db.from("wa_recordatorios").insert(fila).select("id").single());
+      }
       if (error || !data) return `No pude programarlo: ${error?.message ?? "sin fila"}`;
       await anotarEscritura(ctx, "wa_recordatorios", data.id, `recordatorio "${texto}" a las ${horaNorm}`);
-      return `Recordatorio listo: te escribo a las ${horaNorm} ${repite === "diario" ? "todos los días" : "hoy"} para ${texto}.`;
+      return pregunta
+        ? `Listo: a las ${horaNorm} ${repite === "diario" ? "todos los días" : "hoy"} te pregunto ${texto} y registro tu respuesta.`
+        : `Recordatorio listo: te escribo a las ${horaNorm} ${repite === "diario" ? "todos los días" : "hoy"} para ${texto}.`;
     },
   },
 
@@ -706,18 +716,29 @@ async function repartirRecordatorios(db: SupabaseClient): Promise<number> {
   for (const v of (vinculos ?? []) as Array<{ user_id: string; telefono: string; timezone: string }>) {
     const ahora = minutosDe(horaEn(v.timezone));
     const hoy = hoyEn(v.timezone);
-    const { data: pendientes, error } = await db.from("wa_recordatorios")
-      .select("id,texto,hora,repite,fecha,ultimo_envio")
+    let { data: pendientes, error } = await db.from("wa_recordatorios")
+      .select("id,texto,hora,repite,fecha,ultimo_envio,pregunta")
       .eq("user_id", v.user_id).eq("activo", true);
+    // Sin la 0056 todavía: leemos sin el campo pregunta.
+    if (error && /pregunta/i.test(error.message)) {
+      ({ data: pendientes, error } = await db.from("wa_recordatorios")
+        .select("id,texto,hora,repite,fecha,ultimo_envio")
+        .eq("user_id", v.user_id).eq("activo", true));
+    }
     if (error) return enviados; // sin la 0052 todavía, el resto del motor sigue igual
 
-    for (const r of (pendientes ?? []) as Array<{ id: string; texto: string; hora: string; repite: string; fecha: string | null; ultimo_envio: string | null }>) {
+    for (const r of (pendientes ?? []) as Array<{ id: string; texto: string; hora: string; repite: string; fecha: string | null; ultimo_envio: string | null; pregunta?: boolean }>) {
       if (r.ultimo_envio === hoy) continue;
       if (r.repite === "unico" && r.fecha !== hoy) continue;
       const cuando = minutosDe(r.hora);
       if (cuando < 0 || ahora < cuando || ahora - cuando > 30) continue;
 
-      const envio = await enviarTexto(v.telefono, `⏰ ${r.texto}`);
+      // Un recordatorio normal avisa; uno con pregunta invita a responder,
+      // y esa respuesta la registra el motor como cualquier otro mensaje.
+      const texto = r.pregunta
+        ? `💬 ${r.texto}\n\nCuéntame y lo dejo registrado por ti. 🌱`
+        : `⏰ ${r.texto}`;
+      const envio = await enviarTexto(v.telefono, texto);
       await db.from("wa_recordatorios")
         .update({ ultimo_envio: hoy, ...(r.repite === "unico" ? { activo: false } : {}) })
         .eq("id", r.id);
