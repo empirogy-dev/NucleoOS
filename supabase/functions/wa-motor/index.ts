@@ -782,6 +782,127 @@ const MOMENTOS = [
   },
 ] as const;
 
+function fmtISO(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+/** La próxima vez que toca un pago, respetando su recurrencia. Un pago
+ *  mensual guarda la fecha del PRIMERO (que suele estar en el pasado), así
+ *  que hay que proyectarlo hacia adelante o nunca se avisa. Igual que
+ *  nextOccurrence en la app. */
+function proximaOcurrencia(ancla: string, recurrencia: string, hoy: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ancla ?? "")) return null;
+  if (recurrencia === "oneTime") return ancla >= hoy ? ancla : null;
+  const now = new Date(hoy + "T00:00:00Z");
+  const d = new Date(ancla + "T00:00:00Z");
+  if (d >= now) return ancla;
+  if (recurrencia === "monthly") {
+    const diaPago = d.getUTCDate();
+    let guarda = 0;
+    while (d < now && guarda++ < 240) {
+      d.setUTCDate(1);
+      d.setUTCMonth(d.getUTCMonth() + 1);
+      const ultimoDia = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+      d.setUTCDate(Math.min(diaPago, ultimoDia));
+    }
+    return fmtISO(d);
+  }
+  let guarda = 0; // quincenal
+  while (d < now && guarda++ < 500) d.setUTCDate(d.getUTCDate() + 14);
+  return fmtISO(d);
+}
+
+function cuandoTexto(fecha: string, hoy: string): string {
+  const dias = Math.round((new Date(fecha + "T00:00:00Z").getTime() - new Date(hoy + "T00:00:00Z").getTime()) / 86400000);
+  if (dias <= 0) return "¡hoy!";
+  if (dias === 1) return "mañana";
+  return `en ${dias} días`;
+}
+
+/** Lo que ya está esperando en tu app y que, si nadie te lo dice, se olvida:
+ *  lo mismo que muestra el Calendario (pagos con su recurrencia, citas,
+ *  exámenes y cumpleaños) más las tareas de hoy y los vínculos por
+ *  reconectar. Va pegado al check-in de la mañana, sin sumar otro mensaje. */
+async function loQueTeEspera(db: SupabaseClient, userId: string, timezone: string): Promise<string> {
+  const hoy = hoyEn(timezone);
+  const limite = fmtISO(new Date(new Date(hoy + "T00:00:00Z").getTime() + 7 * 86400_000)); // los próximos 7 días
+  const lineas: string[] = [];
+  const seguro = async <T>(p: PromiseLike<{ data: T[] | null }>): Promise<T[]> => {
+    try { return (await p).data ?? []; } catch { return []; }
+  };
+
+  try {
+    const [tareas, rels, logs, pagos, citas, examenes] = await Promise.all([
+      seguro<{ title: string; done: boolean }>(db.from("day_tasks").select("title,done").eq("user_id", userId).eq("date", hoy).limit(10)),
+      seguro<{ id: string; name: string; birthday: string | null; contact_every_days: number | null }>(
+        db.from("relationships").select("id,name,birthday,contact_every_days").eq("user_id", userId).limit(80)),
+      seguro<{ relationship_id: string; date: string }>(
+        db.from("relationship_logs").select("relationship_id,date").eq("user_id", userId).order("date", { ascending: false }).limit(400)),
+      seguro<{ title: string; amount: number | null; date: string; recurrence: string }>(
+        db.from("reminders").select("title,amount,date,recurrence").eq("user_id", userId).limit(60)),
+      seguro<{ title: string; date: string; time: string | null }>(
+        db.from("appointments").select("title,date,time").eq("user_id", userId).gte("date", hoy).lte("date", limite).order("date").limit(10)),
+      seguro<{ name: string; due_date: string | null; result: string | null }>(
+        db.from("health_exams").select("name,due_date,result").eq("user_id", userId).limit(20)),
+    ]);
+
+    const pend = tareas.filter((t) => !t.done).map((t) => t.title);
+    if (pend.length > 0) lineas.push(`📝 Tareas de hoy: ${pend.join(", ")}.`);
+
+    // Pagos: se proyecta la próxima fecha según su recurrencia (mensual,
+    // quincenal o única), así la tarjeta y el seguro sí aparecen.
+    const proximos = pagos
+      .map((p) => ({ ...p, cuando: proximaOcurrencia(p.date, p.recurrence, hoy) }))
+      .filter((p): p is typeof p & { cuando: string } => Boolean(p.cuando) && p.cuando! <= limite)
+      .sort((a, b) => a.cuando.localeCompare(b.cuando));
+    if (proximos.length > 0) {
+      lineas.push("💳 Pagos: " + proximos.slice(0, 6).map((p) =>
+        `${p.title}${p.amount ? ` (${p.amount})` : ""} ${cuandoTexto(p.cuando, hoy)}`).join(", ") + ".");
+    }
+
+    if (citas.length > 0) {
+      lineas.push("🩺 Citas: " + citas.map((c) =>
+        `${c.title}${c.time ? ` a las ${String(c.time).slice(0, 5)}` : ""} ${cuandoTexto(c.date, hoy)}`).join(", ") + ".");
+    }
+
+    const exams = examenes.filter((e) => !e.result && e.due_date && e.due_date >= hoy && e.due_date <= limite);
+    if (exams.length > 0) {
+      lineas.push("🧪 Exámenes: " + exams.map((e) => `${e.name} ${cuandoTexto(e.due_date!, hoy)}`).join(", ") + ".");
+    }
+
+    // Cumpleaños de los próximos 7 días.
+    const cumples: string[] = [];
+    for (const r of rels) {
+      if (!r.birthday) continue;
+      const [, mes, dia] = r.birthday.split("-").map(Number);
+      if (!mes || !dia) continue;
+      const base = new Date(hoy + "T00:00:00Z");
+      let prox = new Date(Date.UTC(base.getUTCFullYear(), mes - 1, dia));
+      if (prox < base) prox = new Date(Date.UTC(base.getUTCFullYear() + 1, mes - 1, dia));
+      const faltan = Math.round((prox.getTime() - base.getTime()) / 86400000);
+      if (faltan <= 7) cumples.push(`${r.name} ${faltan === 0 ? "¡hoy!" : cuandoTexto(fmtISO(prox), hoy)}`);
+    }
+    if (cumples.length > 0) lineas.push(`🎂 Cumpleaños: ${cumples.join(", ")}.`);
+
+    // Vínculos a los que toca escribirles, según la cadencia que elegiste.
+    const ultimo = new Map<string, string>();
+    for (const l of logs) if (!ultimo.has(l.relationship_id)) ultimo.set(l.relationship_id, l.date);
+    const reconectar = rels.filter((r) => {
+      if (!r.contact_every_days) return false;
+      const u = ultimo.get(r.id);
+      if (!u) return true;
+      const dias = Math.round((new Date(hoy + "T00:00:00Z").getTime() - new Date(u + "T00:00:00Z").getTime()) / 86400000);
+      return dias >= r.contact_every_days;
+    }).map((r) => r.name);
+    if (reconectar.length > 0) {
+      lineas.push(`💌 Por reconectar: ${reconectar.slice(0, 4).join(", ")}${reconectar.length > 4 ? ` y ${reconectar.length - 4} más` : ""}.`);
+    }
+  } catch {
+    /* si una tabla falla, el check-in sale igual sin esta parte */
+  }
+  return lineas.length > 0 ? `\n\nY esto te espera:\n${lineas.join("\n")}` : "";
+}
+
 async function repartirCheckins(db: SupabaseClient): Promise<number> {
   let enviados = 0;
   const campos = MOMENTOS.flatMap((m) => [m.activo, m.hora, m.ultimo]).join(",");
@@ -801,7 +922,11 @@ async function repartirCheckins(db: SupabaseClient): Promise<number> {
       const cuando = minutosDe(String(v[m.hora] ?? m.porDefecto) || m.porDefecto);
       if (cuando < 0 || ahora < cuando || ahora - cuando > 30) continue; // ventana de 30 min
 
-      const envio = await enviarTexto(String(v.telefono), m.mensaje);
+      // Solo en la mañana sumamos lo que ya espera en la app: así Telegram
+      // te avisa de los vínculos, tareas, pagos y cumpleaños que hoy solo
+      // se ven si abres la app.
+      const extra = m.clase === "checkin" ? await loQueTeEspera(db, String(v.user_id), tz) : "";
+      const envio = await enviarTexto(String(v.telefono), m.mensaje + extra);
       await db.from("wa_vinculos").update({ [m.ultimo]: hoy }).eq("user_id", String(v.user_id));
       await db.from("wa_eventos").insert({
         user_id: String(v.user_id), tipo: "aviso",
