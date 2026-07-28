@@ -229,7 +229,14 @@ button{font-family:inherit}
 .ftab:hover{border-color:var(--muted)}
 .ftab.active{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-wash)}
 .txrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line-soft)}
-@media (max-width:480px){.txrow{flex-wrap:wrap}.txrow .txmeta{flex-basis:100%}}
+/* En el teléfono la fila se mantiene en una línea: antes el texto ocupaba
+   el ancho completo y empujaba el ícono y los botones a líneas aparte, así
+   que una lista de tres cosas llenaba media pantalla. El título se envuelve
+   en vez de cortarse con puntos suspensivos. */
+@media (max-width:480px){
+  .txrow{gap:10px;padding:9px 2px}
+  .txrow .txmeta b{white-space:normal}
+}
 .txrow:last-child{border-bottom:none}
 .txicon{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font-size:15px;flex:none}
 .txmeta{flex:1;min-width:0}
