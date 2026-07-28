@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
-import { HeartPulse, Pencil, Plus, Trash2 } from "lucide-react";
+import { HeartPulse, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
@@ -22,6 +22,7 @@ import { RecuperacionTab } from "./RecuperacionTab";
 import { PlatoCard } from "./PlatoCard";
 import { GUIAS_NUTRICION } from "./nutricionGuias";
 import { MOMENTOS, deleteMeal, listMeals, momentoDe, totalesDia, updateMeal, type Meal } from "./comidas";
+import { analizarComidaTexto, iaConfigured } from "../lib/ia";
 import { getHealthProfile, type HealthProfile } from "./data";
 import {
   META_AGUA_VASOS,
@@ -673,10 +674,36 @@ function CorregirComidaModal({ comida, onClose, onSaved }: {
   const [prot, setProt] = useState(String(Math.round(comida.protein_g ?? 0)));
   const [carbs, setCarbs] = useState(String(Math.round(comida.carbs_g ?? 0)));
   const [grasas, setGrasas] = useState(String(Math.round(comida.fat_g ?? 0)));
+  const [fibra, setFibra] = useState(String(Math.round(comida.fiber_g ?? 0)));
   const [busy, setBusy] = useState(false);
+  const [recalculando, setRecalculando] = useState(false);
+  const [recalculado, setRecalculado] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const num = (v: string) => Math.max(0, Math.round(Number(v) || 0));
+  const cambioElPlato = descripcion.trim() !== comida.description.trim();
+
+  /** Si corriges QUÉ comiste, los números ya no calzan: la avena no es lo
+   *  mismo que las semillas de cáñamo. Esto le pide a la IA que estime de
+   *  nuevo con el texto corregido. */
+  async function recalcular() {
+    if (!descripcion.trim()) { setErr(tr("Ponle un nombre al plato.")); return; }
+    setRecalculando(true);
+    setErr(null);
+    try {
+      const r = await analizarComidaTexto(descripcion.trim());
+      setKcal(String(r.kcal));
+      setProt(String(r.proteina_g));
+      setCarbs(String(r.carbohidratos_g));
+      setGrasas(String(r.grasas_g));
+      setFibra(String(r.fibra_g));
+      setRecalculado(true);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+    } finally {
+      setRecalculando(false);
+    }
+  }
 
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
@@ -691,6 +718,7 @@ function CorregirComidaModal({ comida, onClose, onSaved }: {
         protein_g: num(prot),
         carbs_g: num(carbs),
         fat_g: num(grasas),
+        fiber_g: num(fibra),
       });
       onSaved();
     } catch (ex) {
@@ -710,7 +738,27 @@ function CorregirComidaModal({ comida, onClose, onSaved }: {
         <form onSubmit={guardar}>
           <div className="field"><label>{tr("Qué comiste")}</label>
             <textarea className="vision-edit" rows={2} value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)} autoFocus /></div>
+              onChange={(e) => { setDescripcion(e.target.value); setRecalculado(false); }} autoFocus /></div>
+
+          {/* Si cambiaste el plato, los macros viejos ya no sirven. */}
+          {iaConfigured && (
+            <>
+              <button type="button" className={"btn " + (cambioElPlato && !recalculado ? "primary" : "ghost")}
+                style={{ width: "100%", marginBottom: 6 }} disabled={recalculando}
+                onClick={() => void recalcular()}>
+                <Sparkles size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+                {recalculando ? tr("Recalculando…") : tr("Recalcular calorías y macros con IA")}
+              </button>
+              <p style={{ fontSize: 11.5, color: recalculado ? "var(--ok)" : "var(--muted)", marginBottom: 12 }}>
+                {recalculado
+                  ? tr("✓ Listo, estos son los números del plato corregido.")
+                  : cambioElPlato
+                    ? tr("Cambiaste el plato: recalcula para que los números cuadren.")
+                    : tr("Corrige el texto de arriba y recalcula, o ajusta los números a mano.")}
+              </p>
+            </>
+          )}
+
           <div className="field"><label>{tr("¿Qué comida es?")}</label>
             <Selector value={momento} ariaLabel={tr("¿Qué comida es?")} placeholder={tr("Sin definir")} onChange={setMomento}
               opciones={[{ value: "", label: tr("Sin definir") }, ...MOMENTOS.map((m) => ({ value: m.key, label: `${m.emoji} ${tr(m.label)}` }))]} /></div>
@@ -726,6 +774,8 @@ function CorregirComidaModal({ comida, onClose, onSaved }: {
             <div className="field"><label>🥑 {tr("Grasas")} (g)</label>
               <input type="number" min="0" value={grasas} onChange={(e) => setGrasas(e.target.value)} /></div>
           </div>
+          <div className="field" style={{ maxWidth: 160 }}><label>🌾 {tr("Fibra")} (g)</label>
+            <input type="number" min="0" value={fibra} onChange={(e) => setFibra(e.target.value)} /></div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>
             {busy ? tr("Guardando…") : tr("com.guardar")}
           </button>
