@@ -37,7 +37,10 @@ export default function App() {
     <SettingsProvider>
       <FechaActivaProvider>
       <ModulosProvider>
-      <BrowserRouter>
+      {/* En producción la app vive en /app y la raíz del dominio es la
+          landing. Mismo dominio a propósito: así la sesión de quien ya
+          entraba no se pierde. En desarrollo sigue en la raíz. */}
+      <BrowserRouter basename={import.meta.env.DEV ? "/" : "/app"}>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Inicio />} />

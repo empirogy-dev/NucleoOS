@@ -1,3 +1,23 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "redirects": [
+    { "source": "/inicio", "destination": "/app", "permanent": false },
+    { "source": "/finanzas/:p*", "destination": "/app/finanzas/:p*", "permanent": false },
+    { "source": "/objetivos/:p*", "destination": "/app/objetivos/:p*", "permanent": false },
+    { "source": "/calendario/:p*", "destination": "/app/calendario/:p*", "permanent": false },
+    { "source": "/habitos/:p*", "destination": "/app/habitos/:p*", "permanent": false },
+    { "source": "/trabajo/:p*", "destination": "/app/trabajo/:p*", "permanent": false },
+    { "source": "/salud/:p*", "destination": "/app/salud/:p*", "permanent": false },
+    { "source": "/aprendizaje/:p*", "destination": "/app/aprendizaje/:p*", "permanent": false },
+    { "source": "/relaciones/:p*", "destination": "/app/relaciones/:p*", "permanent": false },
+    { "source": "/mente/:p*", "destination": "/app/mente/:p*", "permanent": false },
+    { "source": "/movimiento/:p*", "destination": "/app/movimiento/:p*", "permanent": false },
+    { "source": "/revision/:p*", "destination": "/app/revision/:p*", "permanent": false },
+    { "source": "/vision/:p*", "destination": "/app/vision/:p*", "permanent": false },
+    { "source": "/ajustes/:p*", "destination": "/app/ajustes/:p*", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "/home.html" },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/app/:path*", "destination": "/index.html" }
+  ]
 }
