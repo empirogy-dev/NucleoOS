@@ -113,6 +113,17 @@
   .sup-msg{font-size:14px;text-align:center;min-height:20px;margin-top:4px}
   .sup-msg.ok{color:var(--pri-deep)}
   .sup-msg.err{color:var(--acc)}
+  .instalar{background:var(--white);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .pasos{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:40px;max-width:840px;margin-left:auto;margin-right:auto}
+  .paso-card{background:var(--cream);border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:26px}
+  .paso-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .paso-e{font-size:26px;line-height:1}
+  .paso-card ol{margin:0;padding-left:20px;font-size:15px;line-height:1.6;color:var(--ink-soft)}
+  .paso-card li{padding:5px 0}
+  .paso-card li::marker{color:var(--pri-deep);font-weight:700}
+  .paso-card b{color:var(--ink)}
+  @media (max-width:760px){.pasos{grid-template-columns:1fr}}
+
   .cierre{text-align:center;background:linear-gradient(180deg,var(--paper),var(--wash))}
   .cierre h2{max-width:18ch;margin:14px auto 0}
   .cierre .btn{margin-top:30px}
@@ -151,7 +162,7 @@
       <p class="lede" data-i18n="hero.lede">NucleoOS es la app todo en uno para mentes con TDAH. Registra tu día por voz, ordena tu vida entera en un solo lugar, y deja que un coach con IA convierta el caos en claridad. Sin culpa, sin listas infinitas, a tu ritmo.</p>
       <div class="cta">
         <a class="btn primary" href="/app" data-i18n="hero.cta1">Crear mi cuenta gratis</a>
-        <a class="btn ghost" href="#como" data-i18n="hero.cta2">Ver cómo funciona</a>
+        <a class="btn ghost" href="#instalar" data-i18n="hero.cta2">Instalarla en mi teléfono</a>
       </div>
       <p class="fine muted" data-i18n="hero.fine">Gratis para empezar. Sin tarjeta.</p>
       <div class="mock">
@@ -247,6 +258,35 @@
     </div>
   </section>
 
+  <section id="instalar" class="instalar">
+    <div class="wrap center">
+      <span class="eyebrow" data-i18n="ins.eyebrow">En tu teléfono</span>
+      <h2 style="margin-top:14px" data-i18n="ins.h2">Instálala como app, en 20 segundos.</h2>
+      <p class="lede" style="max-width:52ch;margin:18px auto 0" data-i18n="ins.lede">No necesitas buscarla en ninguna tienda. Se instala desde tu navegador y queda con su ícono en tu pantalla, como cualquier otra app.</p>
+      <div class="pasos" style="text-align:left">
+        <div class="paso-card">
+          <div class="paso-top"><span class="paso-e"></span><h3 data-i18n="ins.ios.t">iPhone o iPad</h3></div>
+          <ol>
+            <li data-i18n="ins.ios.1" data-html>Abre <b>nucleoos.app</b> en Safari</li>
+            <li data-i18n="ins.ios.2" data-html>Toca el botón de <b>compartir</b> (el cuadrito con la flecha hacia arriba)</li>
+            <li data-i18n="ins.ios.3" data-html>Baja y toca <b>Agregar a inicio</b></li>
+            <li data-i18n="ins.ios.4" data-html>Toca <b>Agregar</b> y listo, el ícono queda en tu pantalla</li>
+          </ol>
+        </div>
+        <div class="paso-card">
+          <div class="paso-top"><span class="paso-e">🤖</span><h3 data-i18n="ins.and.t">Android</h3></div>
+          <ol>
+            <li data-i18n="ins.and.1" data-html>Abre <b>nucleoos.app</b> en Chrome</li>
+            <li data-i18n="ins.and.2" data-html>Toca los <b>tres puntitos</b> ⋮ de arriba a la derecha</li>
+            <li data-i18n="ins.and.3" data-html>Toca <b>Instalar app</b> o <b>Agregar a pantalla principal</b></li>
+            <li data-i18n="ins.and.4" data-html>Confirma y queda instalada, como app de verdad</li>
+          </ol>
+        </div>
+      </div>
+      <p class="fine muted" style="margin-top:22px" data-i18n="ins.fine">También funciona en el computador: en Chrome verás un ícono de instalar ⊕ en la barra de direcciones.</p>
+    </div>
+  </section>
+
   <section class="price">
     <div class="wrap center">
       <span class="eyebrow" data-i18n="price.eyebrow">Precio simple</span>
@@ -321,7 +361,7 @@
     "hero.eyebrow":"The operating system for your life",
     "hero.h1":"Built for your brain, not against it.",
     "hero.lede":"NucleoOS is the all-in-one app for ADHD minds. Log your day by voice, put your whole life in one place, and let an AI coach turn the chaos into clarity. No guilt, no endless lists, at your own pace.",
-    "hero.cta1":"Create my free account","hero.cta2":"See how it works",
+    "hero.cta1":"Create my free account","hero.cta2":"Install it on my phone",
     "hero.fine":"Free to start. No card needed.",
     "stat.sleep":"😴 Sleep","stat.h":"h","stat.water":"💧 Water","stat.of8":"of 8","stat.sob":"🌱 Sobriety","stat.y":"yr 6mo","stat.focus":"🎯 Focus","stat.blk":"blocks",
     "emp.eyebrow":"Sound familiar?",
@@ -360,6 +400,19 @@
     "price.pro.chip":"Premium","price.pro.n":"With AI","price.pro.d":"When you want the full companion.",
     "price.pro.1":"An AI coach that knows you","price.pro.2":"Voice logging and chat reminders","price.pro.3":"Smart review of your life",
     "price.pro.price":"US$6.99","price.mo":"/mo","price.pro.note":"🌱 Free in early access",
+    "ins.eyebrow":"On your phone","ins.h2":"Install it as an app, in 20 seconds.",
+    "ins.lede":"No need to look for it in any store. It installs from your browser and sits on your home screen with its own icon, like any other app.",
+    "ins.ios.t":"iPhone or iPad",
+    "ins.ios.1":"Open <b>nucleoos.app</b> in Safari",
+    "ins.ios.2":"Tap the <b>share</b> button (the square with the up arrow)",
+    "ins.ios.3":"Scroll down and tap <b>Add to Home Screen</b>",
+    "ins.ios.4":"Tap <b>Add</b> and that's it, the icon lands on your screen",
+    "ins.and.t":"Android",
+    "ins.and.1":"Open <b>nucleoos.app</b> in Chrome",
+    "ins.and.2":"Tap the <b>three dots</b> ⋮ at the top right",
+    "ins.and.3":"Tap <b>Install app</b> or <b>Add to Home screen</b>",
+    "ins.and.4":"Confirm and it's installed, like a real app",
+    "ins.fine":"It also works on your computer: in Chrome you'll see an install icon ⊕ in the address bar.",
     "sup.eyebrow":"Found a bug?","sup.h2":"Help us make NucleoOS better.",
     "sup.lede":"We're in the early days. If something doesn't work as expected, tell us and add a screenshot. We'll look into it and fix it.",
     "sup.ph.email":"Your email, so we can reply","sup.ph.msg":"What happened? Where in the app?",
