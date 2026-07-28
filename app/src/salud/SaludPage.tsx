@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
-import { HeartPulse, Plus, Trash2 } from "lucide-react";
+import { HeartPulse, Pencil, Plus, Trash2 } from "lucide-react";
 import { OrdenGrid } from "../components/OrdenGrid";
 import { TablesMissingError } from "../finanzas/data";
 import { fmtFechaLocal, hoyLocal } from "../lib/fechas";
@@ -21,7 +21,7 @@ import { ClinicaTab } from "./ClinicaTab";
 import { RecuperacionTab } from "./RecuperacionTab";
 import { PlatoCard } from "./PlatoCard";
 import { GUIAS_NUTRICION } from "./nutricionGuias";
-import { deleteMeal, listMeals, momentoDe, totalesDia, type Meal } from "./comidas";
+import { MOMENTOS, deleteMeal, listMeals, momentoDe, totalesDia, updateMeal, type Meal } from "./comidas";
 import { getHealthProfile, type HealthProfile } from "./data";
 import {
   META_AGUA_VASOS,
@@ -503,6 +503,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
   const hoy = hoyLocal();
   const tot = totalesDia(meals, hoy);
   const comidasHoy = meals.filter((m) => m.date === hoy);
+  const [editando, setEditando] = useState<Meal | null>(null);
   const dias = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -516,6 +517,9 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
   return (
     <>
     <OrdenGrid clave="energia-nutricion" bloques={[
+      // La foto del plato vive también aquí: es donde uno viene a registrar
+      // lo que comió, así no hay que saltar a la pestaña Hoy.
+      { id: "plato", el: <PlatoCard onSaved={onChanged} /> },
       { id: "balance", el: (
         <BalanceCalorico profile={profile} edad={edad} comido={tot.kcal} quemadas={quemadasHoy} irAClinica={irAClinica} />
       ) },
@@ -533,12 +537,17 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
               <div className="txrow" key={m.id}>
                 <span className="txicon">{momentoDe(m.meal_type)?.emoji ?? "🍽"}</span>
                 <div className="txmeta">
-                  <b>{m.description}</b>
+                  {/* El nombre completo, sin cortar: la IA describe el plato
+                      entero y saber qué anotó es justo lo que se revisa. */}
+                  <b style={{ whiteSpace: "normal", overflow: "visible" }}>{m.description}</b>
                   <small>
                     {momentoDe(m.meal_type) ? `${momentoDe(m.meal_type)!.label}, ` : ""}
                     {m.kcal ?? 0} kcal, 🍗 {Math.round(m.protein_g ?? 0)} g, 🍞 {Math.round(m.carbs_g ?? 0)} g, 🥑 {Math.round(m.fat_g ?? 0)} g
                   </small>
                 </div>
+                <button className="xdel" aria-label={tr("Corregir comida")} title={tr("Corregir")} onClick={() => setEditando(m)}>
+                  <Pencil size={13} />
+                </button>
                 <button className="xdel" aria-label="Eliminar comida" onClick={async () => { await deleteMeal(m.id); onChanged(); }}>
                   <Trash2 size={13} />
                 </button>
@@ -638,7 +647,91 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
         {GUIAS_NUTRICION.map((g) => <GuiaCard key={g.id} guia={g} />)}
       </div>
     </div>
+
+    {editando && (
+      <CorregirComidaModal
+        comida={editando}
+        onClose={() => setEditando(null)}
+        onSaved={() => { setEditando(null); onChanged(); }}
+      />
+    )}
     </>
+  );
+}
+
+/** Corrige un plato que la IA leyó a medias: el nombre, el momento y los
+ *  macros. Si en la foto no se veía el yogur, aquí se arregla. */
+function CorregirComidaModal({ comida, onClose, onSaved }: {
+  comida: Meal;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { t: tr } = useIdioma();
+  const [descripcion, setDescripcion] = useState(comida.description);
+  const [momento, setMomento] = useState(comida.meal_type ?? "");
+  const [kcal, setKcal] = useState(String(comida.kcal ?? 0));
+  const [prot, setProt] = useState(String(Math.round(comida.protein_g ?? 0)));
+  const [carbs, setCarbs] = useState(String(Math.round(comida.carbs_g ?? 0)));
+  const [grasas, setGrasas] = useState(String(Math.round(comida.fat_g ?? 0)));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const num = (v: string) => Math.max(0, Math.round(Number(v) || 0));
+
+  async function guardar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!descripcion.trim()) { setErr(tr("Ponle un nombre al plato.")); return; }
+    setBusy(true);
+    setErr(null);
+    try {
+      await updateMeal(comida.id, {
+        description: descripcion.trim(),
+        meal_type: momento || null,
+        kcal: num(kcal),
+        protein_g: num(prot),
+        carbs_g: num(carbs),
+        fat_g: num(grasas),
+      });
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : String(ex));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="tp-overlay" onClick={onClose}>
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
+        <h3 style={{ marginBottom: 4 }}>{tr("✏️ Corregir el plato")}</h3>
+        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
+          {tr("La IA estima mirando la foto y a veces no ve todo. Ajusta lo que haga falta.")}
+        </p>
+        {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
+        <form onSubmit={guardar}>
+          <div className="field"><label>{tr("Qué comiste")}</label>
+            <textarea className="vision-edit" rows={2} value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)} autoFocus /></div>
+          <div className="field"><label>{tr("¿Qué comida es?")}</label>
+            <Selector value={momento} ariaLabel={tr("¿Qué comida es?")} placeholder={tr("Sin definir")} onChange={setMomento}
+              opciones={[{ value: "", label: tr("Sin definir") }, ...MOMENTOS.map((m) => ({ value: m.key, label: `${m.emoji} ${tr(m.label)}` }))]} /></div>
+          <div className="frow">
+            <div className="field"><label>kcal</label>
+              <input type="number" min="0" value={kcal} onChange={(e) => setKcal(e.target.value)} /></div>
+            <div className="field"><label>🍗 {tr("Proteína")} (g)</label>
+              <input type="number" min="0" value={prot} onChange={(e) => setProt(e.target.value)} /></div>
+          </div>
+          <div className="frow">
+            <div className="field"><label>🍞 {tr("Carbohidratos")} (g)</label>
+              <input type="number" min="0" value={carbs} onChange={(e) => setCarbs(e.target.value)} /></div>
+            <div className="field"><label>🥑 {tr("Grasas")} (g)</label>
+              <input type="number" min="0" value={grasas} onChange={(e) => setGrasas(e.target.value)} /></div>
+          </div>
+          <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>
+            {busy ? tr("Guardando…") : tr("com.guardar")}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 

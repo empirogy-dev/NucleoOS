@@ -106,6 +106,14 @@ export async function addMeal(m: Omit<Meal, "id">): Promise<void> {
   check(error);
 }
 
+/** Corrige un plato ya registrado: la IA estima mirando una foto, y a veces
+ *  no ve el yogur o se pasa con las porciones. Poder editarlo es lo que
+ *  hace confiable el registro. */
+export async function updateMeal(id: string, cambios: Partial<Omit<Meal, "id">>): Promise<void> {
+  const { error } = await sb().from("meals").update(cambios).eq("id", id);
+  check(error);
+}
+
 export async function deleteMeal(id: string): Promise<void> {
   const { error } = await sb().from("meals").delete().eq("id", id);
   check(error);
