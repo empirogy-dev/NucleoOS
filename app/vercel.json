@@ -16,8 +16,7 @@
     { "source": "/ajustes/:p*", "destination": "/app/ajustes/:p*", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/", "destination": "/home.html" },
-    { "source": "/app", "destination": "/index.html" },
-    { "source": "/app/:path*", "destination": "/index.html" }
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/app/:path*", "destination": "/app.html" }
   ]
 }
