@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>NucleoOS · Manual de marca</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  :root{
+    --paper:#F7F3EA; --cream:#FBF8F0; --white:#fff;
+    --ink:#2F3A35; --ink-soft:#48544E; --muted:#8A9691;
+    --pri:#8FAF9B; --pri-deep:#5F7A6B; --sec:#C7D7C2; --acc:#D9A38F;
+    --line:#E7E1D4; --line-soft:#F0EBDE;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Inter,system-ui,-apple-system,sans-serif;color:var(--ink);font-size:10.5pt;line-height:1.6;background:#fff}
+  h1,h2,h3{margin:0;letter-spacing:-.02em;line-height:1.15;font-weight:600}
+  h1{font-size:30pt}
+  h2{font-size:17pt;margin-bottom:3mm}
+  h3{font-size:11.5pt;margin-bottom:1.5mm}
+  p{margin:0 0 3mm}
+  .muted{color:var(--muted)}
+  .soft{color:var(--ink-soft)}
+
+  .page{page-break-after:always;min-height:245mm;position:relative}
+  .page:last-child{page-break-after:auto}
+
+  /* portada */
+  .cover{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:245mm;background:var(--paper);margin:-18mm -16mm;padding:18mm 16mm}
+  .cover .logo{width:38mm;height:38mm;border-radius:10mm;background:var(--pri);display:flex;align-items:center;justify-content:center;margin-bottom:10mm}
+  .cover h1{font-size:34pt}
+  .cover .sub{font-size:13pt;color:var(--pri-deep);font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-top:5mm}
+  .cover .tag{font-size:12pt;color:var(--ink-soft);margin-top:8mm;max-width:110mm}
+  .cover .fecha{position:absolute;bottom:14mm;left:0;right:0;text-align:center;font-size:9pt;color:var(--muted)}
+
+  .eyebrow{font-size:8pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--pri-deep);margin-bottom:2mm}
+  .sec{margin-bottom:9mm}
+  .rule{height:1px;background:var(--line);margin:7mm 0}
+
+  /* colores */
+  .swatches{display:flex;gap:3mm;flex-wrap:wrap;margin-top:3mm}
+  .sw{width:33mm}
+  .sw .chip{height:22mm;border-radius:3mm;border:1px solid rgba(0,0,0,.06)}
+  .sw .nom{font-weight:600;font-size:9.5pt;margin-top:1.5mm}
+  .sw .hex{font-family:Consolas,monospace;font-size:8.5pt;color:var(--muted)}
+  .sw .uso{font-size:8pt;color:var(--muted);line-height:1.4}
+  .mini{display:flex;gap:2mm;flex-wrap:wrap;margin-top:2mm}
+  .m{width:24mm}
+  .m .chip{height:11mm;border-radius:2mm}
+  .m .nom{font-size:8pt;margin-top:1mm}
+  .m .hex{font-family:Consolas,monospace;font-size:7.5pt;color:var(--muted)}
+
+  table{width:100%;border-collapse:collapse;font-size:9.5pt;margin-top:2mm}
+  th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:2mm 2mm 1.5mm 0;border-bottom:1px solid var(--line)}
+  td{padding:2mm 2mm 2mm 0;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  td code{font-family:Consolas,monospace;font-size:9pt}
+
+  .card{background:var(--cream);border:1px solid var(--line-soft);border-radius:4mm;padding:5mm;margin-top:3mm}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+  .ok{color:#4d7a5f;font-weight:600}
+  .no{color:#b06b58;font-weight:600}
+  ul{margin:1mm 0 0;padding-left:5mm}
+  li{margin-bottom:1mm}
+
+  .esp{display:flex;align-items:flex-end;gap:3mm;margin-top:3mm}
+  .esp div{background:var(--sec);border-radius:1mm;width:7mm}
+  .esp span{font-size:7.5pt;color:var(--muted);display:block;text-align:center;margin-top:1mm}
+
+  .tipo-muestra{font-size:26pt;font-weight:500;letter-spacing:-.02em;margin:2mm 0 1mm}
+  .escala span{display:inline-block;margin-right:4mm;color:var(--ink-soft)}
+
+  .logo-fila{display:flex;gap:4mm;align-items:center;margin-top:3mm;flex-wrap:wrap}
+  .logo-caja{width:30mm;height:30mm;border-radius:3mm;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+  .logo-caja + .pie{font-size:8pt}
+  .lc{text-align:center;width:30mm}
+  .lc .pie{font-size:8pt;color:var(--muted);margin-top:1.5mm;line-height:1.3}
+
+  .pie-pagina{position:absolute;bottom:0;left:0;right:0;font-size:8pt;color:var(--muted);border-top:1px solid var(--line-soft);padding-top:2mm}
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="cover">
+  <div class="logo">
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="0.9" stroke-linecap="round">
+      <ellipse cx="12" cy="12" rx="10.6" ry="4.8"/>
+      <ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(60 12 12)"/>
+      <ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(-60 12 12)"/>
+      <circle cx="12" cy="12" r="2.4" fill="#fff" stroke="none"/>
+      <circle cx="20.3" cy="6.6" r="1" fill="#fff" stroke="none"/>
+    </svg>
+  </div>
+  <h1>NucleoOS</h1>
+  <div class="sub">Manual de marca</div>
+  <p class="tag">El sistema operativo de tu vida.<br>Hecho para tu cerebro, no contra él.</p>
+  <div class="fecha">Julio 2026 · Versión 1</div>
+</div>
+
+<!-- LA MARCA -->
+<div class="page">
+  <div class="eyebrow">01</div>
+  <h2>La marca</h2>
+  <p class="soft">Este documento fija cómo se ve y cómo suena NucleoOS, para que la app, la landing, las redes, los videos y la agenda impresa se sientan como una sola cosa. Cuando tengas una duda visual, la respuesta está acá.</p>
+
+  <div class="rule"></div>
+
+  <div class="sec">
+    <h3>Qué es</h3>
+    <p class="soft">Una app todo en uno para ordenar la vida: energía, mente, hábitos, relaciones, dirección, trabajo, finanzas, aprendizaje y visión, en un solo lugar, con un coach de inteligencia artificial que registra por ti y convierte el caos en claridad.</p>
+  </div>
+
+  <div class="sec">
+    <h3>Para quién</h3>
+    <p class="soft">Personas con TDAH, y en general mentes que corren rápido y se pierden en lo esencial. Esa es la trinchera, y toda función nueva se diseña desde esa lente.</p>
+  </div>
+
+  <div class="sec">
+    <h3>La promesa</h3>
+    <p class="soft"><b>Hecho para tu cerebro, no contra él.</b> Las apps de productividad están pensadas para otro tipo de cabeza. NucleoOS asume desde el diseño que se te olvidan cosas, que las listas largas abruman y que los reinicios son parte del sistema.</p>
+  </div>
+
+  <div class="sec">
+    <h3>El nombre</h3>
+    <p class="soft">Se escribe <b>NucleoOS</b>, siempre junto, con N y OS en mayúscula. Nunca "Nucleo OS", "NúcleoOS" ni "nucleos".</p>
+  </div>
+
+  <div class="sec">
+    <h3>La dirección estética</h3>
+    <p class="soft">Santuario cálido con claridad total. Colores lavados, como pigmento en acuarela. La decoración es mínima e intencional: el trabajo lo hacen la tipografía y el espacio. Nada grita.</p>
+  </div>
+
+  <div class="pie-pagina">NucleoOS · Manual de marca · 01 La marca</div>
+</div>
+
+<!-- EL LOGO -->
+<div class="page">
+  <div class="eyebrow">02</div>
+  <h2>El logo</h2>
+  <p class="soft">Un átomo dibujado en línea: tres órbitas, un núcleo lleno y un electrón. El significado es directo: <b>el núcleo eres tú</b>, y todo lo demás gira alrededor.</p>
+
+  <div class="logo-fila">
+    <div class="lc">
+      <div class="logo-caja" style="background:#8FAF9B">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="0.9" stroke-linecap="round"><ellipse cx="12" cy="12" rx="10.6" ry="4.8"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(-60 12 12)"/><circle cx="12" cy="12" r="2.4" fill="#fff" stroke="none"/><circle cx="20.3" cy="6.6" r="1" fill="#fff" stroke="none"/></svg>
+      </div>
+      <div class="pie">Principal<br>redes y app</div>
+    </div>
+    <div class="lc">
+      <div class="logo-caja" style="background:#F7F3EA">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#8FAF9B" stroke-width="0.9" stroke-linecap="round"><ellipse cx="12" cy="12" rx="10.6" ry="4.8"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(-60 12 12)"/><circle cx="12" cy="12" r="2.4" fill="#8FAF9B" stroke="none"/><circle cx="20.3" cy="6.6" r="1" fill="#8FAF9B" stroke="none"/></svg>
+      </div>
+      <div class="pie">Sobre crema<br>documentos</div>
+    </div>
+    <div class="lc">
+      <div class="logo-caja" style="background:#2F3A35">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="0.9" stroke-linecap="round"><ellipse cx="12" cy="12" rx="10.6" ry="4.8"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(-60 12 12)"/><circle cx="12" cy="12" r="2.4" fill="#fff" stroke="none"/><circle cx="20.3" cy="6.6" r="1" fill="#fff" stroke="none"/></svg>
+      </div>
+      <div class="pie">Blanco<br>fondos oscuros</div>
+    </div>
+    <div class="lc">
+      <div class="logo-caja" style="background:#fff">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#2F3A35" stroke-width="0.9" stroke-linecap="round"><ellipse cx="12" cy="12" rx="10.6" ry="4.8"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10.6" ry="4.8" transform="rotate(-60 12 12)"/><circle cx="12" cy="12" r="2.4" fill="#2F3A35" stroke="none"/><circle cx="20.3" cy="6.6" r="1" fill="#2F3A35" stroke="none"/></svg>
+      </div>
+      <div class="pie">Tinta<br>una sola tinta</div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <h3>Archivos disponibles</h3>
+  <table>
+    <tr><th>Archivo</th><th>Cuándo usarlo</th></tr>
+    <tr><td><code>perfil-redes-verde.png</code></td><td>Foto de perfil en Instagram, Facebook, TikTok</td></tr>
+    <tr><td><code>perfil-redes-crema.png</code></td><td>Alternativa clara, sobre fondos oscuros</td></tr>
+    <tr><td><code>icono-app-verde.png</code></td><td>Ícono de aplicación, esquinas redondeadas</td></tr>
+    <tr><td><code>logo-verde-transparente.png</code></td><td>Sobre fondos claros: documentos, presentaciones</td></tr>
+    <tr><td><code>logo-blanco-transparente.png</code></td><td>Sobre fotos o fondos oscuros</td></tr>
+    <tr><td><code>logo-tinta-transparente.png</code></td><td>Impresión en una tinta</td></tr>
+    <tr><td><code>favicon-32.png</code></td><td>Pestaña del navegador</td></tr>
+  </table>
+
+  <div class="grid2" style="margin-top:5mm">
+    <div class="card">
+      <h3 class="ok">Sí</h3>
+      <ul class="soft" style="font-size:9.5pt">
+        <li>Dejar un margen libre del tamaño del núcleo</li>
+        <li>Mínimo 24 px en pantalla, 8 mm impreso</li>
+        <li>Usar la versión que contraste con el fondo</li>
+        <li>Fondo sólido detrás si va sobre foto</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 class="no">No</h3>
+      <ul class="soft" style="font-size:9.5pt">
+        <li>Cambiar sus colores por otros</li>
+        <li>Deformarlo, inclinarlo o rotarlo</li>
+        <li>Agregarle sombras, degradados o contornos</li>
+        <li>Reescribir el nombre con otra tipografía</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pie-pagina">NucleoOS · Manual de marca · 02 El logo</div>
+</div>
+
+<!-- COLORES -->
+<div class="page">
+  <div class="eyebrow">03</div>
+  <h2>Colores</h2>
+  <p class="soft">La paleta nace de una idea: santuario cálido con claridad total. Colores lavados, nada saturado.</p>
+
+  <h3 style="margin-top:6mm">Paleta principal</h3>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#8FAF9B"></div><div class="nom">Verde salvia</div><div class="hex">#8FAF9B</div><div class="uso">Principal. Botones, logo, acentos</div></div>
+    <div class="sw"><div class="chip" style="background:#F7F3EA"></div><div class="nom">Crema</div><div class="hex">#F7F3EA</div><div class="uso">Fondo de todo</div></div>
+    <div class="sw"><div class="chip" style="background:#2F3A35"></div><div class="nom">Tinta</div><div class="hex">#2F3A35</div><div class="uso">Texto principal</div></div>
+    <div class="sw"><div class="chip" style="background:#C7D7C2"></div><div class="nom">Verde claro</div><div class="hex">#C7D7C2</div><div class="uso">Secundario, fondos suaves</div></div>
+    <div class="sw"><div class="chip" style="background:#D9A38F"></div><div class="nom">Terracota</div><div class="hex">#D9A38F</div><div class="uso">Acento cálido, con moderación</div></div>
+  </div>
+
+  <h3 style="margin-top:7mm">Colores de las áreas</h3>
+  <p class="soft" style="font-size:9.5pt">Cada área tiene su color fijo, para reconocerla de un vistazo. Solo como acento (puntos, barras, encabezados), nunca como fondo grande.</p>
+  <div class="mini">
+    <div class="m"><div class="chip" style="background:#6FA79A"></div><div class="nom">Dirección</div><div class="hex">#6FA79A</div></div>
+    <div class="m"><div class="chip" style="background:#84B183"></div><div class="nom">Finanzas</div><div class="hex">#84B183</div></div>
+    <div class="m"><div class="chip" style="background:#D2B36E"></div><div class="nom">Energía</div><div class="hex">#D2B36E</div></div>
+    <div class="m"><div class="chip" style="background:#9E96C9"></div><div class="nom">Trabajo</div><div class="hex">#9E96C9</div></div>
+    <div class="m"><div class="chip" style="background:#84A9C6"></div><div class="nom">Aprendizaje</div><div class="hex">#84A9C6</div></div>
+    <div class="m"><div class="chip" style="background:#C795AE"></div><div class="nom">Hábitos</div><div class="hex">#C795AE</div></div>
+    <div class="m"><div class="chip" style="background:#CF9E77"></div><div class="nom">Relaciones</div><div class="hex">#CF9E77</div></div>
+  </div>
+
+  <h3 style="margin-top:7mm">Colores de estado</h3>
+  <div class="mini">
+    <div class="m"><div class="chip" style="background:#6BA783"></div><div class="nom">Bien</div><div class="hex">#6BA783</div></div>
+    <div class="m"><div class="chip" style="background:#C69A4D"></div><div class="nom">Atención</div><div class="hex">#C69A4D</div></div>
+    <div class="m"><div class="chip" style="background:#C57A68"></div><div class="nom">Error</div><div class="hex">#C57A68</div></div>
+    <div class="m"><div class="chip" style="background:#6E9BB5"></div><div class="nom">Información</div><div class="hex">#6E9BB5</div></div>
+  </div>
+
+  <div class="card" style="margin-top:7mm">
+    <h3>La regla de oro</h3>
+    <p class="soft" style="margin:0">El protagonismo se gasta en un solo lugar por pantalla. Si el botón principal es verde salvia, todo lo demás alrededor se queda tranquilo.</p>
+  </div>
+
+  <div class="pie-pagina">NucleoOS · Manual de marca · 03 Colores</div>
+</div>
+
+<!-- TIPOGRAFIA Y ESPACIO -->
+<div class="page">
+  <div class="eyebrow">04</div>
+  <h2>Tipografía y espacio</h2>
+
+  <div class="sec" style="margin-top:5mm">
+    <h3>Outfit Medium · títulos</h3>
+    <div class="tipo-muestra">Hecho para tu cerebro</div>
+    <p class="soft" style="font-size:9.5pt">Geométrica, redondeada, amable. Peso 500, con <code>letter-spacing: -0.02em</code>.</p>
+  </div>
+
+  <div class="sec">
+    <h3>Inter Regular · cuerpo e interfaz</h3>
+    <p style="font-size:12pt;margin-bottom:1mm">Los reinicios son parte del sistema, no un fracaso.</p>
+    <p class="soft" style="font-size:9.5pt">Peso 400, y 500 para etiquetas. Clarísima en pantallas chicas, que es donde vive la app. Para números (montos, horas) se usa <code>tabular-nums</code>, para que las cifras queden alineadas en columna.</p>
+  </div>
+
+  <div class="sec">
+    <h3>Escala tipográfica</h3>
+    <p class="soft" style="font-size:9.5pt">Los tamaños en píxeles son estos y no otros. Cuerpo base 16, interlineado 1.55; títulos con interlineado 1.1.</p>
+    <div class="escala" style="margin-top:2mm">
+      <span style="font-size:8pt">12</span><span style="font-size:9pt">13.5</span><span style="font-size:10pt">15</span>
+      <span style="font-size:12pt">18</span><span style="font-size:15pt">23</span><span style="font-size:22pt">34</span><span style="font-size:32pt">50</span>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="sec">
+    <h3>Espaciado</h3>
+    <p class="soft" style="font-size:9.5pt">Base de 8 píxeles, con medios pasos de 4. La densidad es espaciosa a propósito: mucho aire es calma y claridad, justo lo que necesita una mente que va rápido.</p>
+    <div class="esp">
+      <div style="height:2mm"></div><div style="height:3mm"></div><div style="height:5mm"></div><div style="height:8mm"></div>
+      <div style="height:12mm"></div><div style="height:16mm"></div><div style="height:22mm"></div><div style="height:28mm"></div>
+    </div>
+    <div style="display:flex;gap:3mm">
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">2</span>
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">4</span>
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">8</span>
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">16</span>
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">24</span>
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">32</span>
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">48</span>
+      <span style="width:7mm;text-align:center;font-size:7.5pt;color:var(--muted)">64</span>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>Esquinas y sombras</h3>
+    <table>
+      <tr><th>Radio</th><th>Medida</th><th>Para qué</th></tr>
+      <tr><td>Pequeño</td><td><code>8 px</code></td><td>Campos, etiquetas</td></tr>
+      <tr><td>Medio</td><td><code>14 px</code></td><td>Tarjetas</td></tr>
+      <tr><td>Grande</td><td><code>20 px</code></td><td>Paneles, ventanas</td></tr>
+      <tr><td>Completo</td><td><code>999 px</code></td><td>Botones, chips</td></tr>
+    </table>
+    <p class="soft" style="font-size:9.5pt;margin-top:2mm">Las sombras son muy suaves, casi imperceptibles: una corta pegada al borde más una larga y muy tenue. Nunca duras ni marcadas.</p>
+  </div>
+
+  <div class="pie-pagina">NucleoOS · Manual de marca · 04 Tipografía y espacio</div>
+</div>
+
+<!-- TONO DE VOZ -->
+<div class="page">
+  <div class="eyebrow">05</div>
+  <h2>Tono de voz</h2>
+  <p class="soft">La forma de escribir es parte de la marca, tanto como el color.</p>
+
+  <div class="grid2" style="margin-top:5mm">
+    <div class="card"><h3>Cero culpa</h3><p class="soft" style="margin:0;font-size:9.5pt">Los reinicios son parte del sistema, no un fracaso. La app nunca reta ni presiona. Si alguien lleva días sin entrar, se le recibe, no se le cobra.</p></div>
+    <div class="card"><h3>Pasos diminutos</h3><p class="soft" style="margin:0;font-size:9.5pt">Siempre se ofrece la versión de dos minutos. Empezar chiquito es empezar.</p></div>
+    <div class="card"><h3>Se celebra lo hecho</h3><p class="soft" style="margin:0;font-size:9.5pt">Se mira lo que la persona logró, no la lista de lo que falta.</p></div>
+    <div class="card"><h3>Cercano, nunca corporativo</h3><p class="soft" style="margin:0;font-size:9.5pt">Se habla de tú, con calidez, como una amiga que sabe del tema. Sin jerga técnica y sin solemnidad.</p></div>
+  </div>
+
+  <div class="card" style="border-color:var(--pri);background:#EDF2EC;margin-top:5mm">
+    <h3>Regla de puntuación</h3>
+    <p class="soft" style="margin:0">No se usan guiones como puntuación. Nada de rayas ni guiones largos para separar ideas. Se escribe con comas, puntos y paréntesis, como habla una persona de verdad.</p>
+  </div>
+
+  <h3 style="margin-top:7mm">Ejemplos</h3>
+  <table>
+    <tr><th style="width:50%">Así no</th><th>Así sí</th></tr>
+    <tr><td class="muted">No completaste tus hábitos</td><td>Mañana es otro día, y ya llevas 3 esta semana</td></tr>
+    <tr><td class="muted">Error: campo obligatorio</td><td>Nos falta tu correo para poder responderte</td></tr>
+    <tr><td class="muted">Optimiza tu productividad</td><td>Saca las cosas de tu cabeza y descansa</td></tr>
+    <tr><td class="muted">Tarea pendiente vencida</td><td>Esto quedó esperando, ¿lo movemos a hoy?</td></tr>
+  </table>
+
+  <div class="rule"></div>
+
+  <h3>Dónde vive la marca</h3>
+  <table>
+    <tr><th>Dirección</th><th>Qué es</th></tr>
+    <tr><td><code>nucleoos.app</code></td><td>La landing, lo que se promociona</td></tr>
+    <tr><td><code>nucleoos.app/app</code></td><td>La aplicación</td></tr>
+  </table>
+
+  <h3 style="margin-top:6mm">Biografía para redes</h3>
+  <div class="card" style="font-size:10pt">
+    🧠 El sistema operativo de tu vida<br>
+    Hecho para tu cerebro, no contra él<br>
+    ✨ Para mentes con TDAH · Gratis para empezar<br>
+    👇 Instálala en tu teléfono
+  </div>
+
+  <p class="muted" style="font-size:9pt;margin-top:8mm;font-style:italic">Si algo no está resuelto acá, la decisión se toma mirando los principios: calma, claridad y cero culpa.</p>
+
+  <div class="pie-pagina">NucleoOS · Manual de marca · 05 Tono de voz</div>
+</div>
+
+</body>
+</html>
