@@ -209,22 +209,28 @@ export function SaludPage() {
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
 
-      {/* Lectura rápida del estado corporal, siempre visible */}
-      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-        <div className="card stat"><div className="k">{tr("😴 Sueño anoche")}</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></div>
-        <div className="card stat"><div className="k">{tr("💧 Agua")}</div><div className="v tnum">{agua} <small style={{ fontSize: 13, color: "var(--muted)" }}>{tr("de")} {META_AGUA_VASOS}</small></div></div>
-        <div className="card stat"><div className="k">{tr("🍗 Proteína")}</div><div className="v tnum">{Math.round(Number(proteina))} <small style={{ fontSize: 13, color: "var(--muted)" }}>{tr("de")} {metaProt} g</small></div></div>
-        <div className="card stat"><div className="k">{tr("🏃 Movimiento")}</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min{kcalHoy > 0 ? `, ≈${kcalHoy} kcal` : ""}</small></div></div>
-      </div>
-      <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{tr(ESTADOS[señales])}</p>
-
-      <MetasDeArea area="salud" />
-
+      {/* Las pestañas van primero: en el teléfono, tener que bajar cuatro
+          tarjetas antes de poder navegar era una lata. */}
       <div className="ftabs">
         {TABS.filter((t) => t.key !== "ciclo" || profile?.sex !== "masculino").map((t) => (
           <button key={t.key} className={"ftab" + (tab === t.key ? " active" : "")} onClick={() => setTab(t.key)}>{tr("tab.sal." + t.key)}</button>
         ))}
       </div>
+
+      {/* La lectura rápida del cuerpo es de HOY: solo vive en esa pestaña. */}
+      {tab === "hoy" && (
+        <>
+          <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+            <div className="card stat"><div className="k">{tr("😴 Sueño anoche")}</div><div className="v tnum">{suenoAnoche !== null ? `${suenoAnoche} h` : "‥"}</div></div>
+            <div className="card stat"><div className="k">{tr("💧 Agua")}</div><div className="v tnum">{agua} <small style={{ fontSize: 13, color: "var(--muted)" }}>{tr("de")} {META_AGUA_VASOS}</small></div></div>
+            <div className="card stat"><div className="k">{tr("🍗 Proteína")}</div><div className="v tnum">{Math.round(Number(proteina))} <small style={{ fontSize: 13, color: "var(--muted)" }}>{tr("de")} {metaProt} g</small></div></div>
+            <div className="card stat"><div className="k">{tr("🏃 Movimiento")}</div><div className="v tnum">{movimientoHoy} <small style={{ fontSize: 13, color: "var(--muted)" }}>min{kcalHoy > 0 ? `, ≈${kcalHoy} kcal` : ""}</small></div></div>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "-6px 0 16px" }}>{tr(ESTADOS[señales])}</p>
+
+          <MetasDeArea area="salud" />
+        </>
+      )}
 
       {energiaFalta && (tab === "hoy" || tab === "nutricion") && (
         <div className="card pad" style={{ borderLeft: "3px solid var(--warn)", marginBottom: 14, maxWidth: 640 }}>

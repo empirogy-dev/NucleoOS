@@ -139,7 +139,10 @@ button{font-family:inherit}
   .tp-grid{grid-template-columns:1fr}
 }
 @media (max-width:480px){
-  .statrow{grid-template-columns:1fr!important}
+  /* Dos columnas y no una: los números son cortos ("7.5 h", "4 de 8") y
+     así no hay que bajar media pantalla para pasar las tarjetas. */
+  .statrow .card.stat{padding:12px 14px}
+  .statrow .card.stat .v{font-size:20px}
 }
 .scrim{display:none}
 @media (max-width:860px){.scrim.show{display:block;position:fixed;inset:0;background:rgba(20,18,12,.3);z-index:39}}
