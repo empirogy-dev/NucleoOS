@@ -251,16 +251,13 @@ export const MEDITACIONES: Practica[] = [
     emoji: "🧊",
     tipo: "respiracion",
     categoria: "regulacion",
-    descripcion: "Agua fría más respiración de caja: el frío da el estrés, la respiración te enseña a atravesarlo en calma. Sigue el círculo mientras estás bajo el agua.",
+    descripcion: "Respiración de caja bajo el agua fría. El frío pone el estrés, los cuatro tiempos iguales le enseñan al cuerpo a soltarse igual. También sirve sin agua, solo para relajarte.",
     duraciones: [1, 2, 3, 5],
     pasos: [
-      "Dúchate normal, y cuando estés lista gira la llave al frío.",
-      "El primer impulso es tensarte y respirar corto. Ahí está el ejercicio: suelta los hombros.",
-      "Sigue el círculo: inhala 4, sostén 4, exhala 4, sostén vacía 4. Ese ritmo le dice al cuerpo que no hay peligro.",
-      "Si el frío te gana la respiración, alarga la exhalación y vuelve al ciclo. No hay apuro.",
-      "Empieza con 15 o 30 segundos y sube de a poco cada semana.",
-      "Sal, sécate y nota la ola de calor y claridad que llega después.",
-      "Si tienes alguna condición cardíaca, consúltalo antes con tu médico.",
+      "Sigue el círculo y nada más. Los cuatro tiempos son iguales: inhala, sostén, exhala, sostén vacía.",
+      "Hombros abajo, mandíbula suelta. El cuerpo va a querer respirar corto, ahí está el ejercicio.",
+      "Si el frío te gana la respiración, alarga la exhalación y vuelve al ritmo. No hay apuro.",
+      "Con agua: empieza con 15 o 30 segundos de frío y sube de a poco cada semana. Si tienes una condición cardíaca, consúltalo antes con tu médico.",
     ],
     // El mismo ciclo de la respiración de caja: entrenas el sistema nervioso
     // a mantener la calma justo cuando el cuerpo quiere entrar en pánico.

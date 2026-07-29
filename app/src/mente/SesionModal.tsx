@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { fechaRegistro } from "../lib/fechas";
 import { guardarSesion, type Practica, type Sesion } from "./practicas";
 import { TONO_FASE, campana, detenerAmbiente, toggleAmbiente, tono } from "./sonido";
@@ -12,6 +13,7 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
   onClose: () => void;
   onCompleta: (s: Sesion) => void;
 }) {
+  const { t: tr } = useIdioma();
   const total = minutos * 60;
   const [restante, setRestante] = useState(total);
   const [corriendo, setCorriendo] = useState(false);
@@ -123,10 +125,21 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
   return (
     <div className="tp-overlay" onClick={onClose}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 470 }}>
-        <h3 style={{ marginBottom: 4 }}>{practica.emoji} {practica.nombre}</h3>
-        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
-          {minutos} minutos. {practica.descripcion}
+        <h3 style={{ marginBottom: 4 }}>{practica.emoji} {tr(practica.nombre)}</h3>
+        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: fases ? 8 : 12 }}>
+          {minutos} {tr("minutos")}. {tr(practica.descripcion)}
         </p>
+
+        {/* El patrón a la vista: así sabes qué ritmo vas a seguir antes de empezar. */}
+        {fases && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            {fases.map((f) => (
+              <span key={f.etiqueta} className="chip" style={{ fontSize: 11.5 }}>
+                {tr(f.etiqueta)} <b className="tnum">{f.segundos}</b>
+              </span>
+            ))}
+          </div>
+        )}
 
         {fases ? (
           <div className="resp-wrap">
@@ -143,11 +156,11 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
                 <div className="resp-fase">✨</div>
               ) : iniciado ? (
                 <>
-                  <div className="resp-fase">{fases[faseIdx].etiqueta}</div>
+                  <div className="resp-fase">{tr(fases[faseIdx].etiqueta)}</div>
                   <div className="resp-cuenta tnum">{corriendo ? faseRest : "⏸"}</div>
                 </>
               ) : (
-                <div className="resp-fase" style={{ fontSize: 14 }}>Cuando quieras</div>
+                <div className="resp-fase" style={{ fontSize: 14 }}>{tr("Cuando quieras")}</div>
               )}
             </div>
           </div>
@@ -165,25 +178,33 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
 
         {fases && !listo && (
           <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
-            Quedan <b className="tnum" style={{ color: "var(--ink-soft)" }}>{mm}:{ss}</b>. El círculo respira contigo: crece al inhalar y baja al exhalar.
+            {tr("Quedan")} <b className="tnum" style={{ color: "var(--ink-soft)" }}>{mm}:{ss}</b>. {tr("El círculo respira contigo: crece al inhalar y baja al exhalar.")}
           </div>
         )}
 
-        <ol className="med-pasos">
-          {practica.pasos.map((paso, i) => (
-            <li
-              key={paso}
-              className={practica.tipo === "meditacion" && iniciado && !listo && i === pasoIdx ? "activo" : undefined}
-            >
-              {paso}
-            </li>
-          ))}
-        </ol>
+        {/* En la respiración el círculo es la guía, así que los pasos van
+            plegados. En la meditación los pasos son la sesión, van abiertos. */}
+        {practica.tipo === "respiracion" ? (
+          <details className="sesion-tips">
+            <summary>{tr("Cómo hacerlo")}</summary>
+            <ol className="med-pasos">
+              {practica.pasos.map((paso) => <li key={paso}>{tr(paso)}</li>)}
+            </ol>
+          </details>
+        ) : (
+          <ol className="med-pasos">
+            {practica.pasos.map((paso, i) => (
+              <li key={paso} className={iniciado && !listo && i === pasoIdx ? "activo" : undefined}>
+                {tr(paso)}
+              </li>
+            ))}
+          </ol>
+        )}
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {!listo && (
             <button className="btn primary" onClick={alternar}>
-              {corriendo ? "Pausar" : iniciado ? "Continuar" : "Comenzar"}
+              {tr(corriendo ? "Pausar" : iniciado ? "Continuar" : "Comenzar")}
             </button>
           )}
           {!listo && (
@@ -192,22 +213,22 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
               title="Sonido ambiental suave"
               onClick={() => setAmbiente(toggleAmbiente())}
             >
-              {ambiente ? "🌧 Ambiente activo" : "🌧 Ambiente"}
+              {"🌧 " + tr(ambiente ? "Ambiente activo" : "Ambiente")}
             </button>
           )}
           {listo && (
             <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>
-              🎉 Sesión completa. Quedó guardada.
+              🎉 {tr("Sesión completa. Quedó guardada.")}
             </span>
           )}
           <span style={{ flex: 1 }} />
           {!listo && iniciado ? (
             <>
-              <button className="btn primary" onClick={guardarYTerminar}>Guardar y terminar</button>
-              <button className="btn ghost" onClick={onClose} title="Sale sin guardar nada de esta sesión">Salir sin guardar</button>
+              <button className="btn primary" onClick={guardarYTerminar}>{tr("Guardar y terminar")}</button>
+              <button className="btn ghost" onClick={onClose} title={tr("Sale sin guardar nada de esta sesión")}>{tr("Salir sin guardar")}</button>
             </>
           ) : (
-            <button className="btn ghost" onClick={onClose}>{listo ? "Cerrar" : "Salir"}</button>
+            <button className="btn ghost" onClick={onClose}>{tr(listo ? "Cerrar" : "Salir")}</button>
           )}
         </div>
       </div>
