@@ -18,6 +18,16 @@ export const VIAS_LIBRO: Array<{ key: ViaLibro; label: string }> = [
   { key: "espiritualidad", label: "Espiritualidad" },
 ];
 
+/** Un ejercicio del libro, contado con nuestras palabras: la idea es de la
+ *  autora, la redacción es nuestra. Nunca se copia el texto del libro. */
+export interface EjercicioLibro {
+  nombre: string;
+  /** Cómo se hace, en dos o tres frases concretas. */
+  como: string;
+  /** Ritmo sugerido, para saber si conviene hacerlo hábito. */
+  cada?: "diario" | "semanal" | "unico";
+}
+
 export interface Libro {
   id: string;
   titulo: string;
@@ -26,6 +36,8 @@ export interface Libro {
   emoji: string;
   porQue: string;
   ideas: string[];
+  /** Los ejercicios que trae el libro, adaptados para hacerlos hoy. */
+  ejercicios?: EjercicioLibro[];
 }
 
 // Dónde conseguir el libro, de forma legal: no alojamos PDFs (piratería), sino
@@ -150,6 +162,10 @@ export const LIBROS: Libro[] = [
       "Cambia el tengo que por elijo: el lenguaje suelta la presi\u00f3n.",
       "Empieza por treinta minutos imperfectos, no por el proyecto entero.",
     ],
+    ejercicios: [
+      { nombre: "Programación inversa", como: "Antes de agendar el trabajo, agenda el descanso, el ejercicio y lo que disfrutas. El trabajo cabe en lo que sobra, y sin culpa.", cada: "semanal" },
+      { nombre: "Treinta minutos imperfectos", como: "Comprométete a solo treinta minutos de lo que estás evitando, y date permiso de que salga mal. Empezar es el logro.", cada: "diario" },
+    ],
   },
   {
     id: "orderchaos",
@@ -196,6 +212,11 @@ export const LIBROS: Libro[] = [
       "Cada acción es un voto por la identidad que construyes.",
       "No subes por tus metas, caes al nivel de tus sistemas.",
       "Después de un tropiezo, la regla es nunca fallar dos veces seguidas.",
+    ],
+    ejercicios: [
+      { nombre: "Apila un hábito nuevo", como: "Completa la frase: después de (algo que ya hago), voy a (lo nuevo, en su versión mínima). Ancla el hábito a algo que nunca falla.", cada: "diario" },
+      { nombre: "Diseña el entorno", como: "Deja a la vista y a mano lo que quieres hacer, y agrégale pasos a lo que quieres dejar. El ambiente decide más que la voluntad.", cada: "unico" },
+      { nombre: "Nunca dos veces seguidas", como: "Si un día se rompe la cadena, la única regla es no fallar dos días seguidos. Un tropiezo no es una recaída.", cada: "diario" },
     ],
   },
   {
@@ -334,6 +355,10 @@ export const LIBROS: Libro[] = [
       "La autocompasión no es autoindulgencia: es cuidado que sostiene.",
       "Una mano en el pecho y una frase amable calman el sistema nervioso.",
     ],
+    ejercicios: [
+      { nombre: "La pausa de autocompasión", como: "Cuando te pillas siendo dura contigo, di tres frases: esto duele, le pasa a mucha gente, y qué necesito ahora. Una mano en el pecho ayuda.", cada: "diario" },
+      { nombre: "La carta de una amiga", como: "Escribe lo que te está pesando y respóndete como le responderías a tu mejor amiga en el mismo problema. Sin corregir, solo escribe.", cada: "semanal" },
+    ],
   },
   {
     id: "mindset",
@@ -363,6 +388,9 @@ export const LIBROS: Libro[] = [
       "No hagas suposiciones: pregunta en vez de inventar historias.",
       "Haz siempre tu máximo posible, sabiendo que cambia según el día.",
       "Estos cuatro acuerdos son una práctica diaria, no una meta que se logra una vez.",
+    ],
+    ejercicios: [
+      { nombre: "Un acuerdo por semana", como: "Elige uno de los cuatro y practícalo esa semana completa, anotando cada noche dónde se te olvidó. Cuatro semanas, un acuerdo cada una.", cada: "semanal" },
     ],
   },
   {
@@ -394,6 +422,10 @@ export const LIBROS: Libro[] = [
       "El trauma no es el evento, es lo que quedó grabado en el sistema nervioso.",
       "Yoga, teatro y música sanan porque devuelven la sensación de agencia.",
     ],
+    ejercicios: [
+      { nombre: "Vuelve al cuerpo", como: "Cuando te desbordes, nombra en voz baja cinco cosas que ves y siente tus pies en el suelo. El cuerpo te trae de vuelta antes que la razón.", cada: "diario" },
+      { nombre: "Exhalación larga", como: "Inhala en cuatro y exhala en ocho, unas diez veces. La exhalación larga es la que le avisa al sistema nervioso que ya estás a salvo.", cada: "diario" },
+    ],
   },
   {
     id: "permisosentir",
@@ -424,6 +456,10 @@ export const LIBROS: Libro[] = [
       "Defusión: mira tus pensamientos, no desde ellos.",
       "Una vida rica incluye emociones difíciles; evitarlas la achica.",
     ],
+    ejercicios: [
+      { nombre: "Nombra el pensamiento", como: "Cuando venga un pensamiento que te hunde, ponle delante: estoy notando que pienso que... Sigue igual de presente, pero deja de mandarte.", cada: "diario" },
+      { nombre: "Tus valores en una hoja", como: "Escribe cómo quieres ser en las áreas que te importan, no qué quieres lograr. Después elige una acción de hoy que vaya en esa dirección.", cada: "semanal" },
+    ],
   },
   {
     id: "cosasbuenas",
@@ -453,6 +489,10 @@ export const LIBROS: Libro[] = [
       "El síndrome de la dadora agota: no naciste para darlo todo.",
       "Resolver el estresor no cierra el ciclo del estrés: son cosas distintas.",
       "La comparación con un ideal imposible te vacía: suéltala.",
+    ],
+    ejercicios: [
+      { nombre: "Cierra el ciclo del estrés", como: "Resolver el problema no basta: el cuerpo necesita señal de que pasó. Veinte minutos de movimiento, llorar, un abrazo largo o reír fuerte.", cada: "diario" },
+      { nombre: "El presupuesto del 42%", como: "Suma tu sueño y tus pausas del día. Si no llegan al 42% de las 24 horas, el cansancio no es falta de carácter, es matemática.", cada: "semanal" },
     ],
   },
 
@@ -760,6 +800,11 @@ export const LIBROS: Libro[] = [
       "La mente maestra: rodéate de gente que piense contigo, porque nadie llega sola.",
       "La persistencia no es un talento, es un hábito que se entrena fallando de nuevo.",
     ],
+    ejercicios: [
+      { nombre: "Tu propósito por escrito", como: "Escribe en una hoja cuánto quieres ganar, para cuándo, y qué vas a dar en cambio. Guárdala donde la veas.", cada: "unico" },
+      { nombre: "Leerlo dos veces al día", como: "Lee ese propósito en voz alta al despertar y antes de dormir, hasta que se te grabe. Suena raro y funciona.", cada: "diario" },
+      { nombre: "Tu mente maestra", como: "Elige dos o tres personas que puedan pensar contigo en esto y ponles una conversación al mes en el calendario.", cada: "semanal" },
+    ],
   },
   {
     id: "psicologiadinero",
@@ -1017,6 +1062,10 @@ export const LIBROS: Libro[] = [
       "La creatividad es un flujo natural: se destapa, no se fabrica.",
       "Trata el bloqueo como falta de confianza, no de talento.",
     ],
+    ejercicios: [
+      { nombre: "Páginas matutinas", como: "Tres páginas a mano al despertar, sin pensar y sin releer. No es escribir bonito, es sacar el ruido de la cabeza.", cada: "diario" },
+      { nombre: "Cita de artista", como: "Una salida sola por semana a algo que te llene el pozo: una librería, un museo, una feria. Sin productividad, sin compañía.", cada: "semanal" },
+    ],
   },
   {
     id: "sietehabitos",
@@ -1031,6 +1080,10 @@ export const LIBROS: Libro[] = [
       "Afila la sierra: renovarte no es perder el tiempo, es la base.",
       "Sé proactiva: entre lo que pasa y tu respuesta, tú eliges.",
       "Piensa en ganar-ganar: la abundancia alcanza para todos.",
+    ],
+    ejercicios: [
+      { nombre: "Empieza con el fin en mente", como: "Escribe qué te gustaría que dijeran de ti las personas que amas, dentro de muchos años. Eso es tu norte, y ordena las decisiones difíciles.", cada: "unico" },
+      { nombre: "Primero lo primero", como: "Cada domingo elige dos cosas importantes que no son urgentes y agéndalas antes que nada. Ahí se construye la vida, no en los incendios.", cada: "semanal" },
     ],
   },
   {

@@ -20,6 +20,14 @@ import {
   type LibroPropio,
 } from "./librosPropios";
 import { TablesMissingError } from "../finanzas/data";
+import { addDayTask } from "../tareas/data";
+
+// Ritmo sugerido de cada ejercicio, para saber si conviene hacerlo hábito.
+const RITMO: Record<string, string> = {
+  diario: "cada día",
+  semanal: "una vez por semana",
+  unico: "una sola vez",
+};
 import { Selector } from "../components/Selector";
 import { fichaLibro, iaConfigured } from "../lib/ia";
 
@@ -138,6 +146,20 @@ function LibroCard({ libro, estado, onMarcar, onEliminar }: {
 }) {
   const { t: tr } = useIdioma();
   const [open, setOpen] = useState(false);
+  const [enviado, setEnviado] = useState<string | null>(null);
+
+  // Llevar un ejercicio del libro a las tareas de hoy: así el conocimiento
+  // no se queda en la lectura, que es justo lo que le pasa a este cerebro.
+  async function probarEjercicio(nombre: string) {
+    try {
+      await addDayTask(`🧩 ${nombre}`);
+      setEnviado(nombre);
+      setTimeout(() => setEnviado(null), 2500);
+    } catch {
+      /* sin la migración de tareas, el ejercicio igual se puede leer */
+    }
+  }
+
   return (
     <div className="card panel" style={estado === "leido" ? { borderColor: "color-mix(in srgb, var(--ok) 45%, var(--line))" } : undefined}>
       <button
@@ -169,6 +191,26 @@ function LibroCard({ libro, estado, onMarcar, onEliminar }: {
               ))}
             </>
           )}
+          {libro.ejercicios && libro.ejercicios.length > 0 && (
+            <div style={{ marginTop: 12, borderTop: "1px solid var(--line-soft)", paddingTop: 10 }}>
+              <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
+                {tr("Ejercicios del libro")}
+              </p>
+              {libro.ejercicios.map((e) => (
+                <div key={e.nombre} style={{ marginBottom: 10 }}>
+                  <b style={{ fontSize: 13, display: "block" }}>🧩 {tr(e.nombre)}</b>
+                  <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5, margin: "2px 0 5px" }}>{tr(e.como)}</p>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                    <button className="pomo-chip" onClick={() => void probarEjercicio(e.nombre)}>
+                      {enviado === e.nombre ? `✓ ${tr("En tus tareas de hoy")}` : tr("Probarlo hoy")}
+                    </button>
+                    {e.cada && <span style={{ fontSize: 11, color: "var(--muted)" }}>{tr(RITMO[e.cada])}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <span style={{ fontWeight: 600 }}>{tr("Dónde conseguirlo:")}</span>
             {enlacesLibro(libro).map((e) => (
