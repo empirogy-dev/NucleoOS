@@ -747,6 +747,21 @@ export const LIBROS: Libro[] = [
 
   // ---------- Finanzas ----------
   {
+    id: "piensehagaserico",
+    titulo: "Piense y hágase rico",
+    autor: "Napoleon Hill",
+    via: "finanzas",
+    emoji: "\u{1F4B0}",
+    porQue: "El clásico que fundó todo el género del desarrollo personal, escrito tras veinte años entrevistando a los hombres más ricos de su época. Hill sostiene que la riqueza empieza en un deseo definido y una decisión firme, no en la suerte, y arma un método de trece pasos para llevar una idea hasta lo concreto. Denso y de otra época, pero sus ejercicios siguen moviendo a millones.",
+    ideas: [
+      "El deseo difuso no mueve nada: escribe cuánto quieres, para cuándo y qué darás a cambio.",
+      "Lee ese propósito en voz alta dos veces al día, para que se te grabe hasta en el sueño.",
+      "La decisión rápida y el cambio lento distinguen a quien llega: los indecisos se quedan.",
+      "La mente maestra: rodéate de gente que piense contigo, porque nadie llega sola.",
+      "La persistencia no es un talento, es un hábito que se entrena fallando de nuevo.",
+    ],
+  },
+  {
     id: "psicologiadinero",
     titulo: "La psicología del dinero",
     autor: "Morgan Housel",

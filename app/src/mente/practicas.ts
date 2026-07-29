@@ -249,17 +249,26 @@ export const MEDITACIONES: Practica[] = [
     id: "med-frio",
     nombre: "Exposición al frío",
     emoji: "🧊",
-    tipo: "meditacion",
+    tipo: "respiracion",
     categoria: "regulacion",
-    descripcion: "Terminar la ducha con agua fría entrena al sistema nervioso a mantenerse en calma bajo estrés.",
-    duraciones: [2, 3, 5],
+    descripcion: "Agua fría más respiración de caja: el frío da el estrés, la respiración te enseña a atravesarlo en calma. Sigue el círculo mientras estás bajo el agua.",
+    duraciones: [1, 2, 3, 5],
     pasos: [
-      "Dúchate normal, y al final gira la llave al frío.",
+      "Dúchate normal, y cuando estés lista gira la llave al frío.",
       "El primer impulso es tensarte y respirar corto. Ahí está el ejercicio: suelta los hombros.",
-      "Exhala largo y lento, como si le dijeras al cuerpo que no hay peligro.",
+      "Sigue el círculo: inhala 4, sostén 4, exhala 4, sostén vacía 4. Ese ritmo le dice al cuerpo que no hay peligro.",
+      "Si el frío te gana la respiración, alarga la exhalación y vuelve al ciclo. No hay apuro.",
       "Empieza con 15 o 30 segundos y sube de a poco cada semana.",
       "Sal, sécate y nota la ola de calor y claridad que llega después.",
       "Si tienes alguna condición cardíaca, consúltalo antes con tu médico.",
+    ],
+    // El mismo ciclo de la respiración de caja: entrenas el sistema nervioso
+    // a mantener la calma justo cuando el cuerpo quiere entrar en pánico.
+    fases: [
+      { etiqueta: "Inhala", segundos: 4, tipo: "inhala" },
+      { etiqueta: "Sostén", segundos: 4, tipo: "sosten" },
+      { etiqueta: "Exhala", segundos: 4, tipo: "exhala" },
+      { etiqueta: "Sostén vacía", segundos: 4, tipo: "sosten" },
     ],
   },
   {
