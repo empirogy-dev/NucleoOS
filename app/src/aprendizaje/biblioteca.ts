@@ -72,6 +72,11 @@ export const LIBROS: Libro[] = [
       "La conexi\u00f3n humana regula: el aislamiento empeora el TDAH, el v\u00ednculo lo calma.",
       "Busca tu punto justo de est\u00edmulo: ni tan aburrida que te apagues, ni tan saturada que colapses.",
     ],
+    ejercicios: [
+      { nombre: "Mueve el cuerpo antes de lo difícil", como: "Diez minutos de caminata, baile o escalera justo antes de sentarte a la tarea que estás evitando. El movimiento le enciende la atención al cerebro con TDAH.", cada: "diario" },
+      { nombre: "Da vuelta el defecto", como: "Escribe algo que siempre te criticaron y busca dónde esa misma característica te sirve. Distraída también es curiosa. Intensa también es apasionada.", cada: "semanal" },
+      { nombre: "Tus tres personas", como: "Anota tres personas que te conocen de verdad y pídele a cada una algo concreto. La conexión no es un lujo, es tratamiento.", cada: "unico" },
+    ],
   },
   {
     id: "howtoadhd",
@@ -86,6 +91,11 @@ export const LIBROS: Libro[] = [
       "Los sistemas le ganan a la fuerza de voluntad, siempre.",
       "Tus herramientas dejan de funcionar y no es tu culpa: r\u00f3talas sin drama.",
       "Pide ayuda y adapta el mundo a ti: no naciste para encajar a la fuerza.",
+    ],
+    ejercicios: [
+      { nombre: "Un sistema en vez de fuerza de voluntad", como: "Elige la cosa que se te olvida siempre y dale un soporte externo: una alarma, un lugar fijo, algo a la vista. Deja de pedirle a tu memoria lo que puede hacer una nota.", cada: "semanal" },
+      { nombre: "Nombra el muro", como: "Cuando una tarea chica se siente imposible, para y nombra qué capa te frena: vergüenza, un intento fallido, miedo al juicio. Nombrarla la hace más baja.", cada: "diario" },
+      { nombre: "Baja el listón a la mitad", como: "Si no arranca, córtala en dos y quédate con la mitad más fácil. Media tarea hecha vale más que una entera imaginada.", cada: "diario" },
     ],
   },
   {
@@ -102,6 +112,10 @@ export const LIBROS: Libro[] = [
       "No es falta de voluntad ni de inteligencia, es un cableado distinto.",
       "Rod\u00e9ate de gente y sistemas que te devuelvan el rumbo cuando te pierdes.",
     ],
+    ejercicios: [
+      { nombre: "Todo a la vista", como: "Lo que no ves, no existe. Deja lo del día en un solo lugar visible: la mesa de la entrada, un pizarrón, una bandeja.", cada: "diario" },
+      { nombre: "Cinco minutos de arranque", como: "Comprométete a cinco minutos y nada más. El costo de empezar es casi todo el costo de la tarea.", cada: "diario" },
+    ],
   },
   {
     id: "scattered",
@@ -116,6 +130,10 @@ export const LIBROS: Libro[] = [
       "No est\u00e1s rota: tu cerebro se adapt\u00f3 para sobrevivir.",
       "La curiosidad amable por ti misma sana m\u00e1s que la autoexigencia.",
       "El presente se puede reeducar: la historia no es destino.",
+    ],
+    ejercicios: [
+      { nombre: "Escucha tu tono", como: "Cuando se te olvide algo, fíjate cómo te hablas. Después dilo de nuevo con la voz que usarías con una niña de seis años.", cada: "diario" },
+      { nombre: "Media hora presente", como: "Media hora con alguien que quieres, sin pantalla y sin tarea de fondo. La atención se sostiene en el vínculo, no en el esfuerzo.", cada: "diario" },
     ],
   },
   {
@@ -132,6 +150,10 @@ export const LIBROS: Libro[] = [
       "Nombrar lo que sientes te devuelve el volante.",
       "Deja de pelear con tu cerebro y empieza a traducirlo.",
     ],
+    ejercicios: [
+      { nombre: "De qué energía vengo", como: "Antes de decidir el día, pregúntate con qué energía llegaste: acelerada, plana, dispersa o clara. Ordena las tareas según eso, no según la lista.", cada: "diario" },
+      { nombre: "Lo que cuesta de verdad", como: "Junto a la tarea que estás postergando, escribe qué emoción trae: aburrimiento, miedo, rabia. Casi nunca cuesta el trabajo, cuesta el sentimiento.", cada: "semanal" },
+    ],
   },
   {
     id: "radicalguide",
@@ -146,6 +168,10 @@ export const LIBROS: Libro[] = [
       "Vivir en grande no es arreglarte primero: es empezar ahora, como eres.",
       "Tu forma de funcionar no es un error a corregir, es una a comprender.",
       "Rod\u00e9ate de quienes te celebran, no de quienes te toleran.",
+    ],
+    ejercicios: [
+      { nombre: "Deja de compensar en silencio", como: "Elige una cosa que sostienes sola y que te agota, y esta semana pídela o suéltala. Aparentar que puedes con todo tiene un costo que nadie ve.", cada: "semanal" },
+      { nombre: "Tu propia medida", como: "Escribe cómo se ve un buen día para ti, con tu cabeza y tu vida. No la casa impecable de otra persona.", cada: "unico" },
     ],
   },
   {
@@ -181,6 +207,10 @@ export const LIBROS: Libro[] = [
       "Dise\u00f1a para tu peor d\u00eda, no para tu mejor versi\u00f3n.",
       "Menos cosas es menos que ordenar: soltar tambi\u00e9n es organizar.",
     ],
+    ejercicios: [
+      { nombre: "Un lugar para lo que siempre pierdes", como: "Llaves, billetera, teléfono, audífonos. Un lugar fijo para cada uno y siempre el mismo. No es orden, es memoria externa.", cada: "unico" },
+      { nombre: "Una sola bandeja de entrada", como: "Todo lo que llega, papeles, ideas, recados, va a un solo lugar y de ahí se reparte una vez al día. Cinco listas no son ninguna lista.", cada: "diario" },
+    ],
   },
   {
     id: "hyperfocus",
@@ -195,6 +225,10 @@ export const LIBROS: Libro[] = [
       "Deja el ambiente sin anzuelos antes de empezar el bloque.",
       "Cuanto m\u00e1s importante la tarea, m\u00e1s grande el objeto de tu atenci\u00f3n.",
       "Descansar la atenci\u00f3n no es perder tiempo: la recarga.",
+    ],
+    ejercicios: [
+      { nombre: "Una intención antes de abrir", como: "Antes de tocar el computador o el teléfono, di en voz baja para qué lo abres. El hiperfoco es un regalo, pero apunta a donde lo mandas.", cada: "diario" },
+      { nombre: "Mente suelta", como: "Un rato caminando sin pódcast, sin música, sin nada. Ahí es donde aparecen las ideas que no llegan trabajando.", cada: "semanal" },
     ],
   },
 
@@ -233,6 +267,10 @@ export const LIBROS: Libro[] = [
       "La motivación sube y baja: diseña para cuando esté baja.",
       "Comportamiento pasa cuando se juntan motivación, capacidad y una señal.",
     ],
+    ejercicios: [
+      { nombre: "Celébralo en el momento", como: "Cuando cumplas la versión mínima, festeja al instante: un gesto, una sonrisa, decirte bien ahí. La emoción es la que graba el hábito, no la repetición sola.", cada: "diario" },
+      { nombre: "La versión de dos", como: "Dos flexiones, dos líneas, dos minutos. Tan chico que no puedas negociarlo en un día malo.", cada: "diario" },
+    ],
   },
   {
     id: "indistractable",
@@ -247,6 +285,10 @@ export const LIBROS: Libro[] = [
       "Ponle fricción a la distracción antes de que llegue.",
       "Los disparadores externos (avisos, pings) se domestican, no se sufren.",
       "Un pacto contigo o con otros vuelve difícil rendirte.",
+    ],
+    ejercicios: [
+      { nombre: "Agenda con horas, no con listas", como: "Pon las cosas en el calendario con hora de inicio y de término. Una lista no defiende tu tiempo, un bloque sí.", cada: "semanal" },
+      { nombre: "Diez minutos con la molestia", como: "Cuando venga el impulso de revisar el teléfono, quédate diez minutos con la incomodidad y observa cómo baja sola. La distracción es una salida del malestar.", cada: "diario" },
     ],
   },
   {
@@ -263,6 +305,10 @@ export const LIBROS: Libro[] = [
       "El ansia (craving) es el motor: sin ella, la rutina no arranca.",
       "Creer que puedes cambiar, mejor en comunidad, sostiene el cambio.",
     ],
+    ejercicios: [
+      { nombre: "Encuentra la señal y el premio", como: "Anota qué pasó justo antes del hábito que quieres cambiar y qué ganaste justo después. Ahí está el mecanismo completo.", cada: "semanal" },
+      { nombre: "Cambia solo el medio", como: "Deja la misma señal y el mismo premio, cambia únicamente lo que haces en el medio. Es el único punto donde el hábito cede.", cada: "diario" },
+    ],
   },
   {
     id: "deepwork",
@@ -277,6 +323,10 @@ export const LIBROS: Libro[] = [
       "El aburrimiento entrena el foco: no llenes cada espera con el celular.",
       "Agenda cada minuto del día para elegir en qué se va tu atención.",
       "Termina el trabajo con un ritual de cierre: la mente descansa de verdad.",
+    ],
+    ejercicios: [
+      { nombre: "Un bloque profundo agendado", como: "Noventa minutos con el teléfono en otra pieza y una sola tarea. Agendado como una cita, no como una intención.", cada: "diario" },
+      { nombre: "Ritual de cierre", como: "Al terminar de trabajar, revisa lo pendiente, anota el primer paso de mañana y di una frase de cierre. Sin eso el trabajo sigue abierto en tu cabeza toda la noche.", cada: "diario" },
     ],
   },
   {
@@ -293,6 +343,10 @@ export const LIBROS: Libro[] = [
       "Explora mucho antes de comprometerte con poco.",
       "El costo de oportunidad es real: cada sí es un no a otra cosa.",
     ],
+    ejercicios: [
+      { nombre: "El no de la semana", como: "Elige una cosa a la que vas a decir no esta semana, y dilo sin explicación larga. Cada sí es un no a otra cosa, aunque no lo veas.", cada: "semanal" },
+      { nombre: "Si no es un nueve, es un no", como: "Puntúa la oportunidad de uno a diez. Si no llega a nueve, no entra. El casi es lo que te llena la agenda de vida ajena.", cada: "semanal" },
+    ],
   },
   {
     id: "onething",
@@ -307,6 +361,10 @@ export const LIBROS: Libro[] = [
       "El éxito se construye secuencialmente, no simultáneamente.",
       "Pregúntate la pregunta enfocadora cada mañana.",
       "Las fichas de dominó caen encadenadas: empieza por la primera.",
+    ],
+    ejercicios: [
+      { nombre: "La pregunta principal", como: "Pregúntate cuál es la única cosa que puedo hacer hoy que haga todo lo demás más fácil o innecesario. Después hazla primero.", cada: "diario" },
+      { nombre: "Bloquea la única cosa antes de todo", como: "Al planificar la semana, la única cosa entra al calendario antes que las reuniones. Lo que se agenda al final nunca ocurre.", cada: "semanal" },
     ],
   },
   {
@@ -323,6 +381,10 @@ export const LIBROS: Libro[] = [
       "Los mini hábitos no gastan fuerza de voluntad: por eso duran.",
       "La constancia crea identidad: te vuelves quien lo hace todos los días.",
     ],
+    ejercicios: [
+      { nombre: "El hábito ridículamente pequeño", como: "Define la meta tan chica que te dé risa: una flexión, dos líneas, abrir el cuaderno. Tan chica que no puedas fallar ni el peor día.", cada: "diario" },
+      { nombre: "Lo de más es regalo", como: "Si el día te da para más, sigue. Pero nunca subas la meta, porque lo que te sostiene es que el mínimo siga siendo mínimo.", cada: "diario" },
+    ],
   },
   {
     id: "gtd",
@@ -337,6 +399,11 @@ export const LIBROS: Libro[] = [
       "Define siempre la siguiente acción física, no el proyecto abstracto.",
       "Una revisión semanal mantiene el sistema (y tu cabeza) confiable.",
       "Todo pendiente vive en un solo lugar de confianza, fuera de ti.",
+    ],
+    ejercicios: [
+      { nombre: "Vacía la cabeza", como: "Escribe todo lo que traes pendiente, grande y chico, sin ordenar ni filtrar, hasta que no quede nada dando vueltas. La cabeza es para pensar, no para almacenar.", cada: "semanal" },
+      { nombre: "Regla de los dos minutos", como: "Si algo toma menos de dos minutos, hazlo ahora. Anotarlo cuesta más que hacerlo.", cada: "diario" },
+      { nombre: "Escribe la próxima acción física", como: "Cambia llamar al doctor por buscar el número del doctor en el correo. Las tareas se atascan cuando no dicen qué mover primero.", cada: "diario" },
     ],
   },
 
@@ -374,6 +441,10 @@ export const LIBROS: Libro[] = [
       "El error es información para crecer, no una sentencia sobre ti.",
       "El talento sin esfuerzo se estanca: el esfuerzo es la variable que sí controlas.",
     ],
+    ejercicios: [
+      { nombre: "Agrega la palabra todavía", como: "Cuando te escuches decir no soy buena para esto, agrega todavía al final de la frase. Cambia una sentencia por un punto del camino.", cada: "diario" },
+      { nombre: "Celebra el proceso, no el resultado", como: "Cuando algo salga bien, di en voz alta qué hiciste para lograrlo. Elogiar el talento vuelve frágil, elogiar el esfuerzo sostiene.", cada: "semanal" },
+    ],
   },
   {
     id: "cuatroacuerdos",
@@ -406,6 +477,10 @@ export const LIBROS: Libro[] = [
       "La empatía se entrena escuchando sin preparar la respuesta.",
       "Autoconciencia primero: no puedes regular lo que no reconoces.",
       "Las emociones son datos, no órdenes: te informan, no te mandan.",
+    ],
+    ejercicios: [
+      { nombre: "Pon un nombre a lo que sientes", como: "Tres veces al día, para diez segundos y ponle nombre a la emoción exacta. No molesta, sino dolida, o cansada, o con miedo. Nombrarla ya la baja de intensidad.", cada: "diario" },
+      { nombre: "Los seis segundos", como: "Entre lo que te dispara y lo que respondes, mete seis segundos de respiración. Ahí es donde se decide si contestas tú o contesta la reacción.", cada: "diario" },
     ],
   },
   {
@@ -441,6 +516,10 @@ export const LIBROS: Libro[] = [
       "Un vocabulario emocional más rico te da más control.",
       "Preguntar cómo te sientes de verdad abre puertas que el cómo estás cierra.",
     ],
+    ejercicios: [
+      { nombre: "Cómo te sientes de verdad", como: "Cuando alguien te pregunte cómo estás, respóndete a ti primero con la verdad completa, aunque a la otra persona le digas bien. Después de eso ya sabes qué necesitas.", cada: "diario" },
+      { nombre: "Sé el científico, no el juez", como: "Con una emoción difícil, pregúntate de dónde viene y qué te está pidiendo, en vez de si es correcta o exagerada. Las emociones traen información, no notas.", cada: "semanal" },
+    ],
   },
   {
     id: "trampafelicidad",
@@ -474,6 +553,10 @@ export const LIBROS: Libro[] = [
       "Las personas vitamina existen: rodéate de ellas.",
       "El presente es el único lugar sin ansiedad: la mente sufre en el futuro.",
       "Cuerpo y mente son un solo sistema: cuida uno para calmar el otro.",
+    ],
+    ejercicios: [
+      { nombre: "Una cosa buena que ya está", como: "Antes de dormir, escribe una cosa buena que ya existía hoy y que no notaste. El cerebro sale a buscar lo que le entrenas a ver.", cada: "diario" },
+      { nombre: "Baja del futuro", como: "Cuando te sorprendas adelantando desastres, pregúntate si eso está pasando ahora o solo en tu cabeza. Casi todo el sufrimiento vive en el futuro imaginado.", cada: "diario" },
     ],
   },
   {
@@ -511,6 +594,10 @@ export const LIBROS: Libro[] = [
       "Lo que ves es todo lo que hay: la mente ignora lo que no tiene a mano.",
       "El yo que recuerda y el que vive no coinciden: cuida la memoria, no solo el momento.",
     ],
+    ejercicios: [
+      { nombre: "Frena la primera respuesta", como: "Cuando una decisión te parezca obvia, espera veinticuatro horas y vuelve a mirarla. Lo obvio es la parte rápida de la mente, no siempre la correcta.", cada: "semanal" },
+      { nombre: "Busca lo que te contradiga", como: "Antes de decidir algo grande, escribe tres razones por las que podrías estar equivocada. Es lo único que le hace peso a la certeza.", cada: "semanal" },
+    ],
   },
   {
     id: "flow",
@@ -525,6 +612,10 @@ export const LIBROS: Libro[] = [
       "La felicidad no se persigue: se construye haciendo cosas que te absorben.",
       "El ocio pasivo rara vez da flow; la actividad enfocada, sí.",
       "Convertir el trabajo en juego con reglas propias multiplica el disfrute.",
+    ],
+    ejercicios: [
+      { nombre: "El punto justo de dificultad", como: "Ajusta la tarea para que sea un poco más difícil de lo que puedes: si te aburre, súbele, si te angustia, bájale. El flujo vive en ese borde.", cada: "semanal" },
+      { nombre: "Una hora sin interrupción", como: "Reserva una hora en lo que sabes hacer bien, sin teléfono ni relojes. Es la forma más barata de sentirte viva.", cada: "diario" },
     ],
   },
   {
@@ -541,6 +632,10 @@ export const LIBROS: Libro[] = [
       "Muchas veces lo que pides no es lo que necesitas: mira más hondo.",
       "La cárcel más común es la que construimos nosotras mismas, con la llave en la mano.",
     ],
+    ejercicios: [
+      { nombre: "Escribe la otra versión", como: "Cuenta la historia que te tiene atascada, y después escríbela de nuevo desde el lugar de la otra persona. No para darle la razón, para dejar de ser solo la protagonista.", cada: "semanal" },
+      { nombre: "Qué estoy ganando con quedarme aquí", como: "Pregúntate qué te da seguir en la situación que dices querer cambiar. Casi siempre hay un premio escondido, y verlo es lo que suelta.", cada: "semanal" },
+    ],
   },
   {
     id: "seligman",
@@ -555,6 +650,10 @@ export const LIBROS: Libro[] = [
       "El optimismo aprendido se entrena igual que un músculo.",
       "La indefensión aprendida existe, y también se revierte.",
       "Optimismo no es negar lo malo: es no volverlo permanente ni total.",
+    ],
+    ejercicios: [
+      { nombre: "Discute con tu propia voz", como: "Escribe el pensamiento pesimista y después contéstalo como si fuera un rival: qué prueba tienes, qué otra explicación hay, cuánto va a durar de verdad.", cada: "diario" },
+      { nombre: "Tres cosas que salieron bien", como: "Cada noche, tres cosas que salieron bien y tu parte en cada una. La segunda mitad importa más que la primera.", cada: "diario" },
     ],
   },
   {
@@ -571,6 +670,10 @@ export const LIBROS: Libro[] = [
       "El precio ancla lo que crees que algo vale, aunque sea arbitrario.",
       "Somos más honestos cuando algo nos recuerda nuestros valores justo antes de decidir.",
     ],
+    ejercicios: [
+      { nombre: "Saca la opción trampa", como: "Cuando compares precios o planes, borra la opción que está ahí solo para que otra parezca buena. Casi siempre hay una.", cada: "semanal" },
+      { nombre: "Ponle fricción a lo gratis", como: "Antes de tomar algo porque es gratis o está en oferta, calcula qué te cuesta en tiempo, espacio o atención. Gratis nunca es gratis.", cada: "semanal" },
+    ],
   },
   {
     id: "drive",
@@ -585,6 +688,10 @@ export const LIBROS: Libro[] = [
       "Sin un porqué, ninguna zanahoria alcanza.",
       "La autonomía sobre qué, cuándo y cómo enciende el compromiso.",
       "Pagar lo justo saca el dinero de la ecuación y deja brillar la motivación real.",
+    ],
+    ejercicios: [
+      { nombre: "Elige el cómo", como: "En una tarea obligatoria, quédate con una decisión propia: el orden, la hora, la música, el lugar. La autonomía chica cambia toda la motivación.", cada: "diario" },
+      { nombre: "Para qué sirve esto", como: "Escribe a quién le sirve lo que estás haciendo, con nombre y cara. El propósito concreto empuja más que cualquier premio.", cada: "semanal" },
     ],
   },
   {
@@ -601,6 +708,10 @@ export const LIBROS: Libro[] = [
       "La vulnerabilidad no es debilidad: es el nacimiento del coraje.",
       "Pertenecer no es encajar: es atreverte a ser tú y aún así ser aceptada.",
     ],
+    ejercicios: [
+      { nombre: "Cuéntale a alguien la parte imperfecta", como: "Dile a una persona de confianza algo que te da vergüenza de esta semana. La vergüenza necesita silencio para crecer.", cada: "semanal" },
+      { nombre: "Suficiente por hoy", como: "Al terminar el día, di suficiente por hoy y déjalo ahí, con lo que quedó a medias. No es rendirse, es dejar de pedirte perfección.", cada: "diario" },
+    ],
   },
   {
     id: "dyer",
@@ -616,6 +727,10 @@ export const LIBROS: Libro[] = [
       "Nadie te hace sentir algo sin tu permiso: la respuesta es tuya.",
       "Vivir en el ahora es el antídoto contra la mayoría de tus zonas erróneas.",
     ],
+    ejercicios: [
+      { nombre: "De quién es esta obligación", como: "Cuando digas tengo que, cámbialo por elijo o no elijo y fíjate cómo se siente. La mayoría de las obligaciones son acuerdos viejos que nadie revisó.", cada: "diario" },
+      { nombre: "Diez minutos de culpa y basta", como: "Si te va a doler el pasado, ponle diez minutos de reloj y después vuelve al presente. La culpa no arregla nada de lo que ya pasó.", cada: "semanal" },
+    ],
   },
   {
     id: "cialdini",
@@ -630,6 +745,10 @@ export const LIBROS: Libro[] = [
       "El compromiso chico de hoy abre el grande de mañana.",
       "La prueba social manda: hacemos lo que hacen los demás.",
       "La autoridad y el gustar bajan tus defensas: nota cuándo operan sobre ti.",
+    ],
+    ejercicios: [
+      { nombre: "Reconoce la presión", como: "Cuando sientas urgencia por decidir, nombra qué te están usando: escasez, autoridad, todos lo hacen. Verlo funcionando le quita la fuerza.", cada: "semanal" },
+      { nombre: "Nunca decidas en el momento", como: "Frente a una oferta que te apura, di que lo vas a pensar hasta mañana. Si la oferta no aguanta un día, no era para ti.", cada: "diario" },
     ],
   },
 
@@ -648,6 +767,11 @@ export const LIBROS: Libro[] = [
       "Los cuatro jinetes (crítica, desprecio, defensa, muro) predicen el quiebre: cázalos.",
       "Repara rápido después de una pelea: no importa pelear, importa cómo vuelves.",
     ],
+    ejercicios: [
+      { nombre: "Cinco cosas buenas por cada roce", como: "Después de un desencuentro, busca cinco gestos amables de verdad: un gracias, un chiste, una mano. La proporción es lo que sostiene una pareja, no la ausencia de peleas.", cada: "diario" },
+      { nombre: "Cómo empieza el reclamo", como: "Empieza por yo me sentí y no por tú siempre. Los primeros tres minutos deciden casi toda la conversación.", cada: "diario" },
+      { nombre: "Los mapas del otro", como: "Pregunta algo que no sabes de la vida diaria de tu persona: qué le preocupa esta semana, qué le da ganas. Conocer se hace, no se supone.", cada: "semanal" },
+    ],
   },
   {
     id: "attached",
@@ -662,6 +786,10 @@ export const LIBROS: Libro[] = [
       "La comunicación directa le gana al juego de las indirectas.",
       "El estilo ansioso y el evitativo se atraen y se lastiman: nómbralo para salir del ciclo.",
       "Una pareja segura te regula: elegir bien es media terapia.",
+    ],
+    ejercicios: [
+      { nombre: "Reconoce tu estilo", como: "Fíjate qué haces cuando te sientes lejos de alguien: persigues o desapareces. No es un defecto, es un patrón, y los patrones se pueden ver venir.", cada: "unico" },
+      { nombre: "Pide claro, no en clave", como: "Cuando necesites cercanía, dilo directo en vez de mandar señales o castigar con silencio. Pedir claro es lo que hace segura una relación.", cada: "semanal" },
     ],
   },
   {
@@ -678,6 +806,10 @@ export const LIBROS: Libro[] = [
       "Nombra tu sentir sin culpar al otro: me siento, no tú me haces.",
       "Escuchar la necesidad detrás del ataque desarma casi cualquier pelea.",
     ],
+    ejercicios: [
+      { nombre: "Los cuatro pasos", como: "Di lo que pasó sin juicio, lo que sentiste, lo que necesitas y qué pides concreto. Cuatro frases cortas cambian una pelea entera.", cada: "semanal" },
+      { nombre: "Traduce el reproche", como: "Cuando alguien te ataque, escucha qué necesidad hay debajo del reproche. Detrás de nunca me ayudas casi siempre hay estoy agotada.", cada: "diario" },
+    ],
   },
   {
     id: "lenguajesamor",
@@ -692,6 +824,10 @@ export const LIBROS: Libro[] = [
       "El tanque emocional lleno cambia toda la relación.",
       "Damos amor como nos gustaría recibirlo: por eso a veces no llega.",
       "Preguntar el lenguaje del otro es más útil que adivinarlo.",
+    ],
+    ejercicios: [
+      { nombre: "Averigua el idioma del otro", como: "Pregúntale a tu persona qué la hace sentir más querida: palabras, tiempo, gestos de ayuda, regalos o contacto. Después dale eso, no lo que tú darías.", cada: "unico" },
+      { nombre: "Un gesto en su idioma", como: "Una vez por semana, un gesto pensado en el idioma de la otra persona. Amar en el idioma equivocado se siente como no amar.", cada: "semanal" },
     ],
   },
   {
@@ -708,6 +844,10 @@ export const LIBROS: Libro[] = [
       "El apego seguro en pareja se puede reconstruir a cualquier edad.",
       "Nombrar el baile negativo que hacen juntos los saca de él.",
     ],
+    ejercicios: [
+      { nombre: "Debajo de la rabia", como: "En medio de una discusión, di lo que hay abajo: tengo miedo de que no me importes tanto, me sentí sola. La rabia protege, la vulnerabilidad conecta.", cada: "semanal" },
+      { nombre: "Cinco minutos de reencuentro", como: "Al volver a verse en el día, cinco minutos de atención completa sin logística ni pantallas. El vínculo se repara en lo chico y seguido.", cada: "diario" },
+    ],
   },
   {
     id: "limites",
@@ -722,6 +862,10 @@ export const LIBROS: Libro[] = [
       "Decir que no es una frase completa (y un acto de amor propio).",
       "Poner un límite incomoda al principio: la culpa no significa que esté mal.",
       "No eres responsable de la reacción del otro a tu límite sano.",
+    ],
+    ejercicios: [
+      { nombre: "Una frase de límite lista", como: "Ten una frase preparada y corta: eso no me acomoda, no voy a poder, prefiero que no. Sin justificación y sin pedir permiso.", cada: "unico" },
+      { nombre: "Donde te dio rabia", como: "Fíjate dónde sentiste rabia o agotamiento esta semana. Casi siempre ahí falta un límite, no paciencia.", cada: "semanal" },
     ],
   },
   {
@@ -738,6 +882,10 @@ export const LIBROS: Libro[] = [
       "Si no puedes estar bien sola, buscarás en el otro un parche, no un amor.",
       "Amar a una persona bien es amar en ella a la humanidad entera.",
     ],
+    ejercicios: [
+      { nombre: "Amar como práctica", como: "Elige una acción concreta de cuidado y hazla sin esperar respuesta. El amor del libro no es un sentimiento que llega, es algo que se practica.", cada: "semanal" },
+      { nombre: "Un rato bien sola", como: "Un rato contigo sin llamar a nadie ni llenar el silencio. Solo puede amar de verdad quien puede estar sola.", cada: "semanal" },
+    ],
   },
   {
     id: "ganaramigos",
@@ -752,6 +900,10 @@ export const LIBROS: Libro[] = [
       "Nunca digas estás equivocado: deja que el otro salve la cara.",
       "Habla de lo que le importa al otro, no de lo que te importa a ti.",
       "Un elogio sincero y específico vale más que mil halagos vacíos.",
+    ],
+    ejercicios: [
+      { nombre: "El nombre y una pregunta", como: "Usa el nombre de la persona y hazle una pregunta sobre ella antes de contar lo tuyo. Interés real, no técnica.", cada: "diario" },
+      { nombre: "Reconoce primero", como: "Antes de corregir a alguien, di algo verdadero que hizo bien. Nadie escucha con la guardia arriba.", cada: "semanal" },
     ],
   },
   {
@@ -768,6 +920,10 @@ export const LIBROS: Libro[] = [
       "Seguridad y aventura son necesidades opuestas y ambas válidas.",
       "El erotismo es imaginación, no solo cuerpo: se cultiva.",
     ],
+    ejercicios: [
+      { nombre: "Espacio para el deseo", como: "Deja algo sin contar, sin resolver, sin compartir. El deseo necesita distancia, y la cercanía total lo apaga.", cada: "semanal" },
+      { nombre: "Qué te hace sentir viva", como: "Escribe en qué momentos te sientes más tú, sola o acompañada. Ese es el mapa que la pareja no puede adivinar.", cada: "unico" },
+    ],
   },
   {
     id: "masterylove",
@@ -782,6 +938,10 @@ export const LIBROS: Libro[] = [
       "El amor propio es el filtro: como te tratas tú, dejas que te traten.",
       "El miedo pide control; el amor da libertad.",
       "Amar sin condiciones empieza por hacerlo contigo misma.",
+    ],
+    ejercicios: [
+      { nombre: "Ni cazadora ni presa", como: "Fíjate si estás tratando de controlar o de complacer, y suelta las dos. El amor no es un trato de domesticación.", cada: "semanal" },
+      { nombre: "Tu propia herida primero", como: "Cuando algo del otro te duela de más, pregúntate qué herida vieja tocó. Lo que arde de más casi nunca es de ahora.", cada: "semanal" },
     ],
   },
 
@@ -820,6 +980,10 @@ export const LIBROS: Libro[] = [
       "Suficiente es saber cuándo parar: la codicia arruina lo ganado.",
       "Ahorra sin una razón específica: la mejor razón aparece cuando menos la esperas.",
     ],
+    ejercicios: [
+      { nombre: "Cuánto es suficiente para ti", como: "Escribe con número cuánto necesitas para vivir tranquila. Sin ese número, la meta siempre es un poco más y nunca llega.", cada: "unico" },
+      { nombre: "El costo de la tranquilidad", como: "Antes de una compra grande, calcula qué parte de tu libertad estás pagando. La riqueza es lo que no gastaste, no lo que se ve.", cada: "semanal" },
+    ],
   },
   {
     id: "padrerico",
@@ -834,6 +998,10 @@ export const LIBROS: Libro[] = [
       "Tu trabajo paga las cuentas, tus activos construyen libertad.",
       "La educación financiera importa más que el sueldo.",
       "El miedo y la avaricia manejan a quien no entiende el dinero: edúcate para elegir.",
+    ],
+    ejercicios: [
+      { nombre: "Separa activos de pasivos", como: "Haz dos columnas: lo que te trae plata cada mes y lo que te la saca. La casa nueva del vecino casi siempre está en la segunda.", cada: "unico" },
+      { nombre: "Págate primero", como: "Cuando entre plata, aparta tu parte antes de pagar cuentas. Si te pagas al final, nunca queda nada.", cada: "semanal" },
     ],
   },
   {
@@ -850,6 +1018,10 @@ export const LIBROS: Libro[] = [
       "Vive por debajo de lo que ganas, sin importar cuánto ganes.",
       "Protege tu capital: primero no perder, después crecer.",
     ],
+    ejercicios: [
+      { nombre: "La décima parte tuya", como: "De cada diez que entren, uno se queda contigo y no se toca. Es la regla más vieja y la única que nunca falla.", cada: "semanal" },
+      { nombre: "Que la plata trabaje", como: "Lo que ahorras no debe quedarse quieto: cada peso guardado tiene que estar ganando algo. Los ahorros dormidos pierden contra la inflación.", cada: "semanal" },
+    ],
   },
   {
     id: "ramit",
@@ -864,6 +1036,10 @@ export const LIBROS: Libro[] = [
       "El gran ahorro está en las 3 grandes: vivienda, transporte, comida, no en los cafés.",
       "Gasta a lo grande en lo que amas y recorta fuerte en lo que no.",
       "Empezar imperfecto hoy le gana a optimizar perfecto nunca.",
+    ],
+    ejercicios: [
+      { nombre: "Automatiza el día de pago", como: "Programa las transferencias para el día siguiente al sueldo: ahorro, inversión, cuentas. La disciplina que no depende de ti es la que dura.", cada: "unico" },
+      { nombre: "Gasta sin culpa en lo que amas", como: "Elige dos cosas que sí te dan felicidad y déjalas en el presupuesto sin culpa. Después recorta con fuerza en el resto.", cada: "unico" },
     ],
   },
   {
@@ -880,6 +1056,10 @@ export const LIBROS: Libro[] = [
       "Registrar cada peso, sin juicio, revela hacia dónde se va tu vida.",
       "Alinea tus gastos con tus valores y el dinero deja de doler.",
     ],
+    ejercicios: [
+      { nombre: "Cuántas horas cuesta", como: "Antes de comprar algo, divide el precio por lo que ganas en una hora. Después decide si vale esas horas de tu vida.", cada: "semanal" },
+      { nombre: "Sube el gráfico", como: "Anota cada mes lo que entra y lo que sale, y míralos juntos en un solo gráfico. Ver la línea es lo que cambia la conducta, no la intención.", cada: "semanal" },
+    ],
   },
   {
     id: "cerdocapitalista",
@@ -894,6 +1074,10 @@ export const LIBROS: Libro[] = [
       "Invertir no es de ricos: es como los no ricos construyen patrimonio.",
       "Conoce tus deudas al detalle: la que no ves es la que más te cuesta.",
       "Un fondo para imprevistos te da paz y te saca de los préstamos caros.",
+    ],
+    ejercicios: [
+      { nombre: "Ponle nombre a tus deudas", como: "Lista cada deuda con su interés real, de la más caliente a la más fría. La que más quema se paga primero, no la más chica.", cada: "unico" },
+      { nombre: "El fondo para el susto", como: "Junta de a poco un mes de gastos en una cuenta aparte y no la mires. Sin colchón, cualquier imprevisto se vuelve deuda.", cada: "semanal" },
     ],
   },
   {
@@ -910,6 +1094,10 @@ export const LIBROS: Libro[] = [
       "No mires ni toques tus inversiones en cada bajada: el tiempo hace el trabajo.",
       "Un buen colchón de dinero te compra el lujo más grande: opciones.",
     ],
+    ejercicios: [
+      { nombre: "Calcula tu tasa de ahorro", como: "Divide lo que guardas por lo que ganas. Ese porcentaje, y no el sueldo, es el que decide cuándo dejas de necesitar trabajar.", cada: "unico" },
+      { nombre: "Aburrido y automático", como: "Elige una inversión simple, amplia y de costo bajo, y no la toques cuando el mercado caiga. Mover la mano es lo que sale caro.", cada: "unico" },
+    ],
   },
   {
     id: "diewithzero",
@@ -925,6 +1113,10 @@ export const LIBROS: Libro[] = [
       "Optimiza para plenitud total, no para dinero total.",
       "Equilibra ahorrar y vivir en cada etapa, no todo para un futuro incierto.",
     ],
+    ejercicios: [
+      { nombre: "Experiencias con fecha", como: "Escribe tres experiencias que solo se pueden vivir en esta década de tu vida y ponles fecha. Hay cosas que a los setenta ya no se pueden hacer.", cada: "unico" },
+      { nombre: "Dar mientras sirve", como: "Si vas a ayudar a alguien con plata, hazlo cuando le cambia la vida, no cuando ya no la necesite. Una herencia a los sesenta llega tarde.", cada: "semanal" },
+    ],
   },
   {
     id: "millonariodealledo",
@@ -939,6 +1131,10 @@ export const LIBROS: Libro[] = [
       "La defensa (gastar poco) importa tanto como el ataque (ganar).",
       "La riqueza se acumula en silencio, no se exhibe.",
       "Enseñar a los hijos a depender de sí mismos vale más que dejarles plata.",
+    ],
+    ejercicios: [
+      { nombre: "Cuenta lo que se ve", como: "Suma lo que gastas al mes en cosas que solo existen para mostrar. Ahí está casi toda la distancia entre parecer rico y serlo.", cada: "semanal" },
+      { nombre: "Tu patrimonio esperado", como: "Multiplica tu edad por tu ingreso anual y divide por diez. Si tu patrimonio está bajo eso, el problema es el gasto, no el sueldo.", cada: "unico" },
     ],
   },
 
@@ -957,6 +1153,10 @@ export const LIBROS: Libro[] = [
       "No preguntes qué esperas de la vida; pregunta qué espera la vida de ti.",
       "El sufrimiento inevitable puede volverse logro cuando le encuentras un para qué.",
     ],
+    ejercicios: [
+      { nombre: "Para qué o para quién", como: "Escribe una razón concreta para sostener lo que estás pasando: una persona, un trabajo, algo que quieres terminar. El sentido es lo que sostiene lo insoportable.", cada: "semanal" },
+      { nombre: "Lo último que nadie te saca", como: "Frente a algo que no puedes cambiar, decide cómo lo vas a enfrentar. Ahí, dice el libro, está la última libertad.", cada: "semanal" },
+    ],
   },
   {
     id: "ikigai",
@@ -971,6 +1171,10 @@ export const LIBROS: Libro[] = [
       "El fluir diario vale más que las metas épicas.",
       "No te jubiles nunca de aquello que te da sentido.",
       "La comunidad y los vínculos cercanos son medicina para el cuerpo y el alma.",
+    ],
+    ejercicios: [
+      { nombre: "Las cuatro preguntas", como: "Escribe qué amas, en qué eres buena, por qué te pagarían y qué necesita el mundo. Busca dónde se cruzan al menos dos.", cada: "unico" },
+      { nombre: "Una razón para levantarte", como: "Antes de dormir, deja escrita una cosa concreta que te haga levantarte mañana. No tiene que ser grande, tiene que ser tuya.", cada: "diario" },
     ],
   },
   {
@@ -987,6 +1191,10 @@ export const LIBROS: Libro[] = [
       "Inspirar dura; manipular con precio o miedo se agota rápido.",
       "Rodéate de quienes creen lo que tú crees: ahí nace la lealtad.",
     ],
+    ejercicios: [
+      { nombre: "Escribe tu porqué", como: "Completa la frase: hago esto porque creo que... Si suena a lo que hace todo el mundo, sigue escribiendo.", cada: "unico" },
+      { nombre: "Cuenta el porqué primero", como: "La próxima vez que expliques lo que haces, empieza por lo que crees y deja el qué para el final. La gente se mueve por el porqué.", cada: "semanal" },
+    ],
   },
   {
     id: "alquimista",
@@ -1001,6 +1209,10 @@ export const LIBROS: Libro[] = [
       "El miedo a sufrir es peor que el sufrimiento.",
       "Escucha las señales: el mundo te habla si prestas atención.",
       "Realizar tu leyenda personal es tu única obligación real.",
+    ],
+    ejercicios: [
+      { nombre: "Nombra tu tesoro", como: "Escribe qué es lo que buscarías si supieras que puedes. La mayoría no falla en el camino, falla en no nombrarlo nunca.", cada: "unico" },
+      { nombre: "Un paso al día hacia allá", como: "Un solo paso pequeño en dirección a eso, cada día, aunque no sepas la ruta completa. El camino se ve caminando.", cada: "diario" },
     ],
   },
   {
@@ -1017,6 +1229,10 @@ export const LIBROS: Libro[] = [
       "Crea por el placer de crear, no por el resultado ni el aplauso.",
       "No le cargues a tu arte la obligación de pagar las cuentas: déjalo jugar.",
     ],
+    ejercicios: [
+      { nombre: "Hazlo por curiosidad", como: "Sigue una curiosidad chica esta semana, sin pedirle que se convierta en un proyecto ni en un ingreso. La curiosidad es la puerta cuando la pasión no aparece.", cada: "semanal" },
+      { nombre: "El miedo va de pasajero", como: "Cuando el miedo aparezca, dile que puede venir pero no maneja. No hay que esperar valentía para empezar.", cada: "diario" },
+    ],
   },
   {
     id: "elemento",
@@ -1032,6 +1248,10 @@ export const LIBROS: Libro[] = [
       "La educación estándar mata la creatividad; recupérala a propósito.",
       "Amar lo que haces cambia por completo tu relación con el tiempo y la energía.",
     ],
+    ejercicios: [
+      { nombre: "Cuándo se te pasa la hora", como: "Anota en qué actividades pierdes la noción del tiempo. Ahí está la pista de lo tuyo, mucho más que en lo que te sale bien.", cada: "semanal" },
+      { nombre: "Busca a tu tribu", como: "Encuentra un grupo, aunque sea de internet, que haga eso que te gusta. Nadie descubre lo suyo completamente solo.", cada: "unico" },
+    ],
   },
   {
     id: "designlife",
@@ -1046,6 +1266,11 @@ export const LIBROS: Libro[] = [
       "Prueba en pequeño antes de saltar en grande: conversaciones y experimentos.",
       "Sigue la energía: anota cuándo te sientes viva y ahí hay pistas.",
       "No se trata de encontrar tu pasión de un golpe, sino de construirla probando.",
+    ],
+    ejercicios: [
+      { nombre: "Tus tres vidas", como: "Escribe tres versiones de los próximos cinco años: la que va en camino, la que harías si esa se cayera, y la que harías si el dinero y la opinión no importaran.", cada: "unico" },
+      { nombre: "Diario de energía", como: "Durante una semana anota qué actividades te dieron energía y cuáles te la quitaron. Ese registro decide mejor que cualquier test vocacional.", cada: "semanal" },
+      { nombre: "Prototipa antes de saltar", como: "Antes de cambiar de rumbo, prueba una versión chica: conversa con alguien que ya lo hace, toma un curso, hazlo un fin de semana.", cada: "semanal" },
     ],
   },
   {
@@ -1100,6 +1325,10 @@ export const LIBROS: Libro[] = [
       "Cómo piensas de ti define cómo te tratan los demás.",
       "Rodéate de gente que piensa en grande: el ambiente contagia.",
     ],
+    ejercicios: [
+      { nombre: "Cúrate de la excusitis", como: "Cuando aparezca la excusa de salud, edad, suerte o inteligencia, escríbela y busca a alguien que llegó igual con esa misma condición.", cada: "semanal" },
+      { nombre: "Piensa como si ya", como: "Antes de una reunión o entrevista, párate, camina y habla como la persona que ya está donde quieres llegar. La conducta arrastra a la confianza.", cada: "diario" },
+    ],
   },
 
   // ---------- Espiritualidad ----------
@@ -1117,6 +1346,10 @@ export const LIBROS: Libro[] = [
       "Observar una emoción sin nombrarla ni huir la disuelve.",
       "La mente es una gran herramienta y una pésima dueña: úsala, no al revés.",
     ],
+    ejercicios: [
+      { nombre: "Tres respiraciones sin historia", como: "Tres respiraciones prestando atención solo a la sensación del aire. Es la manera más corta de salir de la cabeza y volver al momento.", cada: "diario" },
+      { nombre: "Escucha la voz", como: "Cuando la mente empiece a hablar sin parar, escúchala como si fuera una radio en otra pieza. El que escucha no es la voz.", cada: "diario" },
+    ],
   },
   {
     id: "yogui",
@@ -1131,6 +1364,10 @@ export const LIBROS: Libro[] = [
       "Los maestros aparecen cuando la búsqueda es sincera.",
       "La ciencia y la espiritualidad no se contradicen: se completan.",
       "La calma interior no depende de las circunstancias: se cultiva por dentro.",
+    ],
+    ejercicios: [
+      { nombre: "Un rato de silencio antes del día", como: "Diez minutos sentada en silencio antes de tocar el teléfono. La disciplina diaria es el corazón entero del libro.", cada: "diario" },
+      { nombre: "Anota lo que no se explica", como: "Guarda en el diario las coincidencias y los encuentros raros de la semana, sin apurarte a explicarlos. Verlos juntos cambia cómo miras.", cada: "semanal" },
     ],
   },
   {
@@ -1147,6 +1384,10 @@ export const LIBROS: Libro[] = [
       "Vivir con propósito le da sentido hasta a los días grises.",
       "El tiempo es tu bien más valioso: gástalo en lo que de verdad importa.",
     ],
+    ejercicios: [
+      { nombre: "La hora que es tuya", como: "Reserva la primera hora del día para ti: cuerpo, silencio, lectura. Antes de que el día empiece a pedirte cosas.", cada: "diario" },
+      { nombre: "Vive como si te quedara poco", como: "Pregúntate qué harías distinto hoy si te quedara un año. Después haz una de esas cosas esta semana.", cada: "semanal" },
+    ],
   },
   {
     id: "almaliberada",
@@ -1161,6 +1402,10 @@ export const LIBROS: Libro[] = [
       "Decide no cerrarte: el corazón abierto es una práctica, no un estado.",
       "Deja pasar lo que llega sin aferrarte ni empujarlo: solo obsérvalo.",
       "La paz aparece cuando dejas de exigirle a la vida que sea distinta.",
+    ],
+    ejercicios: [
+      { nombre: "Suéltalo en el momento", como: "Cuando algo te apriete el pecho, en vez de analizarlo, relaja el cuerpo y déjalo pasar. Se suelta soltando, no entendiendo.", cada: "diario" },
+      { nombre: "Quién está mirando", como: "Varias veces al día, pregúntate quién es el que está notando todo esto. Ese lugar es más tranquilo que cualquier pensamiento.", cada: "diario" },
     ],
   },
   {
@@ -1177,6 +1422,10 @@ export const LIBROS: Libro[] = [
       "El conocimiento se transmite; la sabiduría, no.",
       "Cada extravío del camino también enseña: nada se pierde del todo.",
     ],
+    ejercicios: [
+      { nombre: "Escucha el río", como: "Siéntate cinco minutos frente a algo que se mueve: agua, árboles, gente pasando. Sin hacer nada, solo escuchando.", cada: "semanal" },
+      { nombre: "Lo que aprendiste tú", como: "Escribe una cosa que solo entendiste viviéndola, que nadie te pudo enseñar. Ese es el punto del libro completo.", cada: "unico" },
+    ],
   },
   {
     id: "derrumba",
@@ -1191,6 +1440,10 @@ export const LIBROS: Libro[] = [
       "La esperanza y el miedo son la misma moneda: suelta ambas y respira.",
       "Quedarte con la incomodidad, sin arreglarla al toque, te hace más fuerte.",
       "La compasión nace justo donde tocaste tu propio dolor.",
+    ],
+    ejercicios: [
+      { nombre: "Quédate un minuto", como: "Cuando venga la angustia, quédate un minuto sin arreglarla, sin distraerte y sin explicártela. Solo un minuto, y ahí ya cambió algo.", cada: "diario" },
+      { nombre: "No estás sola en esto", como: "Cuando algo te duela, acuérdate de que en este mismo momento hay miles de personas sintiendo exactamente eso. El dolor compartido pesa distinto.", cada: "diario" },
     ],
   },
   {
@@ -1207,6 +1460,10 @@ export const LIBROS: Libro[] = [
       "Volver al presente una y otra vez es toda la práctica.",
       "Cuidar tu paz interior es también cuidar la del mundo.",
     ],
+    ejercicios: [
+      { nombre: "Respirando, sé que respiro", como: "Al caminar, di por dentro: inspirando sé que inspiro, espirando sonrío. Convierte el traslado en práctica.", cada: "diario" },
+      { nombre: "El teléfono como campana", como: "Elige un sonido de tu día, el teléfono, una puerta, el hervidor, y cada vez que suene respira una vez completa. La atención se entrena en lo cotidiano.", cada: "diario" },
+    ],
   },
   {
     id: "lobos",
@@ -1222,6 +1479,10 @@ export const LIBROS: Libro[] = [
       "Guarda tu fuego creativo de quienes lo apagan: no todo se comparte.",
       "Escuchar tu voz instintiva es un acto de sanación y de poder.",
     ],
+    ejercicios: [
+      { nombre: "Lo que te robaron", como: "Escribe qué parte tuya guardaste para que te aceptaran: la voz fuerte, la rabia, el cuerpo, el arte. Nombrarla es el primer paso para volver a buscarla.", cada: "unico" },
+      { nombre: "Tiempo salvaje", como: "Un rato a la semana sola en algo que no le sirve a nadie: caminar sin rumbo, cantar, escribir sin mostrar. El alma se alimenta de lo inútil.", cada: "semanal" },
+    ],
   },
   {
     id: "profeta",
@@ -1236,6 +1497,10 @@ export const LIBROS: Libro[] = [
       "La alegría y la tristeza beben del mismo pozo.",
       "En la cercanía, deja espacios: los pilares del templo se sostienen separados.",
       "Dar de lo que tienes es poco; dar de ti misma es dar de verdad.",
+    ],
+    ejercicios: [
+      { nombre: "Lee una página en voz alta", como: "Elige un capítulo, del amor, del trabajo, de los hijos, y léelo en voz alta despacio. Está escrito para sonar, no para estudiarse.", cada: "semanal" },
+      { nombre: "Escribe tu propia respuesta", como: "Después de leer un capítulo, escribe qué dirías tú si te preguntaran lo mismo. Ahí aparece lo que de verdad piensas.", cada: "semanal" },
     ],
   },
 
