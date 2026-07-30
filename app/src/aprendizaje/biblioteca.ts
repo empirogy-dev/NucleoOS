@@ -35,6 +35,10 @@ export interface Libro {
   via: ViaLibro;
   emoji: string;
   porQue: string;
+  /** El libro contado en varios párrafos, para leer sin tenerlo. Aparece al
+   *  abrir la tarjeta, así la cuadrícula se mantiene liviana. Los párrafos
+   *  se separan con un salto de línea doble. */
+  resumen?: string;
   ideas: string[];
   /** Los ejercicios que trae el libro, adaptados para hacerlos hoy. */
   ejercicios?: EjercicioLibro[];
@@ -65,6 +69,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F9E0}",
     porQue: "Los dos m\u00e9dicos que llevan d\u00e9cadas estudiando el TDAH desarman el mito de que es un defecto. Explican el cerebro que corre como un Ferrari con frenos de bicicleta, y por qu\u00e9 la clave no es forzarte m\u00e1s sino aprender a manejar tus frenos. Trae la ciencia m\u00e1s nueva y, sobre todo, esperanza concreta. EL libro para entenderte sin patologizarte.",
+    resumen:
+      "Hallowell y Ratey son dos psiquiatras que llevan más de treinta años tratando el TDAH, y los dos lo tienen. Este libro es su puesta al día: lo que la ciencia entendió en las últimas dos décadas, contado sin lenguaje clínico y sin tratarte como un caso. Empiezan proponiendo dejar de llamarlo déficit, porque el problema nunca fue que te falte atención, sino que no la puedes dirigir cuando quieres.\n\nEl centro del libro es una imagen que se te queda: un motor de Ferrari con frenos de bicicleta. Tu cerebro no está lento ni averiado, está corriendo más rápido de lo que puede frenar. Los autores explican qué pasa físicamente cuando la mente se va a esa red interna donde vive el rumiar, y por qué ahí aparecen la culpa, la vergüenza y las historias oscuras que te cuentas de ti misma a las tres de la mañana.\n\nLa segunda mitad son los frenos, y no es lo que esperarías. Ejercicio, porque el movimiento le da al cerebro lo que ningún truco de organización puede darle. Conexión humana real, que ellos llaman la otra vitamina. Estructura afuera de tu cabeza, porque adentro no se sostiene. Y la medicación tratada con honestidad, sin promesa y sin miedo. Es el libro para leer primero, cuando lo que necesitas es entender qué tienes y que hay salida.",
     ideas: [
       "El TDAH es un rasgo con superpoderes y costos, no un defecto de car\u00e1cter.",
       "El ejercicio es medicina de primera l\u00ednea para este cerebro: mueve el cuerpo antes de exigirte foco.",
@@ -85,6 +91,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F9F0}",
     porQue: "Nace del canal de YouTube m\u00e1s querido sobre TDAH, escrito por alguien que lo vive, no solo lo estudia. Es una caja de herramientas pr\u00e1ctica, c\u00e1lida y sin verg\u00fcenza, con trucos que de verdad funcionan para un cerebro que se distrae, se agobia y olvida. Te trata como aliada, no como un problema a arreglar.",
+    resumen:
+      "Jessica McCabe fue la niña de la que todos esperaban mucho y la adulta que a los treinta y dos años tenía un matrimonio roto, un trabajo perdido y ninguna explicación. En vez de esconderlo, abrió un canal de YouTube para investigar en público qué le pasaba a su propio cerebro. Ese canal se volvió el lugar donde millones de personas se entendieron por primera vez, y este libro es todo eso ordenado.\n\nSu idea central es simple y cambia todo: tu cerebro no está roto, está construido distinto, y los consejos que le sirven a los demás fallan contigo porque están hechos para otra máquina. Explica que tu sistema nervioso no se mueve por importancia sino por interés, urgencia, novedad y desafío, y que pedirle disciplina a un cerebro así es como pedirle a alguien miope que se concentre más para ver.\n\nDe ahí sale su concepto más útil, el muro de lo terrible: esa pared invisible que se levanta frente a una tarea de dos minutos y está hecha de capas de vergüenza, intentos fallidos y miedo al juicio. McCabe enseña a bajar cada capa en vez de tratar de saltar el muro con fuerza de voluntad. El resto del libro son herramientas concretas para memoria, tiempo, emociones y desorden, todas escritas con la calidez de alguien que estuvo exactamente donde tú estás.",
     ideas: [
       "Trabaja con tu cerebro, no contra \u00e9l: si te funciona raro pero funciona, es v\u00e1lido.",
       "Externaliza todo: tu cerebro es para tener ideas, no para archivarlas.",
@@ -105,6 +113,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F697}",
     porQue: "El cl\u00e1sico que puso el TDAH adulto en el mapa cuando casi nadie lo nombraba. Si TDAH 2.0 es el resumen moderno, este es el fundamento, lleno de casos reales que se sienten como mirarte al espejo. Te explica por qu\u00e9 toda la vida sentiste que algo no calzaba, y que eso tiene nombre y tiene salida.",
+    resumen:
+      "En 1994, cuando casi nadie aceptaba que el TDAH existiera en adultos, estos dos médicos publicaron el libro que abrió la conversación. Antes de esto, un adulto que no podía terminar nada era simplemente flojo, desordenado o poco brillante. Después de esto, tuvo un nombre, una explicación y un tratamiento. Vale leerlo aunque haya libros más nuevos, porque este es el que puso los cimientos.\n\nLo que lo hace distinto son los casos. Página tras página aparecen personas reales: el ejecutivo brillante que no logra abrir el correo, la mujer que lleva veinte años sintiendo que finge ser adulta, el niño al que todos le dijeron que podría si quisiera. Leerlos produce un efecto raro y necesario, el de mirarte en un espejo y darte cuenta de que lo tuyo tiene forma, que no eres un caso único ni un desastre inexplicable.\n\nLos autores describen las distintas caras del TDAH, incluida la que no se mueve ni interrumpe y por eso pasa décadas sin diagnóstico, y explican qué esperar de la evaluación, la terapia y el tratamiento. Pero lo que de verdad te llevas es más simple: la sensación de que toda esa vida en la que sentiste que algo no calzaba tiene una razón, y que la razón no eres tú siendo insuficiente.",
     ideas: [
       "El diagn\u00f3stico es un alivio, no una etiqueta: por fin todo tiene explicaci\u00f3n.",
       "El TDAH adulto existe y se ve distinto al de los ni\u00f1os.",
@@ -124,6 +134,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F32B}",
     porQue: "Mat\u00e9 mira el TDAH con una compasi\u00f3n poco com\u00fan: no como una falla gen\u00e9tica a secas, sino como una historia que tambi\u00e9n se puede sanar. Une la neurociencia con la vida emocional temprana y abre una puerta distinta, m\u00e1s humana. Controversial para algunos, liberador para quien carg\u00f3 culpa durante a\u00f1os.",
+    resumen:
+      "Gabor Maté es médico, tiene TDAH y sus tres hijos también. Escribió este libro después de años de tratar adicciones y trauma en el barrio más duro de Vancouver, y desde ahí propone una mirada que no encontrarás en los manuales: el TDAH no como una avería genética a secas, sino como la forma en que un cerebro muy sensible se desarrolló en un ambiente que no le pudo dar toda la calma que necesitaba.\n\nSu argumento es que los primeros años importan más de lo que la medicina reconoce. No dice que los padres tengan la culpa, y esto es clave: dice que la sintonía emocional temprana moldea circuitos que después se ven como falta de atención, y que un padre agotado, deprimido o sobrepasado no eligió nada de eso. Es la parte que algunos investigadores discuten, así que conviene leerla como una lente más y no como la única verdad.\n\nLo que sí es indiscutible es el efecto que produce. Para quien cargó durante años la sensación de ser difícil, exagerada o defectuosa, Maté ofrece algo que casi ningún libro de TDAH da: compasión de verdad, y la idea de que el cerebro sigue cambiando, que nada quedó cerrado en la infancia. Termina enseñando a hacerte de madre a ti misma, con paciencia y sin el látigo de siempre.",
     ideas: [
       "La atenci\u00f3n se desarrolla en el v\u00ednculo: sanar relaciones ayuda a sanar el foco.",
       "La autocomprensi\u00f3n desarma la verg\u00fcenza acumulada de a\u00f1os.",
@@ -143,6 +155,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F6E0}",
     porQue: "Rosier explica el TDAH desde las emociones, que es donde de verdad duele: la culpa, la verg\u00fcenza y el ciclo de prometer y no cumplir. Le pone palabras a la monta\u00f1a rusa interna y entrega herramientas concretas para bajarse de ella. Se siente escrito por alguien que estuvo justo donde t\u00fa est\u00e1s.",
+    resumen:
+      "Tamara Rosier trabaja como coach de personas con TDAH y tiene TDAH, y notó algo que los libros de organización se saltan: el problema más grande de tu día casi nunca es el calendario, son las emociones. La culpa de la mañana, la vergüenza de la tarde, la rabia con una misma a las nueve de la noche. Este libro empieza justo ahí, en la parte que duele.\n\nDescribe la montaña rusa por dentro con una precisión incómoda. El ciclo de prometer con toda el alma y no cumplir, y cómo cada vuelta deja un depósito de vergüenza que hace más difícil la siguiente. La forma en que un comentario chico te desarma el día entero, porque tu sistema emocional reacciona antes y más fuerte. Y esa voz que traduce todo a lo mismo, que es que hay algo mal contigo.\n\nDesde ahí entrega herramientas que sirven de verdad. Aprender a leer con qué energía llegaste al día y ordenar las tareas según eso en vez de según la lista. Distinguir la tarea del sentimiento que trae, porque casi nunca cuesta el trabajo, cuesta el aburrimiento o el miedo. Y cortar el ciclo de la vergüenza antes de que arrastre el día completo. Se siente escrito por alguien que estuvo exactamente donde tú estás, y eso se nota en cada página.",
     ideas: [
       "El TDAH es un problema de regulaci\u00f3n emocional tanto como de atenci\u00f3n.",
       "Los cuadrantes de energ\u00eda: no toda hora del d\u00eda sirve para todo.",
@@ -162,6 +176,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F451}",
     porQue: "El TDAH en mujeres se ve distinto y se diagnostica tarde, despu\u00e9s de a\u00f1os de sentirse demasiado o muy poco. Este libro es para ti espec\u00edficamente: combina teor\u00eda y ejercicios para dejar de esconderte y empezar a vivir en grande, tal como eres. Menos autoayuda gen\u00e9rica, m\u00e1s permiso para ocupar tu espacio.",
+    resumen:
+      "El TDAH en mujeres se ve distinto y se diagnostica tarde, muchas veces pasados los cuarenta, después de años de escuchar que eres desordenada, dramática o demasiado. Sari Solden lleva décadas trabajando exactamente con esas mujeres, y junto a Michelle Frank escribió este libro que no es un manual de organización sino algo bastante más profundo.\n\nLa tesis es que el daño más grande no lo hicieron los síntomas, lo hizo el esfuerzo de esconderlos. Décadas compensando en silencio, trabajando el doble para parecer normal, evitando todo lo que podía delatarte, guardando la parte tuya que era demasiado. Ese trabajo invisible es el que te dejó agotada, y es también el que nadie te agradeció nunca porque nadie lo vio.\n\nEl libro está armado como un taller, con ejercicios de escritura en cada capítulo, y va en un orden claro: entender tu cerebro, revisar la historia que te contaste sobre ti, soltar la vergüenza, y después decidir cómo quieres vivir en grande y sin esconderte. No promete que te vuelvas ordenada. Promete algo mejor, que es dejar de gastar la vida disimulando quién eres.",
     ideas: [
       "Deja de esconder tu diferencia: la energ\u00eda de camuflarte te est\u00e1 costando la vida.",
       "Las mujeres con TDAH cargan expectativas de g\u00e9nero imposibles.",
@@ -181,6 +197,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{23F3}",
     porQue: "El mejor libro sobre procrastinaci\u00f3n porque la trata como lo que es, miedo, y no como flojera. Fiore muestra que postergas para protegerte del agobio, y ofrece un m\u00e9todo amable para volver a moverte: bloques cortos, descanso garantizado y una relaci\u00f3n nueva con el trabajo. Calza perfecto con tus bloques de foco.",
+    resumen:
+      "Neil Fiore era psicólogo en Berkeley y notó que sus pacientes más brillantes eran los que más postergaban. De ahí salió la idea que hace grande a este libro: la procrastinación no es flojera ni falta de carácter, es un mecanismo de protección. Postergas porque en algún nivel esa tarea representa una amenaza, al juicio, al fracaso, a descubrir que no eres suficiente.\n\nSu invento más útil se llama programación inversa, y da vuelta el calendario completo. En vez de llenarlo de trabajo y meter el descanso en lo que sobre, primero agendas el descanso, el ejercicio, las comidas y lo que disfrutas. El trabajo entra después, en lo que queda. Suena al revés y funciona por una razón fina: cuando el juego está garantizado, el trabajo deja de ser la cosa que te robó la vida, y sin esa amenaza la resistencia baja sola.\n\nLo demás es igual de práctico. Bloques cortos de treinta minutos en los que solo hay que empezar, con permiso explícito de que salga mal. La costumbre de preguntarte cuándo puedes empezar en vez de cuándo tienes que terminar. Y una regla que a un cerebro TDAH le calza perfecto, que es no dejar nunca el trabajo en un punto difícil, porque el yo de mañana necesita una entrada fácil.",
     ideas: [
       "Procrastinar es protegerte del agobio, no ser floja.",
       "Bloques cortos con descansos ganados: tu pomodoro es esto.",
@@ -200,6 +218,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F5C2}",
     porQue: "Organizaci\u00f3n de la casa y de la vida escrita por una mujer con TDAH que prob\u00f3 todo lo que no funciona antes de dar con lo que s\u00ed. Cero sistemas pensados para cerebros neurot\u00edpicos: ac\u00e1 los m\u00e9todos aguantan el desorden real, los d\u00edas malos y la memoria que falla. Pr\u00e1ctico, honesto y sin culpa.",
+    resumen:
+      "Jaclyn Paul escribe desde su casa real, no desde una casa de revista. Tiene TDAH, probó durante años todos los sistemas de organización que existen y los vio fallar uno por uno, hasta que entendió por qué: están diseñados para cerebros que recuerdan, que ven el desorden acumularse y que no tienen días en que la energía simplemente no llega.\n\nSu punto de partida es liberador. El desorden de tu casa no es un defecto moral ni una prueba de que eres una adulta fallida, es un síntoma, y los síntomas se manejan con sistemas, no con culpa. De ahí construye métodos que aguantan la vida real: un lugar fijo para cada cosa que siempre pierdes, una sola bandeja de entrada en vez de cinco montones, rutinas tan cortas que sobreviven a un día malo.\n\nLo que más se agradece es la honestidad sobre las recaídas. Paul asume que la casa se va a desordenar de nuevo, que vas a abandonar el sistema y que vas a volver, y diseña todo pensando en eso en vez de pedirte una constancia que no tienes. Es el libro práctico para cuando ya entendiste tu cerebro y lo que necesitas ahora es que la casa deje de ganarte.",
     ideas: [
       "El sistema perfecto es el que sigues usando en tres meses.",
       "Todo necesita UN lugar visible: lo guardado desaparece del universo.",
@@ -219,6 +239,8 @@ export const LIBROS: Libro[] = [
     via: "tdah",
     emoji: "\u{1F526}",
     porQue: "La atenci\u00f3n tratada como un recurso que se administra: cu\u00e1ndo enfocarla en una sola cosa y cu\u00e1ndo soltarla a prop\u00f3sito para que la mente divague, que tambi\u00e9n es productivo. Para un cerebro TDAH es lectura clave, porque tu hiperfoco deja de ser un accidente y pasa a algo que puedes invitar. Ciencia pr\u00e1ctica sobre tu bien m\u00e1s escaso.",
+    resumen:
+      "Chris Bailey se dedicó un año entero a experimentar consigo mismo sobre productividad, y de ahí salió este libro sobre lo que llama tu recurso más escaso, que no es el tiempo sino la atención. Su idea de fondo es que la atención no se gestiona con más esfuerzo, se gestiona eligiendo a qué la apuntas y cuánta le queda disponible.\n\nLa primera mitad es el hiperfoco, que él define no como el accidente que te pasa a veces sino como un estado que se puede invitar: una sola tarea, un espacio sin interrupciones y una intención dicha antes de empezar. Explica por qué tu memoria de trabajo se llena con cuatro cosas y todo lo que llega después bota algo, y por qué cada notificación cuesta bastante más de lo que dura.\n\nLa segunda mitad es la parte que casi nadie cuenta y que a un cerebro TDAH le sirve todavía más: soltar la atención a propósito. Caminar sin pódcast, lavar los platos sin nada de fondo, dejar la mente vagar. Bailey muestra que ahí es donde el cerebro conecta ideas viejas y aparecen las soluciones que no llegan trabajando. Para ti eso vale doble, porque convierte lo que siempre te dijeron que era distracción en una herramienta que puedes usar cuando quieras.",
     ideas: [
       "Tu atenci\u00f3n cabe una sola cosa compleja a la vez: el\u00edgela a prop\u00f3sito.",
       "El modo difuso (ducha, caminata) resuelve lo que el foco no pudo.",

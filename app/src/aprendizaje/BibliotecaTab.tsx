@@ -65,7 +65,9 @@ export function BibliotecaTab() {
   }
 
   async function eliminarPropio(l: Libro) {
-    if (!window.confirm(`¿Sacar "${l.titulo}" de tu biblioteca?`)) return;
+    if (!window.confirm(`${tr("¿Sacar este libro de tu biblioteca?")}
+
+${tr(l.titulo)}`)) return;
     await deleteLibroPropio(l.id);
     marcar(l.id, null);
     void cargarPropios();
@@ -82,16 +84,16 @@ export function BibliotecaTab() {
     <>
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap" }}>
         <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: "62ch", flex: "1 1 300px" }}>
-          {todos.length} {tr("libros elegidos por impacto real para un cerebro TDAH, no por moda. Abre uno y llévate sus ideas aun")}que nunca lo compres.
+          {todos.length} {tr("libros elegidos por impacto real para un cerebro TDAH, no por moda. Abre uno y llévate sus ideas aunque nunca lo compres.")}
           {(leidos > 0 || quiero > 0) && (
             <>
-              {" "}{tr("Llevas")} <b style={{ color: "var(--ink)" }}>{leidos} {leidos === 1 ? tr("leído") : tr("leídos")}</b> y <b style={{ color: "var(--ink)" }}>{quiero}</b> en tu lista.
+              {" "}{tr("Llevas")} <b style={{ color: "var(--ink)" }}>{leidos} {leidos === 1 ? tr("leído") : tr("leídos")}</b> {tr("y")} <b style={{ color: "var(--ink)" }}>{quiero}</b> {tr("en tu lista.")}
             </>
           )}
         </p>
         <button className="btn primary" onClick={() => setModal(true)}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          Agregar libro
+          {tr("Agregar libro")}
         </button>
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
@@ -99,13 +101,13 @@ export function BibliotecaTab() {
           <button key={v.key} className={"ftab" + (via === v.key ? " active" : "")}
             style={{ padding: "6px 13px", fontSize: 12.5 }}
             onClick={() => setVia(v.key)}>
-            {v.label}
+            {tr(v.label)}
           </button>
         ))}
         <button className={"ftab" + (via === "milista" ? " active" : "")}
           style={{ padding: "6px 13px", fontSize: 12.5 }}
           onClick={() => setVia("milista")}>
-          📖 Mi lista{quiero > 0 ? ` (${quiero})` : ""}
+          📖 {tr("Mi lista")}{quiero > 0 ? ` (${quiero})` : ""}
         </button>
         <button className={"ftab" + (via === "leidos" ? " active" : "")}
           style={{ padding: "6px 13px", fontSize: 12.5 }}
@@ -170,7 +172,7 @@ function LibroCard({ libro, estado, onMarcar, onEliminar }: {
         <span style={{ fontSize: 22, lineHeight: 1 }}>{libro.emoji}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <b style={{ fontSize: 14.5, display: "block" }}>{tr(libro.titulo)}</b>
-          <span style={{ fontSize: 12, color: "var(--muted)" }}>{libro.autor}{onEliminar ? " · tuyo" : ""}</span>
+          <span style={{ fontSize: 12, color: "var(--muted)" }}>{libro.autor}{onEliminar ? ` · ${tr("tuyo")}` : ""}</span>
         </span>
         {open ? <ChevronDown size={15} style={{ color: "var(--muted)", flexShrink: 0 }} /> : <ChevronRight size={15} style={{ color: "var(--muted)", flexShrink: 0 }} />}
       </button>
@@ -179,6 +181,19 @@ function LibroCard({ libro, estado, onMarcar, onEliminar }: {
       </p>
       {open && (
         <div style={{ marginTop: 8, borderTop: "1px solid var(--line-soft)", paddingTop: 8 }}>
+          {libro.resumen && (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 5 }}>
+                {tr("El libro en corto")}
+              </p>
+              {/* Un párrafo por bloque: así se lee como un texto y no como una nota. */}
+              {tr(libro.resumen).split("\n\n").map((parrafo) => (
+                <p key={parrafo.slice(0, 24)} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 8 }}>
+                  {parrafo}
+                </p>
+              ))}
+            </div>
+          )}
           {libro.ideas.length > 0 && (
             <>
               <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 4 }}>
@@ -228,7 +243,7 @@ function LibroCard({ libro, estado, onMarcar, onEliminar }: {
           style={estado === "quiero" ? { background: "var(--accent-wash)", borderColor: "transparent", color: "var(--accent-ink)" } : undefined}
           onClick={() => onMarcar(libro.id, estado === "quiero" ? null : "quiero")}
         >
-          {estado === "quiero" ? "📖 En tu lista" : "Lo quiero leer"}
+          {estado === "quiero" ? `📖 ${tr("En tu lista")}` : tr("Lo quiero leer")}
         </button>
         <button
           className="pomo-chip"
@@ -298,7 +313,7 @@ function AgregarLibroModal({ faltaMigracion, onClose, onSaved }: { faltaMigracio
       onSaved();
     } catch (ex) {
       if (ex instanceof TablesMissingError) {
-        setErr("Para tus propios libros falta la migración 0042 (supabase/migrations/0042_libros_propios.sql). Córrela en el SQL Editor y vuelve a guardar.");
+        setErr(tr("Para tus propios libros falta la migración 0042 (supabase/migrations/0042_libros_propios.sql). Córrela en el SQL Editor y vuelve a guardar."));
       } else {
         setErr(ex instanceof Error ? ex.message : String(ex));
       }
@@ -329,7 +344,7 @@ function AgregarLibroModal({ faltaMigracion, onClose, onSaved }: { faltaMigracio
             </button>
           )}
           <div className="field"><label>{tr("Vía de la vida que toca")}</label>
-            <Selector value={viaSel} ariaLabel="Vía del libro" onChange={setViaSel}
+            <Selector value={viaSel} ariaLabel={tr("Vía del libro")} onChange={setViaSel}
               opciones={VIAS_LIBRO.map((v) => ({ value: v.key, label: v.label }))} /></div>
           <div className="field"><label>{tr("Por qué leerlo (opcional)")}</label>
             <textarea className="vision-edit" rows={3} value={porQue} onChange={(e) => setPorQue(e.target.value)}
@@ -337,7 +352,7 @@ function AgregarLibroModal({ faltaMigracion, onClose, onSaved }: { faltaMigracio
           {ideas.length > 0 && (
             <div style={{ marginBottom: 12 }}>
               <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 4 }}>
-                Ideas para llevarte
+                {tr("Ideas para llevarte")}
               </p>
               {ideas.map((i) => (
                 <p key={i} style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.5, padding: "4px 0" }}>💡 {tr(i)}</p>
