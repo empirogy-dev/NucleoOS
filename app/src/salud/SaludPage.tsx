@@ -47,6 +47,12 @@ import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
 
+/** El día en palabras, para cuando estás registrando un día pasado. */
+function fmtDiaLargo(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(locDeIdioma(), { weekday: "long", day: "numeric", month: "long" });
+}
+
 function locDeIdioma(): string {
   const i = idiomaActual();
   return i === "en" ? "en-US" : i === "pt" ? "pt-BR" : "es-CL";
@@ -274,10 +280,10 @@ export function SaludPage() {
           )}
           {tab === "nutricion" && (
             <NutricionTab energy={energy} meals={meals} metaProt={metaProt} profile={profile} quemadasHoy={kcalHoy} edad={edad}
-              irAClinica={() => setTab("clinica")} onChanged={() => void reload()} />
+              fecha={hoy} esHoy={esHoy} irAClinica={() => setTab("clinica")} onChanged={() => void reload()} />
           )}
           {tab === "movimiento" && <MovimientoTab exercise={exercise} pesoKg={pesoKg} onChanged={() => void reload()} />}
-          {tab === "sueno" && <SuenoTab routine={routine} onChanged={() => void reload()} />}
+          {tab === "sueno" && <SuenoTab routine={routine} fecha={hoy} onChanged={() => void reload()} />}
           {tab === "ciclo" && <CicloTab />}
           {tab === "recuperacion" && <RecuperacionTab />}
           {tab === "clinica" && <ClinicaTab onProfileSaved={() => { void getHealthProfile().then(setProfile).catch(() => undefined); }} />}
@@ -490,18 +496,23 @@ function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: 
 }
 
 // ---------- Nutrición ----------
-function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irAClinica, onChanged }: {
+function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, fecha, esHoy, irAClinica, onChanged }: {
   energy: EnergyLog[];
   meals: Meal[];
   metaProt: number;
   profile: HealthProfile | null;
   quemadasHoy: number;
   edad: number | null;
+  /** El día que se está registrando: hoy, o el día pasado elegido en Ajustes. */
+  fecha: string;
+  esHoy: boolean;
   irAClinica: () => void;
   onChanged: () => void;
 }) {
   const { t: tr } = useIdioma();
-  const hoy = hoyLocal();
+  // Antes esta pestaña leía siempre el día de hoy, así que al registrar un día
+  // pasado el plato se guardaba bien pero no aparecía en ninguna parte.
+  const hoy = fecha;
   const tot = totalesDia(meals, hoy);
   const comidasHoy = meals.filter((m) => m.date === hoy);
   const [editando, setEditando] = useState<Meal | null>(null);
@@ -520,17 +531,20 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, irA
     <OrdenGrid clave="energia-nutricion" bloques={[
       // La foto del plato vive también aquí: es donde uno viene a registrar
       // lo que comió, así no hay que saltar a la pestaña Hoy.
-      { id: "plato", el: <PlatoCard onSaved={onChanged} /> },
+      { id: "plato", el: <PlatoCard fecha={hoy} esHoy={esHoy} onSaved={onChanged} /> },
       { id: "balance", el: (
-        <BalanceCalorico profile={profile} edad={edad} comido={tot.kcal} quemadas={quemadasHoy} irAClinica={irAClinica} />
+        <BalanceCalorico profile={profile} edad={edad} comido={tot.kcal} quemadas={quemadasHoy} esHoy={esHoy} irAClinica={irAClinica} />
       ) },
-      { id: "ayuno", el: <AyunoCard meals={meals} /> },
+      // El contador de ayuno solo tiene sentido contra el reloj de ahora.
+      ...(esHoy ? [{ id: "ayuno", el: <AyunoCard meals={meals} /> }] : []),
       { id: "comidas", el: (
       <div className="card panel">
-        <h3>{tr("🍽 Tus comidas de hoy")}</h3>
+        <h3>{esHoy ? tr("🍽 Tus comidas de hoy") : `🍽 ${tr("Tus comidas del")} ${fmtDiaLargo(hoy)}`}</h3>
         {comidasHoy.length === 0 ? (
           <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-            {tr("Aún no hay platos registrados hoy. Usa la foto del plato en la pestaña Hoy y el acumulado aparece aquí.")}
+            {esHoy
+              ? tr("Aún no hay platos registrados hoy. Usa la foto del plato en la pestaña Hoy y el acumulado aparece aquí.")
+              : tr("Aún no hay platos en este día. Súbelos aquí arriba y el acumulado aparece al tiro.")}
           </p>
         ) : (
           <>
@@ -785,21 +799,23 @@ function CorregirComidaModal({ comida, onClose, onSaved }: {
   );
 }
 
-function BalanceCalorico({ profile, edad, comido, quemadas, irAClinica }: {
+function BalanceCalorico({ profile, edad, comido, quemadas, esHoy = true, irAClinica }: {
   profile: HealthProfile | null;
   edad: number | null;
   comido: number;
   quemadas: number;
+  esHoy?: boolean;
   irAClinica: () => void;
 }) {
   const { t: tr } = useIdioma();
+  const titulo = esHoy ? tr("🔥 Balance calórico de hoy") : tr("🔥 Balance calórico del día");
   const [objetivo, setObjetivo] = useState<ObjetivoCal>(getObjetivoCal());
   const mantencion = metaCalorias(profile, edad);
 
   if (mantencion === null) {
     return (
       <div className="card panel">
-        <h3>{tr("🔥 Balance calórico de hoy")}</h3>
+        <h3>{titulo}</h3>
         <p style={{ fontSize: 13.5, color: "var(--muted)" }}>
           {tr("Para decirte cuántas calorías comer al día y si vas en déficit, necesito tu peso y tu estatura. Con tu nivel de actividad y tu sexo el cálculo queda aún más fino.")}
         </p>
@@ -816,7 +832,7 @@ function BalanceCalorico({ profile, edad, comido, quemadas, irAClinica }: {
 
   return (
     <div className="card panel">
-      <h3>{tr("🔥 Balance calórico de hoy")}</h3>
+      <h3>{titulo}</h3>
       <div className="seg" style={{ marginBottom: 12 }}>
         {OBJETIVOS_CAL.map((o) => (
           <button key={o.key} className={`segbtn ${objetivo === o.key ? "active" : ""}`}
@@ -967,11 +983,16 @@ function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
 }
 
 // ---------- Sueño ----------
-function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: () => void }) {
+function SuenoTab({ routine, fecha, onChanged }: {
+  routine: RoutineLog[];
+  /** El día que se está registrando, igual que en el resto de Energía. */
+  fecha?: string;
+  onChanged: () => void;
+}) {
   const { t: tr } = useIdioma();
   const conHoras = routine.map((r) => ({ r, h: sleepHours(r) })).filter((x): x is { r: RoutineLog; h: number } => x.h !== null);
   const promedio = conHoras.length ? Math.round((conHoras.reduce((s, x) => s + x.h, 0) / conHoras.length) * 10) / 10 : null;
-  const hoy = hoyLocal();
+  const hoy = fecha ?? hoyLocal();
   const rutinaHoy = routine.find((r) => r.date === hoy) ?? null;
 
   const fmtDia = (iso: string) => {
@@ -1012,7 +1033,7 @@ function SuenoTab({ routine, onChanged }: { routine: RoutineLog[]; onChanged: ()
           })}
         </div>
         ) },
-        { id: "registrar", el: <SuenoRapido rutinaHoy={rutinaHoy} onChanged={onChanged} /> },
+        { id: "registrar", el: <SuenoRapido rutinaHoy={rutinaHoy} fecha={hoy} onChanged={onChanged} /> },
         { id: "tip", el: (
           <div className="tip-destacado" style={{ marginBottom: 0 }}>
             {tr("💡 Acostarte y despertar a la misma hora todos los días le enseña a tu cuerpo cuándo soltar. La regularidad vale más que la cantidad.")}

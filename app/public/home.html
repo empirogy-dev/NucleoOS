@@ -8,6 +8,18 @@
 <meta name="theme-color" content="#8FAF9B">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/icon-192.png">
+<!-- Sin esto, "agregar a la pantalla de inicio" creaba un acceso directo a la
+     landing en vez de instalar la app. El manifest manda a /app. -->
+<link rel="manifest" href="/manifest.webmanifest">
+<script>
+  // Si esto se abrió desde el icono del teléfono, la persona quiere la app,
+  // no la página de venta. Vale también para los iconos ya guardados antes.
+  (function () {
+    var instalada = window.matchMedia("(display-mode: standalone)").matches
+      || window.navigator.standalone === true;
+    if (instalada) location.replace("/app");
+  })();
+</script>
 <!-- Vista previa al compartir el link en Instagram, Facebook o WhatsApp -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.nucleoos.app/">
@@ -157,7 +169,11 @@
   @media (max-width:760px){
     .split{grid-template-columns:1fr}.feels{grid-template-columns:1fr}
     .stat-row{grid-template-columns:1fr 1fr}.tiers{grid-template-columns:1fr}.chat{margin:0 auto}
-    .nav .btn.primary{display:none}
+    /* En el teléfono el botón de entrar es lo más importante de la barra:
+       antes se escondía y había que bajar hasta el pie de página. */
+    .nav-in{padding:10px 16px;gap:8px}
+    .nav .btn.primary{padding:9px 16px;font-size:14px}
+    .langs{gap:2px}
   }
 </style>
 
