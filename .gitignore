@@ -5,6 +5,12 @@ dist/
 .DS_Store
 *.log
 
+# Secretos que jamás deben subir al repositorio
+*.vapid-keys.txt
+.vapid-keys.txt
+supabase/.temp/
+
 # Proyectos de referencia (se mantienen locales, se portan en Fase 1)
 /Fluxney/
 /Fluxney-Figma/
+.gstack/

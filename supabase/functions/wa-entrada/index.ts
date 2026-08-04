@@ -108,7 +108,11 @@ Deno.serve(async (req: Request) => {
     const cabecera = req.headers.get("x-telegram-bot-api-secret-token") ?? "";
     if (cabecera !== secreto) return new Response("secret inválido", { status: 401 });
   } else {
-    await evento(db, { tipo: "error", detalle: { aviso: "webhook sin TELEGRAM_SECRET configurado" } });
+    // Cerrado por diseño: sin secreto configurado, nadie entra. Antes solo
+    // se anotaba el aviso y se seguía procesando, y eso dejaba el webhook
+    // abierto a cualquiera que conociera la URL.
+    await evento(db, { tipo: "error", detalle: { aviso: "webhook sin TELEGRAM_SECRET configurado: mensaje rechazado" } });
+    return new Response("webhook sin configurar", { status: 401 });
   }
 
   try {

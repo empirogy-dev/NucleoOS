@@ -26,13 +26,48 @@ function esc(s: string): string {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 }
 
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+// Freno contra el spam: esta función es pública, así que sin esto cualquiera
+// podría disparar miles de correos y quemar la cuota de Resend. El contador
+// vive en la base (tabla wa_eventos, tipo "reporte_web"), porque la memoria
+// del proceso se reinicia entre llamadas y un contador ahí no frena nada.
+const MAX_POR_HORA = 5;
+
+async function excedido(ip: string): Promise<boolean> {
+  try {
+    const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await db
+      .from("wa_eventos")
+      .select("id", { count: "exact", head: true })
+      .eq("tipo", "reporte_web")
+      .gte("creado_en", haceUnaHora)
+      .eq("detalle->>ip", ip);
+    if ((count ?? 0) >= MAX_POR_HORA) return true;
+    await db.from("wa_eventos").insert({ tipo: "reporte_web", detalle: { ip } });
+    return false;
+  } catch {
+    // Si la base no responde, el reporte igual pasa: mejor un spam que
+    // perder el mensaje de una usuaria real.
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Método no permitido." }, 405);
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "sin-ip";
+  if (await excedido(ip)) {
+    return json({ error: "Ya recibimos varios reportes tuyos. Danos un rato para leerlos." }, 429);
+  }
+
   try {
     const { email, mensaje, imagen, imagenTipo, imagenNombre } = await req.json();
     if (!mensaje || !String(mensaje).trim()) return json({ error: "Cuéntanos qué pasó." }, 400);
+    if (String(mensaje).length > 5000) return json({ error: "El mensaje es muy largo. Resume un poco, por favor." }, 400);
+    if (email && String(email).length > 320) return json({ error: "Ese correo no parece válido." }, 400);
 
     const destino = Deno.env.get("SOPORTE_EMAIL");
     const apiKey = Deno.env.get("RESEND_API_KEY");
