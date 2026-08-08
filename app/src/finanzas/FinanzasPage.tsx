@@ -3,11 +3,12 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Trash2, Wallet } from "lucide-react";
+import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Tag, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
 import { comprimirImagen } from "../lib/comprimir";
+import { ETIQUETAS_SUGERIDAS, addTag, deleteTag, desetiquetarTx, etiquetarTx, listTags, tagsPorTransaccion, type Etiqueta } from "./tags";
 import { ComprobantesTab } from "./ComprobantesTab";
 import {
   TablesMissingError,
@@ -97,6 +98,10 @@ export function FinanzasPage() {
   const [splitTx, setSplitTx] = useState<Tx | null>(null);
   const [reciboTx, setReciboTx] = useState<Tx | null>(null);
   const [reciboIds, setReciboIds] = useState<Set<string>>(new Set());
+  // Etiquetas (0057): que movimiento estas etiquetando, el catalogo y el mapa por transaccion.
+  const [tagTx, setTagTx] = useState<Tx | null>(null);
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
+  const [txTags, setTxTags] = useState<Map<string, Etiqueta[]>>(new Map());
   const [vistaTx, setVistaTx] = useState<"revisar" | "archivo" | "comprobantes">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
@@ -135,6 +140,12 @@ export function FinanzasPage() {
     } catch { /* Dirección sin migrar */ }
     // Qué movimientos ya tienen boleta adjunta, para el clip en su fila.
     setReciboIds(await listReciboTxIds());
+    // Etiquetas: opcionales hasta correr la 0057, la pestaña vive igual sin ellas.
+    try {
+      const [ets, mapa] = await Promise.all([listTags(), tagsPorTransaccion()]);
+      setEtiquetas(ets);
+      setTxTags(mapa);
+    } catch { /* sin la 0057 todavía */ }
   }, []);
 
   useEffect(() => {
@@ -161,11 +172,13 @@ export function FinanzasPage() {
   const [fType, setFType] = useState<"all" | Tx["type"]>("all");
   const [fCat, setFCat] = useState("all");
   const [fAcc, setFAcc] = useState("all");
+  const [fTag, setFTag] = useState("all");
   const filteredTxs = useMemo(() => {
     const q = fq.trim().toLowerCase();
     return txs.filter((t) => {
       if (fType !== "all" && t.type !== fType) return false;
       if (fCat !== "all" && t.category_id !== (fCat === "none" ? null : fCat)) return false;
+      if (fTag !== "all" && !(txTags.get(t.id) ?? []).some((e) => e.id === fTag)) return false;
       if (fAcc !== "all") {
         const enOrigen = t.account_id === fAcc;
         const enDestino = (t.destination_ref ?? t.destination_account_id) === fAcc;
@@ -183,7 +196,7 @@ export function FinanzasPage() {
       }
       return true;
     });
-  }, [txs, fq, fType, fCat, fAcc, catById, accById]);
+  }, [txs, fq, fType, fCat, fAcc, fTag, txTags, catById, accById]);
 
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
@@ -386,8 +399,34 @@ export function FinanzasPage() {
                     ]}
                     onChange={setFAcc} />
                 </div>
+                {etiquetas.length > 0 && (
+                  <div style={{ width: 185 }}>
+                    <Selector compacto value={fTag} ariaLabel={tr("Filtrar por etiqueta")}
+                      opciones={[
+                        { value: "all", label: tr("Todas las etiquetas") },
+                        ...etiquetas.map((e) => ({ value: e.id, label: `🏷 ${e.name}` })),
+                      ]}
+                      onChange={setFTag} />
+                  </div>
+                )}
               </div>
               )}
+              {vistaTx !== "comprobantes" && fTag !== "all" && (() => {
+                // El total de la etiqueta filtrada: esto ES el reporte para
+                // impuestos (todos los gastos del negocio, de una mirada).
+                const et = etiquetas.find((e) => e.id === fTag);
+                const gastosEt = filteredTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+                const ingresosEt = filteredTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+                return (
+                  <div className="card pad" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", padding: "10px 16px", marginBottom: 12 }}>
+                    <b style={{ fontSize: 13.5 }}>🏷 {et?.name}</b>
+                    <small style={{ color: "var(--muted)" }}>{filteredTxs.length} {tr("movimientos")}</small>
+                    <span style={{ flex: 1 }} />
+                    {gastosEt > 0 && <small className="tnum" style={{ color: "var(--err)", fontWeight: 600 }}>{tr("Gastos")} −{fmtMoney(gastosEt, currency)}</small>}
+                    {ingresosEt > 0 && <small className="tnum" style={{ color: "var(--ok)", fontWeight: 600 }}>{tr("Ingresos")} +{fmtMoney(ingresosEt, currency)}</small>}
+                  </div>
+                );
+              })()}
               {vistaTx === "comprobantes" && (
                 <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} />
               )}
@@ -408,6 +447,8 @@ export function FinanzasPage() {
                           onSplit={() => setSplitTx(t)}
                           hasRecibo={reciboIds.has(t.id)}
                           onRecibo={() => setReciboTx(t)}
+                          tags={txTags.get(t.id)}
+                          onTags={() => setTagTx(t)}
                           onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                       ))}
                     </>
@@ -455,6 +496,8 @@ export function FinanzasPage() {
                             onSplit={t.type !== "transfer" ? () => setSplitTx(t) : undefined}
                             hasRecibo={reciboIds.has(t.id)}
                             onRecibo={() => setReciboTx(t)}
+                            tags={txTags.get(t.id)}
+                            onTags={() => setTagTx(t)}
                             onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                         ))}
                       </div>
@@ -690,6 +733,16 @@ export function FinanzasPage() {
         <SplitModal tx={splitTx} categories={categories} currency={accById.get(splitTx.account_id ?? "")?.currency ?? currency}
           onClose={() => setSplitTx(null)}
           onSaved={() => { setSplitTx(null); void reload(); }} />
+      )}
+      {tagTx && (
+        <EtiquetasModal tx={tagTx} etiquetas={etiquetas} asignadas={(txTags.get(tagTx.id) ?? []).map((e) => e.id)}
+          onClose={() => setTagTx(null)}
+          onChanged={() => {
+            void Promise.all([listTags(), tagsPorTransaccion()]).then(([ets, mapa]) => {
+              setEtiquetas(ets);
+              setTxTags(mapa);
+            }).catch(() => undefined);
+          }} />
       )}
       {reciboTx && (
         <ReciboModal tx={reciboTx}
@@ -1314,7 +1367,7 @@ function Head() {
   );
 }
 
-function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit, hasRecibo, onRecibo }: {
+function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit, hasRecibo, onRecibo, tags, onTags }: {
   t: Tx;
   catById: Map<string, Category>;
   accById: Map<string, Account>;
@@ -1325,6 +1378,8 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
   onSplit?: () => void;
   hasRecibo?: boolean;
   onRecibo?: () => void;
+  tags?: Etiqueta[];
+  onTags?: () => void;
 }) {
   const { t: tr } = useIdioma();
   const cat = t.category_id ? catById.get(t.category_id) : undefined;
@@ -1344,12 +1399,27 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
             : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : ""}`}
           {t.source !== "manual" ? `, ${t.source}` : ""}
         </small>
+        {tags && tags.length > 0 && (
+          <span style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>
+            {tags.map((e) => (
+              <small key={e.id} style={{ fontSize: 10.5, padding: "1px 7px", borderRadius: 99, background: `color-mix(in srgb, ${e.color ?? "var(--accent)"} 18%, var(--paper))`, color: "var(--ink-soft)", border: "1px solid var(--line-soft)" }}>
+                {e.name}
+              </small>
+            ))}
+          </span>
+        )}
       </div>
       <b className={"tnum txamt " + (esTransfer ? "neutral" : neg ? "neg" : "pos")}>{esTransfer ? "⇄ " : neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
       {onRecibo && (
         <button className="xdel" aria-label={hasRecibo ? tr("Ver boleta") : tr("Adjuntar boleta")} title={hasRecibo ? tr("Ver boleta") : tr("Adjuntar boleta")}
           style={hasRecibo ? { color: "var(--accent-ink)" } : undefined} onClick={onRecibo}>
           <Paperclip size={13} />
+        </button>
+      )}
+      {onTags && (
+        <button className="xdel" aria-label={tr("Etiquetas")} title={tr("Etiquetas")}
+          style={tags && tags.length > 0 ? { color: "var(--accent-ink)" } : undefined} onClick={onTags}>
+          <Tag size={13} />
         </button>
       )}
       {onSplit && <button className="xdel" aria-label="Dividir boleta" title="Dividir en categorías" onClick={onSplit}><Scissors size={13} /></button>}
@@ -1966,5 +2036,136 @@ function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCa
         </div>
       </div>
     </>
+  );
+}
+
+/** Etiquetas de un movimiento: tocar un chip lo pone o lo quita al instante,
+ *  y desde aquí mismo se crean las nuevas. Sin pantallas de administración
+ *  aparte: el catálogo se maneja donde se usa. */
+function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
+  tx: Tx;
+  etiquetas: Etiqueta[];
+  asignadas: string[];
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const { t: tr } = useIdioma();
+  const [marcadas, setMarcadas] = useState<Set<string>>(() => new Set(asignadas));
+  const [nueva, setNueva] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [faltaMigracion, setFaltaMigracion] = useState(false);
+
+  async function alternar(tagId: string) {
+    const estaba = marcadas.has(tagId);
+    setMarcadas((prev) => {
+      const next = new Set(prev);
+      if (estaba) next.delete(tagId);
+      else next.add(tagId);
+      return next;
+    });
+    try {
+      if (estaba) await desetiquetarTx(tx.id, tagId);
+      else await etiquetarTx(tx.id, tagId);
+      onChanged();
+    } catch (e) {
+      if (e instanceof TablesMissingError) setFaltaMigracion(true);
+      else setErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function crear(nombre: string, color: string | null) {
+    setBusy(true);
+    setErr(null);
+    try {
+      const et = await addTag(nombre, color);
+      await etiquetarTx(tx.id, et.id);
+      setMarcadas((prev) => new Set(prev).add(et.id));
+      setNueva("");
+      onChanged();
+    } catch (e) {
+      if (e instanceof TablesMissingError) setFaltaMigracion(true);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function eliminar(et: Etiqueta) {
+    if (!window.confirm(`${tr("¿Eliminar esta etiqueta? Se quitará de todos los movimientos.")}\n\n${et.name}`)) return;
+    try {
+      await deleteTag(et.id);
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  const sugeridas = ETIQUETAS_SUGERIDAS.filter((s) => !etiquetas.some((e) => e.name.toLowerCase() === s.name.toLowerCase()));
+
+  return (
+    <div className="tp-overlay" onClick={onClose}>
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
+        <h3 style={{ marginBottom: 4 }}>🏷 {tr("Etiquetas")}</h3>
+        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
+          {tx.merchant || tx.description || tx.date}
+        </p>
+
+        {faltaMigracion ? (
+          <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 12 }}>
+            {tr("Falta la migración 0057 (supabase/migrations/0057_finanzas_pro.sql). Córrela en el SQL Editor y vuelve a intentar.")}
+          </p>
+        ) : (
+          <>
+            {etiquetas.length > 0 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                {etiquetas.map((e) => {
+                  const activa = marcadas.has(e.id);
+                  return (
+                    <span key={e.id} style={{ display: "inline-flex", alignItems: "center" }}>
+                      <button className="pomo-chip" onClick={() => void alternar(e.id)}
+                        style={activa ? { background: `color-mix(in srgb, ${e.color ?? "var(--accent)"} 26%, var(--paper))`, borderColor: "transparent", fontWeight: 600 } : undefined}>
+                        {activa ? "✓ " : ""}{e.name}
+                      </button>
+                      <button className="xdel" aria-label={`${tr("Eliminar etiqueta")} ${e.name}`} title={tr("Eliminar etiqueta")}
+                        style={{ marginLeft: 1 }} onClick={() => void eliminar(e)}>
+                        <Trash2 size={11} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {sugeridas.length > 0 && (
+              <>
+                <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
+                  {tr("Sugeridas para empezar")}
+                </p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                  {sugeridas.map((sg) => (
+                    <button key={sg.name} className="pomo-chip" disabled={busy} onClick={() => void crear(sg.name, sg.color)}>
+                      + {sg.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <form style={{ display: "flex", gap: 8 }}
+              onSubmit={(e) => { e.preventDefault(); if (nueva.trim()) void crear(nueva, null); }}>
+              <input className="input-inline" style={{ flex: 1 }} value={nueva} maxLength={40}
+                onChange={(e) => setNueva(e.target.value)} placeholder={tr("Nueva etiqueta…")} aria-label={tr("Nueva etiqueta…")} />
+              <button className="btn primary" disabled={busy || !nueva.trim()}>{tr("Crear")}</button>
+            </form>
+          </>
+        )}
+
+        {err && <p style={{ color: "var(--err)", fontSize: 13, marginTop: 10 }}>{err}</p>}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+          <button className="btn ghost" onClick={onClose}>{tr("Listo")}</button>
+        </div>
+      </div>
+    </div>
   );
 }
