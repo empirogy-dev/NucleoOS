@@ -467,6 +467,7 @@ export async function importStatementRows(
   rows: Array<{ date: string; description: string; amount: number; type: "income" | "expense"; category: string }>,
   accountId: string | null,
   categories: Category[],
+  cardId: string | null = null,
 ): Promise<{ imported: number }> {
   const user_id = await uid();
   const catByName = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
@@ -488,12 +489,21 @@ export async function importStatementRows(
       ...(regla ? { merchant: regla.merchant } : {}),
       category_id: regla?.category_id ?? (r.category ? catByName.get(r.category.toLowerCase()) ?? null : null),
       account_id: accountId,
+      // La cartola de una tarjeta deja cada gasto colgando de la tarjeta,
+      // igual que si lo hubieras registrado a mano con "Pagado con".
+      payment_source_type: cardId ? "credit_card" : accountId ? "account" : null,
+      payment_source_id: cardId ?? accountId,
       source: "cartola",
     });
   }
 
   if (toInsert.length > 0) {
     let { error } = await sb().from("transactions").insert(toInsert);
+    if (error && /payment_source/.test(error.message)) {
+      // Sin la 0057 todavía: se importa sin la fuente unificada.
+      const sinFuente = toInsert.map(({ payment_source_type, payment_source_id, ...t }) => t);
+      ({ error } = await sb().from("transactions").insert(sinFuente));
+    }
     if (error && /bank_ref/.test(error.message)) {
       // Sin la 0043 todavía: formato antiguo, el texto del banco en la descripción.
       const legado = toInsert.map(({ bank_ref, ...t }) => ({ ...t, description: bank_ref }));
@@ -506,6 +516,17 @@ export async function importStatementRows(
         0
       );
       await ajustarSaldo(accountId, delta);
+    }
+    if (cardId) {
+      // En una tarjeta, el gasto sube lo adeudado y un abono lo baja.
+      const delta = toInsert.reduce(
+        (s, t) => s + (t.type === "expense" ? Number(t.amount) : -Number(t.amount)),
+        0
+      );
+      if (delta !== 0) {
+        const { data } = await sb().from("credit_cards").select("balance").eq("id", cardId).single();
+        if (data) await sb().from("credit_cards").update({ balance: Number(data.balance) + delta }).eq("id", cardId);
+      }
     }
   }
   return { imported: toInsert.length };

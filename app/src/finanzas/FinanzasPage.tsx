@@ -206,14 +206,30 @@ export function FinanzasPage() {
 
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
-  const ingresos = monthTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
   const gastos = monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
   const balanceTotal = accounts.reduce((s, a) => s + Number(a.balance), 0);
   const currency = accounts[0]?.currency ?? defaultCurrency;
 
   const budgetCats = categories.filter((c) => c.type === "expense" && Number(c.budget) > 0 && !c.exclude_from_budget);
-  const deudaTotal = debts.reduce((s, d) => s + Number(d.balance), 0) + cards.reduce((s, c) => s + Number(c.balance), 0);
-  const patrimonio = balanceTotal - deudaTotal;
+
+  // Cada moneda vive aparte: sumar CAD con CLP daría un número mentiroso.
+  // Las deudas sin moneda propia se cuentan en la moneda principal.
+  const monedaDeTx = (t: Tx): string =>
+    t.payment_source_type === "credit_card"
+      ? cards.find((c) => c.id === t.payment_source_id)?.currency ?? defaultCurrency
+      : (t.account_id ? accById.get(t.account_id)?.currency : null) ?? defaultCurrency;
+  const monedas = [...new Set([
+    ...accounts.map((a) => a.currency || defaultCurrency),
+    ...cards.map((c) => c.currency || defaultCurrency),
+  ])];
+  const porMoneda = monedas.map((cur) => {
+    const bal = accounts.filter((a) => (a.currency || defaultCurrency) === cur).reduce((s, a) => s + Number(a.balance), 0);
+    const deu = cards.filter((c) => (c.currency || defaultCurrency) === cur).reduce((s, c) => s + Number(c.balance), 0)
+      + (cur === currency ? debts.reduce((s, d) => s + Number(d.balance), 0) : 0);
+    const ing = monthTxs.filter((t) => t.type === "income" && monedaDeTx(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
+    const gas = monthTxs.filter((t) => t.type === "expense" && monedaDeTx(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
+    return { cur, balance: bal, deuda: deu, patrimonio: bal - deu, ingresos: ing, gastos: gas };
+  });
 
   const gastoPorCategoria = useMemo(() => {
     const m = new Map<string, number>();
@@ -292,11 +308,21 @@ export function FinanzasPage() {
           {tab === "resumen" && (
             <>
               <div className="statrow" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
-                <div className="card stat"><div className="k">{tr("stat.fin.balance")}</div><div className="v tnum">{fmtMoney(balanceTotal, currency)}</div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.deuda")}</div><div className="v tnum" style={deudaTotal > 0 ? { color: "var(--err)" } : undefined}>{fmtMoney(deudaTotal, currency)}</div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.patrimonio")}</div><div className="v tnum" style={{ color: patrimonio >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(patrimonio, currency)}</div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.ingresos")}</div><div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(ingresos, currency)}</div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.gastos")}</div><div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(gastos, currency)}</div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.balance")}</div><div className="v tnum">
+                  {porMoneda.map((m) => <span key={m.cur} style={{ display: "block" }}>{fmtMoney(m.balance, m.cur)}</span>)}
+                </div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.deuda")}</div><div className="v tnum">
+                  {porMoneda.map((m) => <span key={m.cur} style={{ display: "block", color: m.deuda > 0 ? "var(--err)" : undefined }}>{fmtMoney(m.deuda, m.cur)}</span>)}
+                </div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.patrimonio")}</div><div className="v tnum">
+                  {porMoneda.map((m) => <span key={m.cur} style={{ display: "block", color: m.patrimonio >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(m.patrimonio, m.cur)}</span>)}
+                </div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.ingresos")}</div><div className="v tnum" style={{ color: "var(--ok)" }}>
+                  {porMoneda.filter((m) => m.ingresos > 0 || m.cur === currency).map((m) => <span key={m.cur} style={{ display: "block" }}>{fmtMoney(m.ingresos, m.cur)}</span>)}
+                </div></div>
+                <div className="card stat"><div className="k">{tr("stat.fin.gastos")}</div><div className="v tnum" style={{ color: "var(--err)" }}>
+                  {porMoneda.filter((m) => m.gastos > 0 || m.cur === currency).map((m) => <span key={m.cur} style={{ display: "block" }}>{fmtMoney(m.gastos, m.cur)}</span>)}
+                </div></div>
               </div>
               <div className="panelgrid">
                 <div className="card panel">
@@ -1075,7 +1101,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
     setBusy(true);
     setErr(null);
     try {
-      const res = await importStatementRows(incluidas, accountId || null, categories);
+      const res = await importStatementRows(incluidas, accountId || null, categories, cardImpId || null);
       // La cartola queda archivada con su fuente, su mes y el archivo original.
       try {
         await addCartola({
@@ -1224,6 +1250,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
   const [minPay, setMinPay] = useState(edit?.min_payment != null ? String(edit.min_payment) : "");
   const [dueDate, setDueDate] = useState(edit?.due_date ?? "");
   const [apr, setApr] = useState(edit?.apr != null ? String(edit.apr) : "");
+  const [moneda, setMoneda] = useState(edit?.currency ?? currency);
   const [busy, setBusy] = useState(false);
 
   async function save(e: React.FormEvent) {
@@ -1234,7 +1261,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
       credit_limit: limit ? Number(limit) : null, balance: Number(balance || 0),
       min_payment: minPay ? Number(minPay) : null, due_date: dueDate || null,
       apr: apr ? Number(apr) : null,
-      currency: edit?.currency ?? currency,
+      currency: moneda,
     };
     if (edit) await updateCard(edit.id, payload);
     else await addCard(payload);
@@ -1244,6 +1271,9 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
   return (
     <Modal title={edit ? "Editar tarjeta de crédito" : "Agregar tarjeta de crédito"} onClose={onClose}>
       <form onSubmit={save}>
+        <div className="field"><label>Moneda</label>
+          <Selector value={moneda} ariaLabel="Moneda de la tarjeta" onChange={setMoneda}
+            opciones={CURRENCIES.map((c) => ({ value: c, label: c }))} /></div>
         <div className="field"><label>Nombre</label>
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Visa" autoFocus /></div>
         <div className="frow">
