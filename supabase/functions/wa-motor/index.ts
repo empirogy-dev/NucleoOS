@@ -291,19 +291,20 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     decl: {
       name: "registrar_agua",
       description: "Suma vasos de agua al día de hoy (meta diaria: 8 vasos).",
-      parameters: { type: "OBJECT", properties: { vasos: { type: "NUMBER", description: "Cuántos vasos sumar, 1 a 8" } }, required: ["vasos"] },
+      parameters: { type: "OBJECT", properties: { vasos: { type: "NUMBER", description: "Cuántos vasos sumar, 1 a 8" }, fecha: { type: "STRING", description: "YYYY-MM-DD o 'ayer'. Vacío = hoy" } }, required: ["vasos"] },
     },
     run: async (args, ctx) => {
       const vasos = Math.round(Number(args.vasos));
       if (!(vasos >= 1 && vasos <= 8)) return "Los vasos deben ser entre 1 y 8.";
-      const fecha = hoyEn(ctx.timezone);
+      const fecha = fechaDe(args, ctx);
       const { data: fila } = await ctx.db.from("energy_logs").select("id,water_cups")
         .eq("user_id", ctx.userId).eq("date", fecha).maybeSingle();
       const total = Math.min(8, Number(fila?.water_cups ?? 0) + vasos);
       const { error } = await ctx.db.from("energy_logs")
         .upsert({ user_id: ctx.userId, date: fecha, water_cups: total }, { onConflict: "user_id,date" });
       if (error) return `No pude registrar el agua: ${error.message}`;
-      return `Agua registrada: vas ${total} de 8 vasos hoy.`;
+      await anotarEscritura(ctx, "energy_logs", fecha, `agua ${total} vasos (${fecha})`);
+      return `Agua registrada: ${total} de 8 vasos el ${fecha}.`;
     },
   },
 
@@ -316,6 +317,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
         properties: {
           acoste: { type: "STRING", description: "Hora de acostarse HH:MM (24 h)" },
           desperte: { type: "STRING", description: "Hora de despertar HH:MM (24 h)" },
+          fecha: { type: "STRING", description: "El día en que DESPERTÓ: YYYY-MM-DD o 'ayer'. Vacío = hoy" },
         },
         required: ["acoste", "desperte"],
       },
@@ -324,7 +326,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
       const hhmm = /^\d{1,2}:\d{2}$/;
       const acoste = String(args.acoste ?? ""), desperte = String(args.desperte ?? "");
       if (!hhmm.test(acoste) || !hhmm.test(desperte)) return "Las horas deben venir como HH:MM.";
-      const fecha = hoyEn(ctx.timezone);
+      const fecha = fechaDe(args, ctx);
       const { error } = await ctx.db.from("routine_logs")
         .upsert({ user_id: ctx.userId, date: fecha, bed_time: acoste, wake_time: desperte }, { onConflict: "user_id,date" });
       if (error) return `No pude registrar el sueño: ${error.message}`;
@@ -381,15 +383,15 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
   marcar_habito: {
     decl: {
       name: "marcar_habito",
-      description: "Marca como cumplido hoy un hábito existente de la usuaria (por su nombre aproximado).",
-      parameters: { type: "OBJECT", properties: { nombre: { type: "STRING", description: "Nombre o palabra clave del hábito" } }, required: ["nombre"] },
+      description: "Marca como cumplido un hábito existente (hoy o en una fecha pasada) de la usuaria (por su nombre aproximado).",
+      parameters: { type: "OBJECT", properties: { nombre: { type: "STRING", description: "Nombre o palabra clave del hábito" }, fecha: { type: "STRING", description: "YYYY-MM-DD o 'ayer'. Vacío = hoy" } }, required: ["nombre"] },
     },
     run: async (args, ctx) => {
       const palabra = String(args.nombre ?? "").trim().split(/\s+/)[0] ?? "";
       const { data: hab } = await ctx.db.from("habits").select("id,name")
         .eq("user_id", ctx.userId).ilike("name", `%${palabra}%`).limit(1).maybeSingle();
       if (!hab) return `No encontré un hábito que se parezca a "${args.nombre}".`;
-      const fecha = hoyEn(ctx.timezone);
+      const fecha = fechaDe(args, ctx);
       const { data: ya } = await ctx.db.from("habit_logs").select("id")
         .eq("user_id", ctx.userId).eq("habit_id", hab.id).eq("date", fecha).maybeSingle();
       if (ya) return `${hab.name} ya estaba marcado hoy. 🌱`;
@@ -410,6 +412,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
         properties: {
           persona: { type: "STRING", description: "Nombre de la persona tal como la llama la usuaria" },
           descripcion: { type: "STRING", description: "Qué pasó, en una línea" },
+          fecha: { type: "STRING", description: "YYYY-MM-DD o 'ayer'. Vacío = hoy" },
         },
         required: ["persona", "descripcion"],
       },
@@ -420,7 +423,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
         .eq("user_id", ctx.userId).ilike("name", `%${nombre}%`).limit(1).maybeSingle();
       if (!rel) return `No encontré a "${nombre}" en Relaciones. Puede agregarla en la app.`;
       const { data, error } = await ctx.db.from("relationship_logs")
-        .insert({ relationship_id: rel.id, date: hoyEn(ctx.timezone), description: String(args.descripcion ?? "").slice(0, 300), user_id: ctx.userId })
+        .insert({ relationship_id: rel.id, date: fechaDe(args, ctx), description: String(args.descripcion ?? "").slice(0, 300), user_id: ctx.userId })
         .select("id").single();
       if (error || !data) return `No pude registrarlo: ${error?.message ?? "sin fila"}`;
       await anotarEscritura(ctx, "relationship_logs", data.id, `interacción con ${rel.name}`);
@@ -514,6 +517,181 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
       );
       if (error) return `No pude marcar el ayuno: ${error.message}`;
       return "Ayuno marcado: el contador parte ahora. ⏳";
+    },
+  },
+
+  crear_proyecto: {
+    decl: {
+      name: "crear_proyecto",
+      description: "Crea un proyecto nuevo en Trabajo (para algo con varias tareas, ej: lanzar un producto).",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          nombre: { type: "STRING", description: "Nombre del proyecto" },
+          descripcion: { type: "STRING", description: "De qué se trata, en una línea. Vacío si no se sabe" },
+        },
+        required: ["nombre"],
+      },
+    },
+    run: async (args, ctx) => {
+      const nombre = String(args.nombre ?? "").trim().slice(0, 120);
+      if (!nombre) return "El proyecto necesita un nombre.";
+      const { data, error } = await ctx.db.from("projects")
+        .insert({ user_id: ctx.userId, name: nombre, status: "activo", description: String(args.descripcion ?? "").slice(0, 300) || null })
+        .select("id").single();
+      if (error || !data) return `No pude crear el proyecto: ${error?.message ?? "sin fila"}`;
+      await anotarEscritura(ctx, "projects", data.id, `proyecto "${nombre}"`);
+      return `Proyecto creado: ${nombre}. Puedes dictarme sus tareas.`;
+    },
+  },
+
+  agregar_tarea_proyecto: {
+    decl: {
+      name: "agregar_tarea_proyecto",
+      description: "Agrega una tarea a un proyecto existente (por su nombre aproximado).",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          proyecto: { type: "STRING", description: "Nombre o palabra clave del proyecto" },
+          titulo: { type: "STRING", description: "La tarea, corta y concreta" },
+        },
+        required: ["proyecto", "titulo"],
+      },
+    },
+    run: async (args, ctx) => {
+      const palabra = String(args.proyecto ?? "").trim().split(/\s+/)[0] ?? "";
+      const { data: proy } = await ctx.db.from("projects").select("id,name")
+        .eq("user_id", ctx.userId).neq("status", "terminado").ilike("name", `%${palabra}%`).limit(1).maybeSingle();
+      if (!proy) return `No encontré un proyecto que se parezca a "${args.proyecto}". Ofrécele crearlo con crear_proyecto.`;
+      const titulo = String(args.titulo ?? "").trim().slice(0, 200);
+      const { data, error } = await ctx.db.from("project_tasks")
+        .insert({ user_id: ctx.userId, project_id: proy.id, title: titulo }).select("id").single();
+      if (error || !data) return `No pude agregar la tarea: ${error?.message ?? "sin fila"}`;
+      await anotarEscritura(ctx, "project_tasks", data.id, `tarea "${titulo}" en ${proy.name}`);
+      return `Tarea agregada a ${proy.name}: ${titulo}`;
+    },
+  },
+
+  crear_meta: {
+    decl: {
+      name: "crear_meta",
+      description: "Crea una meta nueva en Dirección. Áreas válidas: salud, habitos, relaciones, trabajo, finanzas, aprendizaje, o vacío si es general.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          titulo: { type: "STRING", description: "La meta, en una frase (ej: correr 5K en octubre)" },
+          area: { type: "STRING", description: "Área de la vida, o vacío" },
+        },
+        required: ["titulo"],
+      },
+    },
+    run: async (args, ctx) => {
+      const titulo = String(args.titulo ?? "").trim().slice(0, 200);
+      if (!titulo) return "La meta necesita un título.";
+      const areas = ["salud", "habitos", "relaciones", "trabajo", "finanzas", "aprendizaje"];
+      const area = areas.includes(String(args.area)) ? String(args.area) : null;
+      const { data, error } = await ctx.db.from("objectives")
+        .insert({ user_id: ctx.userId, title: titulo, area }).select("id").single();
+      if (error || !data) return `No pude crear la meta: ${error?.message ?? "sin fila"}`;
+      await anotarEscritura(ctx, "objectives", data.id, `meta "${titulo}"`);
+      return `Meta creada en Dirección: ${titulo}`;
+    },
+  },
+
+  tomar_nota: {
+    decl: {
+      name: "tomar_nota",
+      description: "Guarda una nota o idea en los cuadernos de Aprendizaje. Úsala cuando diga 'toma nota', 'anótame esta idea' o cuente un aprendizaje.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          texto: { type: "STRING", description: "La nota completa, con sus palabras" },
+          cuaderno: { type: "STRING", description: "Nombre del cuaderno si lo dice. Vacío = el cuaderno de Kay" },
+        },
+        required: ["texto"],
+      },
+    },
+    run: async (args, ctx) => {
+      const texto = String(args.texto ?? "").trim().slice(0, 2000);
+      if (!texto) return "La nota está vacía.";
+      const nombreCuaderno = String(args.cuaderno ?? "").trim();
+      let cuaderno: { id: string; name: string } | null = null;
+      if (nombreCuaderno) {
+        const { data } = await ctx.db.from("notebooks").select("id,name")
+          .eq("user_id", ctx.userId).ilike("name", `%${nombreCuaderno.split(/\s+/)[0]}%`).limit(1).maybeSingle();
+        cuaderno = data as { id: string; name: string } | null;
+      }
+      if (!cuaderno) {
+        // El cuaderno de Kay: se crea solo la primera vez.
+        const { data } = await ctx.db.from("notebooks").select("id,name")
+          .eq("user_id", ctx.userId).eq("name", "Notas con Kay").maybeSingle();
+        cuaderno = data as { id: string; name: string } | null;
+        if (!cuaderno) {
+          const { data: nuevo, error } = await ctx.db.from("notebooks")
+            .insert({ user_id: ctx.userId, name: "Notas con Kay", icon: "🌱" }).select("id,name").single();
+          if (error || !nuevo) return `No pude crear el cuaderno: ${error?.message ?? "sin fila"}`;
+          cuaderno = nuevo as { id: string; name: string };
+        }
+      }
+      const { data, error } = await ctx.db.from("notebook_entries")
+        .insert({ user_id: ctx.userId, notebook_id: cuaderno.id, title: texto.slice(0, 60), content: texto })
+        .select("id").single();
+      if (error || !data) return `No pude guardar la nota: ${error?.message ?? "sin fila"}`;
+      await anotarEscritura(ctx, "notebook_entries", data.id, `nota en ${cuaderno.name}`);
+      return `Nota guardada en ${cuaderno.name}.`;
+    },
+  },
+
+  registrar_lectura: {
+    decl: {
+      name: "registrar_lectura",
+      description: "Registra que la usuaria leyó (páginas o minutos de un libro). Queda como avance de Aprendizaje.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          libro: { type: "STRING", description: "Título o palabras del libro" },
+          detalle: { type: "STRING", description: "Cuánto leyó (30 páginas, 20 minutos, un capítulo...)" },
+          fecha: { type: "STRING", description: "YYYY-MM-DD o 'ayer'. Vacío = hoy" },
+        },
+        required: ["libro"],
+      },
+    },
+    run: async (args, ctx) => {
+      const libro = String(args.libro ?? "").trim().slice(0, 120);
+      const detalle = String(args.detalle ?? "").trim().slice(0, 120);
+      const fecha = fechaDe(args, ctx);
+      const texto = `Leyó ${detalle ? detalle + " de " : ""}"${libro}"`;
+      const { data, error } = await ctx.db.from("activity_log")
+        .insert({ user_id: ctx.userId, area: "aprendizaje", date: fecha, description: texto.slice(0, 300) })
+        .select("id").single();
+      if (error || !data) return `No pude registrar la lectura: ${error?.message ?? "sin fila"}`;
+      await anotarEscritura(ctx, "activity_log", data.id, `lectura de "${libro}" (${fecha})`);
+      return `Lectura registrada: ${texto}, ${fecha}. Empuja tus metas de aprendizaje.`;
+    },
+  },
+
+  registrar_energia: {
+    decl: {
+      name: "registrar_energia",
+      description: "Registra el nivel de energía del día, de 1 (en el suelo) a 5 (a mil).",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          nivel: { type: "NUMBER", description: "1 a 5" },
+          fecha: { type: "STRING", description: "YYYY-MM-DD o 'ayer'. Vacío = hoy" },
+        },
+        required: ["nivel"],
+      },
+    },
+    run: async (args, ctx) => {
+      const nivel = Math.round(Number(args.nivel));
+      if (!(nivel >= 1 && nivel <= 5)) return "El nivel va de 1 a 5.";
+      const fecha = fechaDe(args, ctx);
+      const { error } = await ctx.db.from("energy_logs")
+        .upsert({ user_id: ctx.userId, date: fecha, energy_level: nivel }, { onConflict: "user_id,date" });
+      if (error) return `No pude registrar la energía: ${error.message}`;
+      await anotarEscritura(ctx, "energy_logs", fecha, `energía ${nivel}/5 (${fecha})`);
+      return `Energía del ${fecha}: ${nivel} de 5. Úsala para calibrar qué le sugieres hoy.`;
     },
   },
 
@@ -751,6 +929,11 @@ function promptSistema(idioma: string, timezone: string): string {
     "· \"recuérdame tomar mis suplementos a las 2\" (CON hora) → crear_recordatorio con texto \"tomar tus suplementos\" y hora \"14:00\". Si menciona una hora, SIEMPRE crear_recordatorio y nunca crear_tarea, porque solo así te escribo a esa hora. Si pide varios recordatorios en un mensaje, crea uno por cada hora.\n" +
     "· \"me comí un yogur con granola\" → registrar_plato con esa descripción.\n" +
     "· \"llamé a mi mamá\" → registrar_interaccion con persona \"mamá\".\n" +
+    "· \"crea un proyecto para el lanzamiento\" → crear_proyecto; \"agrégale la tarea diseñar logo\" → agregar_tarea_proyecto.\n" +
+    "· \"anótame: comprar comida, llamar al banco, terminar el informe\" → crear_tarea TRES veces, una por cosa.\n" +
+    "· \"mi meta es correr 5K en octubre\" → crear_meta.\n" +
+    "· \"toma nota: idea para el negocio...\" → tomar_nota. \"leí 30 páginas de Hábitos Atómicos\" → registrar_lectura.\n" +
+    "· \"hoy ando con la energía por el suelo\" → registrar_energia con nivel 1 o 2.\n" +
     "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n\n" +
     "Resto de las reglas:\n" +
     "1. No inventes montos de dinero. Cantidades de comida, agua o minutos sí se estiman con criterio.\n" +
