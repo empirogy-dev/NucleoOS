@@ -130,6 +130,9 @@ interface Ctx {
   timezone: string;
   loteId: string;
   escrituras: { tabla: string; fila_id: string; resumen: string }[];
+  /** Las fotos que vinieron en el lote: si una transacción sale de una
+   *  boleta, la imagen se adjunta a esa transacción y se consume. */
+  fotos: { mime: string; b64: string }[];
 }
 
 type ToolFn = (args: Record<string, unknown>, ctx: Ctx) => Promise<string>;
@@ -915,10 +918,25 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
         }
       }
 
+      // La boleta misma queda adjunta a la transacción, con la convención
+      // de la app (usuario/txId/archivo): aparece con su clip en Finanzas.
+      let conBoleta = false;
+      const foto = ctx.fotos.shift();
+      if (foto) {
+        try {
+          const bytes = Uint8Array.from(atob(foto.b64), (c) => c.charCodeAt(0));
+          const ext = foto.mime.includes("png") ? "png" : "jpg";
+          const { error: eSubida } = await ctx.db.storage.from("recibos")
+            .upload(`${ctx.userId}/${data.id}/${Date.now()}-boleta.${ext}`, bytes, { contentType: foto.mime });
+          conBoleta = !eSubida;
+        } catch { /* sin adjunto, la transacción igual vale */ }
+      }
+
       await anotarEscritura(ctx, "transactions", data.id, `${tipo === "income" ? "ingreso" : "gasto"} ${monto} ${comercio ?? ""} (${fecha})`);
       const partes = [`${tipo === "income" ? "Ingreso" : "Gasto"} de ${monto} registrado`];
       if (comercio) partes.push(`en ${comercio}`);
       if (fuenteNombre) partes.push(`con ${fuenteNombre}`);
+      if (conBoleta) partes.push("con su boleta adjunta 📎");
       if (!categoryId) partes.push("(quedó en Por revisar para que le pongas categoría)");
       return partes.join(" ") + ".";
     },
@@ -1508,6 +1526,7 @@ Deno.serve(async (req: Request) => {
       const { data: mensajes } = await db.from("wa_mensajes").select("tipo,contenido")
         .eq("lote_id", lote.id).order("creado_en");
       const bloque: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [];
+      const fotosDelLote: { mime: string; b64: string }[] = [];
       for (const m of mensajes ?? []) {
         if (m.tipo === "texto") {
           if (m.contenido) bloque.push({ text: `[mensaje] ${m.contenido}` });
@@ -1525,6 +1544,7 @@ Deno.serve(async (req: Request) => {
                   : "[foto de la usuaria: si es una boleta o recibo, extrae monto total, comercio, fecha y últimos 4 dígitos de la tarjeta y llama registrar_transaccion; si es comida, registrar_plato]",
               });
               bloque.push({ inlineData: { mimeType: media.mime, data: media.b64 } });
+              if (m.tipo === "imagen") fotosDelLote.push({ mime: media.mime, b64: media.b64 });
             }
             else bloque.push({ text: `[${m.tipo} que no se pudo leer]` });
           } catch {
@@ -1557,7 +1577,7 @@ Deno.serve(async (req: Request) => {
         .eq("user_id", lote.user_id).eq("key", "nucleoos-idioma").maybeSingle();
       const idioma = String((kvIdioma?.value as { raw?: string })?.raw ?? "es").replace(/"/g, "");
 
-      const ctx: Ctx = { db, userId: lote.user_id, timezone: vinculo.timezone, loteId: lote.id, escrituras: [] };
+      const ctx: Ctx = { db, userId: lote.user_id, timezone: vinculo.timezone, loteId: lote.id, escrituras: [], fotos: fotosDelLote };
       const contexto = await contextoDe(db, lote.user_id, vinculo.timezone);
       let respuesta = await turnoGemini(bloque, ctx, idioma, contexto, historial);
 
