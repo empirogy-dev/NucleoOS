@@ -142,6 +142,9 @@ export interface Tx {
   destination_kind: DestKind | null;
   destination_ref: string | null;
   source: TxSource;
+  /** Fuente del pago (0057): cuenta o tarjeta de crédito. */
+  payment_source_type?: "account" | "credit_card" | null;
+  payment_source_id?: string | null;
 }
 
 /** Tipos de cuenta (los valores en inglés vienen del esquema de Fluxney). */

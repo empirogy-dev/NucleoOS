@@ -73,7 +73,7 @@ import {
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 
-type TabKey = "resumen" | "transacciones" | "metas" | "deudas" | "cuentas" | "categorias" | "reporte";
+type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "metas" | "etiquetas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
   const [tab, setTab] = useState<TabKey>("resumen");
@@ -253,9 +253,10 @@ export function FinanzasPage() {
           [
             ["resumen", "Resumen"],
             ["transacciones", "Transacciones"],
-            ["metas", "Metas"],
-            ["deudas", "Deudas y tarjetas"],
             ["cuentas", "Cuentas"],
+            ["deudas", "Deudas y tarjetas"],
+            ["metas", "Metas"],
+            ["etiquetas", "Etiquetas"],
             ["categorias", "Categorías"],
             ["reporte", "Reporte"],
           ] as Array<[TabKey, string]>
@@ -449,6 +450,7 @@ export function FinanzasPage() {
                           onRecibo={() => setReciboTx(t)}
                           tags={txTags.get(t.id)}
                           onTags={() => setTagTx(t)}
+                          cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
                           onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                       ))}
                     </>
@@ -498,6 +500,7 @@ export function FinanzasPage() {
                             onRecibo={() => setReciboTx(t)}
                             tags={txTags.get(t.id)}
                             onTags={() => setTagTx(t)}
+                            cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
                             onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                         ))}
                       </div>
@@ -507,6 +510,46 @@ export function FinanzasPage() {
               </div>
               )}
             </>
+            );
+          })()}
+
+          {tab === "etiquetas" && (() => {
+            const anio = hoyLocal().slice(0, 4);
+            const stats = etiquetas.map((e) => {
+              const mias = txs.filter((t) => (txTags.get(t.id) ?? []).some((x) => x.id === e.id));
+              const delAnio = mias.filter((t) => t.date.startsWith(anio));
+              return {
+                e,
+                n: mias.length,
+                gastos: delAnio.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0),
+                ingresos: delAnio.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0),
+              };
+            });
+            return (
+              <div className="card pad" style={{ maxWidth: 720 }}>
+                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+                  {tr("Tus etiquetas cruzan categorías: negocio, personal, impuestos. Los totales son de este año, y Ver la abre filtrada en Transacciones.")}
+                </p>
+                {stats.length === 0 && (
+                  <p style={{ fontSize: 13.5, color: "var(--muted)" }}>
+                    {tr("Aún no hay etiquetas. Créalas desde el 🏷 de cualquier movimiento, con tus nombres y colores.")}
+                  </p>
+                )}
+                {stats.map(({ e, n, gastos, ingresos }) => (
+                  <div className="txrow" key={e.id}>
+                    <span style={{ width: 14, height: 14, borderRadius: "50%", background: e.color ?? "var(--accent)", flex: "none" }} />
+                    <div className="txmeta">
+                      <b>{e.name}</b>
+                      <small>{n} {tr("movimientos")}</small>
+                    </div>
+                    {gastos > 0 && <small className="tnum" style={{ color: "var(--err)", fontWeight: 600 }}>−{fmtMoney(gastos, currency)}</small>}
+                    {ingresos > 0 && <small className="tnum" style={{ color: "var(--ok)", fontWeight: 600 }}>+{fmtMoney(ingresos, currency)}</small>}
+                    <button className="btn ghost" onClick={() => { setFTag(e.id); setVistaTx("archivo"); setTab("transacciones"); }}>
+                      {tr("Ver")}
+                    </button>
+                  </div>
+                ))}
+              </div>
             );
           })()}
 
@@ -1367,7 +1410,7 @@ function Head() {
   );
 }
 
-function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit, hasRecibo, onRecibo, tags, onTags }: {
+function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit, hasRecibo, onRecibo, tags, onTags, cardName }: {
   t: Tx;
   catById: Map<string, Category>;
   accById: Map<string, Account>;
@@ -1380,6 +1423,7 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
   onRecibo?: () => void;
   tags?: Etiqueta[];
   onTags?: () => void;
+  cardName?: string | null;
 }) {
   const { t: tr } = useIdioma();
   const cat = t.category_id ? catById.get(t.category_id) : undefined;
@@ -1396,7 +1440,7 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
           {t.merchant && t.description ? `${t.description}, ` : ""}{t.date}
           {esTransfer
             ? `, transferencia${acc ? ` desde ${acc.name}` : ""}${dest ? ` hacia ${dest}` : ""}`
-            : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : ""}`}
+            : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : cardName ? `, 💳 ${cardName}` : ""}`}
           {t.source !== "manual" ? `, ${t.source}` : ""}
         </small>
         {tags && tags.length > 0 && (
@@ -1546,7 +1590,16 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
     edit?.merchant ? edit.merchant : esDelBanco ? sugerenciaComercio(textoOriginal) : "");
   const [recordar, setRecordar] = useState(true);
   const [categoryId, setCategoryId] = useState(edit?.category_id ?? "");
-  const [accountId, setAccountId] = useState(edit ? (edit.account_id ?? "") : (accounts[0]?.id ?? ""));
+  // La fuente del pago: "acc:<id>" o "card:<id>". Un gasto puede salir de
+  // una cuenta o de una tarjeta de crédito; transferencias, solo de cuentas.
+  const [fuente, setFuente] = useState(() =>
+    edit
+      ? (edit.payment_source_type === "credit_card" && edit.payment_source_id
+          ? `card:${edit.payment_source_id}`
+          : edit.account_id ? `acc:${edit.account_id}` : "")
+      : (accounts[0] ? `acc:${accounts[0].id}` : ""));
+  const accountId = fuente.startsWith("acc:") ? fuente.slice(4) : "";
+  const cardId = fuente.startsWith("card:") ? fuente.slice(5) : "";
   const [destino, setDestino] = useState(destinoInicial);
   const [date, setDate] = useState(edit?.date ?? hoyLocal());
   const [busy, setBusy] = useState(false);
@@ -1575,6 +1628,8 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
         ...(esDelBanco && edit && !edit.bank_ref && textoOriginal ? { bank_ref: textoOriginal } : {}),
         category_id: type === "transfer" ? null : (categoryId || null),
         account_id: accountId || null,
+        payment_source_type: (cardId ? "credit_card" : accountId ? "account" : null) as "account" | "credit_card" | null,
+        payment_source_id: cardId || accountId || null,
         destination_kind: type === "transfer" ? destKind : null,
         destination_ref: type === "transfer" ? destRef : null,
       };
@@ -1632,9 +1687,16 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
               <Selector value={categoryId} ariaLabel="Categoría" placeholder="Sin categoría" onChange={setCategoryId}
                 opciones={[{ value: "", label: "Sin categoría" }, ...cats.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} /></div>
           )}
-          <div className="field"><label>{type === "transfer" ? "Desde la cuenta" : "Cuenta"}</label>
-            <Selector value={accountId} ariaLabel="Cuenta" placeholder="Sin cuenta" onChange={setAccountId}
-              opciones={[{ value: "", label: "Sin cuenta" }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
+          <div className="field"><label>{type === "transfer" ? tr("Desde la cuenta") : tr("Pagado con")}</label>
+            <Selector value={fuente} ariaLabel={tr("Pagado con")} placeholder={tr("Sin cuenta")}
+              onChange={setFuente}
+              opciones={[
+                { value: "", label: tr("Sin cuenta") },
+                ...accounts.map((a) => ({ value: `acc:${a.id}`, label: a.name })),
+                ...(type === "expense"
+                  ? cards.map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` •••• ${c.last_four}` : ""}` }))
+                  : []),
+              ]} /></div>
           {type === "transfer" && (
             <div className="field"><label>Hacia</label>
               <Selector value={destino} ariaLabel="Destino de la transferencia" placeholder="Fuera de la app (otro banco)" onChange={setDestino}

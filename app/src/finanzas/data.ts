@@ -322,6 +322,8 @@ export interface TxInput {
   account_id: string | null;
   destination_kind: Tx["destination_kind"];
   destination_ref: string | null;
+  payment_source_type?: "account" | "credit_card" | null;
+  payment_source_id?: string | null;
 }
 
 interface Efecto {
@@ -339,6 +341,8 @@ function efectosMovimiento(t: {
   type: Tx["type"];
   amount: number;
   account_id: string | null;
+  payment_source_type?: "account" | "credit_card" | null;
+  payment_source_id?: string | null;
   destination_kind: Tx["destination_kind"];
   destination_ref: string | null;
 }): Efecto[] {
@@ -349,6 +353,12 @@ function efectosMovimiento(t: {
     return ef;
   }
   if (t.type === "expense") {
+    // Pagado con tarjeta de crédito: sube lo adeudado en la tarjeta, la
+    // cuenta no se toca. La deuda se salda después con una transferencia.
+    if (t.payment_source_type === "credit_card" && t.payment_source_id) {
+      ef.push({ tabla: "credit_cards", campo: "balance", id: t.payment_source_id, delta: monto });
+      return ef;
+    }
     if (t.account_id) ef.push({ tabla: "accounts", campo: "balance", id: t.account_id, delta: -monto });
     return ef;
   }
@@ -383,11 +393,11 @@ function columnasTx(t: TxInput) {
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()
     .from("transactions")
-    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source")
+    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error && /bank_ref/.test(error.message)) {
+  if (error && /bank_ref|payment_source/.test(error.message)) {
     // La migración 0043 aún no se corre: leemos sin el texto del banco.
     const sinBankRef = await sb()
       .from("transactions")
