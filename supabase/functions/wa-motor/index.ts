@@ -134,11 +134,62 @@ interface Ctx {
 
 type ToolFn = (args: Record<string, unknown>, ctx: Ctx) => Promise<string>;
 
+function diasAtrasEn(timezone: string, n: number): string {
+  return enZona(timezone, new Date(Date.now() - n * 24 * 3600_000));
+}
+
+const DIAS_SEMANA: Record<string, number> = {
+  domingo: 0, sunday: 0, lunes: 1, monday: 1, segunda: 1, martes: 2, tuesday: 2,
+  miercoles: 3, "miércoles": 3, wednesday: 3, quarta: 3, jueves: 4, thursday: 4, quinta: 4,
+  viernes: 5, friday: 5, sexta: 5, sabado: 6, "sábado": 6, saturday: 6,
+};
+
+/** Fecha de los args, entendiendo referencias relativas: "ayer", "anteayer",
+ *  "hace 3 dias", "el lunes" (el lunes mas reciente hacia atras). */
 function fechaDe(args: Record<string, unknown>, ctx: Ctx): string {
-  const f = String(args.fecha ?? "");
+  const f = String(args.fecha ?? "").toLowerCase().trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(f)) return f;
-  if (f === "ayer") return ayerEn(ctx.timezone);
+  if (f === "ayer" || f === "yesterday" || f === "ontem") return ayerEn(ctx.timezone);
+  if (f === "anteayer" || f === "antier" || f === "anteontem") return diasAtrasEn(ctx.timezone, 2);
+  const hace = f.match(/hace\s+(\d{1,2})\s*d/) ?? f.match(/(\d{1,2})\s+days?\s+ago/);
+  if (hace) return diasAtrasEn(ctx.timezone, Math.min(60, Number(hace[1])));
+  const dia = Object.keys(DIAS_SEMANA).find((d) => f.includes(d));
+  if (dia !== undefined) {
+    const objetivo = DIAS_SEMANA[dia];
+    // El dia de la semana de hoy, en la zona de la usuaria.
+    for (let n = 1; n <= 7; n++) {
+      const fecha = diasAtrasEn(ctx.timezone, n);
+      const [y, m, d] = fecha.split("-").map(Number);
+      if (new Date(Date.UTC(y, m - 1, d)).getUTCDay() === objetivo) return fecha;
+    }
+  }
   return hoyEn(ctx.timezone);
+}
+
+/** Un instante "fecha + hora local de la usuaria" convertido a ISO UTC.
+ *  Usa el offset actual de la zona: exacto para fechas cercanas, que es
+ *  el caso del registro conversacional. */
+function isoEnZona(timezone: string, fecha: string, hora: string): string | null {
+  try {
+    const ahora = new Date();
+    const enTz = new Date(ahora.toLocaleString("en-US", { timeZone: timezone }));
+    const offMin = Math.round((enTz.getTime() - ahora.getTime()) / 60000);
+    const base = new Date(`${fecha}T${hora}:00Z`);
+    if (isNaN(base.getTime())) return null;
+    return new Date(base.getTime() - offMin * 60000).toISOString();
+  } catch {
+    return null;
+  }
+}
+
+/** El momento de la comida segun la hora local: nadie deberia tener que
+ *  decir "esto fue desayuno" a las 8 de la manana. */
+function momentoPorHora(hhmm: string): string {
+  const h = Number(hhmm.slice(0, 2));
+  if (h >= 5 && h < 11) return "desayuno";
+  if (h >= 11 && h < 15) return "almuerzo";
+  if (h >= 15 && h < 19) return "snack";
+  return "cena";
 }
 
 async function anotarEscritura(ctx: Ctx, tabla: string, filaId: string, resumen: string): Promise<void> {
@@ -288,29 +339,42 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
       parameters: {
         type: "OBJECT",
         properties: {
-          descripcion: { type: "STRING", description: "Qué comió, con detalle. Si es muy vago, pregunta antes" },
-          momento: { type: "STRING", description: "desayuno | almuerzo | cena | snack. Vacío si no se sabe" },
+          descripcion: { type: "STRING", description: "Qué comió, con el detalle que haya. Si es vago, estima una porción normal y registra igual" },
+          momento: { type: "STRING", description: "desayuno | almuerzo | once | cena | snack. Vacío = se infiere por la hora" },
+          fecha: { type: "STRING", description: "YYYY-MM-DD, 'ayer', 'anteayer', 'hace 2 dias' o 'el lunes'. Vacío = hoy" },
+          hora: { type: "STRING", description: "HH:MM si la usuaria dijo a qué hora comió. Vacío si no" },
         },
         required: ["descripcion"],
       },
     },
     run: async (args, ctx) => {
       const desc = String(args.descripcion ?? "").slice(0, 400).trim();
-      if (desc.length < 6) return "La descripción es muy vaga: pregunta qué comió exactamente.";
+      if (desc.length < 3) return "Registra igual con lo que dijo: usa la descripción tal cual, no le pidas repetir.";
       const macros = await estimarMacros(desc);
+      const fecha = fechaDe(args, ctx);
+      const esHoy = fecha === hoyEn(ctx.timezone);
+      const hora = /^\d{2}:\d{2}$/.test(String(args.hora ?? "")) ? String(args.hora) : null;
+      // "once" es merienda chilena: en la app vive como snack.
+      const momentoCrudo = String(args.momento ?? "") === "once" ? "snack" : String(args.momento ?? "");
+      const momento = ["desayuno", "almuerzo", "cena", "snack"].includes(momentoCrudo)
+        ? momentoCrudo
+        : momentoPorHora(hora ?? (esHoy ? horaEn(ctx.timezone) : "13:00"));
+      // La hora del bocado: la dicha, o ahora si es de hoy. En días pasados
+      // sin hora queda vacía para no ensuciar el contador de ayuno.
+      const eatenAt = hora ? isoEnZona(ctx.timezone, fecha, hora) : esHoy ? new Date().toISOString() : null;
       const fila: Record<string, unknown> = {
-        user_id: ctx.userId, date: hoyEn(ctx.timezone), description: desc,
-        eaten_at: new Date().toISOString(),
-        meal_type: ["desayuno", "almuerzo", "cena", "snack"].includes(String(args.momento)) ? args.momento : null,
+        user_id: ctx.userId, date: fecha, description: desc,
+        eaten_at: eatenAt,
+        meal_type: momento,
         kcal: macros?.kcal ?? null, protein_g: macros?.prot ?? null,
         carbs_g: macros?.carb ?? null, fat_g: macros?.grasa ?? null,
       };
       const { data, error } = await ctx.db.from("meals").insert(fila).select("id").single();
       if (error || !data) return `No pude registrar el plato: ${error?.message ?? "sin fila"}`;
-      await anotarEscritura(ctx, "meals", data.id, `plato "${desc.slice(0, 40)}"`);
+      await anotarEscritura(ctx, "meals", data.id, `plato "${desc.slice(0, 40)}" (${momento} ${fecha})`);
       return macros
-        ? `Plato registrado: ≈${macros.kcal} kcal, ${macros.prot} g de proteína. El contador de ayuno se reinició.`
-        : "Plato registrado (no pude estimar los macros esta vez). El contador de ayuno se reinició.";
+        ? `Guardado como ${momento} del ${fecha}: ≈${macros.kcal} kcal, ${macros.prot} g de proteína.`
+        : `Guardado como ${momento} del ${fecha} (sin macros esta vez).`;
     },
   },
 
@@ -607,12 +671,20 @@ async function contextoDe(db: SupabaseClient, userId: string, timezone: string):
 function promptSistema(idioma: string, timezone: string): string {
   const idiomaTxt = idioma === "en" ? "inglés" : idioma === "pt" ? "portugués" : "español";
   return (
-    "Eres el asistente de chat de NucleoOS, la app de vida de la usuaria. Tu trabajo es el de un ESCRIBA: " +
-    "cuando ella cuenta algo que hizo, lo REGISTRAS en su app llamando a las tools.\n\n" +
-    "REGLA NÚMERO UNO, LA MÁS IMPORTANTE: si el mensaje cuenta algo que ya pasó (ejercicio, comida, agua, " +
-    "sueño, una tarea, un hábito, un contacto con alguien, trabajo, un avance, algo del diario), TIENES QUE " +
-    "llamar la tool correspondiente. Está TERMINANTEMENTE PROHIBIDO responder \"listo\", \"registrado\" o " +
-    "\"anotado\" sin haber llamado antes a la tool: eso sería mentirle a la usuaria sobre sus propios datos.\n\n" +
+    "Eres KAY, la coach personal de NucleoOS en el chat de la usuaria. Cálida, cercana y con chispa, " +
+    "como una amiga entrenadora: celebra, empuja con cariño y jamás hace sentir culpa. Muchas usuarias " +
+    "tienen TDAH y TDA: cero sermones, cero listas, cero tono de manual.\n\n" +
+    "REGLA NÚMERO UNO: GUARDAR PRIMERO, CONVERSAR DESPUÉS. Si el mensaje cuenta algo que pasó (comida, " +
+    "ejercicio, agua, sueño, una tarea, un hábito, un contacto, trabajo, un avance, algo del diario), " +
+    "llama la tool correspondiente AHORA, con lo que tengas:\n" +
+    "· Si falta la cantidad, ESTÍMALA razonable (una porción normal, 30 minutos, 1 vaso) y guarda igual. " +
+    "Jamás te niegues a guardar por falta de detalle.\n" +
+    "· Puedes preguntar UN dato faltante como máximo, UNA sola vez, y siempre DESPUÉS de guardar lo que ya sabías.\n" +
+    "· PROHIBIDO pedir que repita algo que ya aparece en esta conversación: los mensajes anteriores están ahí, úsalos.\n" +
+    "· PROHIBIDO decir \"listo\", \"registrado\" o \"anotado\" sin haber llamado la tool: sería mentirle sobre sus datos.\n\n" +
+    "FECHAS Y HORAS: entiende referencias relativas y pásalas en el campo fecha de las tools: \"ayer\", " +
+    "\"anteayer\", \"hace 3 días\", \"el lunes\" (el más reciente). Si dice a qué hora comió, pásala en hora. " +
+    "Si no dice fecha, es hoy. El momento de la comida se infiere por la hora: no lo preguntes.\n\n" +
     "Ejemplos de lo que se espera de ti:\n" +
     "· \"hice 30 minutos de gimnasio\" → llama registrar_ejercicio con tipo \"Gimnasio\" y minutos 30.\n" +
     "· \"salí a caminar media hora\" → registrar_ejercicio con tipo \"Caminata\" y minutos 30.\n" +
@@ -623,27 +695,31 @@ function promptSistema(idioma: string, timezone: string): string {
     "· \"llamé a mi mamá\" → registrar_interaccion con persona \"mamá\".\n" +
     "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n\n" +
     "Resto de las reglas:\n" +
-    "1. NUNCA inventes montos, fechas ni horas: si algo es ambiguo, pregunta en una línea.\n" +
+    "1. No inventes montos de dinero. Cantidades de comida, agua o minutos sí se estiman con criterio.\n" +
     "2. Un mensaje puede traer VARIAS cosas: llama a todas las tools que hagan falta.\n" +
-    "3. Después de registrar, confirma en pocas líneas lo que quedó guardado, cálido y breve, estilo coach " +
-    "consciente del TDAH. Celebra los logros.\n" +
+    "3. TU TONO: 1 a 3 frases, directo y con cariño. Confirma lo guardado en UNA frase y suma máximo una " +
+    "pregunta o un empujón. Nada de viñetas, nada de párrafos largos, nada de explicar cómo usarte. " +
+    "Ejemplo bueno: \"Anotado el pollo con arroz 💪 ¿Cómo viene la energía hoy?\". Ejemplo prohibido: " +
+    "\"Para registrar tu comida necesito los siguientes datos\".\n" +
     "4. Si el mensaje es una nota de voz, entiende lo que dice y actúa igual que si te lo hubieran escrito.\n" +
     "5. Si solo conversa o pregunta cómo va, usa ver_dia y responde con sus datos, sin registrar nada.\n" +
-    "6. No des consejo médico ni financiero profesional. No escribas código ni hagas tareas ajenas a la vida " +
+    "6. Personaliza solo con LO QUE SABES DE ELLA (abajo): no asumas dietas ni regímenes que no estén en su perfil.\n" +
+    "7. No des consejo médico ni financiero profesional. No escribas código ni hagas tareas ajenas a la vida " +
     "de la usuaria: redirige con cariño a lo que sí haces.\n" +
-    "7. No uses guiones como puntuación. Emojis con moderación.\n" +
+    "8. No uses guiones como puntuación. Emojis con moderación.\n" +
     `Responde SIEMPRE en ${idiomaTxt}. La fecha de hoy para la usuaria (timezone ${timezone}) es ${hoyEn(timezone)}.`
   );
 }
 
-async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: string; data: string } }[], ctx: Ctx, idioma: string, contexto: string): Promise<string> {
+async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: string; data: string } }[], ctx: Ctx, idioma: string, contexto: string, historial: Record<string, unknown>[] = []): Promise<string> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) return "La IA no está configurada todavía.";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
   const declaraciones = Object.values(TOOLS).map((t) => t.decl);
 
-  const contents: Record<string, unknown>[] = [{ role: "user", parts: bloque }];
+  const contents: Record<string, unknown>[] = [...historial, { role: "user", parts: bloque }];
   let toolsUsadas = 0;
+  let exigido = false;
 
   for (let paso = 0; paso < MAX_TOOLS_POR_TURNO + 2; paso++) {
     const res = await fetch(url, {
@@ -679,6 +755,15 @@ async function turnoGemini(bloque: { text?: string; inlineData?: { mimeType: str
 
     if (llamadas.length === 0) {
       const texto = partes.map((p) => (typeof p.text === "string" ? p.text : "")).join("").trim();
+      // El bug más doloroso del bot: decir "registrado" sin haber llamado
+      // ninguna tool. En vez de confesarlo y pedir que repita, se le exige
+      // al modelo que llame las tools AHORA con lo que ya tiene.
+      if (ctx.escrituras.length === 0 && !exigido && /(list[oa]|registr|anot|guard|apunt|saved|logged|record)/i.test(texto)) {
+        exigido = true;
+        contents.push({ role: "model", parts: [{ text: texto }] });
+        contents.push({ role: "user", parts: [{ text: "[SISTEMA] No llamaste ninguna tool, así que NADA quedó guardado. Llama AHORA las tools con los datos que ya están en la conversación, estimando lo que falte. No le pidas repetir nada. Después confirma en una frase corta." }] });
+        continue;
+      }
       return texto || "Listo. 🌱";
     }
 
@@ -992,6 +1077,22 @@ Deno.serve(async (req: Request) => {
       const { data: vinculo } = await db.from("wa_vinculos").select("*").eq("user_id", lote.user_id).single();
       if (!vinculo) throw new Error("lote sin vínculo");
 
+      // La memoria corta: los últimos mensajes de ida y vuelta, para que
+      // Kay nunca pida repetir lo que ya le contaron. Sin esto, cada turno
+      // partía de cero y la usuaria repetía lo mismo tres veces.
+      const { data: previos } = await db.from("wa_mensajes")
+        .select("direccion,tipo,contenido")
+        .eq("user_id", lote.user_id).neq("lote_id", lote.id)
+        .order("creado_en", { ascending: false }).limit(12);
+      const historial: Record<string, unknown>[] = [];
+      for (const m of (previos ?? []).reverse()) {
+        if (m.tipo !== "texto" || !m.contenido) continue;
+        historial.push({
+          role: m.direccion === "out" ? "model" : "user",
+          parts: [{ text: String(m.contenido).slice(0, 500) }],
+        });
+      }
+
       // El bloque semántico: los mensajes del lote en orden.
       const { data: mensajes } = await db.from("wa_mensajes").select("tipo,contenido")
         .eq("lote_id", lote.id).order("creado_en");
@@ -1047,14 +1148,14 @@ Deno.serve(async (req: Request) => {
 
       const ctx: Ctx = { db, userId: lote.user_id, timezone: vinculo.timezone, loteId: lote.id, escrituras: [] };
       const contexto = await contextoDe(db, lote.user_id, vinculo.timezone);
-      let respuesta = await turnoGemini(bloque, ctx, idioma, contexto);
+      let respuesta = await turnoGemini(bloque, ctx, idioma, contexto, historial);
 
       // Red de seguridad: si el modelo dijo que guardó algo pero ninguna tool
       // escribió, se lo avisamos. Prefiero admitir el fallo antes que dejar a
       // la usuaria creyendo que su registro quedó hecho.
       const dijoQueGuardo = /(listo|registr|anot|guard|apunt)/i.test(respuesta);
       if (ctx.escrituras.length === 0 && dijoQueGuardo) {
-        respuesta += "\n\nOjo: no alcancé a guardarlo en la app. ¿Me lo cuentas otra vez con el detalle, qué hiciste y cuánto?";
+        respuesta += "\n\nOjo: tuve un problema técnico y esto aún no queda en la app. No me lo repitas: dime solo \"guárdalo\" y lo dejo registrado al tiro.";
         await db.from("wa_eventos").insert({
           user_id: lote.user_id, lote_id: lote.id, tipo: "error",
           detalle: { motivo: "confirmo sin registrar" },
