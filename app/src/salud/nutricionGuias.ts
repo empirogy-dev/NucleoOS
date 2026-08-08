@@ -53,7 +53,7 @@ export const GUIAS_NUTRICION: GuiaNutricion[] = [
     id: "foco-estable",
     emoji: "🧠",
     titulo: "Comer para sostener el foco",
-    resumen: "El cerebro quiere glucosa estable, no picos. Especialmente importante con ADHD.",
+    resumen: "El cerebro quiere glucosa estable, no picos. Especialmente importante con ADHD & ADD.",
     consejos: [
       "Desayuno con proteína y grasa (huevos, palta, yogur) sostiene el foco de la mañana mucho más que solo pan.",
       "Comidas gigantes producen siesta: si necesitas foco en la tarde, almuerza moderado y guarda un snack.",

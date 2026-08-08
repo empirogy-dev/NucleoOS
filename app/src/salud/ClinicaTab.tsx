@@ -249,7 +249,7 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
         <div className="field"><label>{tr("Alergias")}</label>
           <input value={allergies} onChange={(e) => setAllergies(e.target.value)} placeholder={tr("Penicilina, maní…")} /></div>
         <div className="field"><label>{tr("Condiciones")}</label>
-          <input value={conditions} onChange={(e) => setConditions(e.target.value)} placeholder="ADHD, hipotiroidismo…" /></div>
+          <input value={conditions} onChange={(e) => setConditions(e.target.value)} placeholder="ADHD & ADD, hipotiroidismo…" /></div>
         <div className="field"><label>{tr("Operaciones")}</label>
           <input value={surgeries} onChange={(e) => setSurgeries(e.target.value)} placeholder={tr("Apendicectomía (2019)…")} /></div>
         <div className="frow">

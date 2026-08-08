@@ -8,7 +8,7 @@ import { listAppointments } from "../salud/data";
 import { listRelLogs, listRelationships, daysToBirthday, needsReconnect } from "../relaciones/data";
 import { listHabitLogs, listHabits } from "../habitos/data";
 
-// Centro de notificaciones (bloque F): para una persona con ADHD los
+// Centro de notificaciones (bloque F): para una persona con ADHD & ADD los
 // recordatorios son parte central. Todo lo urgente, visible en un lugar,
 // mas un aviso del navegador una vez al día si lo permites.
 
