@@ -5,7 +5,7 @@ import { TablesMissingError } from "../finanzas/data";
 
 // Captura rápida global: atrapa el pensamiento antes de que se esfume.
 // Un toque, escribes, Enter, y quedó en Tareas de hoy. Sin categorías,
-// sin fecha, sin decisiones. El cerebro TDAH suelta y sigue.
+// sin fecha, sin decisiones. El cerebro TDAH y TDA suelta y sigue.
 
 export function CapturaRapida() {
   const [abierta, setAbierta] = useState(false);

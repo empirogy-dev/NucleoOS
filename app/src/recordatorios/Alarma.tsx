@@ -6,7 +6,7 @@ import { listRecordatorios, type Recordatorio } from "./data";
 // La alarma de la app: mientras NucleoOS esté abierta (en cualquier página),
 // revisa cada medio minuto si un recordatorio llegó a su hora y entonces
 // suena, notifica al navegador y muestra un aviso en pantalla. El bot de
-// Telegram avisa por su lado: doble campana, que para el TDAH nunca sobra.
+// Telegram avisa por su lado: doble campana, que para el TDAH y TDA nunca sobra.
 
 const LS_AVISADOS = "nucleoos-recordatorios-avisados";
 const VENTANA_MIN = 30; // cuánto hacia atrás se considera "recién vencido"

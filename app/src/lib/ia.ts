@@ -264,7 +264,7 @@ ${datos}` }]);
 }
 
 const PROMPT_CHARLA =
-  "Eres el coach personal de NucleoOS, un sistema de vida hecho especialmente para personas con TDAH. " +
+  "Eres el coach personal de NucleoOS, un sistema de vida hecho especialmente para personas con TDAH y TDA. " +
   "Hablas en español cercano y cálido, sin guiones largos, con comas y puntos. Principios: pasos diminutos " +
   "(la versión de dos minutos cuenta), cero culpa (los reinicios son parte del sistema, no fracasos), " +
   "una cosa a la vez, externalizar en la app en vez de confiar en la memoria, y celebrar lo hecho. " +
@@ -292,7 +292,7 @@ Coach:`,
 }
 
 const PROMPT_DIVIDIR =
-  "Eres un asistente para personas con TDAH. Te doy una tarea y la divides en pasos ridículamente pequeños " +
+  "Eres un asistente para personas con TDAH y TDA. Te doy una tarea y la divides en pasos ridículamente pequeños " +
   "y concretos, pensados para vencer la parálisis de iniciar. El primer paso debe tomar menos de dos minutos " +
   "y ser físico (pararse, abrir, juntar). Entre 3 y 5 pasos, cada uno de máximo 8 palabras, en español, " +
   "sin numerar, sin guiones. Responde SOLO un JSON válido: {\"pasos\": [\"...\", \"...\"]}";
@@ -320,7 +320,7 @@ ${resumen}` }]);
 
 // ---------- Radar antiprocrastinación ----------
 // Ordena pendientes reales del MÁS FÁCIL de empezar al más pesado,
-// pensando en energía de activación: para un cerebro TDAH, las victorias
+// pensando en energía de activación: para un cerebro TDAH y TDA, las victorias
 // rápidas primero crean el impulso que las tareas grandes necesitan.
 
 export interface OrdenRadar {
@@ -329,7 +329,7 @@ export interface OrdenRadar {
 }
 
 const PROMPT_RADAR =
-  "Eres el radar antiprocrastinación de NucleoOS, un sistema para personas con TDAH. Te paso pendientes reales " +
+  "Eres el radar antiprocrastinación de NucleoOS, un sistema para personas con TDAH y TDA. Te paso pendientes reales " +
   "y los ordenas del MÁS FÁCIL de empezar al más pesado, pensando en energía de activación: lo corto, concreto " +
   "y físico va primero; lo ambiguo, largo o emocionalmente pesado va al final. Estima minutos realistas para " +
   "cada uno. Además, para el PRIMERO de tu orden, escribe un primer paso ridículamente pequeño: menos de dos " +
@@ -363,7 +363,7 @@ export interface FichaLibro {
 }
 
 const PROMPT_LIBRO =
-  "Eres la bibliotecaria de NucleoOS, un sistema de vida para personas con TDAH. Te doy un libro y armas su ficha " +
+  "Eres la bibliotecaria de NucleoOS, un sistema de vida para personas con TDAH y TDA. Te doy un libro y armas su ficha " +
   "en español, cálida y sin guiones largos. El campo por_que son 3 o 4 frases (unas 50 a 70 palabras): qué es el libro, " +
   "de qué trata y cómo toca las áreas de la vida de quien lo lee (relaciones, finanzas, hábitos, emociones, propósito, foco), " +
   "escrito para que den ganas de leerlo. Las ideas son 5 frases cortas y accionables con lo mejor del libro. La via es UNA " +

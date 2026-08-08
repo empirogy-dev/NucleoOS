@@ -5,7 +5,7 @@ import { useModulos } from "../modulos/ModulosProvider";
 import { MODOS_INICIO, ocultosDeModo } from "../modulos/modulos";
 
 // La bienvenida de la primera entrada: tu nombre y qué quieres ordenar
-// primero. Dos pantallas y adentro, porque un cerebro TDAH no quiere un
+// primero. Dos pantallas y adentro, porque un cerebro TDAH y TDA no quiere un
 // tour de doce pasos: quiere empezar. Todo lo elegido se cambia después
 // en Ajustes, nada es para siempre.
 

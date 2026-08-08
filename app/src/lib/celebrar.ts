@@ -1,5 +1,5 @@
 // El cañón de serpentinas de NucleoOS: celebración visual instantánea
-// cuando concretas un logro. Para un cerebro TDAH la recompensa inmediata
+// cuando concretas un logro. Para un cerebro TDAH y TDA la recompensa inmediata
 // no es adorno, es el circuito que hace que quieras volver a lograr.
 // Sin librerías: un canvas encima de todo que se limpia solo.
 

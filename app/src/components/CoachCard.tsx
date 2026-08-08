@@ -4,7 +4,7 @@ import { Compass, Send } from "lucide-react";
 import { consejoCoach, hablarConCoach, iaConfigured } from "../lib/ia";
 
 // Coach conversable: mira tu estado real y además puedes contarle cómo
-// te sientes o preguntarle. Pensado para TDAH: pasos chicos, cero culpa.
+// te sientes o preguntarle. Pensado para TDAH y TDA: pasos chicos, cero culpa.
 
 interface Mensaje {
   de: "yo" | "coach";

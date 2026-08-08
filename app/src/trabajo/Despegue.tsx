@@ -12,7 +12,7 @@ import { listProjectTasks, listProjects, toggleProjectTask } from "./data";
 // Despegue antiprocrastinación: escanea TODO lo pendiente (checklists de
 // proyectos, próximos pasos de metas y tareas de hoy) y lo ordena del más
 // fácil al más pesado. Las victorias rápidas primero: cada pendiente chico
-// completado le regala impulso al siguiente. Eso es diseñar para el TDAH.
+// completado le regala impulso al siguiente. Eso es diseñar para el TDAH y TDA.
 
 interface ItemRadar {
   id: string;

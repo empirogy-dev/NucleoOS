@@ -6,7 +6,7 @@ import { bloquesHoyLocal, saveFocusBlock, sumarBloqueLocal, type PomodoroPreset 
 import { listProjects, type Project } from "../trabajo/data";
 import { Selector } from "./Selector";
 
-// Pomodoro global, pensado para el foco con TDAH: vive sobre todas las
+// Pomodoro global, pensado para el foco con TDAH y TDA: vive sobre todas las
 // páginas, externaliza el tiempo (lo ves siempre), parte con un toque,
 // avisa con una campana suave y celebra cada bloque sin culpa.
 

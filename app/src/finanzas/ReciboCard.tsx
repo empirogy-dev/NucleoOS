@@ -10,7 +10,7 @@ import { fmtMoney, type Account, type Category } from "./types";
 
 // Foto del recibo: la IA lee el gasto y lo muestra para que la persona
 // confirme y corrija antes de que entre a sus finanzas. Un cerebro con
-// TDAH agradece revisar antes de que algo se guarde solo.
+// TDAH y TDA agradece revisar antes de que algo se guarde solo.
 
 interface Borrador {
   monto: string;

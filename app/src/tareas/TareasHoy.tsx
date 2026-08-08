@@ -118,7 +118,7 @@ function TareaFila({ t, deOtroDia = false, onChanged }: { t: DayTask; deOtroDia?
   const [dividiendo, setDividiendo] = useState(false);
   const [errDiv, setErrDiv] = useState<string | null>(null);
 
-  // La iniciación es el muro TDAH: la IA parte la tarea en pasos diminutos
+  // La iniciación es el muro TDAH y TDA: la IA parte la tarea en pasos diminutos
   // que reemplazan a la original, cada uno con su propia casilla.
   async function dividir() {
     if (dividiendo) return;

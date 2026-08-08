@@ -56,7 +56,7 @@ const FASES: Record<Fase["key"], Omit<Fase, "key">> = {
   lutea: {
     nombre: "Lútea",
     emoji: "🌗",
-    descripcion: "La progesterona domina y hacia el final puede venir el SPM: más sensibilidad, menos paciencia, antojo de calma. Con TDAH esta fase puede sentirse más intensa.",
+    descripcion: "La progesterona domina y hacia el final puede venir el SPM: más sensibilidad, menos paciencia, antojo de calma. Con TDAH y TDA esta fase puede sentirse más intensa.",
     paraTi: "Baja las exigencias sociales, prioriza la comodidad y prepárate algo rico. Sentir más fuerte estos días no es exagerar, es tu química.",
     apoyo: "Paciencia extra, validar sin arreglar, menos planes sociales y más comodidad. Un 'te tengo algo rico' vale oro.",
   },

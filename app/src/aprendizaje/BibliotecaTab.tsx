@@ -84,7 +84,7 @@ ${tr(l.titulo)}`)) return;
     <>
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap" }}>
         <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: "62ch", flex: "1 1 300px" }}>
-          {todos.length} {tr("libros elegidos por impacto real para un cerebro TDAH, no por moda. Abre uno y llévate sus ideas aunque nunca lo compres.")}
+          {todos.length} {tr("libros elegidos por impacto real para un cerebro TDAH y TDA, no por moda. Abre uno y llévate sus ideas aunque nunca lo compres.")}
           {(leidos > 0 || quiero > 0) && (
             <>
               {" "}{tr("Llevas")} <b style={{ color: "var(--ink)" }}>{leidos} {leidos === 1 ? tr("leído") : tr("leídos")}</b> {tr("y")} <b style={{ color: "var(--ink)" }}>{quiero}</b> {tr("en tu lista.")}

@@ -1,7 +1,7 @@
 {
   "name": "NucleoOS",
   "short_name": "NucleoOS",
-  "description": "El sistema operativo de tu vida, hecho para mentes con TDAH.",
+  "description": "El sistema operativo de tu vida, hecho para mentes con TDAH y TDA.",
   "start_url": "/app",
   "_comentario_scope": "El alcance es todo el sitio a propósito: si fuera /app, el navegador ignoraría este manifest al leerlo desde la landing, que vive en la raíz, y agregar a pantalla de inicio crearía un acceso directo a la landing en vez de instalar la app.",
   "scope": "/",
