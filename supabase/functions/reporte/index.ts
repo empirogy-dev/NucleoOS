@@ -36,7 +36,7 @@ const MAX_POR_HORA = 5;
 
 async function excedido(ip: string): Promise<boolean> {
   try {
-    const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const db = createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))!);
     const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count } = await db
       .from("wa_eventos")

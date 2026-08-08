@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // El tope diario, con el service role (la usuaria no puede tocar su contador).
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))!);
     const dia = new Date().toISOString().slice(0, 10);
     const { data: fila } = await admin.from("ia_uso").select("usos").eq("user_id", quien.user.id).eq("dia", dia).maybeSingle();
     const usos = Number(fila?.usos ?? 0);

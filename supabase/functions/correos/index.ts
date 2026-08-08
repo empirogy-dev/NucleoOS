@@ -126,9 +126,9 @@ Deno.serve(async (req: Request) => {
   // Solo el cron (con una llave de servicio) puede despachar el correo.
   // Acepta la legacy (eyJ...), la nueva (sb_secret_...) y WA_CRON_SECRET,
   // igual que wa-motor: así rotar llaves no deja al cartero afuera.
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const serviceKey = (Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))!;
   const enviada = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  const validas = [serviceKey, Deno.env.get("SUPABASE_SECRET_KEY"), Deno.env.get("WA_CRON_SECRET")]
+  const validas = [serviceKey, Deno.env.get("SB_SECRET_KEY"), Deno.env.get("WA_CRON_SECRET")]
     .filter((k): k is string => Boolean(k && k.trim())).map((k) => k.trim());
   if (!enviada || !validas.some((k) => k === enviada)) {
     return new Response(JSON.stringify({ error: "Solo el cartero puede entrar aquí." }), { status: 401, headers });

@@ -26,7 +26,7 @@ const LEASE_MS = 5 * 60_000;
 const MAX_INTENTOS = 3;
 
 function admin(): SupabaseClient {
-  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  return createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))!);
 }
 
 // ---------- Utilidades ----------
@@ -952,7 +952,7 @@ function autorizado(req: Request): boolean {
   const validas = [
     Deno.env.get("WA_CRON_SECRET"),
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
-    Deno.env.get("SUPABASE_SECRET_KEY"),
+    Deno.env.get("SB_SECRET_KEY"),
   ].filter((k): k is string => Boolean(k && k.trim())).map((k) => k.trim());
   return validas.some((k) => k === enviada);
 }
