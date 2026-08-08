@@ -19,6 +19,15 @@ import { useAuth } from "./auth/AuthProvider";
 import { SettingsProvider } from "./settings/SettingsProvider";
 import { FechaActivaProvider } from "./fecha/FechaActiva";
 import { ModulosProvider } from "./modulos/ModulosProvider";
+import { Onboarding } from "./onboarding/Onboarding";
+
+// Si llegas desde la landing de finanzas (?modo=finanzas), la intención se
+// guarda antes del login y la bienvenida parte con ese modo elegido.
+try {
+  if (new URLSearchParams(window.location.search).get("modo") === "finanzas") {
+    localStorage.setItem("nucleoos-modo-pendiente", "finanzas");
+  }
+} catch { /* entorno sin window */ }
 
 export default function App() {
   const { session, loading } = useAuth();
@@ -37,6 +46,7 @@ export default function App() {
     <SettingsProvider>
       <FechaActivaProvider>
       <ModulosProvider>
+      <Onboarding />
       {/* En producción la app vive en /app y la raíz del dominio es la
           landing. Mismo dominio a propósito: así la sesión de quien ya
           entraba no se pierde. En desarrollo sigue en la raíz. */}

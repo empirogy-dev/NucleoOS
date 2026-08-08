@@ -10,12 +10,15 @@ interface Ctx {
   ocultos: Set<string>;
   esVisible: (id: string) => boolean;
   alternar: (id: string) => void;
+  /** Reemplaza el set completo de una vez (lo usa el onboarding). */
+  reemplazar: (ids: string[]) => void;
 }
 
 const ModulosCtx = createContext<Ctx>({
   ocultos: new Set(),
   esVisible: () => true,
   alternar: () => {},
+  reemplazar: () => {},
 });
 
 export function ModulosProvider({ children }: { children: ReactNode }) {
@@ -33,7 +36,13 @@ export function ModulosProvider({ children }: { children: ReactNode }) {
 
   const esVisible = useCallback((id: string) => !ocultos.has(id), [ocultos]);
 
-  return <ModulosCtx.Provider value={{ ocultos, esVisible, alternar }}>{children}</ModulosCtx.Provider>;
+  const reemplazar = useCallback((ids: string[]) => {
+    const next = new Set(ids);
+    guardarOcultos(next);
+    setOcultos(next);
+  }, []);
+
+  return <ModulosCtx.Provider value={{ ocultos, esVisible, alternar, reemplazar }}>{children}</ModulosCtx.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

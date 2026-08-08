@@ -71,3 +71,28 @@ export function guardarOcultos(ocultos: Set<string>): void {
     /* sin almacenamiento: no pasa nada grave */
   }
 }
+
+// ---------- Modos de inicio (onboarding) ----------
+// Cada modo dice qué módulos quedan VISIBLES al partir. No borra nada:
+// el resto se esconde del menú y se puede encender en Ajustes cuando quiera.
+
+export interface ModoInicio {
+  key: string;
+  emoji: string;
+  tkey: string; // nombre del modo en el diccionario
+  dkey: string; // descripción corta en el diccionario
+  visibles: string[] | null; // null = todos
+}
+
+export const MODOS_INICIO: ModoInicio[] = [
+  { key: "todo", emoji: "🧭", tkey: "modo.todo", dkey: "modo.todo.d", visibles: null },
+  { key: "finanzas", emoji: "💰", tkey: "modo.finanzas", dkey: "modo.finanzas.d", visibles: ["/finanzas", "/calendario"] },
+  { key: "cuerpo", emoji: "⚡", tkey: "modo.cuerpo", dkey: "modo.cuerpo.d", visibles: ["/salud", "/movimiento", "/habitos", "/calendario", "/revision"] },
+  { key: "mente", emoji: "🧠", tkey: "modo.mente", dkey: "modo.mente.d", visibles: ["/mente", "/habitos", "/calendario", "/revision", "/vision"] },
+];
+
+/** Los módulos que ese modo esconde (para pasarle al proveedor). */
+export function ocultosDeModo(modo: ModoInicio): string[] {
+  if (!modo.visibles) return [];
+  return IDS_MODULOS.filter((id) => !modo.visibles!.includes(id));
+}

@@ -19,6 +19,7 @@ export const CLAVES_NUBE: string[] = [
   "nucleoos-objetivo-cal", // objetivo calórico
   "nucleoos-idioma", // el idioma elegido para la app
   "nucleoos-modulos-ocultos", // qué módulos escondió la persona del menú
+  "nucleoos-onboarding", // la bienvenida ya hecha, para no repetirla en otro aparato
 ];
 
 // Guardamos los métodos originales para leer y escribir sin eco:
