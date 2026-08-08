@@ -32,12 +32,11 @@ Deno.serve(async (req: Request) => {
   if (!key) return responder(500, { error: "Falta el secreto GEMINI_API_KEY en Supabase (Edge Functions → Secrets)." });
 
   try {
-    // ¿Quién llama? El JWT ya viene verificado por la plataforma.
-    const auth = req.headers.get("Authorization") ?? "";
-    const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: auth } },
-    });
-    const { data: quien } = await anon.auth.getUser();
+    // ¿Quién llama? Validamos su token directo con la llave de servicio,
+    // sin depender de la anon legacy (que va camino a apagarse).
+    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))!);
+    const { data: quien } = token ? await admin.auth.getUser(token) : { data: { user: null } };
     if (!quien?.user) return responder(401, { error: "Sin sesión." });
 
     // La petición: tamaño y forma acotados.
@@ -50,8 +49,8 @@ Deno.serve(async (req: Request) => {
       return responder(400, { error: "La petición es demasiado larga para la IA de NucleoOS." });
     }
 
-    // El tope diario, con el service role (la usuaria no puede tocar su contador).
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("SB_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))!);
+    // El tope diario, con la misma llave de servicio (la usuaria no puede
+    // tocar su contador).
     const dia = new Date().toISOString().slice(0, 10);
     const { data: fila } = await admin.from("ia_uso").select("usos").eq("user_id", quien.user.id).eq("dia", dia).maybeSingle();
     const usos = Number(fila?.usos ?? 0);
