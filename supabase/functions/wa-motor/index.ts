@@ -814,6 +814,55 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     },
   },
 
+  por_donde_empiezo: {
+    decl: {
+      name: "por_donde_empiezo",
+      description: "Junta TODOS los frentes reales de la usuaria (tareas de hoy, tareas de proyectos, metas, hábitos, energía del día, citas). Úsala cuando pregunte '¿por dónde empiezo?', '¿qué hago ahora?' o diga que está abrumada. Con lo que devuelve, recomienda UNA sola cosa.",
+    },
+    run: async (_args, ctx) => {
+      const fecha = hoyEn(ctx.timezone);
+      const [tareas, proyectos, ptareas, metas, habitos, marcados, energia, citas] = await Promise.all([
+        ctx.db.from("day_tasks").select("title,done").eq("user_id", ctx.userId).eq("date", fecha).order("created_at"),
+        ctx.db.from("projects").select("id,name").eq("user_id", ctx.userId).eq("status", "activo").limit(6),
+        ctx.db.from("project_tasks").select("project_id,title,done").eq("user_id", ctx.userId).eq("done", false).limit(20),
+        ctx.db.from("objectives").select("title,status,deadline").eq("user_id", ctx.userId).neq("status", "lograda").limit(8),
+        ctx.db.from("habits").select("id,name").eq("user_id", ctx.userId).limit(15),
+        ctx.db.from("habit_logs").select("habit_id").eq("user_id", ctx.userId).eq("date", fecha),
+        ctx.db.from("energy_logs").select("energy_level").eq("user_id", ctx.userId).eq("date", fecha).maybeSingle(),
+        ctx.db.from("appointments").select("title,time").eq("user_id", ctx.userId).eq("date", fecha).limit(5),
+      ]);
+
+      const lineas: string[] = [];
+      const nivel = (energia.data as { energy_level?: number } | null)?.energy_level;
+      lineas.push(nivel
+        ? `ENERGÍA DE HOY: ${nivel}/5 ${nivel <= 2 ? "(baja: sugiere algo liviano y corto)" : nivel >= 4 ? "(alta: puede con lo pesado)" : "(media)"}`
+        : "ENERGÍA DE HOY: no registrada (pregúntala en la misma respuesta, de pasada)");
+
+      const pendHoy = ((tareas.data ?? []) as Array<{ title: string; done: boolean }>).filter((t) => !t.done).map((t) => t.title);
+      if (pendHoy.length) lineas.push(`Tareas de hoy pendientes: ${pendHoy.join("; ")}`);
+
+      const nombreProy = new Map(((proyectos.data ?? []) as Array<{ id: string; name: string }>).map((p) => [p.id, p.name]));
+      const dePro = ((ptareas.data ?? []) as Array<{ project_id: string; title: string }>)
+        .filter((t) => nombreProy.has(t.project_id))
+        .slice(0, 8).map((t) => `${t.title} (proyecto ${nombreProy.get(t.project_id)})`);
+      if (dePro.length) lineas.push(`Tareas de proyectos: ${dePro.join("; ")}`);
+
+      const metasTxt = ((metas.data ?? []) as Array<{ title: string; status: string; deadline: string | null }>)
+        .map((m) => `${m.title}${m.status === "en_riesgo" ? " (EN RIESGO)" : ""}${m.deadline ? ` (vence ${m.deadline})` : ""}`);
+      if (metasTxt.length) lineas.push(`Metas vivas: ${metasTxt.join("; ")}`);
+
+      const hechos = new Set(((marcados.data ?? []) as Array<{ habit_id: string }>).map((l) => l.habit_id));
+      const pendHab = ((habitos.data ?? []) as Array<{ id: string; name: string }>).filter((h) => !hechos.has(h.id)).map((h) => h.name);
+      if (pendHab.length) lineas.push(`Hábitos sin marcar hoy: ${pendHab.join(", ")}`);
+
+      const citasTxt = ((citas.data ?? []) as Array<{ title: string; time: string | null }>).map((c) => `${c.title}${c.time ? ` a las ${c.time}` : ""}`);
+      if (citasTxt.length) lineas.push(`Citas de hoy: ${citasTxt.join("; ")}`);
+
+      if (lineas.length <= 1 && pendHoy.length === 0) lineas.push("No hay nada urgente pendiente: día despejado.");
+      return lineas.join("\n");
+    },
+  },
+
   ver_dia: {
     decl: {
       name: "ver_dia",
@@ -918,6 +967,14 @@ function promptSistema(idioma: string, timezone: string): string {
     "· Puedes preguntar UN dato faltante como máximo, UNA sola vez, y siempre DESPUÉS de guardar lo que ya sabías.\n" +
     "· PROHIBIDO pedir que repita algo que ya aparece en esta conversación: los mensajes anteriores están ahí, úsalos.\n" +
     "· PROHIBIDO decir \"listo\", \"registrado\" o \"anotado\" sin haber llamado la tool: sería mentirle sobre sus datos.\n\n" +
+    "EL SUPERPODER \"¿POR DÓNDE EMPIEZO?\": cuando pregunte por dónde partir, qué hacer ahora, o diga que " +
+    "está abrumada o bloqueada, llama por_donde_empiezo y con eso recomienda UNA SOLA cosa concreta, nunca " +
+    "una lista. Elige con este criterio: primero lo que vence hoy o está en riesgo, después lo que más " +
+    "destranca el resto. Con energía baja (1 o 2) sugiere lo más liviano o el primer paso de 2 minutos de " +
+    "algo grande; con energía alta (4 o 5), lo más pesado del día. Si la cosa es grande, pártela: dile solo " +
+    "el PRIMER paso chico y concreto. Cero culpa por lo pendiente: jamás menciones cuánto se acumuló. " +
+    "Ejemplo: \"Con la energía de hoy, parte por lo más simple: manda ese correo (2 min) y lo demás lo vemos " +
+    "después 💪\". Un mini-plan del día completo SOLO si te lo pide explícitamente, y máximo 3 cosas.\n\n" +
     "FECHAS Y HORAS: entiende referencias relativas y pásalas en el campo fecha de las tools: \"ayer\", " +
     "\"anteayer\", \"hace 3 días\", \"el lunes\" (el más reciente). Si dice a qué hora comió, pásala en hora. " +
     "Si no dice fecha, es hoy. El momento de la comida se infiere por la hora: no lo preguntes.\n\n" +
