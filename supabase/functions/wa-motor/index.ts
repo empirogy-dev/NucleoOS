@@ -814,6 +814,116 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     },
   },
 
+  registrar_transaccion: {
+    decl: {
+      name: "registrar_transaccion",
+      description: "Registra un gasto o ingreso en Finanzas. Sirve para lo dicho de palabra y para boletas en foto: de la foto extrae TÚ el monto total, el comercio, la fecha y los últimos 4 dígitos de la tarjeta si aparecen. NUNCA inventes un monto: si no se lee, pregunta una vez.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          monto: { type: "NUMBER", description: "El monto total, solo el número" },
+          comercio: { type: "STRING", description: "Nombre del comercio o de quién pagó, limpio (Sephora, no SEPHORA*123)" },
+          descripcion: { type: "STRING", description: "Qué fue, en pocas palabras. Vacío si el comercio ya lo dice" },
+          tipo: { type: "STRING", description: "gasto | ingreso. Por defecto gasto" },
+          fecha: { type: "STRING", description: "La de la boleta o la dicha: YYYY-MM-DD, 'ayer', etc. Vacío = hoy" },
+          ultimos4: { type: "STRING", description: "Últimos 4 dígitos de la tarjeta si aparecen en la boleta o los dice" },
+          cuenta: { type: "STRING", description: "Nombre aproximado de la cuenta o tarjeta si la menciona (ej: la visa, banco estado)" },
+          categoria: { type: "STRING", description: "Categoría si es obvia (supermercado, comida, transporte...). Vacío si no" },
+          etiquetas: { type: "STRING", description: "Etiquetas separadas por coma si las pide (negocio, personal...). Vacío si no" },
+        },
+        required: ["monto"],
+      },
+    },
+    run: async (args, ctx) => {
+      const monto = Math.abs(Number(args.monto));
+      if (!(monto > 0)) return "El monto no es válido. Pregunta cuánto fue, una sola vez.";
+      const tipo = String(args.tipo ?? "gasto") === "ingreso" ? "income" : "expense";
+      const fecha = fechaDe(args, ctx);
+      const comercio = String(args.comercio ?? "").trim().slice(0, 120) || null;
+      const descripcion = String(args.descripcion ?? "").trim().slice(0, 200);
+
+      // ¿Con qué pagó? Primero los últimos 4 (tarjeta exacta), después el
+      // nombre; si nada calza, queda sin cuenta y no se toca ningún saldo.
+      let accountId: string | null = null;
+      let cardId: string | null = null;
+      let fuenteNombre = "";
+      const u4 = String(args.ultimos4 ?? "").replace(/\D/g, "").slice(-4);
+      if (u4.length === 4) {
+        const { data: card } = await ctx.db.from("credit_cards").select("id,name")
+          .eq("user_id", ctx.userId).eq("last_four", u4).limit(1).maybeSingle();
+        if (card) { cardId = card.id; fuenteNombre = `💳 ${card.name} •••• ${u4}`; }
+      }
+      const nombreFuente = String(args.cuenta ?? "").trim();
+      if (!cardId && nombreFuente) {
+        const palabra = nombreFuente.split(/\s+/).filter((p) => p.length > 2)[0] ?? nombreFuente;
+        const { data: card } = await ctx.db.from("credit_cards").select("id,name,last_four")
+          .eq("user_id", ctx.userId).ilike("name", `%${palabra}%`).limit(1).maybeSingle();
+        if (card && tipo === "expense") { cardId = card.id; fuenteNombre = `💳 ${card.name}`; }
+        else {
+          const { data: acc } = await ctx.db.from("accounts").select("id,name")
+            .eq("user_id", ctx.userId).ilike("name", `%${palabra}%`).limit(1).maybeSingle();
+          if (acc) { accountId = acc.id; fuenteNombre = acc.name; }
+        }
+      }
+
+      // Categoría por nombre, del tipo correcto. Sin categoría no pasa nada:
+      // el movimiento cae a la bandeja Por revisar de la app.
+      let categoryId: string | null = null;
+      const nombreCat = String(args.categoria ?? "").trim();
+      if (nombreCat) {
+        const { data: cat } = await ctx.db.from("categories").select("id")
+          .eq("user_id", ctx.userId).eq("type", tipo === "income" ? "income" : "expense")
+          .ilike("name", `%${nombreCat.split(/\s+/)[0]}%`).limit(1).maybeSingle();
+        if (cat) categoryId = cat.id;
+      }
+
+      const { data, error } = await ctx.db.from("transactions").insert({
+        user_id: ctx.userId, date: fecha, amount: monto, type: tipo,
+        description: descripcion, merchant: comercio, category_id: categoryId,
+        account_id: accountId,
+        payment_source_type: cardId ? "credit_card" : accountId ? "account" : null,
+        payment_source_id: cardId ?? accountId,
+        source: "coach",
+      }).select("id").single();
+      if (error || !data) return `No pude registrar el movimiento: ${error?.message ?? "sin fila"}`;
+
+      // Los saldos, igual que en la app: el gasto con tarjeta sube lo
+      // adeudado; con cuenta, resta (o suma si es ingreso).
+      if (cardId && tipo === "expense") {
+        const { data: c } = await ctx.db.from("credit_cards").select("balance").eq("id", cardId).single();
+        if (c) await ctx.db.from("credit_cards").update({ balance: Number(c.balance) + monto }).eq("id", cardId);
+      } else if (accountId) {
+        const { data: a } = await ctx.db.from("accounts").select("balance").eq("id", accountId).single();
+        if (a) await ctx.db.from("accounts").update({ balance: Number(a.balance) + (tipo === "income" ? monto : -monto) }).eq("id", accountId);
+      }
+
+      // Etiquetas pedidas: si no existen se crean, porque quien las pide es
+      // la propia usuaria por chat.
+      const etiquetas = String(args.etiquetas ?? "").split(",").map((e) => e.trim()).filter(Boolean).slice(0, 4);
+      for (const nombre of etiquetas) {
+        let { data: tag } = await ctx.db.from("tags").select("id")
+          .eq("user_id", ctx.userId).ilike("name", nombre).limit(1).maybeSingle();
+        if (!tag) {
+          ({ data: tag } = await ctx.db.from("tags")
+            .insert({ user_id: ctx.userId, name: nombre.slice(0, 40) }).select("id").single());
+        }
+        if (tag) {
+          await ctx.db.from("transaction_tags").upsert(
+            { user_id: ctx.userId, transaction_id: data.id, tag_id: tag.id },
+            { onConflict: "transaction_id,tag_id", ignoreDuplicates: true },
+          );
+        }
+      }
+
+      await anotarEscritura(ctx, "transactions", data.id, `${tipo === "income" ? "ingreso" : "gasto"} ${monto} ${comercio ?? ""} (${fecha})`);
+      const partes = [`${tipo === "income" ? "Ingreso" : "Gasto"} de ${monto} registrado`];
+      if (comercio) partes.push(`en ${comercio}`);
+      if (fuenteNombre) partes.push(`con ${fuenteNombre}`);
+      if (!categoryId) partes.push("(quedó en Por revisar para que le pongas categoría)");
+      return partes.join(" ") + ".";
+    },
+  },
+
   por_donde_empiezo: {
     decl: {
       name: "por_donde_empiezo",
@@ -991,6 +1101,8 @@ function promptSistema(idioma: string, timezone: string): string {
     "· \"mi meta es correr 5K en octubre\" → crear_meta.\n" +
     "· \"toma nota: idea para el negocio...\" → tomar_nota. \"leí 30 páginas de Hábitos Atómicos\" → registrar_lectura.\n" +
     "· \"hoy ando con la energía por el suelo\" → registrar_energia con nivel 1 o 2.\n" +
+    "· \"gasté 25.000 en el súper con la visa\" → registrar_transaccion con monto 25000, comercio súper, cuenta visa.\n" +
+    "· una foto de boleta → registrar_transaccion con lo que TÚ leas en ella (monto total, comercio, fecha, últimos 4).\n" +
     "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n\n" +
     "Resto de las reglas:\n" +
     "1. No inventes montos de dinero. Cantidades de comida, agua o minutos sí se estiman con criterio.\n" +
@@ -1410,7 +1522,7 @@ Deno.serve(async (req: Request) => {
               bloque.push({
                 text: m.tipo === "audio"
                   ? "[nota de voz de la usuaria: entiende lo que dice y REGISTRA con las tools lo que cuenta que hizo]"
-                  : "[foto de la usuaria: si es comida, regístrala con registrar_plato]",
+                  : "[foto de la usuaria: si es una boleta o recibo, extrae monto total, comercio, fecha y últimos 4 dígitos de la tarjeta y llama registrar_transaccion; si es comida, registrar_plato]",
               });
               bloque.push({ inlineData: { mimeType: media.mime, data: media.b64 } });
             }
