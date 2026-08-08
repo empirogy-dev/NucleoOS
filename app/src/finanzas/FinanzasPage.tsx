@@ -1,5 +1,6 @@
 import { IconField } from "../components/IconField";
 import { useIdioma } from "../idioma/IdiomaProvider";
+import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -10,6 +11,7 @@ import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, t
 import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarTx, etiquetarTx, listTags, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ComprobantesTab } from "./ComprobantesTab";
+import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
 import {
   TablesMissingError,
   addAccount,
@@ -102,7 +104,8 @@ export function FinanzasPage() {
   const [tagTx, setTagTx] = useState<Tx | null>(null);
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [txTags, setTxTags] = useState<Map<string, Etiqueta[]>>(new Map());
-  const [vistaTx, setVistaTx] = useState<"revisar" | "archivo" | "comprobantes">("revisar");
+  const [cartolas, setCartolas] = useState<Cartola[]>([]);
+  const [vistaTx, setVistaTx] = useState<"revisar" | "archivo" | "comprobantes" | "cartolas">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
@@ -145,6 +148,9 @@ export function FinanzasPage() {
       const [ets, mapa] = await Promise.all([listTags(), tagsPorTransaccion()]);
       setEtiquetas(ets);
       setTxTags(mapa);
+    } catch { /* sin la 0057 todavía */ }
+    try {
+      setCartolas(await listCartolas());
     } catch { /* sin la 0057 todavía */ }
   }, []);
 
@@ -366,8 +372,11 @@ export function FinanzasPage() {
                 <button className={"segbtn" + (vistaTx === "comprobantes" ? " active" : "")} onClick={() => setVistaTx("comprobantes")}>
                   🧾 {tr("Comprobantes")}
                 </button>
+                <button className={"segbtn" + (vistaTx === "cartolas" ? " active" : "")} onClick={() => setVistaTx("cartolas")}>
+                  🏦 {tr("Cartolas")}{cartolas.length > 0 ? ` (${cartolas.length})` : ""}
+                </button>
               </div>
-              {vistaTx !== "comprobantes" && (
+              {vistaTx !== "comprobantes" && vistaTx !== "cartolas" && (
               <div className="filterbar">
                 <div className="searchbox" style={{ minWidth: 200 }}>
                   <input value={fq} onChange={(e) => setFq(e.target.value)} placeholder="Buscar movimientos…" aria-label="Buscar movimientos" />
@@ -412,7 +421,7 @@ export function FinanzasPage() {
                 )}
               </div>
               )}
-              {vistaTx !== "comprobantes" && fTag !== "all" && (() => {
+              {vistaTx !== "comprobantes" && vistaTx !== "cartolas" && fTag !== "all" && (() => {
                 // El total de la etiqueta filtrada: esto ES el reporte para
                 // impuestos (todos los gastos del negocio, de una mirada).
                 const et = etiquetas.find((e) => e.id === fTag);
@@ -430,6 +439,43 @@ export function FinanzasPage() {
               })()}
               {vistaTx === "comprobantes" && (
                 <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} />
+              )}
+              {vistaTx === "cartolas" && (
+                <div className="card pad" style={{ maxWidth: 720 }}>
+                  <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+                    {tr("Cada cartola que subes queda archivada con su cuenta y su mes, con el archivo original para cuando lo pidan.")}
+                  </p>
+                  {cartolas.length === 0 && (
+                    <p style={{ fontSize: 13.5, color: "var(--muted)" }}>{tr("Aún no hay cartolas archivadas. Sube una con el botón Subir cartola.")}</p>
+                  )}
+                  {cartolas.map((c) => {
+                    const fuenteNombre = c.credit_card_id
+                      ? `💳 ${cards.find((x) => x.id === c.credit_card_id)?.name ?? tr("Tarjeta")}`
+                      : accById.get(c.account_id ?? "")?.name ?? tr("Sin cuenta");
+                    const [y, m] = c.period_month.split("-").map(Number);
+                    const nombreMes = new Date(y, m - 1, 1).toLocaleDateString(locDeIdiomaFin(), { month: "long", year: "numeric" });
+                    return (
+                      <div className="txrow" key={c.id}>
+                        <span className="txicon">🏦</span>
+                        <div className="txmeta">
+                          <b>{fuenteNombre}</b>
+                          <small>{nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}, {c.transactions_count} {tr("movimientos")}{c.file_name ? `, ${c.file_name}` : ""}</small>
+                        </div>
+                        {c.file_path && (
+                          <button className="btn ghost" onClick={() => void openCartola(c).catch((e) => window.alert(String(e)))}>{tr("Ver")}</button>
+                        )}
+                        <button className="xdel" aria-label={tr("Eliminar cartola")}
+                          onClick={async () => {
+                            if (!window.confirm(tr("¿Eliminar esta cartola del archivo? Los movimientos importados no se tocan."))) return;
+                            await deleteCartola(c);
+                            setCartolas(await listCartolas());
+                          }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
               {vistaTx === "revisar" && (
                 <div className="card pad">
@@ -829,7 +875,7 @@ export function FinanzasPage() {
         <ReminderModal onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
       )}
       {modal === "import" && (
-        <ImportModal accounts={accounts} categories={categories} existing={txs} currency={currency}
+        <ImportModal accounts={accounts} cards={cards} categories={categories} existing={txs} currency={currency}
           onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
       )}
     </div>
@@ -953,8 +999,14 @@ function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categor
   );
 }
 
-function ImportModal({ accounts, categories, existing, currency, onClose, onSaved }: {
+function locDeIdiomaFin(): string {
+  const i = idiomaActual();
+  return i === "en" ? "en-US" : i === "pt" ? "pt-BR" : "es-CL";
+}
+
+function ImportModal({ accounts, cards, categories, existing, currency, onClose, onSaved }: {
   accounts: Account[];
+  cards: CreditCard[];
   categories: Category[];
   existing: Tx[];
   currency: string;
@@ -962,7 +1014,11 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
   onSaved: () => void;
 }) {
   const { t: tr } = useIdioma();
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const [fuenteImp, setFuenteImp] = useState(accounts[0] ? `acc:${accounts[0].id}` : "");
+  const accountId = fuenteImp.startsWith("acc:") ? fuenteImp.slice(4) : "";
+  const cardImpId = fuenteImp.startsWith("card:") ? fuenteImp.slice(5) : "";
+  const [mesCartola, setMesCartola] = useState(mesActualLocal());
+  const [archivo, setArchivo] = useState<File | null>(null);
   const [rows, setRows] = useState<Array<StatementImportRow & { dup: boolean }> | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
@@ -1020,6 +1076,16 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
     setErr(null);
     try {
       const res = await importStatementRows(incluidas, accountId || null, categories);
+      // La cartola queda archivada con su fuente, su mes y el archivo original.
+      try {
+        await addCartola({
+          file: archivo,
+          account_id: accountId || null,
+          credit_card_id: cardImpId || null,
+          period_month: mesCartola,
+          transactions_count: res.imported,
+        });
+      } catch { /* sin la 0057, el import igual vale */ }
       setResult({ imported: res.imported, excluidos: rows.length - incluidas.length });
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : String(ex));
@@ -1043,11 +1109,21 @@ function ImportModal({ accounts, categories, existing, currency, onClose, onSave
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
             {tr("Descarga la cartola desde tu banco (CSV, OFX o QFX) y súbela aquí. Reviso cuáles ya tienes y marco los repetidos para que no entren dos veces.")}
           </p>
-          <div className="field"><label>{tr("Cuenta de destino")}</label>
-            <Selector value={accountId} ariaLabel={tr("Cuenta de destino")} placeholder={tr("Sin cuenta")} onChange={setAccountId}
-              opciones={[{ value: "", label: tr("Sin cuenta") }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
+          <div className="frow">
+            <div className="field"><label>{tr("¿De qué cuenta o tarjeta es?")}</label>
+              <Selector value={fuenteImp} ariaLabel={tr("¿De qué cuenta o tarjeta es?")} placeholder={tr("Elige una")} onChange={setFuenteImp}
+                opciones={[
+                  ...accounts.map((a) => ({ value: `acc:${a.id}`, label: a.name })),
+                  ...cards.map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` •••• ${c.last_four}` : ""}` })),
+                ]} /></div>
+            <div className="field"><label>{tr("Mes de la cartola")}</label>
+              <input type="month" className="input-inline" value={mesCartola} onChange={(e) => setMesCartola(e.target.value)} aria-label={tr("Mes de la cartola")} /></div>
+          </div>
           <div className="field"><label>{tr("Archivo")}</label>
-            <input type="file" accept=".csv,.ofx,.qfx,text/csv" onChange={onFile} /></div>
+            <input type="file" accept=".csv,.ofx,.qfx,text/csv" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivo(e.target.files?.[0] ?? null); void onFile(e); }} /></div>
+          {(!fuenteImp || !mesCartola) && (
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>{tr("Primero elige la cuenta o tarjeta y el mes: así la cartola queda bien archivada.")}</p>
+          )}
           {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
           {rows && (
             <div style={{ marginBottom: 12 }}>
