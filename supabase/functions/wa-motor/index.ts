@@ -517,6 +517,45 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     },
   },
 
+  actualizar_perfil: {
+    decl: {
+      name: "actualizar_perfil",
+      description: "Guarda o actualiza el perfil de coaching de la usuaria: meta principal, alimentación o restricciones, condiciones, estilo de trato y notas de lo aprendido. Llámala cada vez que cuente algo DURADERO sobre sí misma.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          meta: { type: "STRING", description: "Su meta principal (bajar grasa, ganar músculo, más energía, salud general...)" },
+          alimentacion: { type: "STRING", description: "Tipo de alimentación o restricciones (vegetariana, keto, anti cándida, sin gluten, ninguna...)" },
+          condiciones: { type: "STRING", description: "Condiciones a considerar (TDAH, tiroides, una lesión...)" },
+          estilo: { type: "STRING", description: "Cómo prefiere que la trates (más empuje, más suave, sin emojis...)" },
+          notas: { type: "STRING", description: "Algo aprendido que valga recordar (horarios típicos, lo que le cuesta, lo que le funciona)" },
+        },
+      },
+    },
+    run: async (args, ctx) => {
+      const { data: kv } = await ctx.db.from("user_kv").select("value")
+        .eq("user_id", ctx.userId).eq("key", "nucleoos-coach-perfil").maybeSingle();
+      let perfil: Record<string, string> = {};
+      try {
+        perfil = JSON.parse(String((kv?.value as { raw?: string })?.raw ?? "{}"));
+      } catch { /* dato corrupto: se rehace */ }
+      for (const campo of ["meta", "alimentacion", "condiciones", "estilo"]) {
+        const v = String(args[campo] ?? "").trim();
+        if (v) perfil[campo] = v.slice(0, 200);
+      }
+      const nota = String(args.notas ?? "").trim();
+      // Las notas se acumulan (con tope), porque el aprendizaje es continuo.
+      if (nota) perfil.notas = `${perfil.notas ? perfil.notas + " · " : ""}${nota}`.slice(-600);
+      const { error } = await ctx.db.from("user_kv").upsert(
+        { user_id: ctx.userId, key: "nucleoos-coach-perfil", value: { raw: JSON.stringify(perfil) }, updated_at: new Date().toISOString() },
+        { onConflict: "user_id,key" },
+      );
+      if (error) return `No pude guardar el perfil: ${error.message}`;
+      await anotarEscritura(ctx, "user_kv", "coach-perfil", "perfil de coaching actualizado");
+      return "Perfil guardado. Desde ahora personaliza con esto.";
+    },
+  },
+
   crear_recordatorio: {
     decl: {
       name: "crear_recordatorio",
@@ -665,6 +704,25 @@ async function contextoDe(db: SupabaseClient, userId: string, timezone: string):
   } catch {
     /* si alguna tabla falla, el coach responde igual con lo que tenga */
   }
+
+  // El perfil de coaching: lo que Kay sabe de ESTA persona. Si aún no existe,
+  // el mini-onboarding conversacional parte solo, sin formularios.
+  try {
+    const { data: kv } = await db.from("user_kv").select("value")
+      .eq("user_id", userId).eq("key", "nucleoos-coach-perfil").maybeSingle();
+    const perfil = JSON.parse(String((kv?.value as { raw?: string })?.raw ?? "{}")) as Record<string, string>;
+    const lineas: string[] = [];
+    if (perfil.meta) lineas.push(`meta principal: ${perfil.meta}`);
+    if (perfil.alimentacion) lineas.push(`alimentación: ${perfil.alimentacion}`);
+    if (perfil.condiciones) lineas.push(`condiciones: ${perfil.condiciones}`);
+    if (perfil.estilo) lineas.push(`estilo de trato que prefiere: ${perfil.estilo}`);
+    if (perfil.notas) lineas.push(`lo que has aprendido de ella: ${perfil.notas}`);
+    if (lineas.length > 0) {
+      partes.push(`Su perfil de coaching (${lineas.join("; ")}). Personaliza SOLO con esto, nunca supongas otra dieta ni otra meta.`);
+    } else {
+      partes.push("AÚN NO TIENES SU PERFIL DE COACHING: además de registrar lo que te cuente, preséntate en una frase como Kay y pregúntale, cálida y breve, cuál es su meta principal ahora y si sigue alguna alimentación especial. Cuando responda, guárdalo con actualizar_perfil.");
+    }
+  } catch { /* sin user_kv, Kay atiende igual */ }
   return partes.length > 0 ? `\n\nLO QUE SABES DE ELLA HOY:\n${partes.join("\n")}` : "";
 }
 
@@ -703,7 +761,8 @@ function promptSistema(idioma: string, timezone: string): string {
     "\"Para registrar tu comida necesito los siguientes datos\".\n" +
     "4. Si el mensaje es una nota de voz, entiende lo que dice y actúa igual que si te lo hubieran escrito.\n" +
     "5. Si solo conversa o pregunta cómo va, usa ver_dia y responde con sus datos, sin registrar nada.\n" +
-    "6. Personaliza solo con LO QUE SABES DE ELLA (abajo): no asumas dietas ni regímenes que no estén en su perfil.\n" +
+    "6. Personaliza solo con LO QUE SABES DE ELLA (abajo): no asumas dietas ni regímenes que no estén en su perfil. " +
+    "Y cuando te cuente algo duradero de ella (su meta, su alimentación, una condición, cómo prefiere que la trates), guárdalo con actualizar_perfil además de responderle.\n" +
     "7. No des consejo médico ni financiero profesional. No escribas código ni hagas tareas ajenas a la vida " +
     "de la usuaria: redirige con cariño a lo que sí haces.\n" +
     "8. No uses guiones como puntuación. Emojis con moderación.\n" +
