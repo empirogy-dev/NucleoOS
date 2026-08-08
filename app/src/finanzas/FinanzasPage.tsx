@@ -8,7 +8,7 @@ import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
 import { comprimirImagen } from "../lib/comprimir";
-import { ETIQUETAS_SUGERIDAS, addTag, deleteTag, desetiquetarTx, etiquetarTx, listTags, tagsPorTransaccion, type Etiqueta } from "./tags";
+import { PALETA_TAGS, addTag, deleteTag, desetiquetarTx, etiquetarTx, listTags, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ComprobantesTab } from "./ComprobantesTab";
 import {
   TablesMissingError,
@@ -2039,9 +2039,9 @@ function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCa
   );
 }
 
-/** Etiquetas de un movimiento: tocar un chip lo pone o lo quita al instante,
- *  y desde aquí mismo se crean las nuevas. Sin pantallas de administración
- *  aparte: el catálogo se maneja donde se usa. */
+/** Etiquetas de un movimiento: tocar un chip lo pone o lo quita al instante.
+ *  El catálogo es 100% de la usuaria: ella crea, renombra, cambia el color
+ *  y elimina. Aquí no se sugiere nada, cada quien nombra su mundo. */
 function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
   tx: Tx;
   etiquetas: Etiqueta[];
@@ -2052,9 +2052,18 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
   const { t: tr } = useIdioma();
   const [marcadas, setMarcadas] = useState<Set<string>>(() => new Set(asignadas));
   const [nueva, setNueva] = useState("");
+  const [nuevaColor, setNuevaColor] = useState<string>(PALETA_TAGS[0]);
+  const [editando, setEditando] = useState<Etiqueta | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editColor, setEditColor] = useState<string>(PALETA_TAGS[0]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [faltaMigracion, setFaltaMigracion] = useState(false);
+
+  function atrapar(e: unknown) {
+    if (e instanceof TablesMissingError) setFaltaMigracion(true);
+    else setErr(e instanceof Error ? e.message : String(e));
+  }
 
   async function alternar(tagId: string) {
     const estaba = marcadas.has(tagId);
@@ -2068,44 +2077,60 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
       if (estaba) await desetiquetarTx(tx.id, tagId);
       else await etiquetarTx(tx.id, tagId);
       onChanged();
-    } catch (e) {
-      if (e instanceof TablesMissingError) setFaltaMigracion(true);
-      else setErr(e instanceof Error ? e.message : String(e));
-    }
+    } catch (e) { atrapar(e); }
   }
 
-  async function crear(nombre: string, color: string | null) {
+  async function crear() {
+    if (!nueva.trim()) return;
     setBusy(true);
     setErr(null);
     try {
-      const et = await addTag(nombre, color);
+      const et = await addTag(nueva, nuevaColor);
       await etiquetarTx(tx.id, et.id);
       setMarcadas((prev) => new Set(prev).add(et.id));
       setNueva("");
       onChanged();
-    } catch (e) {
-      if (e instanceof TablesMissingError) setFaltaMigracion(true);
-      else setErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
+    } catch (e) { atrapar(e); } finally { setBusy(false); }
+  }
+
+  async function guardarEdicion() {
+    if (!editando || !editNombre.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await updateTag(editando.id, { name: editNombre, color: editColor });
+      setEditando(null);
+      onChanged();
+    } catch (e) { atrapar(e); } finally { setBusy(false); }
   }
 
   async function eliminar(et: Etiqueta) {
     if (!window.confirm(`${tr("¿Eliminar esta etiqueta? Se quitará de todos los movimientos.")}\n\n${et.name}`)) return;
     try {
       await deleteTag(et.id);
+      if (editando?.id === et.id) setEditando(null);
       onChanged();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
+    } catch (e) { atrapar(e); }
   }
 
-  const sugeridas = ETIQUETAS_SUGERIDAS.filter((s) => !etiquetas.some((e) => e.name.toLowerCase() === s.name.toLowerCase()));
+  function Paleta({ valor, onElegir }: { valor: string; onElegir: (c: string) => void }) {
+    return (
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="radiogroup" aria-label={tr("Color de la etiqueta")}>
+        {PALETA_TAGS.map((c) => (
+          <button key={c} type="button" role="radio" aria-checked={valor === c} aria-label={c}
+            onClick={() => onElegir(c)}
+            style={{
+              width: 22, height: 22, borderRadius: "50%", background: c, cursor: "pointer",
+              border: valor === c ? "2px solid var(--ink)" : "2px solid transparent",
+            }} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="tp-overlay" onClick={onClose}>
-      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
         <h3 style={{ marginBottom: 4 }}>🏷 {tr("Etiquetas")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
           {tx.merchant || tx.description || tx.date}
@@ -2117,6 +2142,11 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
           </p>
         ) : (
           <>
+            {etiquetas.length === 0 && (
+              <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+                {tr("Aún no tienes etiquetas. Crea las tuyas abajo: negocio, personal, impuestos, viajes, lo que a ti te sirva.")}
+              </p>
+            )}
             {etiquetas.length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
                 {etiquetas.map((e) => {
@@ -2127,8 +2157,12 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
                         style={activa ? { background: `color-mix(in srgb, ${e.color ?? "var(--accent)"} 26%, var(--paper))`, borderColor: "transparent", fontWeight: 600 } : undefined}>
                         {activa ? "✓ " : ""}{e.name}
                       </button>
+                      <button className="xdel" aria-label={`${tr("Editar etiqueta")} ${e.name}`} title={tr("Editar etiqueta")}
+                        onClick={() => { setEditando(e); setEditNombre(e.name); setEditColor(e.color ?? PALETA_TAGS[0]); }}>
+                        <Pencil size={11} />
+                      </button>
                       <button className="xdel" aria-label={`${tr("Eliminar etiqueta")} ${e.name}`} title={tr("Eliminar etiqueta")}
-                        style={{ marginLeft: 1 }} onClick={() => void eliminar(e)}>
+                        onClick={() => void eliminar(e)}>
                         <Trash2 size={11} />
                       </button>
                     </span>
@@ -2137,27 +2171,32 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
               </div>
             )}
 
-            {sugeridas.length > 0 && (
-              <>
-                <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
-                  {tr("Sugeridas para empezar")}
+            {editando ? (
+              <div style={{ border: "1px solid var(--line-soft)", borderRadius: 12, padding: 12, marginBottom: 4, display: "grid", gap: 10 }}>
+                <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600 }}>
+                  {tr("Editar etiqueta")}
                 </p>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-                  {sugeridas.map((sg) => (
-                    <button key={sg.name} className="pomo-chip" disabled={busy} onClick={() => void crear(sg.name, sg.color)}>
-                      + {sg.name}
-                    </button>
-                  ))}
+                <input className="input-inline" value={editNombre} maxLength={40}
+                  onChange={(e) => setEditNombre(e.target.value)} aria-label={tr("Nombre de la etiqueta")} />
+                <Paleta valor={editColor} onElegir={setEditColor} />
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button className="btn ghost" onClick={() => setEditando(null)}>{tr("Cancelar")}</button>
+                  <button className="btn primary" disabled={busy || !editNombre.trim()} onClick={() => void guardarEdicion()}>
+                    {tr("com.guardar")}
+                  </button>
                 </div>
-              </>
+              </div>
+            ) : (
+              <form style={{ display: "grid", gap: 10 }}
+                onSubmit={(e) => { e.preventDefault(); void crear(); }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input className="input-inline" style={{ flex: 1 }} value={nueva} maxLength={40}
+                    onChange={(e) => setNueva(e.target.value)} placeholder={tr("Nueva etiqueta…")} aria-label={tr("Nueva etiqueta…")} />
+                  <button className="btn primary" disabled={busy || !nueva.trim()}>{tr("Crear")}</button>
+                </div>
+                <Paleta valor={nuevaColor} onElegir={setNuevaColor} />
+              </form>
             )}
-
-            <form style={{ display: "flex", gap: 8 }}
-              onSubmit={(e) => { e.preventDefault(); if (nueva.trim()) void crear(nueva, null); }}>
-              <input className="input-inline" style={{ flex: 1 }} value={nueva} maxLength={40}
-                onChange={(e) => setNueva(e.target.value)} placeholder={tr("Nueva etiqueta…")} aria-label={tr("Nueva etiqueta…")} />
-              <button className="btn primary" disabled={busy || !nueva.trim()}>{tr("Crear")}</button>
-            </form>
           </>
         )}
 

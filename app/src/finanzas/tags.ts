@@ -13,12 +13,10 @@ export interface Etiqueta {
   color: string | null;
 }
 
-/** Las primeras etiquetas que se ofrecen crear, pensadas para quien trabaja
- *  como independiente en Canadá (deducciones CRA) sin dejar fuera al resto. */
-export const ETIQUETAS_SUGERIDAS: Array<{ name: string; color: string }> = [
-  { name: "Negocio", color: "#8FAF9B" },
-  { name: "Personal", color: "#C9A96A" },
-  { name: "Deducible impuestos", color: "#7E9CC0" },
+/** Colores para elegir al crear o editar una etiqueta: tonos del sistema
+ *  de diseño, que se ven bien en los temas claros y oscuros. */
+export const PALETA_TAGS: string[] = [
+  "#8FAF9B", "#C9A96A", "#7E9CC0", "#B08BA5", "#C97B6A", "#7FA8A0", "#A3A05E", "#8A8FB5",
 ];
 
 function sb() {
@@ -60,6 +58,15 @@ export async function addTag(name: string, color: string | null = null): Promise
     .single();
   check(error);
   return data as Etiqueta;
+}
+
+export async function updateTag(id: string, cambios: { name?: string; color?: string | null }): Promise<void> {
+  if (cambios.name !== undefined && !cambios.name.trim()) throw new Error("La etiqueta necesita un nombre.");
+  const fila: Record<string, unknown> = {};
+  if (cambios.name !== undefined) fila.name = cambios.name.trim();
+  if (cambios.color !== undefined) fila.color = cambios.color;
+  const { error } = await sb().from("tags").update(fila).eq("id", id);
+  check(error);
 }
 
 export async function deleteTag(id: string): Promise<void> {
