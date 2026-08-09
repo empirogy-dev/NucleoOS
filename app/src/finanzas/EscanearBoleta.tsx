@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Camera, ImagePlus } from "lucide-react";
 import { analizarBoleta, blobToBase64, iaConfigured, type AnalisisBoleta } from "../lib/ia";
@@ -6,7 +6,7 @@ import { comprimirImagen } from "../lib/comprimir";
 import { hoyLocal } from "../lib/fechas";
 import { addTransaction, updateTransaction } from "./data";
 import { uploadRecibo } from "./recibos";
-import { candidatosPara, esBuenMatch, type Candidato } from "./matchBoleta";
+import { candidatosPara, esBuenMatch } from "./matchBoleta";
 import { Selector } from "../components/Selector";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtMoney } from "./types";
@@ -32,7 +32,6 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
   const [paso, setPaso] = useState<Paso>("leyendo");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [lectura, setLectura] = useState<AnalisisBoleta | null>(null);
-  const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [elegido, setElegido] = useState<string>(""); // id del gasto, o "nuevo"
   const [categoria, setCategoria] = useState("");
   const [fuente, setFuente] = useState("");
@@ -42,6 +41,14 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [resumen, setResumen] = useState("");
+  // Se recalculan solos: si ella corrige el monto o la fecha, la lista de
+  // gastos posibles se rehace al instante.
+  const candidatos = useMemo(
+    () => (Number(monto) > 0
+      ? candidatosPara(txs, { monto: Number(monto), comercio, fecha })
+      : []),
+    [txs, monto, comercio, fecha],
+  );
   const camara = useRef<HTMLInputElement>(null);
   const galeria = useRef<HTMLInputElement>(null);
 
@@ -65,11 +72,11 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
       const f = r.fecha ?? hoyLocal();
       setFecha(f);
 
-      // El match: solo se propone, nunca se aplica solo.
+      // El match solo se PROPONE: se marca de entrada únicamente cuando el
+      // monto calza exacto. Con un monto distinto, elige ella.
       const cands = r.monto
-        ? candidatosPara(txs, { monto: r.monto, comercio: r.comercio, fecha: f }).slice(0, 6)
+        ? candidatosPara(txs, { monto: r.monto, comercio: r.comercio, fecha: f })
         : [];
-      setCandidatos(cands);
       setElegido(esBuenMatch(cands[0]) ? cands[0].tx.id : "nuevo");
       // Si la tarjeta viene en la boleta, la fuente queda propuesta.
       if (r.ultimos4) {
@@ -186,13 +193,22 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
                 : tr("No logré leer la boleta. Complétala tú.")}
             </p>
 
+            <div className="frow">
+              <div className="field"><label>{tr("Monto")}</label>
+                <input type="number" step="any" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" /></div>
+              <div className="field"><label>{tr("Fecha")}</label>
+                <CampoFecha value={fecha} onChange={setFecha} ariaLabel={tr("Fecha")} conBorrar={false} /></div>
+            </div>
+
             {candidatos.length > 0 && (
               <>
                 <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
-                  {tr("¿Es este el gasto de esta boleta?")}
+                  {candidatos[0].cerco === "exacto"
+                    ? tr("¿Es este el gasto de esta boleta?")
+                    : tr("Ninguno calza exacto. ¿Es alguno de estos?")}
                 </p>
                 <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
-                  {candidatos.map(({ tx }) => (
+                  {candidatos.map(({ tx, cerco }) => (
                     <button key={tx.id} type="button" className="card"
                       onClick={() => setElegido(tx.id)}
                       style={{
@@ -204,6 +220,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
                         <b style={{ fontSize: 13.5, display: "block" }}>{tx.merchant || tx.bank_ref || tr("Gasto")}</b>
                         <small style={{ color: "var(--muted)", fontSize: 11.5 }}>
                           {tx.date}{tx.category_id ? "" : `, ${tr("sin categoría")}`}
+                          {cerco === "cercano" ? `, ${tr("monto parecido")}` : cerco === "fecha" ? `, ${tr("de esos días")}` : ""}
                         </small>
                       </span>
                       <b className="tnum" style={{ fontSize: 13.5 }}>{fmtMoney(Number(tx.amount), currency)}</b>
@@ -221,14 +238,14 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
               </>
             )}
 
+            {candidatos.length === 0 && Number(monto) > 0 && (
+              <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
+                {tr("No encontré un gasto parecido. Si el monto de arriba está mal, corrígelo y busco de nuevo; si no, se crea uno nuevo.")}
+              </p>
+            )}
+
             {elegido === "nuevo" && (
               <>
-                <div className="frow">
-                  <div className="field"><label>{tr("Monto")}</label>
-                    <input type="number" step="any" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" /></div>
-                  <div className="field"><label>{tr("Fecha")}</label>
-                    <CampoFecha value={fecha} onChange={setFecha} ariaLabel={tr("Fecha")} conBorrar={false} /></div>
-                </div>
                 <div className="field"><label>{tr("Comercio")}</label>
                   <input value={comercio} onChange={(e) => setComercio(e.target.value)} placeholder="Starlink" /></div>
                 <div className="field"><label>{tr("Pagado con")}</label>
