@@ -37,7 +37,15 @@ export function candidatosPara(
   tope = 8,
 ): Candidato[] {
   const gastos = txs.filter((t) => t.type === "expense");
-  const primeraPalabra = normal(boleta.comercio).split(/\s+/).filter((p) => p.length > 3)[0] ?? "";
+  // La palabra con la que se reconoce el comercio: la más larga del nombre.
+  // Antes se tomaba la primera de más de tres letras, y eso dejaba fuera a
+  // IGA, BP o Uno, que tienen tres. Sin palabra clave no hay premio por
+  // comercio, y entonces mandaba solo la fecha: una boleta de IGA elegía un
+  // gasto de Shell del mismo monto por caer un día más cerca.
+  const primeraPalabra = normal(boleta.comercio)
+    .split(/\s+/)
+    .filter((p) => p.length >= 3)
+    .sort((a, b) => b.length - a.length)[0] ?? "";
 
   const puntaje = (tx: Tx): number => {
     const texto = normal(`${tx.merchant ?? ""} ${tx.bank_ref ?? ""} ${tx.description ?? ""}`);
@@ -78,10 +86,18 @@ export function candidatosPara(
 export function separar(cands: Candidato[]): { principales: Candidato[]; otros: Candidato[] } {
   if (cands.length === 0) return { principales: [], otros: [] };
   const mejor = cands[0].cerco;
-  // Del cerco exacto caben hasta tres: un mismo monto puede repetirse de
-  // verdad. Los otros cercos son suposiciones, y de esas basta con dos.
-  const cuantos = mejor === "exacto" ? 3 : 2;
-  const principales = cands.filter((c) => c.cerco === mejor).slice(0, cuantos);
+  const mismoCerco = cands.filter((c) => c.cerco === mejor);
+
+  // Además del cerco, se mira si están en la misma liga que el primero. El
+  // comercio vale mil puntos, así que cuando el mejor coincide en comercio
+  // los demás quedan a mil de distancia: no son competencia, son ruido.
+  // Esto es lo que deja UNA opción cuando de verdad hay una sola.
+  const tope = mismoCerco[0].puntaje;
+  const enLaMismaLiga = mismoCerco.filter((c) => tope - c.puntaje < 500);
+
+  // Y aun así, un techo: hasta tres cuando el monto calza exacto, porque un
+  // mismo monto sí puede repetirse de verdad. Dos cuando es una suposición.
+  const principales = enLaMismaLiga.slice(0, mejor === "exacto" ? 3 : 2);
   return { principales, otros: cands.filter((c) => !principales.includes(c)) };
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cierreDeFondo, sinRobarFoco } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Camera, ImagePlus } from "lucide-react";
@@ -8,6 +8,7 @@ import { hoyLocal } from "../lib/fechas";
 import { addTransaction, updateTransaction } from "./data";
 import { uploadRecibo } from "./recibos";
 import { candidatosPara, esBuenMatch, separar } from "./matchBoleta";
+import { etiquetarTx, listTags, type Etiqueta } from "./tags";
 import { Selector } from "../components/Selector";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtMoney } from "./types";
@@ -54,6 +55,10 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
   const { principales, otros } = useMemo(() => separar(candidatos), [candidatos]);
   const [verOtros, setVerOtros] = useState(false);
   const aMostrar = verOtros ? [...principales, ...otros] : principales;
+  // Sus etiquetas, para poder ponerlas sin salir del escáner.
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
+  const [elegidas, setElegidas] = useState<Set<string>>(new Set());
+  useEffect(() => { listTags().then(setEtiquetas).catch(() => setEtiquetas([])); }, []);
   const camara = useRef<HTMLInputElement>(null);
   const galeria = useRef<HTMLInputElement>(null);
 
@@ -150,6 +155,12 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
         if (!mia) throw new Error(tr("Se guardó el gasto pero no pude adjuntar la boleta."));
         txId = mia.id;
         setResumen(`${tr("Gasto creado")}: ${comercio.trim() || tr("boleta")} ${fmtMoney(valor, currency)}`);
+      }
+
+      // Las etiquetas se agregan, no se reemplazan: si el gasto ya traía una
+      // puesta desde la lista, sigue ahí.
+      for (const tagId of elegidas) {
+        try { await etiquetarTx(txId, tagId); } catch { /* una etiqueta repetida no es un error */ }
       }
 
       if (archivo) await uploadRecibo(txId, archivo);
@@ -273,6 +284,38 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
             <div className="field"><label>{tr("Categoría")}</label>
               <Selector value={categoria} ariaLabel={tr("Categoría")} placeholder={tr("Sin categoría")} onChange={setCategoria}
                 opciones={[{ value: "", label: tr("Sin categoría") }, ...gastos.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} /></div>
+
+            {/* Las etiquetas son de ella: aquí solo se eligen las que ya creó,
+                nunca se inventa una por suposición. */}
+            {etiquetas.length > 0 && (
+              <div className="field">
+                <label>{tr("Etiquetas")}</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {etiquetas.map((e) => {
+                    const puesta = elegidas.has(e.id);
+                    return (
+                      <button key={e.id} type="button" {...sinRobarFoco}
+                        aria-pressed={puesta}
+                        onClick={() => setElegidas((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(e.id)) next.delete(e.id);
+                          else next.add(e.id);
+                          return next;
+                        })}
+                        style={{
+                          font: "inherit", fontSize: 12.5, cursor: "pointer",
+                          padding: "5px 11px", borderRadius: 999,
+                          border: `1px solid ${e.color ?? "var(--line)"}`,
+                          background: puesta ? (e.color ?? "var(--accent)") : "transparent",
+                          color: puesta ? "#fff" : "var(--ink-soft)",
+                        }}>
+                        {puesta ? "✓ " : ""}{e.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>

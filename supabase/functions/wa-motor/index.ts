@@ -944,7 +944,14 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
       // gasto que se repite todos los meses cae en el mes correcto.
       const normal = (x: string) => x.toLowerCase().replace(/[^a-z0-9áéíóúñ ]/g, " ").trim();
       const comercioBoleta = normal(comercio ?? descripcion ?? "");
-      const primeraPalabra = comercioBoleta.split(/\s+/).filter((p) => p.length > 3)[0] ?? "";
+      // La palabra con la que se reconoce el comercio: la más larga del
+      // nombre. Con "más de tres letras" quedaban fuera IGA, BP o Uno, y sin
+      // palabra clave mandaba solo la fecha: una boleta de IGA se pegaba a un
+      // gasto de Shell del mismo monto por caer un día más cerca.
+      const primeraPalabra = comercioBoleta
+        .split(/\s+/)
+        .filter((p) => p.length >= 3)
+        .sort((a, b) => b.length - a.length)[0] ?? "";
       const puntaje = (c: { category_id: string | null; merchant: string | null; bank_ref: string | null; date: string }) => {
         const texto = normal(`${c.merchant ?? ""} ${c.bank_ref ?? ""}`);
         let p = 0;
