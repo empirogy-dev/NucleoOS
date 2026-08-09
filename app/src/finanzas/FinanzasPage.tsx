@@ -12,6 +12,7 @@ import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarTx, etiquetarTx, listTags, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
+import { BancoPanel } from "./BancoPanel";
 import {
   TablesMissingError,
   addAccount,
@@ -784,6 +785,7 @@ export function FinanzasPage() {
 
           {tab === "cuentas" && (
             <>
+              <BancoPanel onCambio={() => void reload()} />
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))" }}>
                 {accounts.map((a) => (
                   <div className="card pad" key={a.id}>
