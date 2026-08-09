@@ -817,6 +817,55 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     },
   },
 
+  adjuntar_boleta: {
+    decl: {
+      name: "adjuntar_boleta",
+      description: "Pega la foto que acaba de mandar la usuaria a un gasto que YA está registrado y está esperando su boleta (los que avisaste del banco). Úsala cuando mande una foto de boleta y haya gastos esperando, en vez de registrar_transaccion, para no duplicar.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          pista: { type: "STRING", description: "Comercio o monto que diga la usuaria, si nombra uno en particular. Vacío = el más reciente" },
+        },
+      },
+    },
+    run: async (args, ctx) => {
+      const { data: kv } = await ctx.db.from("user_kv").select("value")
+        .eq("user_id", ctx.userId).eq("key", "nucleoos-boletas-pendientes").maybeSingle();
+      let cola: Array<{ id: string; texto: string; monto: number }> = [];
+      try {
+        cola = JSON.parse(String((kv?.value as { raw?: string })?.raw ?? "[]"));
+      } catch { /* cola corrupta: se rehace */ }
+      if (cola.length === 0) return "No hay gastos esperando boleta. Si es una boleta nueva, usa registrar_transaccion.";
+
+      const pista = String(args.pista ?? "").trim().toLowerCase();
+      const elegido = pista
+        ? cola.find((g) => g.texto.toLowerCase().includes(pista) || String(g.monto).includes(pista)) ?? cola[0]
+        : cola[0];
+
+      const foto = ctx.fotos.shift();
+      if (!foto) return "No me llegó ninguna foto en este mensaje. Pídesela.";
+      try {
+        const bytes = Uint8Array.from(atob(foto.b64), (c) => c.charCodeAt(0));
+        const ext = foto.mime.includes("png") ? "png" : "jpg";
+        const { error } = await ctx.db.storage.from("recibos")
+          .upload(`${ctx.userId}/${elegido.id}/${Date.now()}-boleta.${ext}`, bytes, { contentType: foto.mime });
+        if (error) return `No pude guardar la boleta: ${error.message}`;
+      } catch (e) {
+        return `No pude guardar la boleta: ${String(e).slice(0, 120)}`;
+      }
+
+      // Fuera de la cola: una boleta por gasto.
+      const queda = cola.filter((g) => g.id !== elegido.id);
+      await ctx.db.from("user_kv").upsert({
+        user_id: ctx.userId, key: "nucleoos-boletas-pendientes",
+        value: { raw: JSON.stringify(queda) }, updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id,key" });
+
+      await anotarEscritura(ctx, "recibos", elegido.id, `boleta de "${elegido.texto}"`);
+      return `Boleta pegada al gasto de ${elegido.texto} (${elegido.monto}).${queda.length > 0 ? ` Quedan ${queda.length} esperando boleta.` : ""}`;
+    },
+  },
+
   registrar_transaccion: {
     decl: {
       name: "registrar_transaccion",
@@ -1120,7 +1169,8 @@ function promptSistema(idioma: string, timezone: string): string {
     "· \"toma nota: idea para el negocio...\" → tomar_nota. \"leí 30 páginas de Hábitos Atómicos\" → registrar_lectura.\n" +
     "· \"hoy ando con la energía por el suelo\" → registrar_energia con nivel 1 o 2.\n" +
     "· \"gasté 25.000 en el súper con la visa\" → registrar_transaccion con monto 25000, comercio súper, cuenta visa.\n" +
-    "· una foto de boleta → registrar_transaccion con lo que TÚ leas en ella (monto total, comercio, fecha, últimos 4).\n" +
+    "· una foto de boleta → registrar_transaccion con lo que TÚ leas en ella (monto total, comercio, fecha, últimos 4). " +
+    "PERO si le avisaste de un gasto del banco que está esperando boleta, usa adjuntar_boleta en vez de registrarlo de nuevo: el gasto ya existe.\n" +
     "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n\n" +
     "Resto de las reglas:\n" +
     "1. No inventes montos de dinero. Cantidades de comida, agua o minutos sí se estiman con criterio.\n" +

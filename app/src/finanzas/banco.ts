@@ -49,6 +49,13 @@ export async function canjearToken(publicToken: string, institucion?: string): P
   return r.nuevas ?? 0;
 }
 
+/** Reabre Plaid sobre una conexión existente para sumar las cuentas que
+ *  quedaron fuera (las tarjetas suelen no venir marcadas por defecto). */
+export async function tokenAgregarCuentas(id: string): Promise<string> {
+  const r = await llamar<{ link_token: string }>({ accion: "agregar_cuentas", id });
+  return r.link_token;
+}
+
 export async function sincronizarBanco(): Promise<number> {
   const r = await llamar<{ nuevas: number }>({ accion: "sync" });
   return r.nuevas ?? 0;

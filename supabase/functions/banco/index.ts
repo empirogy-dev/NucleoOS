@@ -79,12 +79,45 @@ async function categoriaPara(db: SupabaseClient, userId: string, plaidCat: strin
   return null;
 }
 
+/** Kay avisa por Telegram del gasto recién llegado y pide la boleta. Ese
+ *  es el circuito que crea el hábito: ves el gasto en el momento, mandas la
+ *  foto, y queda categorizado y con respaldo sin esfuerzo. */
+async function avisarGasto(db: SupabaseClient, userId: string, gastos: Array<{ id: string; monto: number; texto: string }>): Promise<void> {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  if (!token || gastos.length === 0) return;
+  const { data: v } = await db.from("wa_vinculos")
+    .select("telefono,avisos_activos").eq("user_id", userId).maybeSingle();
+  if (!v?.telefono || v.avisos_activos === false) return;
+
+  // Tope de tres por sincronización: un banco que publica veinte de golpe no
+  // puede convertirse en veinte notificaciones.
+  const muestra = gastos.slice(0, 3);
+  const resto = gastos.length - muestra.length;
+  const lineas = muestra.map((g) => `💳 ${g.texto || "Gasto"}: ${g.monto}`);
+  const texto = `${lineas.join("\n")}${resto > 0 ? `\n… y ${resto} más.` : ""}\n\n` +
+    "¿Me mandas la foto de la boleta? La dejo pegada al gasto y con su categoría. 📎";
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: Number(v.telefono), text: texto }),
+  }).catch(() => undefined);
+
+  // La cola de gastos esperando boleta: la lee el motor cuando llega la foto.
+  await db.from("user_kv").upsert({
+    user_id: userId,
+    key: "nucleoos-boletas-pendientes",
+    value: { raw: JSON.stringify(muestra.map((g) => ({ id: g.id, texto: g.texto, monto: g.monto }))) },
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id,key" });
+}
+
 /** Trae lo nuevo de una conexión y lo escribe en transacciones y saldos. */
 async function sincronizar(db: SupabaseClient, conexion: {
   id: string; user_id: string; access_token: string; cursor: string | null;
 }): Promise<{ nuevas: number; error?: string }> {
   let cursor = conexion.cursor ?? undefined;
   let nuevas = 0;
+  const recienLlegados: Array<{ id: string; monto: number; texto: string }> = [];
 
   // Las cuentas del banco: el saldo lo manda él, nosotras lo reflejamos.
   const mapaCuentas = new Map<string, { id: string; tabla: "accounts" | "credit_cards" }>();
@@ -177,8 +210,11 @@ async function sincronizar(db: SupabaseClient, conexion: {
         } : {}),
       };
       // El índice único por external_id hace el resto: si ya estaba, no entra.
-      const { error } = await db.from("transactions").insert(fila);
-      if (!error) nuevas++;
+      const { data: creada, error } = await db.from("transactions").insert(fila).select("id").single();
+      if (!error && creada) {
+        nuevas++;
+        if (tipo === "expense") recienLlegados.push({ id: creada.id, monto: Math.abs(monto), texto });
+      }
     }
 
     // Lo que el banco corrigió o borró después de publicarlo.
@@ -194,6 +230,8 @@ async function sincronizar(db: SupabaseClient, conexion: {
   await db.from("bank_connections")
     .update({ cursor, last_sync: new Date().toISOString(), status: "activo" })
     .eq("id", conexion.id);
+  // El aviso va DESPUÉS de guardar: nunca se anuncia lo que no quedó escrito.
+  await avisarGasto(db, conexion.user_id, recienLlegados);
   return { nuevas };
 }
 
@@ -246,8 +284,33 @@ Deno.serve(async (req: Request) => {
         client_name: "NucleoOS",
         products: ["transactions"],
         transactions: { days_requested: dias },
+        // Explícito: cuentas Y tarjetas de crédito. Sin esto, la pantalla de
+        // selección de Plaid puede dejar las tarjetas fuera de la lista.
+        account_filters: {
+          depository: { account_subtypes: ["checking", "savings"] },
+          credit: { account_subtypes: ["credit card"] },
+        },
         country_codes: ["CA", "US"],
         language: "es",
+        webhook: `${Deno.env.get("SUPABASE_URL")}/functions/v1/banco`,
+      });
+      return json({ link_token: r.link_token });
+    }
+
+    // Volver a abrir Plaid sobre una conexión que YA existe, para marcar las
+    // cuentas que quedaron fuera (las tarjetas, típicamente). No pide las
+    // credenciales de nuevo ni pierde lo ya sincronizado.
+    if (accion === "agregar_cuentas") {
+      const { data: con } = await db.from("bank_connections")
+        .select("access_token").eq("id", String(cuerpo.id ?? "")).eq("user_id", userId).maybeSingle();
+      if (!con) return json({ error: "No encontré esa conexión." }, 404);
+      const r = await plaid("/link/token/create", {
+        user: { client_user_id: userId },
+        client_name: "NucleoOS",
+        country_codes: ["CA", "US"],
+        language: "es",
+        access_token: con.access_token,
+        update: { account_selection_enabled: true },
         webhook: `${Deno.env.get("SUPABASE_URL")}/functions/v1/banco`,
       });
       return json({ link_token: r.link_token });

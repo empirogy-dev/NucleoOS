@@ -9,6 +9,7 @@ import {
   desconectarBanco,
   listConexiones,
   sincronizarBanco,
+  tokenAgregarCuentas,
   type ConexionBanco,
 } from "./banco";
 
@@ -136,6 +137,29 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
                   {c.last_sync ? `, ${tr("última vez")} ${new Date(c.last_sync).toLocaleString()}` : ""}
                 </small>
               </div>
+              <button className="btn ghost" style={{ fontSize: 12.5, padding: "7px 12px" }}
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setErr(null);
+                  try {
+                    const token = await tokenAgregarCuentas(c.id);
+                    await abrirPlaid(token, () => {
+                      void (async () => {
+                        const n = await sincronizarBanco();
+                        setMsg(`${tr("Cuentas actualizadas")}: ${n} ${tr("movimientos nuevos")}.`);
+                        await cargar();
+                        onCambio();
+                        setBusy(false);
+                      })();
+                    });
+                  } catch (e) {
+                    setErr(e instanceof Error ? e.message : String(e));
+                    setBusy(false);
+                  }
+                }}>
+                {tr("Agregar cuentas")}
+              </button>
               <button className="btn ghost" style={{ fontSize: 12.5, padding: "7px 12px" }}
                 onClick={async () => {
                   if (!window.confirm(tr("¿Desconectar este banco? Los movimientos ya registrados se quedan en la app."))) return;
