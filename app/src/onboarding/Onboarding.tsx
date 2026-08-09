@@ -1,28 +1,39 @@
 import { useEffect, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
-import { useSettings } from "../settings/SettingsProvider";
+import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import { useModulos } from "../modulos/ModulosProvider";
-import { MODOS_INICIO, ocultosDeModo } from "../modulos/modulos";
+import { MODOS_INICIO, ocultosDeModo, type ModoInicio } from "../modulos/modulos";
+import { Selector } from "../components/Selector";
 
-// La bienvenida de la primera entrada: tu nombre y qué quieres ordenar
-// primero. Dos pantallas y adentro, porque un cerebro TDAH y TDA no quiere un
-// tour de doce pasos: quiere empezar. Todo lo elegido se cambia después
-// en Ajustes, nada es para siempre.
+// La bienvenida de la primera entrada: quién eres, qué quieres ordenar
+// primero, y en qué moneda. Cuatro pantallas cortas y adentro, porque un
+// cerebro TDAH y TDA no quiere un tour de doce pasos: quiere empezar. Todo
+// lo elegido se cambia después en Ajustes, nada es para siempre.
 
 const LS_KEY = "nucleoos-onboarding";
 const LS_MODO_PENDIENTE = "nucleoos-modo-pendiente";
 
+/** Por dónde empezar según lo que eligió: dos o tres cosas concretas, no un
+ *  manual. La primera lleva el peso, las otras son el camino. */
+const PRIMEROS_PASOS: Record<string, string[]> = {
+  todo: ["paso.todo.1", "paso.todo.2", "paso.todo.3"],
+  finanzas: ["paso.fin.1", "paso.fin.2", "paso.fin.3"],
+  cuerpo: ["paso.cuerpo.1", "paso.cuerpo.2", "paso.cuerpo.3"],
+  mente: ["paso.mente.1", "paso.mente.2", "paso.mente.3"],
+};
+
 export function Onboarding() {
   const { t: tr } = useIdioma();
-  const { displayName, updateProfile } = useSettings();
+  const { displayName, updateProfile, setCurrency } = useSettings();
   const { reemplazar } = useModulos();
 
   const [visible, setVisible] = useState(() => !localStorage.getItem(LS_KEY));
-  const [paso, setPaso] = useState<1 | 2>(1);
+  const [paso, setPaso] = useState<1 | 2 | 3 | 4>(1);
   const [nombre, setNombre] = useState("");
   const [tocado, setTocado] = useState(false);
   // Si vienes de la landing de finanzas (?modo=finanzas), ese modo parte elegido.
   const [modo, setModo] = useState(() => localStorage.getItem(LS_MODO_PENDIENTE) ?? "todo");
+  const [moneda, setMoneda] = useState("CAD");
   const [busy, setBusy] = useState(false);
 
   // Cuenta antigua: si el perfil ya tiene nombre y la persona aún no tocó
@@ -36,18 +47,28 @@ export function Onboarding() {
 
   if (!visible) return null;
 
-  async function terminar() {
+  const elegido: ModoInicio = MODOS_INICIO.find((m) => m.key === modo) ?? MODOS_INICIO[0];
+  // La moneda solo se pregunta a quien va a ver Finanzas: al resto le sobra.
+  const conFinanzas = !elegido.visibles || elegido.visibles.includes("/finanzas");
+
+  async function guardarYSeguir() {
     setBusy(true);
     try {
       if (nombre.trim()) await updateProfile({ display_name: nombre.trim() });
-      const elegido = MODOS_INICIO.find((m) => m.key === modo) ?? MODOS_INICIO[0];
+      if (conFinanzas) await setCurrency(moneda);
       reemplazar(ocultosDeModo(elegido));
+      // La zona horaria del navegador: la usan el coach y el corte del día.
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) localStorage.setItem("nucleoos-timezone", tz);
+      } catch { /* sin zona: se usa la del sistema */ }
       localStorage.setItem(LS_KEY, "hecho");
       localStorage.removeItem(LS_MODO_PENDIENTE);
     } catch {
-      /* sin red, la bienvenida no bloquea: el nombre se puede poner en Ajustes */
+      /* sin red, la bienvenida no bloquea: todo se puede poner en Ajustes */
     } finally {
-      setVisible(false);
+      setBusy(false);
+      setPaso(4);
     }
   }
 
@@ -72,6 +93,7 @@ export function Onboarding() {
             </div>
           </>
         )}
+
         {paso === 2 && (
           <>
             <h3 style={{ marginBottom: 6 }}>{tr("¿Qué quieres ordenar primero?")}</h3>
@@ -98,9 +120,59 @@ export function Onboarding() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <button className="btn ghost" onClick={() => setPaso(1)}>{tr("Volver")}</button>
-              <button className="btn primary" disabled={busy} onClick={() => void terminar()}>
-                {busy ? tr("com.guardando") : tr("Empezar")}
+              <button className="btn primary" onClick={() => (conFinanzas ? setPaso(3) : void guardarYSeguir())}>
+                {tr("Seguir")}
               </button>
+            </div>
+          </>
+        )}
+
+        {paso === 3 && (
+          <>
+            <h3 style={{ marginBottom: 6 }}>{tr("¿En qué moneda manejas tu plata?")}</h3>
+            <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 14 }}>
+              {tr("Es tu moneda principal. Si tienes cuentas en otro país, cada una lleva la suya y NucleoOS nunca las mezcla.")}
+            </p>
+            <div className="field"><label>{tr("Moneda")}</label>
+              <Selector value={moneda} ariaLabel={tr("Moneda")} onChange={setMoneda}
+                opciones={CURRENCIES.map((c) => ({ value: c, label: c }))} /></div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
+              <button className="btn ghost" onClick={() => setPaso(2)}>{tr("Volver")}</button>
+              <button className="btn primary" disabled={busy} onClick={() => void guardarYSeguir()}>
+                {busy ? tr("com.guardando") : tr("Seguir")}
+              </button>
+            </div>
+          </>
+        )}
+
+        {paso === 4 && (
+          <>
+            <h3 style={{ marginBottom: 6 }}>
+              {nombre.trim() ? `${tr("Todo listo")}, ${nombre.trim()} 🌱` : `${tr("Todo listo")} 🌱`}
+            </h3>
+            <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 12 }}>
+              {tr("No tienes que llenar nada de golpe. Con empezar por una cosa basta:")}
+            </p>
+            <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
+              {(PRIMEROS_PASOS[modo] ?? PRIMEROS_PASOS.todo).map((k, i) => (
+                <div key={k} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{
+                    width: 22, height: 22, borderRadius: "50%", flex: "none",
+                    background: i === 0 ? "var(--accent)" : "var(--accent-wash)",
+                    color: i === 0 ? "#fff" : "var(--accent-ink)",
+                    display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700,
+                  }}>{i + 1}</span>
+                  <span style={{ fontSize: 13.5, color: i === 0 ? "var(--ink)" : "var(--ink-soft)", lineHeight: 1.5 }}>
+                    {tr(k)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
+              {tr("Todo lo que elegiste ahora se cambia cuando quieras en Ajustes.")}
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button className="btn primary" onClick={() => setVisible(false)}>{tr("Entrar")}</button>
             </div>
           </>
         )}
