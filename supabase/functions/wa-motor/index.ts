@@ -931,19 +931,35 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
         if (cat) categoryId = cat.id;
       }
 
-      // ¿Este gasto YA está? El banco suele traerlo antes de que ella mande
-      // la boleta. Si aparece uno del mismo monto en días cercanos, se le
-      // pega la boleta y la categoría en vez de crear un duplicado.
+      // ¿Este gasto YA está? El banco casi siempre lo trajo antes. Se busca
+      // en TODA la historia, sin ventana de días: una boleta de junio tiene
+      // que encontrar su gasto de junio.
       const dia = new Date(`${fecha}T00:00:00Z`).getTime();
-      const desde = new Date(dia - 5 * 86400000).toISOString().slice(0, 10);
-      const hasta = new Date(dia + 5 * 86400000).toISOString().slice(0, 10);
       const { data: candidatos } = await ctx.db.from("transactions")
-        .select("id,category_id,merchant,date,source")
-        .eq("user_id", ctx.userId).eq("type", tipo).eq("amount", monto)
-        .gte("date", desde).lte("date", hasta).limit(5);
-      // Se prefiere el que aún no tiene categoría: ese es el que espera en
-      // la bandeja Por revisar.
-      const existente = (candidatos ?? []).sort((a, b) => (a.category_id ? 1 : 0) - (b.category_id ? 1 : 0))[0];
+        .select("id,category_id,merchant,bank_ref,date,amount")
+        .eq("user_id", ctx.userId).eq("type", tipo).eq("amount", monto).limit(60);
+
+      // Entre los del mismo monto, gana el que coincide en comercio, y a
+      // igualdad de comercio, el de la fecha más cercana a la boleta. Un
+      // gasto que se repite todos los meses cae en el mes correcto.
+      const normal = (x: string) => x.toLowerCase().replace(/[^a-z0-9áéíóúñ ]/g, " ").trim();
+      const comercioBoleta = normal(comercio ?? descripcion ?? "");
+      const primeraPalabra = comercioBoleta.split(/\s+/).filter((p) => p.length > 3)[0] ?? "";
+      const puntaje = (c: { category_id: string | null; merchant: string | null; bank_ref: string | null; date: string }) => {
+        const texto = normal(`${c.merchant ?? ""} ${c.bank_ref ?? ""}`);
+        let p = 0;
+        // El comercio manda por lejos: un gasto de otro comercio con el mismo
+        // monto nunca debe ganarle a uno del comercio correcto.
+        if (primeraPalabra && texto.includes(primeraPalabra)) p += 1000;
+        // Entre los del mismo comercio (Starlink todos los meses), decide la
+        // fecha: una boleta de junio cae en el gasto de junio.
+        const dias = Math.abs(new Date(`${c.date}T00:00:00Z`).getTime() - dia) / 86400000;
+        p -= Math.min(dias, 400) / 2;
+        // Y a igualdad de fecha, primero el que espera en Por revisar.
+        if (!c.category_id) p += 5;
+        return p;
+      };
+      const existente = (candidatos ?? []).slice().sort((a, b) => puntaje(b) - puntaje(a))[0];
 
       if (existente) {
         const cambios: Record<string, unknown> = {};
@@ -964,7 +980,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
           } catch { /* sin adjunto, el gasto igual queda categorizado */ }
         }
         await anotarEscritura(ctx, "transactions", existente.id, `boleta sobre gasto existente ${monto} ${comercio ?? ""}`);
-        return `Ese gasto ya estaba registrado (lo trajo el banco el ${existente.date}). Le puse ${categoryId ? "su categoría" : "el comercio"}${pegada ? " y le pegué la boleta 📎" : ""}, sin duplicarlo.`;
+        return `Encontré ese gasto, ya estaba del ${existente.date}. Le puse ${categoryId ? "su categoría" : "el comercio"}${pegada ? " y le pegué la boleta 📎" : ""}, sin duplicarlo.`;
       }
 
       const { data, error } = await ctx.db.from("transactions").insert({
