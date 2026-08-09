@@ -23,7 +23,7 @@ export interface CsvColumnMapping {
 }
 
 export interface StatementImportResult {
-  fileType: "csv" | "ofx";
+  fileType: "csv" | "ofx" | "pdf";
   rows: StatementImportRow[];
   warnings: string[];
 }
@@ -102,6 +102,9 @@ const CATEGORY_COLUMN_ALIASES = ["category", "budget category"];
 export class StatementImportError extends Error {
   code: "UNRECOGNIZED_COLUMNS" | "INVALID_FILE";
   inspection?: StatementFileInspection;
+  /** El mensaje está escrito para la persona y se puede mostrar tal cual.
+   *  Los mensajes viejos son de diagnóstico y llevan su propio texto en la UI. */
+  humano = false;
 
   constructor(
     message: string,
@@ -113,6 +116,12 @@ export class StatementImportError extends Error {
     this.code = code;
     this.inspection = inspection;
   }
+}
+
+/** Marca un error como escrito para la persona, para mostrarlo tal cual. */
+function humano(e: StatementImportError): StatementImportError {
+  e.humano = true;
+  return e;
 }
 
 function normalizeHeader(value: string) {
@@ -535,13 +544,73 @@ function parseOfxStatement(content: string, categories: Category[]) {
   return { fileType: "ofx" as const, rows, warnings };
 }
 
+/** Una cartola en PDF: la lee la IA, porque el PDF no tiene columnas que
+ *  partir. Antes esto caía en el lector de CSV, que leía los bytes crudos del
+ *  archivo como si fueran texto y sacaba de ahí movimientos que no existían:
+ *  fechas 0-00-00 y montos de un millón setecientos mil. */
+async function parsePdfStatement(file: File, categories: Category[]): Promise<StatementImportResult> {
+  const { analizarCartola, blobToBase64, iaConfigured } = await import("../lib/ia");
+  if (!iaConfigured) {
+    throw humano(new StatementImportError(
+      "Para leer una cartola en PDF hace falta la IA, que ahora no está disponible. Exporta la cartola como CSV, OFX o QFX.",
+      "INVALID_FILE",
+    ));
+  }
+
+  const movimientos = await analizarCartola(await blobToBase64(file), file.type || "application/pdf");
+  if (movimientos.length === 0) {
+    throw humano(new StatementImportError(
+      "No encontré movimientos en ese PDF. Si tu banco deja exportar la cartola como CSV, OFX o QFX, esa vía es más exacta.",
+      "INVALID_FILE",
+    ));
+  }
+
+  const rows = movimientos.flatMap((m, index) => {
+    const row = buildStatementRow(index, m.fecha, m.descripcion, m.monto, undefined, categories);
+    return row ? [row] : [];
+  });
+
+  return {
+    fileType: "pdf",
+    rows,
+    // Lo que leyó una IA se revisa antes de entrar. Se dice, no se esconde.
+    warnings: ["Esta cartola la leyó la IA desde un PDF. Revisa los montos y las fechas antes de importar."],
+  };
+}
+
+/** ¿Esto es un archivo binario disfrazado de texto? Un PDF, un Excel o una
+ *  imagen leídos como CSV producen filas inventadas. Mejor decir que no. */
+function pareceBinario(contenido: string): boolean {
+  const muestra = contenido.slice(0, 4000);
+  if (!muestra) return false;
+  let raros = 0;
+  for (const ch of muestra) {
+    const c = ch.charCodeAt(0);
+    // Se cuentan los bytes de control, que en una cartola de verdad no salen.
+    if (c === 0 || (c < 9) || (c > 13 && c < 32) || c === 0xfffd) raros += 1;
+  }
+  return raros / muestra.length > 0.05;
+}
+
 export async function parseStatementFile(
   file: File,
   categories: Category[],
   options?: { csvColumnMapping?: CsvColumnMapping },
 ): Promise<StatementImportResult> {
-  const fileContent = await file.text();
   const fileName = file.name.toLowerCase();
+  const fileContent = await file.text();
+
+  if (fileName.endsWith(".pdf") || fileContent.startsWith("%PDF-")) {
+    return parsePdfStatement(file, categories);
+  }
+
+  if (pareceBinario(fileContent)) {
+    throw humano(new StatementImportError(
+      "Ese archivo no es una cartola de texto. Exporta la cartola desde tu banco como CSV, OFX o QFX, o súbela en PDF.",
+      "INVALID_FILE",
+    ));
+  }
+
   const isOfxFile =
     fileName.endsWith(".ofx") || fileName.endsWith(".qfx") || fileContent.toLowerCase().includes("<ofx>");
 

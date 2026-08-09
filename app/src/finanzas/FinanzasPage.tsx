@@ -1097,6 +1097,8 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
   const [archivo, setArchivo] = useState<File | null>(null);
   const [rows, setRows] = useState<Array<StatementImportRow & { dup: boolean }> | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [tipoArchivo, setTipoArchivo] = useState<"csv" | "ofx" | "pdf">("csv");
+  const [leyendo, setLeyendo] = useState(false);
   const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1111,6 +1113,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
     setErr(null);
     setRows(null);
     setResult(null);
+    setLeyendo(true);
     try {
       const parsed = await parseStatementFile(file, categories);
       // Lector de duplicados: marca las filas que ya están en el sistema o que
@@ -1124,6 +1127,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
         return { ...r, dup };
       });
       setRows(conDup);
+      setTipoArchivo(parsed.fileType);
       setWarnings(parsed.warnings);
       // Por defecto los duplicados quedan desmarcados: no entran salvo que ella
       // los marque a propósito.
@@ -1131,9 +1135,14 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
     } catch (ex) {
       if (ex instanceof StatementImportError && ex.code === "UNRECOGNIZED_COLUMNS") {
         setErr(tr("No reconocí las columnas del archivo. Exporta la cartola de tu banco como CSV con columnas de fecha, descripción y monto, e intenta de nuevo."));
+      } else if (ex instanceof StatementImportError && ex.humano) {
+        // Estos mensajes ya están escritos para ella: se muestran tal cual.
+        setErr(tr(ex.message));
       } else {
-        setErr(tr("No pude leer el archivo. Verifica que sea la cartola en formato CSV, OFX o QFX de tu banco."));
+        setErr(tr("No pude leer el archivo. Verifica que sea la cartola en formato CSV, OFX, QFX o PDF de tu banco."));
       }
+    } finally {
+      setLeyendo(false);
     }
   }
 
@@ -1183,7 +1192,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
       ) : (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            {tr("Descarga la cartola desde tu banco (CSV, OFX o QFX) y súbela aquí. Reviso cuáles ya tienes y marco los repetidos para que no entren dos veces.")}
+            {tr("Descarga la cartola desde tu banco y súbela aquí. Si es CSV, OFX o QFX la leo tal cual; si es PDF la lee la IA y tú revisas antes de importar. En cualquier caso miro cuáles ya tienes y marco los repetidos para que no entren dos veces.")}
           </p>
           <div className="frow">
             <div className="field"><label>{tr("¿De qué cuenta o tarjeta es?")}</label>
@@ -1196,17 +1205,25 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
               <input type="month" className="input-inline" value={mesCartola} onChange={(e) => setMesCartola(e.target.value)} aria-label={tr("Mes de la cartola")} /></div>
           </div>
           <div className="field"><label>{tr("Archivo")}</label>
-            <input type="file" accept=".csv,.ofx,.qfx,text/csv" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivo(e.target.files?.[0] ?? null); void onFile(e); }} /></div>
+            <input type="file" accept=".csv,.ofx,.qfx,.pdf,text/csv,application/pdf" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivo(e.target.files?.[0] ?? null); void onFile(e); }} /></div>
           {(!fuenteImp || !mesCartola) && (
             <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>{tr("Primero elige la cuenta o tarjeta y el mes: así la cartola queda bien archivada.")}</p>
+          )}
+          {leyendo && (
+            <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>{tr("Leyendo la cartola…")}</p>
           )}
           {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
           {rows && (
             <div style={{ marginBottom: 12 }}>
               <p style={{ fontSize: 13.5, marginBottom: 2 }}>
                 {tr("Encontré")} <b>{rows.length}</b> {tr("movimientos.")}
-                {warnings.length > 0 && <> {warnings.length} {tr("filas no se pudieron leer.")}</>}
+                {tipoArchivo !== "pdf" && warnings.length > 0 && <> {warnings.length} {tr("filas no se pudieron leer.")}</>}
               </p>
+              {tipoArchivo === "pdf" && (
+                <p style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 8 }}>
+                  ⚠️ {tr("Esta cartola la leyó la IA desde un PDF. Revisa los montos y las fechas antes de importar.")}
+                </p>
+              )}
               {dups > 0 ? (
                 <p style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 8 }}>
                   ⚠️ {dups} {dups === 1 ? tr("ya está en el sistema, lo dejé sin marcar.") : tr("ya están en el sistema, los dejé sin marcar.")} {tr("Márcalos solo si quieres importarlos igual.")}

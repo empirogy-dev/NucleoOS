@@ -394,6 +394,59 @@ export async function fichaLibro(titulo: string, autor: string): Promise<FichaLi
   };
 }
 
+// ---------- Cartolas en PDF ----------
+
+export interface MovimientoCartola {
+  fecha: string;      // YYYY-MM-DD
+  descripcion: string;
+  monto: number;      // negativo si sale plata, positivo si entra
+}
+
+const PROMPT_CARTOLA =
+  "Eres un lector de cartolas bancarias (estados de cuenta). Lee el documento y devuelve TODOS los movimientos " +
+  "de la tabla, en orden. Responde SOLO con un arreglo JSON, sin texto alrededor. Cada elemento tiene estas llaves: " +
+  "fecha (YYYY-MM-DD), descripcion (el texto del movimiento tal cual aparece, limpio de espacios de más), " +
+  "monto (número con signo: NEGATIVO cuando sale plata de la cuenta, o sea cargos, compras, retiros y débitos; " +
+  "POSITIVO cuando entra, o sea depósitos, abonos y créditos). " +
+  "OJO con las columnas: muchas cartolas traen una columna de monto (Amount) y otra de saldo corrido (Balance). " +
+  "El monto que va en la respuesta es el de la columna de monto del movimiento, NUNCA el saldo. " +
+  "NO incluyas filas de saldo, de total, de subtotal, de saldo anterior ni encabezados: solo movimientos reales. " +
+  "El año sale del periodo de la cartola; si una fila solo trae día y mes, usa ese año. " +
+  "REGLA CRÍTICA: no inventes NADA. Si un movimiento no se lee con claridad, déjalo fuera. " +
+  "Si el documento no es una cartola bancaria, devuelve un arreglo vacío.";
+
+/** Lee una cartola en PDF o foto. Devuelve solo los movimientos que se leen. */
+export async function analizarCartola(base64: string, mimeType: string): Promise<MovimientoCartola[]> {
+  const texto = await generate([
+    { inlineData: { mimeType, data: base64 } },
+    { text: PROMPT_CARTOLA },
+  ]);
+  const limpio = texto.replace(/```json|```/g, "").trim();
+  const i = limpio.indexOf("[");
+  const f = limpio.lastIndexOf("]");
+  if (i === -1 || f === -1) throw new Error("No pude leer los movimientos de esa cartola.");
+  let crudo: unknown;
+  try {
+    crudo = JSON.parse(limpio.slice(i, f + 1));
+  } catch {
+    throw new Error("No pude leer los movimientos de esa cartola.");
+  }
+  if (!Array.isArray(crudo)) return [];
+
+  // Se filtra en casa: una fecha que no calza o un monto en cero no entran,
+  // por mucho que el modelo los haya escrito.
+  return crudo.flatMap((x) => {
+    const o = x as Record<string, unknown>;
+    const fecha = String(o.fecha ?? "");
+    const monto = Number(o.monto);
+    const descripcion = String(o.descripcion ?? "").trim().slice(0, 200);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return [];
+    if (!Number.isFinite(monto) || monto === 0) return [];
+    if (!descripcion) return [];
+    return [{ fecha, descripcion, monto }];
+  });
+}
+
 // ---------- Boletas ----------
 
 export interface AnalisisBoleta {
