@@ -848,7 +848,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
       if (!foto) return "No me llegó ninguna foto en este mensaje. Pídesela.";
       try {
         const bytes = Uint8Array.from(atob(foto.b64), (c) => c.charCodeAt(0));
-        const ext = foto.mime.includes("png") ? "png" : "jpg";
+        const ext = foto.mime.includes("pdf") ? "pdf" : foto.mime.includes("png") ? "png" : "jpg";
         const { error } = await ctx.db.storage.from("recibos")
           .upload(`${ctx.userId}/${elegido.id}/${Date.now()}-boleta.${ext}`, bytes, { contentType: foto.mime });
         if (error) return `No pude guardar la boleta: ${error.message}`;
@@ -931,6 +931,42 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
         if (cat) categoryId = cat.id;
       }
 
+      // ¿Este gasto YA está? El banco suele traerlo antes de que ella mande
+      // la boleta. Si aparece uno del mismo monto en días cercanos, se le
+      // pega la boleta y la categoría en vez de crear un duplicado.
+      const dia = new Date(`${fecha}T00:00:00Z`).getTime();
+      const desde = new Date(dia - 5 * 86400000).toISOString().slice(0, 10);
+      const hasta = new Date(dia + 5 * 86400000).toISOString().slice(0, 10);
+      const { data: candidatos } = await ctx.db.from("transactions")
+        .select("id,category_id,merchant,date,source")
+        .eq("user_id", ctx.userId).eq("type", tipo).eq("amount", monto)
+        .gte("date", desde).lte("date", hasta).limit(5);
+      // Se prefiere el que aún no tiene categoría: ese es el que espera en
+      // la bandeja Por revisar.
+      const existente = (candidatos ?? []).sort((a, b) => (a.category_id ? 1 : 0) - (b.category_id ? 1 : 0))[0];
+
+      if (existente) {
+        const cambios: Record<string, unknown> = {};
+        if (!existente.category_id && categoryId) cambios.category_id = categoryId;
+        if (!existente.merchant && comercio) cambios.merchant = comercio;
+        if (Object.keys(cambios).length > 0) {
+          await ctx.db.from("transactions").update(cambios).eq("id", existente.id).eq("user_id", ctx.userId);
+        }
+        let pegada = false;
+        const fotoExistente = ctx.fotos.shift();
+        if (fotoExistente) {
+          try {
+            const bytes = Uint8Array.from(atob(fotoExistente.b64), (c) => c.charCodeAt(0));
+            const ext = fotoExistente.mime.includes("pdf") ? "pdf" : fotoExistente.mime.includes("png") ? "png" : "jpg";
+            const { error: eSub } = await ctx.db.storage.from("recibos")
+              .upload(`${ctx.userId}/${existente.id}/${Date.now()}-boleta.${ext}`, bytes, { contentType: fotoExistente.mime });
+            pegada = !eSub;
+          } catch { /* sin adjunto, el gasto igual queda categorizado */ }
+        }
+        await anotarEscritura(ctx, "transactions", existente.id, `boleta sobre gasto existente ${monto} ${comercio ?? ""}`);
+        return `Ese gasto ya estaba registrado (lo trajo el banco el ${existente.date}). Le puse ${categoryId ? "su categoría" : "el comercio"}${pegada ? " y le pegué la boleta 📎" : ""}, sin duplicarlo.`;
+      }
+
       const { data, error } = await ctx.db.from("transactions").insert({
         user_id: ctx.userId, date: fecha, amount: monto, type: tipo,
         description: descripcion, merchant: comercio, category_id: categoryId,
@@ -976,7 +1012,7 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
       if (foto) {
         try {
           const bytes = Uint8Array.from(atob(foto.b64), (c) => c.charCodeAt(0));
-          const ext = foto.mime.includes("png") ? "png" : "jpg";
+          const ext = foto.mime.includes("pdf") ? "pdf" : foto.mime.includes("png") ? "png" : "jpg";
           const { error: eSubida } = await ctx.db.storage.from("recibos")
             .upload(`${ctx.userId}/${data.id}/${Date.now()}-boleta.${ext}`, bytes, { contentType: foto.mime });
           conBoleta = !eSubida;
