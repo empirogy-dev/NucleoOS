@@ -8,8 +8,10 @@ import {
   crearLinkToken,
   desconectarBanco,
   listConexiones,
+  limpiarOAuth,
   sincronizarBanco,
   tokenAgregarCuentas,
+  volviendoDeOAuth,
   type ConexionBanco,
 } from "./banco";
 
@@ -45,6 +47,30 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // Si volvemos del sitio del banco (OAuth), se retoma el mismo flujo con
+  // el token guardado: para la persona es un solo movimiento continuo.
+  useEffect(() => {
+    const token = volviendoDeOAuth();
+    if (!token) return;
+    setBusy(true);
+    void abrirPlaid(token, (publicToken, institucion) => {
+      void (async () => {
+        try {
+          const nuevas = await canjearToken(publicToken, institucion);
+          setMsg(`${tr("Banco conectado")}: ${nuevas} ${tr("movimientos nuevos")}.`);
+          await cargar();
+          onCambio();
+        } catch (e) {
+          setErr(e instanceof Error ? e.message : String(e));
+        } finally {
+          limpiarOAuth();
+          setBusy(false);
+        }
+      })();
+    }, true).catch(() => { limpiarOAuth(); setBusy(false); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function conectar() {
     setBusy(true);

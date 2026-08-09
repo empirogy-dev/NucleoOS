@@ -803,8 +803,45 @@ export function FinanzasPage() {
                 ))}
               </div>
               <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => setModal("account")}>
-                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Agregar cuenta
+                <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> {tr("Agregar cuenta")}
               </button>
+
+              {cards.length > 0 && (
+                <div className="card pad" style={{ marginTop: 18, maxWidth: 720 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                    <b style={{ fontSize: 13.5 }}>💳 {tr("Tus tarjetas")}</b>
+                    <small style={{ color: "var(--muted)", flex: 1, minWidth: 200 }}>
+                      {tr("Se pueden usar para pagar igual que una cuenta, pero su deuda vive en Deudas y tarjetas.")}
+                    </small>
+                    <button className="btn ghost" style={{ fontSize: 12.5, padding: "7px 12px" }} onClick={() => setTab("deudas")}>
+                      {tr("Ver deudas y tarjetas")}
+                    </button>
+                  </div>
+                  {cards.map((c) => {
+                    const cupo = Number(c.credit_limit ?? 0);
+                    const usado = Number(c.balance);
+                    const pct = cupo > 0 ? Math.min(100, Math.round((usado / cupo) * 100)) : 0;
+                    return (
+                      <div className="txrow" key={c.id}>
+                        <span className="txicon">💳</span>
+                        <div className="txmeta">
+                          <b>{c.name}{c.last_four ? ` •••• ${c.last_four}` : ""}</b>
+                          <small>
+                            {tr("Debes")} {fmtMoney(usado, c.currency ?? currency)}
+                            {cupo > 0 ? `, ${pct}% ${tr("del cupo")}` : ""}
+                            {c.due_date ? `, ${tr("pagas el")} ${c.due_date}` : ""}
+                          </small>
+                        </div>
+                        {cupo > 0 && (
+                          <div className="track" style={{ width: 90, flex: "none" }}>
+                            <div className="fill" style={{ width: `${pct}%`, background: pct >= 80 ? "var(--err)" : "var(--accent)" }} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
 

@@ -69,7 +69,29 @@ export async function desconectarBanco(id: string, borrarDatos = false): Promise
 /** Carga el script de Plaid una sola vez y abre su ventana segura. Las
  *  credenciales del banco se escriben DENTRO de esa ventana, que es de
  *  Plaid: NucleoOS nunca las ve ni las puede ver. */
-export async function abrirPlaid(linkToken: string, alTerminar: (publicToken: string, institucion?: string) => void): Promise<void> {
+const LS_LINK = "nucleoos-plaid-link";
+
+/** ¿Volvimos del sitio del banco? Plaid deja su rastro en la URL. */
+export function volviendoDeOAuth(): string | null {
+  try {
+    if (!new URLSearchParams(window.location.search).get("oauth_state_id")) return null;
+    return localStorage.getItem(LS_LINK);
+  } catch {
+    return null;
+  }
+}
+
+export function limpiarOAuth(): void {
+  try {
+    localStorage.removeItem(LS_LINK);
+    window.history.replaceState({}, "", window.location.pathname);
+  } catch { /* sin historial: no pasa nada */ }
+}
+
+export async function abrirPlaid(linkToken: string, alTerminar: (publicToken: string, institucion?: string) => void, volviendo = false): Promise<void> {
+  // El token se guarda porque el banco con OAuth se lleva a la persona a
+  // su sitio: al volver hay que retomar el mismo flujo, no empezar otro.
+  try { localStorage.setItem(LS_LINK, linkToken); } catch { /* sin storage */ }
   await new Promise<void>((listo, falla) => {
     const w = window as unknown as { Plaid?: unknown };
     if (w.Plaid) return listo();
@@ -84,7 +106,9 @@ export async function abrirPlaid(linkToken: string, alTerminar: (publicToken: st
   }).Plaid;
   Plaid.create({
     token: linkToken,
+    ...(volviendo ? { receivedRedirectUri: window.location.href } : {}),
     onSuccess: (publicToken: string, metadata: { institution?: { name?: string } }) => {
+      try { localStorage.removeItem(LS_LINK); } catch { /* sin storage */ }
       alTerminar(publicToken, metadata?.institution?.name);
     },
   }).open();

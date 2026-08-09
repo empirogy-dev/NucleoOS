@@ -292,6 +292,11 @@ Deno.serve(async (req: Request) => {
         },
         country_codes: ["CA", "US"],
         language: "es",
+        // Bancos con OAuth (Capital One, Chase, Bank of America) no aceptan
+        // que la clave se escriba en Plaid: mandan a su propio sitio y
+        // vuelven aquí. Sin esto, esos bancos responden "credenciales
+        // incorrectas" aunque estén perfectas.
+        ...(Deno.env.get("PLAID_REDIRECT_URI") ? { redirect_uri: Deno.env.get("PLAID_REDIRECT_URI") } : {}),
         webhook: `${Deno.env.get("SUPABASE_URL")}/functions/v1/banco`,
       });
       return json({ link_token: r.link_token });
@@ -311,6 +316,7 @@ Deno.serve(async (req: Request) => {
         language: "es",
         access_token: con.access_token,
         update: { account_selection_enabled: true },
+        ...(Deno.env.get("PLAID_REDIRECT_URI") ? { redirect_uri: Deno.env.get("PLAID_REDIRECT_URI") } : {}),
         webhook: `${Deno.env.get("SUPABASE_URL")}/functions/v1/banco`,
       });
       return json({ link_token: r.link_token });
