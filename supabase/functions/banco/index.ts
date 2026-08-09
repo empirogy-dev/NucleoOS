@@ -302,13 +302,14 @@ Deno.serve(async (req: Request) => {
           for (const c of tarjetas ?? []) locales.push(c.id);
         }
 
-        // Los movimientos que vinieron del banco: por su cuenta si la
-        // conocemos, y si no, todo lo que tenga origen "banco".
-        const q = db.from("transactions").delete().eq("user_id", userId).eq("source", "banco");
-        const { count } = locales.length > 0
-          ? await q.or(`account_id.in.(${locales.join(",")}),payment_source_id.in.(${locales.join(",")})`).select("id", { count: "exact", head: true })
-          : await q.select("id", { count: "exact", head: true });
-        borradas = Number(count ?? 0);
+        // Los movimientos que vinieron del banco. Se borran por su origen y
+        // su id externo, que solo pone la sincronización: filtrar además por
+        // cuenta dejaba fuera los que quedaron sin cuenta mapeada, y esos se
+        // quedaban huérfanos en la app.
+        const { data: fuera } = await db.from("transactions")
+          .delete().eq("user_id", userId).eq("source", "banco").not("external_id", "is", null)
+          .select("id");
+        borradas = (fuera ?? []).length;
 
         if (externos.length > 0) {
           await db.from("accounts").delete().eq("user_id", userId).in("external_id", externos);
