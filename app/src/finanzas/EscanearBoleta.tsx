@@ -8,7 +8,8 @@ import { hoyLocal } from "../lib/fechas";
 import { addTransaction, updateTransaction } from "./data";
 import { uploadRecibo } from "./recibos";
 import { candidatosPara, esBuenMatch, separar } from "./matchBoleta";
-import { etiquetarTx, listTags, type Etiqueta } from "./tags";
+import { etiquetarTx, listTags, tagsPorCategoria, type Etiqueta } from "./tags";
+import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { Selector } from "../components/Selector";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtMoney } from "./types";
@@ -58,7 +59,23 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
   // Sus etiquetas, para poder ponerlas sin salir del escáner.
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [elegidas, setElegidas] = useState<Set<string>>(new Set());
-  useEffect(() => { listTags().then(setEtiquetas).catch(() => setEtiquetas([])); }, []);
+  const [tagsDeCategoria, setTagsDeCategoria] = useState<Map<string, Etiqueta[]>>(new Map());
+  useEffect(() => {
+    listTags().then(setEtiquetas).catch(() => setEtiquetas([]));
+    tagsPorCategoria().then(setTagsDeCategoria).catch(() => setTagsDeCategoria(new Map()));
+  }, []);
+
+  function alternarEtiqueta(id: string) {
+    setElegidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    // Si la categoría que estaba puesta no pertenece a la etiqueta nueva, se
+    // suelta: dejarla puesta y escondida sería guardar algo que no se ve.
+    setCategoria("");
+  }
   const camara = useRef<HTMLInputElement>(null);
   const galeria = useRef<HTMLInputElement>(null);
 
@@ -173,7 +190,14 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
     }
   }
 
-  const gastos = categories.filter((c) => c.type !== "income");
+  // La etiqueta acorta la lista de categorías. Si una etiqueta elegida no
+  // tiene ninguna categoría suya todavía, no se acorta nada: dejarla con la
+  // lista vacía sería un callejón sin salida.
+  const todosLosGastos = categories.filter((c) => c.type !== "income");
+  const deLasElegidas = elegidas.size === 0 ? [] : todosLosGastos.filter((c) =>
+    (tagsDeCategoria.get(c.id) ?? []).some((e) => elegidas.has(e.id)));
+  const acotadas = deLasElegidas.length > 0;
+  const gastos = acotadas ? deLasElegidas : todosLosGastos;
 
   return (
     <div className="tp-overlay" {...cierreDeFondo(onClose)}>
@@ -281,41 +305,29 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
               </>
             )}
 
-            <div className="field"><label>{tr("Categoría")}</label>
-              <Selector value={categoria} ariaLabel={tr("Categoría")} placeholder={tr("Sin categoría")} onChange={setCategoria}
-                opciones={[{ value: "", label: tr("Sin categoría") }, ...gastos.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} /></div>
-
-            {/* Las etiquetas son de ella: aquí solo se eligen las que ya creó,
-                nunca se inventa una por suposición. */}
+            {/* Primero la etiqueta, después la categoría. La etiqueta dice de
+                qué vida es el gasto (personal, empresa), y con eso la lista de
+                categorías se acorta a las de esa vida. Las etiquetas son de
+                ella: aquí solo se eligen las que ya creó. */}
             {etiquetas.length > 0 && (
               <div className="field">
                 <label>{tr("Etiquetas")}</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {etiquetas.map((e) => {
-                    const puesta = elegidas.has(e.id);
-                    return (
-                      <button key={e.id} type="button" {...sinRobarFoco}
-                        aria-pressed={puesta}
-                        onClick={() => setElegidas((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(e.id)) next.delete(e.id);
-                          else next.add(e.id);
-                          return next;
-                        })}
-                        style={{
-                          font: "inherit", fontSize: 12.5, cursor: "pointer",
-                          padding: "5px 11px", borderRadius: 999,
-                          border: `1px solid ${e.color ?? "var(--line)"}`,
-                          background: puesta ? (e.color ?? "var(--accent)") : "transparent",
-                          color: puesta ? "#fff" : "var(--ink-soft)",
-                        }}>
-                        {puesta ? "✓ " : ""}{e.name}
-                      </button>
-                    );
-                  })}
-                </div>
+                <ChipsEtiquetas etiquetas={etiquetas} puestas={elegidas} onToggle={alternarEtiqueta} />
               </div>
             )}
+
+            <div className="field"><label>{tr("Categoría")}</label>
+              <Selector value={categoria} ariaLabel={tr("Categoría")} placeholder={tr("Sin categoría")} onChange={setCategoria}
+                opciones={[{ value: "", label: tr("Sin categoría") }, ...gastos.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} />
+              {acotadas && (
+                <small style={{ color: "var(--muted)", fontSize: 11.5 }}>
+                  {tr("Solo las categorías de esa etiqueta.")}{" "}
+                  <button type="button" className="linklike" style={{ fontSize: 11.5 }} onClick={() => setElegidas(new Set())}>
+                    {tr("ver todas")}
+                  </button>
+                </small>
+              )}
+            </div>
 
             {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>

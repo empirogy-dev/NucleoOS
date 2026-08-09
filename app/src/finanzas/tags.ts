@@ -111,3 +111,48 @@ export async function desetiquetarTx(transactionId: string, tagId: string): Prom
     .eq("tag_id", tagId);
   check(error);
 }
+
+// ---------- Las etiquetas de las categorías, o sea de los presupuestos ----------
+//
+// Una etiqueta puesta en la categoría vale para todo lo que caiga ahí: si
+// Bencina es de la empresa, todo gasto de bencina es de la empresa sin que
+// haya que marcarlo uno por uno. Y una categoría puede llevar varias, porque
+// la bencina a veces es personal y a veces del negocio.
+
+/** Mapa category_id → etiquetas. */
+export async function tagsPorCategoria(): Promise<Map<string, Etiqueta[]>> {
+  const { data, error } = await sb()
+    .from("category_tags")
+    .select("category_id, tags (id,name,color)");
+  // Sin la migración 0059 la tabla no existe todavía: la app sigue andando
+  // sin etiquetas de categoría en vez de caerse entera.
+  if (error) return new Map();
+  const mapa = new Map<string, Etiqueta[]>();
+  for (const fila of (data ?? []) as Array<{ category_id: string; tags: Etiqueta | Etiqueta[] | null }>) {
+    const t = fila.tags;
+    if (!t) continue;
+    const lista = mapa.get(fila.category_id) ?? [];
+    lista.push(...(Array.isArray(t) ? t : [t]));
+    mapa.set(fila.category_id, lista);
+  }
+  return mapa;
+}
+
+export async function etiquetarCategoria(categoryId: string, tagId: string): Promise<void> {
+  const { error } = await sb()
+    .from("category_tags")
+    .upsert(
+      { user_id: await uid(), category_id: categoryId, tag_id: tagId },
+      { onConflict: "category_id,tag_id", ignoreDuplicates: true },
+    );
+  check(error);
+}
+
+export async function desetiquetarCategoria(categoryId: string, tagId: string): Promise<void> {
+  const { error } = await sb()
+    .from("category_tags")
+    .delete()
+    .eq("category_id", categoryId)
+    .eq("tag_id", tagId);
+  check(error);
+}

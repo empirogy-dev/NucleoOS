@@ -4,6 +4,7 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { listTodosRecibos, signedUrlsRecibos, openRecibo, type ReciboItem } from "./recibos";
 import { fmtMoney, type Account, type Category, type Tx } from "./types";
+import type { Etiqueta } from "./tags";
 
 // Biblioteca de comprobantes: todas las boletas en un solo lugar, cada una
 // junto a su gasto (fecha, comercio, categoría, monto). Bookkeeping en línea:
@@ -20,11 +21,14 @@ interface Fila {
 
 const MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-export function ComprobantesTab({ txs, categories, accounts, currency }: {
+export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas, txTags, catTags }: {
   txs: Tx[];
   categories: Category[];
   accounts: Account[];
   currency: string;
+  etiquetas: Etiqueta[];
+  txTags: Map<string, Etiqueta[]>;
+  catTags: Map<string, Etiqueta[]>;
 }) {
   const { t: tr } = useIdioma();
   const [items, setItems] = useState<ReciboItem[]>([]);
@@ -32,6 +36,7 @@ export function ComprobantesTab({ txs, categories, accounts, currency }: {
   const [cargando, setCargando] = useState(true);
   const [fMes, setFMes] = useState("all");
   const [fCat, setFCat] = useState("all");
+  const [fTag, setFTag] = useState("all");
 
   const txById = useMemo(() => new Map(txs.map((t) => [t.id, t])), [txs]);
   const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
@@ -71,7 +76,17 @@ export function ComprobantesTab({ txs, categories, accounts, currency }: {
     return [...set].sort().reverse();
   }, [filas]);
 
+  // La etiqueta de una boleta viene de dos lados: la que ella le puso al
+  // gasto, y la que lleva su categoría. Poner "empresa" en Bencina tiene que
+  // alcanzar para que la boleta de bencina salga en el filtro de empresa,
+  // sin marcarla una por una.
+  const etiquetasDe = (f: Fila): string[] => [
+    ...(f.tx ? txTags.get(f.tx.id) ?? [] : []),
+    ...(f.tx?.category_id ? catTags.get(f.tx.category_id) ?? [] : []),
+  ].map((e) => e.id);
+
   const visibles = filas.filter((f) => {
+    if (fTag !== "all" && !etiquetasDe(f).includes(fTag)) return false;
     if (fMes !== "all" && f.fecha.slice(0, 7) !== fMes) return false;
     if (fCat === "none" && f.tx?.category_id) return false;
     if (fCat !== "all" && fCat !== "none" && f.tx?.category_id !== fCat) return false;
@@ -85,12 +100,16 @@ export function ComprobantesTab({ txs, categories, accounts, currency }: {
 
   function exportarCSV() {
     const esc = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
-    const cab = [tr("Fecha"), tr("Comercio"), tr("Categoría"), tr("Monto"), tr("Moneda"), tr("Comprobante")];
+    const cab = [tr("Fecha"), tr("Comercio"), tr("Categoría"), tr("Etiquetas"), tr("Monto"), tr("Moneda"), tr("Comprobante")];
     const lineas = visibles.map((f) =>
       [
         f.fecha,
         f.tx?.merchant || f.tx?.description || f.tx?.bank_ref || "",
         f.cat?.name ?? "",
+        [...new Set([
+          ...(f.tx ? txTags.get(f.tx.id) ?? [] : []),
+          ...(f.tx?.category_id ? catTags.get(f.tx.category_id) ?? [] : []),
+        ].map((e) => e.name))].join(", "),
         String(f.monto),
         f.currency,
         f.item.name,
@@ -101,7 +120,8 @@ export function ComprobantesTab({ txs, categories, accounts, currency }: {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    const suf = fMes === "all" ? "todos" : fMes;
+    const etiqueta = fTag === "all" ? "" : `-${(etiquetas.find((e) => e.id === fTag)?.name ?? "").toLowerCase().replace(/\s+/g, "-")}`;
+    const suf = (fMes === "all" ? "todos" : fMes) + etiqueta;
     a.download = `comprobantes-nucleoos-${suf}.csv`;
     // Adjuntar al documento antes del clic: sin esto, varios navegadores no
     // disparan la descarga. Y liberar el enlace después, no al instante, para
@@ -141,6 +161,16 @@ export function ComprobantesTab({ txs, categories, accounts, currency }: {
             ]}
             onChange={setFCat} />
         </div>
+        {etiquetas.length > 0 && (
+          <div style={{ width: 175 }}>
+            <Selector compacto value={fTag} ariaLabel={tr("Filtrar por etiqueta")}
+              opciones={[
+                { value: "all", label: tr("Todas las etiquetas") },
+                ...etiquetas.map((e) => ({ value: e.id, label: e.name })),
+              ]}
+              onChange={setFTag} />
+          </div>
+        )}
         <span style={{ flex: 1 }} />
         <button className="btn ghost" onClick={exportarCSV} disabled={visibles.length === 0}>
           <Download size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />

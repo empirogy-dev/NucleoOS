@@ -10,7 +10,8 @@ import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
 import { comprimirImagen } from "../lib/comprimir";
-import { PALETA_TAGS, addTag, deleteTag, desetiquetarTx, etiquetarTx, listTags, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
+import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
+import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
 import { BancoPanel } from "./BancoPanel";
@@ -107,6 +108,8 @@ export function FinanzasPage() {
   const [tagTx, setTagTx] = useState<Tx | null>(null);
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [txTags, setTxTags] = useState<Map<string, Etiqueta[]>>(new Map());
+  // Las etiquetas de cada categoría: lo que separa lo personal de lo de la empresa.
+  const [catTags, setCatTags] = useState<Map<string, Etiqueta[]>>(new Map());
   const [cartolas, setCartolas] = useState<Cartola[]>([]);
   const [escaneando, setEscaneando] = useState(false);
   const [vistaTx, setVistaTx] = useState<"revisar" | "archivo" | "comprobantes" | "cartolas">("revisar");
@@ -149,9 +152,10 @@ export function FinanzasPage() {
     setReciboIds(await listReciboTxIds());
     // Etiquetas: opcionales hasta correr la 0057, la pestaña vive igual sin ellas.
     try {
-      const [ets, mapa] = await Promise.all([listTags(), tagsPorTransaccion()]);
+      const [ets, mapa, porCat] = await Promise.all([listTags(), tagsPorTransaccion(), tagsPorCategoria()]);
       setEtiquetas(ets);
       setTxTags(mapa);
+      setCatTags(porCat);
     } catch { /* sin la 0057 todavía */ }
     try {
       setCartolas(await listCartolas());
@@ -215,6 +219,27 @@ export function FinanzasPage() {
   const currency = accounts[0]?.currency ?? defaultCurrency;
 
   const budgetCats = categories.filter((c) => c.type === "expense" && Number(c.budget) > 0 && !c.exclude_from_budget);
+
+  // Los presupuestos ordenados por etiqueta. Una categoría con dos etiquetas
+  // sale en las dos: la bencina es personal y de la empresa a la vez, y
+  // esconderla de una de las dos vistas sería mentir. Lo que no tiene etiqueta
+  // va al final, sin título, tal como se veía antes.
+  const gruposPresupuesto = (() => {
+    const usadas = etiquetas.filter((e) =>
+      budgetCats.some((c) => (catTags.get(c.id) ?? []).some((x) => x.id === e.id)));
+    const grupos = usadas.map((e) => {
+      const cats = budgetCats.filter((c) => (catTags.get(c.id) ?? []).some((x) => x.id === e.id));
+      const resumenes = cats.map((c) => resumenPresupuesto(c, txs, month));
+      const gastado = resumenes.reduce((s, r) => s + r.gastado, 0);
+      const tope = resumenes.reduce((s, r) => s + r.disponible, 0);
+      return { clave: e.id, etiqueta: e, cats, gastado, tope, excedido: gastado > tope };
+    });
+    const sueltas = budgetCats.filter((c) => (catTags.get(c.id) ?? []).length === 0);
+    if (sueltas.length > 0) {
+      grupos.push({ clave: "sin-etiqueta", etiqueta: null as unknown as Etiqueta, cats: sueltas, gastado: 0, tope: 0, excedido: false });
+    }
+    return grupos;
+  })();
 
   // Cada moneda vive aparte: sumar CAD con CLP daría un número mentiroso.
   // Las deudas sin moneda propia se cuentan en la moneda principal.
@@ -360,7 +385,23 @@ export function FinanzasPage() {
                     {tr("Aún no defines presupuestos. Ve a")} <b>{tr("tab.fin.categorias")}</b> {tr("y asigna un tope mensual con el lápiz ✎.")}
                   </p>
                 )}
-                {budgetCats.map((c) => {
+                {gruposPresupuesto.map((g) => (
+                  <div key={g.clave} style={{ marginBottom: g.etiqueta ? 14 : 0 }}>
+                    {/* Agrupados por etiqueta: lo personal por un lado y lo de
+                        la empresa por otro, cada uno con su total, que es la
+                        pregunta que uno se hace de verdad a fin de mes. */}
+                    {g.etiqueta && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "10px 0 6px" }}>
+                        <span className="chip" style={g.etiqueta.color
+                          ? { background: g.etiqueta.color, color: "#fff", borderColor: g.etiqueta.color }
+                          : undefined}>{g.etiqueta.name}</span>
+                        <span style={{ flex: 1, height: 1, background: "var(--line)" }} />
+                        <b className="tnum" style={{ fontSize: 12.5, color: g.excedido ? "var(--err)" : "var(--muted)" }}>
+                          {fmtMoney(g.gastado, currency)} / {fmtMoney(g.tope, currency)}
+                        </b>
+                      </div>
+                    )}
+                {g.cats.map((c) => {
                   const r = resumenPresupuesto(c, txs, month);
                   const pct = Math.min(100, Math.round(r.pct));
                   const enAlerta = !r.excedido && r.pct >= r.umbral;
@@ -381,6 +422,8 @@ export function FinanzasPage() {
                     </div>
                   );
                 })}
+                  </div>
+                ))}
               </div>
             </>
           )}
@@ -468,7 +511,7 @@ export function FinanzasPage() {
                 );
               })()}
               {vistaTx === "comprobantes" && (
-                <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} />
+                <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} etiquetas={etiquetas} txTags={txTags} catTags={catTags} />
               )}
               {vistaTx === "cartolas" && (
                 <div className="card pad" style={{ maxWidth: 720 }}>
@@ -854,7 +897,7 @@ export function FinanzasPage() {
             <>
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
                 {categories.map((c) => (
-                  <div className="card" key={c.id} style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div className="card" key={c.id} style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 18 }}>{c.icon ?? "🏷️"}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <b style={{ fontSize: 13.5 }}>{c.name}</b>
@@ -871,6 +914,24 @@ export function FinanzasPage() {
                     )}
                     <button className="xdel" aria-label="Editar categoría" title="Editar" onClick={() => setEditCat(c)}><Pencil size={14} /></button>
                     <button className="xdel" aria-label="Eliminar categoría" onClick={async () => { if (!window.confirm(`${tr("¿Eliminar la categoría")} ${c.name}?`)) return; await deleteCategory(c.id); void reload(); }}><Trash2 size={14} /></button>
+                    {/* La etiqueta puesta aquí vale para todo lo que caiga en
+                        esta categoría: así se separa lo personal de lo de la
+                        empresa sin marcar gasto por gasto. */}
+                    {etiquetas.length > 0 && (
+                      <div style={{ flexBasis: "100%" }}>
+                        <ChipsEtiquetas
+                          etiquetas={etiquetas}
+                          puestas={new Set((catTags.get(c.id) ?? []).map((e) => e.id))}
+                          tamano={11}
+                          onToggle={async (tagId) => {
+                            const puesta = (catTags.get(c.id) ?? []).some((e) => e.id === tagId);
+                            if (puesta) await desetiquetarCategoria(c.id, tagId);
+                            else await etiquetarCategoria(c.id, tagId);
+                            setCatTags(await tagsPorCategoria());
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
