@@ -238,6 +238,15 @@ button{font-family:inherit}
   .txrow{gap:10px;padding:9px 2px;flex-wrap:wrap}
   .txrow .txmeta{min-width:min(190px,100%)}
   .txrow .txmeta b{white-space:normal}
+  /* El monto y los botones viajan juntos en su propia línea: así el
+     basurero no queda solo en un renglón, como pasaba antes. */
+  .txrow .txamt{margin-right:auto}
+  /* El encabezado del mes se envuelve: los totales bajan a su línea en vez
+     de salirse de la tarjeta. El nombre del mes no se parte en tres. */
+  .mes-head{flex-wrap:wrap;padding:9px 10px}
+  .mes-head b{white-space:nowrap}
+  .mes-head small{flex:1 0 auto}
+  .mes-head .mes-tot{flex-basis:100%;display:flex;gap:12px;justify-content:flex-end}
 }
 .txrow:last-child{border-bottom:none}
 .txicon{width:34px;height:34px;border-radius:9px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font-size:15px;flex:none}

@@ -347,6 +347,15 @@ Deno.serve(async (req: Request) => {
         .select("id,user_id,access_token,cursor").eq("user_id", userId).eq("status", "activo");
       let total = 0;
       const errores: string[] = [];
+      // Plaid sirve lo que tiene guardado, y lo refresca por su cuenta unas
+      // pocas veces al día. Cuando la persona aprieta Actualizar, le pedimos
+      // al banco datos frescos AHORA. Si el plan no incluye este refresco, se
+      // ignora y seguimos con lo que haya: nunca bloquea la sincronización.
+      for (const c of cons ?? []) {
+        try {
+          await plaid("/transactions/refresh", { access_token: c.access_token });
+        } catch { /* sin refresco a pedido: seguimos con lo que Plaid tenga */ }
+      }
       for (const c of cons ?? []) {
         const r = await sincronizar(db, desdeCero ? { ...c, cursor: null } : c);
         total += r.nuevas;

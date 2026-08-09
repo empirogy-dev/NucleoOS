@@ -562,8 +562,10 @@ export function FinanzasPage() {
                           <b>{nombre.charAt(0).toUpperCase() + nombre.slice(1)}</b>
                           <small>{lista.length === 1 ? "1 movimiento" : `${lista.length} movimientos`}</small>
                           <span style={{ flex: 1 }} />
-                          {ingresosMes > 0 && <small className="tnum" style={{ color: "var(--ok)" }}>+{fmtMoney(ingresosMes, currency)}</small>}
-                          {gastosMes > 0 && <small className="tnum" style={{ color: "var(--err)" }}>−{fmtMoney(gastosMes, currency)}</small>}
+                          <span className="mes-tot">
+                            {ingresosMes > 0 && <small className="tnum" style={{ color: "var(--ok)" }}>+{fmtMoney(ingresosMes, currency)}</small>}
+                            {gastosMes > 0 && <small className="tnum" style={{ color: "var(--err)" }}>−{fmtMoney(gastosMes, currency)}</small>}
+                          </span>
                         </button>
                         {abierto && lista.map((t) => (
                           <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
