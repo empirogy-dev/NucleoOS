@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Landmark, RefreshCw, Trash2, Unlink } from "lucide-react";
+import { Selector } from "../components/Selector";
 import {
   abrirPlaid,
   canjearToken,
@@ -23,6 +24,9 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [disponible, setDisponible] = useState(true);
+  // Cuánta historia traer del banco al conectar. Tres meses es el punto
+  // dulce: suficiente para ver patrones, sin llenar la app de arqueología.
+  const [dias, setDias] = useState("90");
 
   const cargar = useCallback(async () => {
     try {
@@ -46,7 +50,7 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
     setErr(null);
     setMsg(null);
     try {
-      const token = await crearLinkToken();
+      const token = await crearLinkToken(Number(dias));
       await abrirPlaid(token, (publicToken, institucion) => {
         void (async () => {
           try {
@@ -105,6 +109,16 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
             {busy ? tr("com.guardando") : tr("Actualizar")}
           </button>
         )}
+        <div style={{ width: 150 }}>
+          <Selector compacto value={dias} ariaLabel={tr("Historial que traer")} onChange={setDias}
+            opciones={[
+              { value: "30", label: tr("Último mes") },
+              { value: "90", label: tr("3 meses") },
+              { value: "180", label: tr("6 meses") },
+              { value: "365", label: tr("1 año") },
+              { value: "730", label: tr("2 años") },
+            ]} />
+        </div>
         <button className="btn primary" disabled={busy} onClick={() => void conectar()}>
           {conexiones.length === 0 ? tr("Conectar mi banco") : tr("Conectar otro")}
         </button>

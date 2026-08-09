@@ -237,10 +237,15 @@ Deno.serve(async (req: Request) => {
 
   try {
     if (accion === "link_token") {
+      // Cuánta historia pedirle al banco. Plaid no le pregunta a la persona:
+      // lo define quien integra, así que lo elige ella en la app. El tope de
+      // Plaid son 730 días, y el banco entrega lo que tenga dentro de eso.
+      const dias = Math.min(730, Math.max(30, Number(cuerpo.dias ?? 90)));
       const r = await plaid("/link/token/create", {
         user: { client_user_id: userId },
         client_name: "NucleoOS",
         products: ["transactions"],
+        transactions: { days_requested: dias },
         country_codes: ["CA", "US"],
         language: "es",
         webhook: `${Deno.env.get("SUPABASE_URL")}/functions/v1/banco`,

@@ -39,8 +39,8 @@ export async function listConexiones(): Promise<ConexionBanco[]> {
   return r.conexiones ?? [];
 }
 
-export async function crearLinkToken(): Promise<string> {
-  const r = await llamar<{ link_token: string }>({ accion: "link_token" });
+export async function crearLinkToken(dias = 90): Promise<string> {
+  const r = await llamar<{ link_token: string }>({ accion: "link_token", dias });
   return r.link_token;
 }
 
