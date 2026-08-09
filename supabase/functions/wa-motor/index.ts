@@ -107,6 +107,8 @@ async function bajarMedia(fileId: string): Promise<{ b64: string; mime: string }
       mp3: "audio/mp3", m4a: "audio/mp4", mp4: "audio/mp4",
       wav: "audio/wav", aac: "audio/aac", flac: "audio/flac",
       jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
+      // Las boletas suelen llegar en PDF: Gemini las lee igual que una foto.
+      pdf: "application/pdf",
     };
     const delServidor = res.headers.get("content-type") ?? "";
     const mime = porExtension[ext]
@@ -1143,6 +1145,10 @@ function promptSistema(idioma: string, timezone: string): string {
     "Jamás te niegues a guardar por falta de detalle.\n" +
     "· Puedes preguntar UN dato faltante como máximo, UNA sola vez, y siempre DESPUÉS de guardar lo que ya sabías.\n" +
     "· PROHIBIDO pedir que repita algo que ya aparece en esta conversación: los mensajes anteriores están ahí, úsalos.\n" +
+    "· Los mensajes marcados como [conversación anterior] son SOLO contexto y YA fueron atendidos: nunca vuelvas a registrarlos. " +
+    "Actúa únicamente sobre el mensaje nuevo de este turno.\n" +
+    "· PROHIBIDO INVENTAR: si en una foto o archivo no logras leer un dato, dilo y pregunta. Nunca nombres un producto, " +
+    "una comida ni un monto que no esté en el mensaje nuevo o en la imagen. Una boleta es un GASTO, jamás una comida.\n" +
     "· PROHIBIDO decir \"listo\", \"registrado\" o \"anotado\" sin haber llamado la tool: sería mentirle sobre sus datos.\n\n" +
     "EL SUPERPODER \"¿POR DÓNDE EMPIEZO?\": cuando pregunte por dónde partir, qué hacer ahora, o diga que " +
     "está abrumada o bloqueada, llama por_donde_empiezo y con eso recomienda UNA SOLA cosa concreta, nunca " +
@@ -1568,7 +1574,13 @@ Deno.serve(async (req: Request) => {
         if (m.tipo !== "texto" || !m.contenido) continue;
         historial.push({
           role: m.direccion === "out" ? "model" : "user",
-          parts: [{ text: String(m.contenido).slice(0, 500) }],
+          parts: [{
+            text: m.direccion === "out"
+              ? String(m.contenido).slice(0, 500)
+              // Marcado como ya atendido: sin esto el modelo tomaba mensajes
+              // viejos como pedidos nuevos y volvía a registrarlos.
+              : `[conversación anterior, YA atendida, solo para entender el contexto] ${String(m.contenido).slice(0, 500)}`,
+          }],
         });
       }
 
@@ -1591,10 +1603,12 @@ Deno.serve(async (req: Request) => {
               bloque.push({
                 text: m.tipo === "audio"
                   ? "[nota de voz de la usuaria: entiende lo que dice y REGISTRA con las tools lo que cuenta que hizo]"
-                  : "[foto de la usuaria: si es una boleta o recibo, extrae monto total, comercio, fecha y últimos 4 dígitos de la tarjeta y llama registrar_transaccion; si es comida, registrar_plato]",
+                  : m.tipo === "documento"
+                    ? "[ARCHIVO de la usuaria, casi siempre una BOLETA: léela y extrae monto total, comercio, fecha y últimos 4 dígitos de la tarjeta, y llama registrar_transaccion o adjuntar_boleta. Un archivo NUNCA es una comida: jamás llames registrar_plato por esto. Si no logras leer el monto, dilo y pregunta, no inventes]"
+                    : "[IMAGEN de la usuaria. Si es una boleta o recibo (tiene montos, comercio, fecha): extrae monto total, comercio, fecha y últimos 4 dígitos y llama registrar_transaccion o adjuntar_boleta, NUNCA registrar_plato. Si es un plato de comida: registrar_plato. Si no logras leerla, dilo y pregunta, no inventes nada]",
               });
               bloque.push({ inlineData: { mimeType: media.mime, data: media.b64 } });
-              if (m.tipo === "imagen") fotosDelLote.push({ mime: media.mime, b64: media.b64 });
+              if (m.tipo === "imagen" || m.tipo === "documento") fotosDelLote.push({ mime: media.mime, b64: media.b64 });
             }
             else bloque.push({ text: `[${m.tipo} que no se pudo leer]` });
           } catch {

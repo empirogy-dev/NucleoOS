@@ -125,14 +125,18 @@ Deno.serve(async (req: Request) => {
     const updateId = body?.update_id != null ? `tg-${body.update_id}` : null;
     const esVoz = Boolean(m.voice ?? m.audio);
     const esFoto = Array.isArray(m.photo) && m.photo.length > 0;
-    const tipo: string = esVoz ? "audio" : esFoto ? "imagen" : "texto";
+    // Un archivo adjunto (una boleta en PDF, o una foto mandada como
+    // documento) llegaba como mensaje vacío y se perdía por completo.
+    const doc = m.document as { file_id?: string; mime_type?: string; file_name?: string } | undefined;
+    const esDoc = Boolean(doc?.file_id) && /pdf|image/i.test(String(doc?.mime_type ?? ""));
+    const tipo: string = esVoz ? "audio" : esFoto ? "imagen" : esDoc ? "documento" : "texto";
     const texto: string = String(m.text ?? m.caption ?? "").trim();
     // Audio y foto: guardamos el file_id y wa-motor lo descarga con el token.
     // En las fotos Telegram manda varios tamaños: usamos el más grande.
     const media = tipo !== "texto"
       ? JSON.stringify({
-          fileId: m.voice?.file_id ?? m.audio?.file_id ?? m.photo?.[m.photo.length - 1]?.file_id ?? null,
-          mime: m.voice?.mime_type ?? m.audio?.mime_type ?? (esFoto ? "image/jpeg" : null),
+          fileId: m.voice?.file_id ?? m.audio?.file_id ?? m.photo?.[m.photo.length - 1]?.file_id ?? doc?.file_id ?? null,
+          mime: m.voice?.mime_type ?? m.audio?.mime_type ?? (esFoto ? "image/jpeg" : doc?.mime_type ?? null),
           caption: texto || null,
         })
       : null;
