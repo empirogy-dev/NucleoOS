@@ -336,11 +336,23 @@ Deno.serve(async (req: Request) => {
     }
 
     if (accion === "sync") {
+      // Con "desde_cero" se olvida el marcador de avance y el banco vuelve a
+      // entregar toda su historia. Es lo que hay que hacer si los movimientos
+      // se borraron a mano: si no, el banco cree que ya te los dio.
+      const desdeCero = cuerpo.desde_cero === true;
+      if (desdeCero) {
+        await db.from("bank_connections").update({ cursor: null }).eq("user_id", userId);
+      }
       const { data: cons } = await db.from("bank_connections")
         .select("id,user_id,access_token,cursor").eq("user_id", userId).eq("status", "activo");
       let total = 0;
-      for (const c of cons ?? []) total += (await sincronizar(db, c)).nuevas;
-      return json({ ok: true, nuevas: total });
+      const errores: string[] = [];
+      for (const c of cons ?? []) {
+        const r = await sincronizar(db, desdeCero ? { ...c, cursor: null } : c);
+        total += r.nuevas;
+        if (r.error) errores.push(r.error);
+      }
+      return json({ ok: true, nuevas: total, ...(errores.length ? { aviso: errores.join(" | ") } : {}) });
     }
 
     if (accion === "estado") {

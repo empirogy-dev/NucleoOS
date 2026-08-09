@@ -98,12 +98,12 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
     }
   }
 
-  async function actualizar() {
+  async function actualizar(desdeCero = false) {
     setBusy(true);
     setErr(null);
     setMsg(null);
     try {
-      const nuevas = await sincronizarBanco();
+      const nuevas = await sincronizarBanco(desdeCero);
       setMsg(nuevas > 0 ? `${nuevas} ${tr("movimientos nuevos")}.` : tr("Todo al día."));
       await cargar();
       onCambio();
@@ -218,6 +218,19 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
         </div>
       )}
 
+      {conexiones.length > 0 && (
+        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 10 }}>
+          {tr("¿Faltan movimientos que sí ves en tu banco?")}{" "}
+          <button type="button" disabled={busy}
+            style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "var(--accent-ink)", textDecoration: "underline", cursor: "pointer" }}
+            onClick={async () => {
+              if (!window.confirm(tr("Voy a pedirle al banco toda su historia de nuevo. Lo que ya está no se duplica. ¿Vamos?"))) return;
+              await actualizar(true);
+            }}>
+            {tr("Traer todo de nuevo")}
+          </button>
+        </p>
+      )}
       {msg && <p style={{ fontSize: 13, color: "var(--ok)", marginTop: 10 }}>{msg}</p>}
       {err && <p style={{ fontSize: 13, color: "var(--err)", marginTop: 10 }}>{err}</p>}
     </div>

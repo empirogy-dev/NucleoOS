@@ -56,8 +56,8 @@ export async function tokenAgregarCuentas(id: string): Promise<string> {
   return r.link_token;
 }
 
-export async function sincronizarBanco(): Promise<number> {
-  const r = await llamar<{ nuevas: number }>({ accion: "sync" });
+export async function sincronizarBanco(desdeCero = false): Promise<number> {
+  const r = await llamar<{ nuevas: number }>({ accion: "sync", desde_cero: desdeCero });
   return r.nuevas ?? 0;
 }
 
