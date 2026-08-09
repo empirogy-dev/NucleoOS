@@ -393,3 +393,48 @@ export async function fichaLibro(titulo: string, autor: string): Promise<FichaLi
     via: VIAS.includes(String(crudo.via)) ? String(crudo.via) : "proposito",
   };
 }
+
+// ---------- Boletas ----------
+
+export interface AnalisisBoleta {
+  monto: number;
+  comercio: string;
+  fecha: string | null; // YYYY-MM-DD si se lee en la boleta
+  ultimos4: string | null;
+}
+
+const PROMPT_BOLETA =
+  "Eres un lector de boletas y recibos. Mira la imagen y extrae SOLO lo que de verdad se lee. " +
+  "Responde en JSON con estas llaves: monto (número, el TOTAL pagado, sin símbolos), comercio (nombre limpio del " +
+  "negocio, ej: Starlink, Costco), fecha (YYYY-MM-DD si aparece, si no null), ultimos4 (los últimos 4 dígitos de la " +
+  "tarjeta si aparecen, si no null). " +
+  "REGLA CRÍTICA: si un dato no se lee con claridad, ponlo en null o en 0. JAMÁS inventes un monto, un comercio ni " +
+  "una fecha. Si la imagen no es una boleta, devuelve monto 0.";
+
+/** Lee una boleta con la IA. Devuelve solo lo que se ve: si algo no se lee,
+ *  viene vacío para que la persona lo complete, nunca inventado. */
+export async function analizarBoleta(base64: string, mimeType: string): Promise<AnalisisBoleta> {
+  const texto = await generate([
+    { inlineData: { mimeType, data: base64 } },
+    { text: PROMPT_BOLETA },
+  ]);
+  const limpio = texto.replace(/```json|```/g, "").trim();
+  const i = limpio.indexOf("{");
+  const f = limpio.lastIndexOf("}");
+  if (i === -1 || f === -1) throw new Error("No pude leer esa boleta. Prueba con otra foto, más derecha y con luz.");
+  let crudo: Record<string, unknown>;
+  try {
+    crudo = JSON.parse(limpio.slice(i, f + 1));
+  } catch {
+    throw new Error("No pude leer esa boleta. Prueba con otra foto.");
+  }
+  const monto = Math.abs(Number(crudo.monto) || 0);
+  const fecha = typeof crudo.fecha === "string" && /^\d{4}-\d{2}-\d{2}$/.test(crudo.fecha) ? crudo.fecha : null;
+  const u4 = String(crudo.ultimos4 ?? "").replace(/\D/g, "").slice(-4);
+  return {
+    monto,
+    comercio: String(crudo.comercio ?? "").trim().slice(0, 120),
+    fecha,
+    ultimos4: u4.length === 4 ? u4 : null,
+  };
+}

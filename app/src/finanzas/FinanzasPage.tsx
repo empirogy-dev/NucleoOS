@@ -13,6 +13,7 @@ import { PALETA_TAGS, addTag, deleteTag, desetiquetarTx, etiquetarTx, listTags, 
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
 import { BancoPanel } from "./BancoPanel";
+import { EscanearBoleta } from "./EscanearBoleta";
 import {
   TablesMissingError,
   addAccount,
@@ -106,6 +107,7 @@ export function FinanzasPage() {
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [txTags, setTxTags] = useState<Map<string, Etiqueta[]>>(new Map());
   const [cartolas, setCartolas] = useState<Cartola[]>([]);
+  const [escaneando, setEscaneando] = useState(false);
   const [vistaTx, setVistaTx] = useState<"revisar" | "archivo" | "comprobantes" | "cartolas">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
@@ -882,6 +884,7 @@ export function FinanzasPage() {
       {(modal === "tx" || editTx) && (
         <TxModal key={editTx?.id ?? "nuevo"} categories={categories} accounts={accounts}
           cards={cards} debts={debts} goals={goals} edit={editTx}
+          onEscanear={() => { setModal(null); setEscaneando(true); }}
           onClose={() => { setModal(null); setEditTx(null); }}
           onSaved={() => { setModal(null); setEditTx(null); void reload(); }} />
       )}
@@ -889,6 +892,11 @@ export function FinanzasPage() {
         <SplitModal tx={splitTx} categories={categories} currency={accById.get(splitTx.account_id ?? "")?.currency ?? currency}
           onClose={() => setSplitTx(null)}
           onSaved={() => { setSplitTx(null); void reload(); }} />
+      )}
+      {escaneando && (
+        <EscanearBoleta txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency}
+          onClose={() => setEscaneando(false)}
+          onSaved={() => { void reload(); }} />
       )}
       {tagTx && (
         <EtiquetasModal tx={tagTx} etiquetas={etiquetas} asignadas={(txTags.get(tagTx.id) ?? []).map((e) => e.id)}
@@ -1705,13 +1713,15 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
   );
 }
 
-function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onSaved }: {
+function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, onClose, onSaved }: {
   categories: Category[];
   accounts: Account[];
   cards: CreditCard[];
   debts: Debt[];
   goals: Goal[];
   edit?: Tx | null;
+  /** Atajo a la foto de la boleta: registrar sin escribir nada. */
+  onEscanear?: () => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -1806,6 +1816,17 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onClose, onS
 
   return (
     <Modal title={edit ? tr("m.tx.editar") : tr("m.tx.registrar")} onClose={onClose}>
+      {!edit && onEscanear && (
+        <>
+          <button type="button" className="btn ghost" style={{ width: "100%", marginBottom: 10 }} onClick={onEscanear}>
+            <Camera size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+            {tr("Con una foto de la boleta")}
+          </button>
+          <p style={{ fontSize: 11.5, color: "var(--muted)", textAlign: "center", marginBottom: 12 }}>
+            {tr("o escríbelo tú")}
+          </p>
+        </>
+      )}
       <div className="seg">
         <button className={"segbtn" + (type === "expense" ? " active" : "")} onClick={() => setType("expense")} type="button">{tr("m.tx.gasto")}</button>
         <button className={"segbtn" + (type === "income" ? " active" : "")} onClick={() => setType("income")} type="button">{tr("m.tx.ingreso")}</button>
