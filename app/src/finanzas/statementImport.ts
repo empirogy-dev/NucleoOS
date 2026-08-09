@@ -23,7 +23,7 @@ export interface CsvColumnMapping {
 }
 
 export interface StatementImportResult {
-  fileType: "csv" | "ofx" | "pdf";
+  fileType: "csv" | "ofx" | "pdf" | "xlsx";
   rows: StatementImportRow[];
   warnings: string[];
 }
@@ -299,6 +299,17 @@ function parseDateValue(rawValue?: string) {
   const trimmedValue = rawValue.trim();
   if (!trimmedValue) {
     return null;
+  }
+
+  // Excel no guarda fechas: guarda cuántos días pasaron desde el 30 de
+  // diciembre de 1899. Una celda con 46234 es el 25 de julio de 2026, no un
+  // número. El rango cubre de 1954 a 2064, que es donde vive una cartola.
+  if (/^\d{5}(\.\d+)?$/.test(trimmedValue)) {
+    const serie = Number(trimmedValue);
+    if (serie >= 20000 && serie <= 60000) {
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.round(serie) * 86400000);
+      return toIsoDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+    }
   }
 
   const compactDateMatch = trimmedValue.match(/^(\d{4})(\d{2})(\d{2})/);
@@ -602,6 +613,29 @@ export async function parseStatementFile(
 
   if (fileName.endsWith(".pdf") || fileContent.startsWith("%PDF-")) {
     return parsePdfStatement(file, categories);
+  }
+
+  // Un .xlsx es un ZIP, y empieza con PK. Se abre y se vuelve texto, y de ahí
+  // en adelante lo lee el mismo lector de CSV.
+  if (fileName.endsWith(".xlsx") || (fileContent.startsWith("PK") && !fileName.endsWith(".csv"))) {
+    const { leerXlsx, grillaACsv } = await import("./xlsx");
+    let comoCsv: string;
+    try {
+      comoCsv = grillaACsv(await leerXlsx(file));
+    } catch (e) {
+      throw humano(new StatementImportError(
+        e instanceof Error ? e.message : "No pude abrir ese Excel. Exporta la cartola como CSV.",
+        "INVALID_FILE",
+      ));
+    }
+    return { ...parseCsvStatement(comoCsv, categories, options?.csvColumnMapping), fileType: "xlsx" as const };
+  }
+
+  if (fileName.endsWith(".xls")) {
+    throw humano(new StatementImportError(
+      "Ese es un Excel del formato viejo (.xls). Ábrelo en Excel y guárdalo como .xlsx o como CSV.",
+      "INVALID_FILE",
+    ));
   }
 
   if (pareceBinario(fileContent)) {

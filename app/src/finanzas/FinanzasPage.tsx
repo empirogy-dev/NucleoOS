@@ -1097,7 +1097,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
   const [archivo, setArchivo] = useState<File | null>(null);
   const [rows, setRows] = useState<Array<StatementImportRow & { dup: boolean }> | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [tipoArchivo, setTipoArchivo] = useState<"csv" | "ofx" | "pdf">("csv");
+  const [tipoArchivo, setTipoArchivo] = useState<"csv" | "ofx" | "pdf" | "xlsx">("csv");
   const [leyendo, setLeyendo] = useState(false);
   const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
   const [err, setErr] = useState<string | null>(null);
@@ -1205,7 +1205,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
               <input type="month" className="input-inline" value={mesCartola} onChange={(e) => setMesCartola(e.target.value)} aria-label={tr("Mes de la cartola")} /></div>
           </div>
           <div className="field"><label>{tr("Archivo")}</label>
-            <input type="file" accept=".csv,.ofx,.qfx,.pdf,text/csv,application/pdf" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivo(e.target.files?.[0] ?? null); void onFile(e); }} /></div>
+            <input type="file" accept=".csv,.ofx,.qfx,.pdf,.xlsx,text/csv,application/pdf" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivo(e.target.files?.[0] ?? null); void onFile(e); }} /></div>
           {(!fuenteImp || !mesCartola) && (
             <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>{tr("Primero elige la cuenta o tarjeta y el mes: así la cartola queda bien archivada.")}</p>
           )}
