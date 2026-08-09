@@ -60,6 +60,9 @@ button{font-family:inherit}
 .grid>*,.panelgrid>*,.statrow>*{min-width:0}
 .btn{font-weight:600;font-size:13.5px;border-radius:var(--r-full);padding:9px 18px;cursor:pointer;border:1px solid transparent}
 .btn.primary{background:var(--accent);color:#fff}
+/* Un botón apagado tiene que verse apagado: si no, uno lo aprieta y cree que
+   la app se colgó, cuando en realidad falta un dato. */
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.ghost{background:transparent;color:var(--ink-soft);border-color:var(--line)}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:var(--r-full);background:var(--accent-wash);color:var(--accent-ink)}
 
@@ -110,6 +113,14 @@ button{font-family:inherit}
 /* max-height + scroll: en celular un modal largo (temas, nueva meta) debe
    poder recorrerse entero, con sus botones de salida siempre alcanzables. */
 .tp{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);width:100%;max-width:520px;padding:22px;max-height:calc(100dvh - 40px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+/* En el celular el modal se ancla arriba y no al centro. Centrado, cada vez
+   que el teclado aparece o se va la ventana entera sube o baja, y el botón
+   que ibas a apretar se corre de abajo del dedo. Anclado arriba, se queda
+   quieto. */
+@media (max-width:640px){
+  .tp-overlay{align-items:start;padding:14px}
+  .tp{max-height:calc(100dvh - 28px)}
+}
 .tp h3{font-size:19px;margin-bottom:4px}
 .tp p{color:var(--muted);font-size:13px;margin-bottom:16px}
 .tp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}

@@ -1,4 +1,5 @@
 import { IconField } from "../components/IconField";
+import { cierreDeFondo, sinRobarFoco } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
@@ -261,7 +262,7 @@ export function FinanzasPage() {
             <li>Copia el contenido de <code>supabase/migrations/0001_finanzas.sql</code> (está en el repo).</li>
             <li>Pégalo y presiona <b>Run</b>.</li>
           </ol>
-          <button className="btn primary" style={{ marginTop: 16 }} onClick={() => void reload()}>
+          <button className="btn primary" {...sinRobarFoco} style={{ marginTop: 16 }} onClick={() => void reload()}>
             Ya lo hice, reintentar
           </button>
         </div>
@@ -297,7 +298,7 @@ export function FinanzasPage() {
           {privado ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
         <button className="btn ghost" onClick={() => setModal("import")}>{tr("btn.importarcartola")}</button>
-        <button className="btn primary" onClick={() => setModal("tx")}>
+        <button className="btn primary" {...sinRobarFoco} onClick={() => setModal("tx")}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
           {tr("btn.registrar")}
         </button>
@@ -1177,7 +1178,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
             {tr("Se importaron")} <b>{result.imported}</b> {tr("movimientos.")}
             {result.excluidos > 0 && <> {tr("Dejaste fuera")} {result.excluidos} {tr("repetidos.")}</>}
           </p>
-          <button className="btn primary" style={{ width: "100%", marginTop: 10 }} onClick={onSaved}>{tr("Listo")}</button>
+          <button className="btn primary" {...sinRobarFoco} style={{ width: "100%", marginTop: 10 }} onClick={onSaved}>{tr("Listo")}</button>
         </div>
       ) : (
         <>
@@ -1229,7 +1230,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
               </div>
             </div>
           )}
-          <button className="btn primary" style={{ width: "100%" }} disabled={!rows || busy || incluidas.length === 0} onClick={() => void doImport()}>
+          <button className="btn primary" {...sinRobarFoco} style={{ width: "100%" }} disabled={!rows || busy || incluidas.length === 0} onClick={() => void doImport()}>
             {busy ? tr("Importando…") : rows ? `${tr("Importar")} ${incluidas.length} ${tr("movimientos")}` : tr("Elige un archivo primero")}
           </button>
         </>
@@ -1284,7 +1285,7 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
         <div className="field"><label>Notas (opcional)</label>
           <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Cuotas restantes, condiciones…" /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual.</p>
-        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
   );
@@ -1346,7 +1347,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
         <div className="field"><label>Interés anual % (opcional)</label>
           <input type="number" min="0" step="any" value={apr} onChange={(e) => setApr(e.target.value)} placeholder="21.99" /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual. El interés alimenta el plan para salir de deudas.</p>
-        <button className="btn primary" disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
   );
@@ -1387,7 +1388,7 @@ function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
               { value: "oneTime", label: "Solo una vez" },
             ]}
             onChange={(v) => setRecurrence(v as typeof recurrence)} /></div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
   );
@@ -1459,7 +1460,7 @@ function GoalModal({ edit, metasDireccion, onClose, onSaved }: { edit?: Goal | n
             )}
           </div>
         )}
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : edit ? "Guardar" : "Crear meta"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : edit ? "Guardar" : "Crear meta"}</button>
       </form>
     </Modal>
   );
@@ -1515,7 +1516,7 @@ function ContributeModal({ goal, accounts, currency, onClose, onSaved }: {
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           Con una cuenta elegida, el aporte queda como transferencia: descuenta de la cuenta y suma a la meta.
         </p>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Aportar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Aportar"}</button>
       </form>
     </Modal>
   );
@@ -1546,7 +1547,7 @@ function BudgetModal({ cat, currency, onClose, onSaved }: {
       <form onSubmit={save}>
         <div className="field"><label>Monto mensual</label>
           <input type="number" min="0" step="any" value={value} onChange={(e) => setValue(e.target.value)} placeholder="300000" autoFocus /></div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
   );
@@ -1706,7 +1707,7 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
         </span>
       </div>
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
-      <button className="btn primary" style={{ width: "100%" }} disabled={!puedeGuardar || busy} onClick={() => void guardar()}>
+      <button className="btn primary" {...sinRobarFoco} style={{ width: "100%" }} disabled={!puedeGuardar || busy} onClick={() => void guardar()}>
         {busy ? "Dividiendo…" : `Dividir en ${listas.length || 2} movimientos`}
       </button>
     </Modal>
@@ -1889,7 +1890,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
         )}
         <div className="field"><label>Fecha</label>
           <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
   );
@@ -1935,7 +1936,7 @@ function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClo
         )}
         <div className="field"><label>{edit ? "Saldo" : "Saldo inicial"}</label>
           <input type="number" step="any" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0" /></div>
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
   );
@@ -2015,7 +2016,7 @@ function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onC
             </label>
           </>
         )}
-        <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
+        <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
   );
@@ -2023,7 +2024,7 @@ function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onC
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
         <h3 style={{ marginBottom: 14 }}>{title}</h3>
         {children}
@@ -2142,7 +2143,7 @@ function ReciboModal({ tx, onClose, onChanged }: { tx: Tx; onClose: () => void; 
                 <button className="xdel" aria-label={tr("Quitar")} style={{ width: 24, height: 24 }} onClick={quitarPendiente} disabled={subiendo}><Trash2 size={12} /></button>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn primary" style={{ flex: 1 }} disabled={subiendo} onClick={() => void guardar()}>
+                <button className="btn primary" {...sinRobarFoco} style={{ flex: 1 }} disabled={subiendo} onClick={() => void guardar()}>
                   {subiendo ? tr("Guardando…") : tr("com.guardar")}
                 </button>
                 <button className="btn ghost" onClick={quitarPendiente} disabled={subiendo}>{tr("Descartar")}</button>
@@ -2359,7 +2360,7 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
         <h3 style={{ marginBottom: 4 }}>🏷 {tr("Etiquetas")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
@@ -2411,7 +2412,7 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
                 <Paleta valor={editColor} onElegir={setEditColor} />
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                   <button className="btn ghost" onClick={() => setEditando(null)}>{tr("Cancelar")}</button>
-                  <button className="btn primary" disabled={busy || !editNombre.trim()} onClick={() => void guardarEdicion()}>
+                  <button className="btn primary" {...sinRobarFoco} disabled={busy || !editNombre.trim()} onClick={() => void guardarEdicion()}>
                     {tr("com.guardar")}
                   </button>
                 </div>
@@ -2422,7 +2423,7 @@ function EtiquetasModal({ tx, etiquetas, asignadas, onClose, onChanged }: {
                 <div style={{ display: "flex", gap: 8 }}>
                   <input className="input-inline" style={{ flex: 1 }} value={nueva} maxLength={40}
                     onChange={(e) => setNueva(e.target.value)} placeholder={tr("Nueva etiqueta…")} aria-label={tr("Nueva etiqueta…")} />
-                  <button className="btn primary" disabled={busy || !nueva.trim()}>{tr("Crear")}</button>
+                  <button className="btn primary" {...sinRobarFoco} disabled={busy || !nueva.trim()}>{tr("Crear")}</button>
                 </div>
                 <Paleta valor={nuevaColor} onElegir={setNuevaColor} />
               </form>

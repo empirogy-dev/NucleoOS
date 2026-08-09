@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { Link } from "react-router-dom";
@@ -217,7 +218,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
         <h3 style={{ marginBottom: 4 }}>{rutina.emoji} {tr(rutina.nombre)}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>
@@ -398,7 +399,7 @@ function ProgramModal({ up, onClose, onSaved }: { up: UserProgram | null; onClos
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
         <h3 style={{ marginBottom: 4 }}>{up ? tr("Editar programa") : tr("Mi programa")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>

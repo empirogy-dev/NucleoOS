@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { CALENDARIO } from "../idioma/textos";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
@@ -152,7 +153,7 @@ export function CalendarioPage() {
       )}
 
       {diaAbierto && (
-        <div className="tp-overlay" onClick={() => setDiaAbierto(null)}>
+        <div className="tp-overlay" {...cierreDeFondo(() => setDiaAbierto(null))}>
           <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
             <h3 style={{ marginBottom: 12 }}>
               {new Date(diaAbierto + "T00:00:00").toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}

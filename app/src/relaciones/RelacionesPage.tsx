@@ -1,4 +1,5 @@
 import { OrdenGrid } from "../components/OrdenGrid";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
@@ -424,7 +425,7 @@ function RelModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
         <h3 style={{ marginBottom: 14 }}>{tr("Nuevo vínculo")}</h3>
         <form onSubmit={save}>

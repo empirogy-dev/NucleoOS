@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { CampoFecha } from "../components/CampoFecha";
@@ -993,7 +994,7 @@ function AvanceModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
 
 function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
         <h3 style={{ marginBottom: 14 }}>{title}</h3>
         {children}

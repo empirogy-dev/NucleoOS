@@ -1,4 +1,5 @@
 import { IconField } from "../components/IconField";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, FileUp, Plus, Search, Sparkles, Trash2 } from "lucide-react";
@@ -274,7 +275,7 @@ export function AprendizajePage() {
 
       {nbModal && <NotebookModal onClose={() => { setNbModal(false); setPendingNote(false); }} onSaved={() => void onNotebookCreated()} />}
       {summary && (
-        <div className="tp-overlay" onClick={() => setSummary(null)}>
+        <div className="tp-overlay" {...cierreDeFondo(() => setSummary(null))}>
           <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
             <h3 style={{ marginBottom: 12 }}>✨ {summary.title}</h3>
             <div className="summary-body">{summary.text}</div>
@@ -449,7 +450,7 @@ function NotebookModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <h3 style={{ marginBottom: 14 }}>{tr("Nuevo cuaderno")}</h3>
         <form onSubmit={save}>

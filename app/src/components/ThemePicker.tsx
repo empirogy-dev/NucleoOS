@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { cierreDeFondo } from "./cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { PALETTES } from "../theme/palettes";
 import { useTheme } from "../theme/ThemeProvider";
@@ -8,7 +9,7 @@ export function ThemePicker({ onClose }: { onClose: () => void }) {
 
   const { palette, setPalette } = useTheme();
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <h3>{tr("tp.titulo")}</h3>

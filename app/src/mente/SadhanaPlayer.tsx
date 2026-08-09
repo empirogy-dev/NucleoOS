@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { fechaRegistro } from "../lib/fechas";
 import { guardarSesion, type Sesion } from "./practicas";
 import { minutosSadhana, type Sadhana } from "./sadhana";
@@ -115,7 +116,7 @@ export function SadhanaPlayer({ sadhana, onClose, onCompleta }: {
   const ss = String(restante % 60).padStart(2, "0");
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
         <h3 style={{ marginBottom: 2 }}>{sadhana.emoji} {sadhana.nombre}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", fontStyle: "italic", marginBottom: 12 }}>

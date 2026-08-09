@@ -1,4 +1,5 @@
 import { IconField } from "../components/IconField";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Link } from "react-router-dom";
 import { fechaRegistro, fmtFechaLocal } from "../lib/fechas";
@@ -382,7 +383,7 @@ function HabitModal({ base, habit, onClose, onSaved }: {
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
         <h3 style={{ marginBottom: 14 }}>{habit ? tr("m.hab.editar") : tr("m.hab.nuevo")}</h3>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}

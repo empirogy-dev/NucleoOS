@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { ChevronDown, ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react";
 import {
@@ -322,7 +323,7 @@ function AgregarLibroModal({ faltaMigracion, onClose, onSaved }: { faltaMigracio
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
         <h3 style={{ marginBottom: 14 }}>Agregar un libro tuyo</h3>
         {faltaMigracion && (

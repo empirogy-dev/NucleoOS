@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { celebrar } from "../lib/celebrar";
 import { CampoFecha } from "../components/CampoFecha";
@@ -324,7 +325,7 @@ function RetoModal({ reto, base, onClose, onSaved }: {
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
         <h3 style={{ marginBottom: 4 }}>{reto ? tr("Editar reto") : tr("Nuevo reto")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>

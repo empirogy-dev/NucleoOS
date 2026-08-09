@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { cierreDeFondo, sinRobarFoco } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Camera, ImagePlus } from "lucide-react";
 import { analizarBoleta, blobToBase64, iaConfigured, type AnalisisBoleta } from "../lib/ia";
@@ -159,7 +160,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
   const gastos = categories.filter((c) => c.type !== "income");
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 470 }}>
         <h3 style={{ marginBottom: 4 }}>🧾 {tr("Escanear boleta")}</h3>
 
@@ -173,7 +174,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
             <input ref={camara} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => void leer(e)} />
             <input ref={galeria} type="file" accept="image/*,application/pdf" style={{ display: "none" }} onChange={(e) => void leer(e)} />
             <div style={{ display: "grid", gap: 8 }}>
-              <button className="btn primary" disabled={busy} onClick={() => camara.current?.click()}>
+              <button className="btn primary" {...sinRobarFoco} disabled={busy} onClick={() => camara.current?.click()}>
                 <Camera size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
                 {busy ? tr("Leyendo la boleta…") : tr("Tomar foto")}
               </button>
@@ -265,7 +266,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
             {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <button className="btn ghost" onClick={onClose}>{tr("Cancelar")}</button>
-              <button className="btn primary" disabled={busy} onClick={() => void confirmar()}>
+              <button className="btn primary" {...sinRobarFoco} disabled={busy} onClick={() => void confirmar()}>
                 {busy ? tr("com.guardando") : elegido === "nuevo" ? tr("Crear el gasto") : tr("Sí, es este")}
               </button>
             </div>
@@ -278,7 +279,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
               ✅ {resumen}
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button className="btn primary" onClick={onClose}>{tr("Listo")}</button>
+              <button className="btn primary" {...sinRobarFoco} onClick={onClose}>{tr("Listo")}</button>
             </div>
           </>
         )}

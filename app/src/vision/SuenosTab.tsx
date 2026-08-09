@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { CampoFecha } from "../components/CampoFecha";
 import { Link } from "react-router-dom";
@@ -185,7 +186,7 @@ function DreamModal({ dream, onClose, onSaved }: { dream: Dream | null; onClose:
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
         <h3 style={{ marginBottom: 4 }}>{dream ? tr("Editar sueño") : tr("Nuevo sueño")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
@@ -248,7 +249,7 @@ function ConvertirModal({ dream, onClose, onSaved }: { dream: Dream; onClose: ()
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
         <h3 style={{ marginBottom: 4 }}>🚀 De sueño a meta</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>

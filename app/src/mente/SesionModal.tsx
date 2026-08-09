@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { fechaRegistro } from "../lib/fechas";
 import { guardarSesion, type Practica, type Sesion } from "./practicas";
@@ -123,7 +124,7 @@ export function SesionModal({ practica, minutos, onClose, onCompleta }: {
   const pct = Math.round((elapsed / total) * 100);
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 470 }}>
         <h3 style={{ marginBottom: 4 }}>{practica.emoji} {tr(practica.nombre)}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: fases ? 8 : 12 }}>

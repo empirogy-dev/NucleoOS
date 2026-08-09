@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
@@ -742,7 +743,7 @@ function CorregirComidaModal({ comida, onClose, onSaved }: {
   }
 
   return (
-    <div className="tp-overlay" onClick={onClose}>
+    <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430 }}>
         <h3 style={{ marginBottom: 4 }}>{tr("✏️ Corregir el plato")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
