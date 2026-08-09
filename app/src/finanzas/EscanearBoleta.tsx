@@ -7,7 +7,7 @@ import { comprimirImagen } from "../lib/comprimir";
 import { hoyLocal } from "../lib/fechas";
 import { addTransaction, updateTransaction } from "./data";
 import { uploadRecibo } from "./recibos";
-import { candidatosPara, esBuenMatch } from "./matchBoleta";
+import { candidatosPara, esBuenMatch, separar } from "./matchBoleta";
 import { Selector } from "../components/Selector";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtMoney } from "./types";
@@ -50,6 +50,10 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
       : []),
     [txs, monto, comercio, fecha],
   );
+  // Se muestra el mejor cerco y nada más. El resto vive detrás de un toque.
+  const { principales, otros } = useMemo(() => separar(candidatos), [candidatos]);
+  const [verOtros, setVerOtros] = useState(false);
+  const aMostrar = verOtros ? [...principales, ...otros] : principales;
   const camara = useRef<HTMLInputElement>(null);
   const galeria = useRef<HTMLInputElement>(null);
 
@@ -79,6 +83,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
         ? candidatosPara(txs, { monto: r.monto, comercio: r.comercio, fecha: f })
         : [];
       setElegido(esBuenMatch(cands[0]) ? cands[0].tx.id : "nuevo");
+      setVerOtros(false);
       // Si la tarjeta viene en la boleta, la fuente queda propuesta.
       if (r.ultimos4) {
         const card = cards.find((c) => c.last_four === r.ultimos4);
@@ -209,7 +214,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
                     : tr("Ninguno calza exacto. ¿Es alguno de estos?")}
                 </p>
                 <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
-                  {candidatos.map(({ tx, cerco }) => (
+                  {aMostrar.map(({ tx, cerco }) => (
                     <button key={tx.id} type="button" className="card"
                       onClick={() => setElegido(tx.id)}
                       style={{
@@ -227,6 +232,12 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
                       <b className="tnum" style={{ fontSize: 13.5 }}>{fmtMoney(Number(tx.amount), currency)}</b>
                     </button>
                   ))}
+                  {otros.length > 0 && !verOtros && (
+                    <button type="button" className="linklike" style={{ fontSize: 12, justifySelf: "start" }}
+                      onClick={() => setVerOtros(true)}>
+                      {tr("Ver otros gastos parecidos")} ({otros.length})
+                    </button>
+                  )}
                   <button type="button" className="card"
                     onClick={() => setElegido("nuevo")}
                     style={{

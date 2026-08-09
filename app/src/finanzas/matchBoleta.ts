@@ -69,6 +69,22 @@ export function candidatosPara(
   return [...arma(exactos, "exacto"), ...arma(cercanos, "cercano"), ...arma(porFecha, "fecha")].slice(0, tope);
 }
 
+/** Qué se muestra de entrada y qué queda guardado detrás de "ver otros".
+ *
+ *  La lección: cuando uno calza exacto, mostrar ocho parecidos al lado de la
+ *  respuesta correcta no ayuda, estorba. Se enseña solo el mejor cerco, y los
+ *  demás quedan a un toque de distancia por si acaso.
+ */
+export function separar(cands: Candidato[]): { principales: Candidato[]; otros: Candidato[] } {
+  if (cands.length === 0) return { principales: [], otros: [] };
+  const mejor = cands[0].cerco;
+  // Del cerco exacto caben hasta tres: un mismo monto puede repetirse de
+  // verdad. Los otros cercos son suposiciones, y de esas basta con dos.
+  const cuantos = mejor === "exacto" ? 3 : 2;
+  const principales = cands.filter((c) => c.cerco === mejor).slice(0, cuantos);
+  return { principales, otros: cands.filter((c) => !principales.includes(c)) };
+}
+
 /** ¿La mejor opción es lo bastante buena para dejarla marcada de entrada?
  *  Solo si el monto calza exacto: con un monto distinto, que elija ella. */
 export function esBuenMatch(c: Candidato | undefined): boolean {
