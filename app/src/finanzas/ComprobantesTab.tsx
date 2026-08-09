@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, FileText, Printer } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { listTodosRecibos, signedUrlsRecibos, openRecibo, type ReciboItem } from "./recibos";
 import { fmtMoney, type Account, type Category, type Tx } from "./types";
 import type { Etiqueta } from "./tags";
-import { aDatos, armarInforme, type FilaInforme } from "./informeBoletas";
+import { ExportarBoletas, type ItemExportable } from "./ExportarBoletas";
 
 // Biblioteca de comprobantes: todas las boletas en un solo lugar, cada una
 // junto a su gasto (fecha, comercio, categoría, monto). Bookkeeping en línea:
@@ -39,7 +39,7 @@ export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas
   const [fCat, setFCat] = useState("all");
   const [fTag, setFTag] = useState("all");
   const [orden, setOrden] = useState<"fecha" | "categoria">("fecha");
-  const [armando, setArmando] = useState(false);
+  const [exportando, setExportando] = useState(false);
 
   const txById = useMemo(() => new Map(txs.map((t) => [t.id, t])), [txs]);
   const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
@@ -118,20 +118,6 @@ export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas
     return (fMes === "all" ? "todos" : fMes) + etiqueta;
   }
 
-  function descargar(blob: Blob, nombre: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = nombre;
-    // Adjuntar al documento antes del clic: sin esto, varios navegadores no
-    // disparan la descarga. Y liberar el enlace después, no al instante, para
-    // no cancelar la descarga a medio empezar.
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-  }
-
   function etiquetasNombre(f: Fila): string {
     return [...new Set([
       ...(f.tx ? txTags.get(f.tx.id) ?? [] : []),
@@ -139,74 +125,31 @@ export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas
     ].map((e) => e.name))].join(", ");
   }
 
-  /** El informe con la tabla y las fotos, listo para guardar como PDF. */
-  async function exportarPDF() {
-    setArmando(true);
-    try {
-      const conFoto: FilaInforme[] = [];
-      for (const f of exportables) {
-        const url = f.item.isImage ? urls.get(f.item.path) : undefined;
-        conFoto.push({
-          fecha: f.fecha,
-          comercio: f.tx?.merchant || f.tx?.description || f.tx?.bank_ref || tr("Movimiento"),
-          categoria: f.cat ? `${f.cat.icon ?? ""} ${f.cat.name}`.trim() : "",
-          etiquetas: etiquetasNombre(f),
-          monto: f.monto,
-          moneda: f.currency,
-          archivo: f.item.name,
-          imagen: url ? await aDatos(url) : null,
-        });
-      }
-      const filtros = [
-        fMes === "all" ? tr("Todos los meses") : nombreMes(fMes),
-        fCat === "all" ? null : fCat === "none" ? tr("Sin categoría") : categories.find((c) => c.id === fCat)?.name,
-        fTag === "all" ? null : etiquetas.find((e) => e.id === fTag)?.name,
-      ].filter(Boolean).join(" · ");
+  function paraExportar(): ItemExportable[] {
+    return exportables.map((f) => ({
+      path: f.item.path,
+      archivo: f.item.name,
+      esImagen: f.item.isImage,
+      fecha: f.fecha,
+      comercio: f.tx?.merchant || f.tx?.description || f.tx?.bank_ref || tr("Movimiento"),
+      categoria: f.cat ? `${f.cat.icon ?? ""} ${f.cat.name}`.trim() : "",
+      etiquetas: etiquetasNombre(f),
+      monto: f.monto,
+      moneda: f.currency,
+    }));
+  }
 
-      const html = armarInforme(
-        { titulo: tr("Comprobantes"), filtros, generado: new Date().toLocaleDateString() },
-        conFoto,
-      );
-
-      // Se abre en una ventana aparte y se manda a imprimir: desde ahí sale
-      // "Guardar como PDF", que es el motor del navegador y pagina mejor que
-      // cualquier cosa que uno arme a mano.
-      const v = window.open("", "_blank");
-      if (!v) {
-        // Con las ventanas bloqueadas, igual se entrega el archivo.
-        descargar(new Blob([html], { type: "text/html" }), `comprobantes-nucleoos-${sufijoArchivo()}.html`);
-        return;
-      }
-      v.document.write(html);
-      v.document.close();
-      v.focus();
-      setTimeout(() => v.print(), 400);
-    } finally {
-      setArmando(false);
-    }
+  function textoFiltros(): string {
+    return [
+      fMes === "all" ? tr("Todos los meses") : nombreMes(fMes),
+      fCat === "all" ? null : fCat === "none" ? tr("Sin categoría") : categories.find((c) => c.id === fCat)?.name,
+      fTag === "all" ? null : etiquetas.find((e) => e.id === fTag)?.name,
+    ].filter(Boolean).join(" · ");
   }
 
   function nombreMes(ym: string): string {
     const [y, m] = ym.split("-").map(Number);
     return `${MESES[m] ? MESES[m].charAt(0).toUpperCase() + MESES[m].slice(1) : m} ${y}`;
-  }
-
-  function exportarCSV() {
-    const esc = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
-    const cab = [tr("Fecha"), tr("Comercio"), tr("Categoría"), tr("Etiquetas"), tr("Monto"), tr("Moneda"), tr("Comprobante")];
-    const lineas = exportables.map((f) =>
-      [
-        f.fecha,
-        f.tx?.merchant || f.tx?.description || f.tx?.bank_ref || "",
-        f.cat?.name ?? "",
-        etiquetasNombre(f),
-        String(f.monto),
-        f.currency,
-        f.item.name,
-      ].map(esc).join(","),
-    );
-    const csv = "﻿" + [cab.map(esc).join(","), ...lineas].join("\r\n");
-    descargar(new Blob([csv], { type: "text/csv;charset=utf-8" }), `comprobantes-nucleoos-${sufijoArchivo()}.csv`);
   }
 
   if (cargando) return <p style={{ color: "var(--muted)" }}>{tr("cargando")}</p>;
@@ -257,13 +200,9 @@ export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas
             onChange={(v) => setOrden(v as "fecha" | "categoria")} />
         </div>
         <span style={{ flex: 1 }} />
-        <button className="btn ghost" onClick={() => void exportarPDF()} disabled={exportables.length === 0 || armando}>
-          <Printer size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          {armando ? tr("Armando el informe…") : tr("Informe con las fotos")}
-        </button>
-        <button className="btn ghost" onClick={exportarCSV} disabled={exportables.length === 0}>
+        <button className="btn ghost" onClick={() => setExportando(true)} disabled={exportables.length === 0}>
           <Download size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-          {tr("Planilla")}
+          {tr("Exportar")}
         </button>
       </div>
 
@@ -296,6 +235,15 @@ export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas
           </div>
         ))}
       </div>
+
+      {exportando && (
+        <ExportarBoletas
+          items={paraExportar()}
+          filtros={textoFiltros()}
+          sufijo={sufijoArchivo()}
+          onClose={() => setExportando(false)}
+        />
+      )}
     </>
   );
 }
