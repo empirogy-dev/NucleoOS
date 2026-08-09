@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
-import { Landmark, RefreshCw, Unlink } from "lucide-react";
+import { Landmark, RefreshCw, Trash2, Unlink } from "lucide-react";
 import {
   abrirPlaid,
   canjearToken,
@@ -122,13 +122,32 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
                   {c.last_sync ? `, ${tr("última vez")} ${new Date(c.last_sync).toLocaleString()}` : ""}
                 </small>
               </div>
-              <button className="xdel" aria-label={tr("Desconectar")} title={tr("Desconectar")}
+              <button className="btn ghost" style={{ fontSize: 12.5, padding: "7px 12px" }}
                 onClick={async () => {
-                  if (!window.confirm(tr("¿Desconectar este banco? Los movimientos ya registrados se quedan."))) return;
-                  await desconectarBanco(c.id);
+                  if (!window.confirm(tr("¿Desconectar este banco? Los movimientos ya registrados se quedan en la app."))) return;
+                  await desconectarBanco(c.id, false);
                   await cargar();
+                  onCambio();
                 }}>
-                <Unlink size={13} />
+                <Unlink size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+                {tr("Desconectar")}
+              </button>
+              <button className="xdel" aria-label={tr("Desconectar y borrar sus datos")} title={tr("Desconectar y borrar sus datos")}
+                onClick={async () => {
+                  if (!window.confirm(tr("¿Desconectar y BORRAR todo lo que trajo este banco? Se van sus cuentas, sus tarjetas y sus movimientos. Lo que registraste a mano se queda. Esto no se puede deshacer."))) return;
+                  setBusy(true);
+                  try {
+                    const n = await desconectarBanco(c.id, true);
+                    setMsg(`${tr("Banco desconectado y datos borrados")}: ${n} ${tr("movimientos")}.`);
+                    await cargar();
+                    onCambio();
+                  } catch (e) {
+                    setErr(e instanceof Error ? e.message : String(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}>
+                <Trash2 size={13} />
               </button>
             </div>
           ))}

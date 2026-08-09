@@ -277,13 +277,51 @@ Deno.serve(async (req: Request) => {
 
     if (accion === "desconectar") {
       const id = String(cuerpo.id ?? "");
+      const borrar = cuerpo.borrar === true;
       const { data: con } = await db.from("bank_connections")
         .select("access_token").eq("id", id).eq("user_id", userId).maybeSingle();
-      if (con) {
-        try { await plaid("/item/remove", { access_token: con.access_token }); } catch { /* ya no existe */ }
-        await db.from("bank_connections").delete().eq("id", id).eq("user_id", userId);
+      if (!con) return json({ ok: true });
+
+      let borradas = 0;
+      if (borrar) {
+        // Qué cuentas trajo ESTE banco: se preguntan mientras el token sirve,
+        // así el borrado es preciso y no toca lo que la usuaria creó a mano.
+        let externos: string[] = [];
+        try {
+          const r = await plaid("/accounts/get", { access_token: con.access_token });
+          externos = ((r.accounts ?? []) as Array<Record<string, unknown>>).map((a) => String(a.account_id));
+        } catch { /* el item ya no responde: se limpia por origen más abajo */ }
+
+        const locales: string[] = [];
+        if (externos.length > 0) {
+          const { data: cuentas } = await db.from("accounts").select("id")
+            .eq("user_id", userId).in("external_id", externos);
+          const { data: tarjetas } = await db.from("credit_cards").select("id")
+            .eq("user_id", userId).in("external_id", externos);
+          for (const c of cuentas ?? []) locales.push(c.id);
+          for (const c of tarjetas ?? []) locales.push(c.id);
+        }
+
+        // Los movimientos que vinieron del banco: por su cuenta si la
+        // conocemos, y si no, todo lo que tenga origen "banco".
+        const q = db.from("transactions").delete().eq("user_id", userId).eq("source", "banco");
+        const { count } = locales.length > 0
+          ? await q.or(`account_id.in.(${locales.join(",")}),payment_source_id.in.(${locales.join(",")})`).select("id", { count: "exact", head: true })
+          : await q.select("id", { count: "exact", head: true });
+        borradas = Number(count ?? 0);
+
+        if (externos.length > 0) {
+          await db.from("accounts").delete().eq("user_id", userId).in("external_id", externos);
+          await db.from("credit_cards").delete().eq("user_id", userId).in("external_id", externos);
+        } else {
+          await db.from("accounts").delete().eq("user_id", userId).eq("is_connected", true).not("external_id", "is", null);
+          await db.from("credit_cards").delete().eq("user_id", userId).not("external_id", "is", null);
+        }
       }
-      return json({ ok: true });
+
+      try { await plaid("/item/remove", { access_token: con.access_token }); } catch { /* ya no existe */ }
+      await db.from("bank_connections").delete().eq("id", id).eq("user_id", userId);
+      return json({ ok: true, borradas });
     }
 
     return json({ error: "Acción desconocida." }, 400);

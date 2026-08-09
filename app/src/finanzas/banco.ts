@@ -54,8 +54,9 @@ export async function sincronizarBanco(): Promise<number> {
   return r.nuevas ?? 0;
 }
 
-export async function desconectarBanco(id: string): Promise<void> {
-  await llamar({ accion: "desconectar", id });
+export async function desconectarBanco(id: string, borrarDatos = false): Promise<number> {
+  const r = await llamar<{ borradas?: number }>({ accion: "desconectar", id, borrar: borrarDatos });
+  return r.borradas ?? 0;
 }
 
 /** Carga el script de Plaid una sola vez y abre su ventana segura. Las
