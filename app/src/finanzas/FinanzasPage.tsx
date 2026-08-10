@@ -5,7 +5,7 @@ import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Tag, Trash2, Wallet } from "lucide-react";
+import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
@@ -590,49 +590,16 @@ export function FinanzasPage() {
                   ) : (
                     <>
                       <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
-                        Ponles categoría con el lápiz (o divídelas con la tijera) y se archivan solas.
+                        Abre el lápiz y ahí está todo: categoría, etiquetas, con qué se pagó y la boleta. Guardas una vez y sale de la bandeja.
                       </p>
                       {pendientes.map((t) => (
                         <div key={t.id}>
                           <TxRow t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
                             onEdit={() => setEditTx(t)}
-                            onSplit={() => setSplitTx(t)}
                             hasRecibo={reciboIds.has(t.id)}
-                            onRecibo={() => setReciboTx(t)}
                             tags={txTags.get(t.id)}
-                            onTags={() => setTagTx(t)}
                             cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
                             onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
-                          {/* La categoría en la misma fila: con casi
-                              trescientos por revisar, abrir una ventana por
-                              cada uno es lo que hace que uno lo abandone. */}
-                          {t.type !== "transfer" && (
-                            <div style={{ maxWidth: 260, margin: "-2px 0 10px 44px" }}>
-                              <Selector compacto value="" ariaLabel={tr("Ponerle categoría")}
-                                placeholder={tr("Ponerle categoría…")}
-                                opciones={categories
-                                  .filter((c) => (t.type === "income" ? c.type === "income" : c.type !== "income"))
-                                  .map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() }))}
-                                onChange={async (v) => {
-                                  if (!v) return;
-                                  await updateTransaction(t, {
-                                    date: t.date,
-                                    amount: Number(t.amount),
-                                    type: t.type,
-                                    description: t.description,
-                                    merchant: t.merchant,
-                                    bank_ref: t.bank_ref ?? null,
-                                    category_id: v,
-                                    account_id: t.account_id,
-                                    destination_kind: t.destination_kind,
-                                    destination_ref: t.destination_ref,
-                                    payment_source_type: t.payment_source_type ?? null,
-                                    payment_source_id: t.payment_source_id ?? null,
-                                  });
-                                  void reload();
-                                }} />
-                            </div>
-                          )}
                         </div>
                       ))}
                     </>
@@ -648,22 +615,16 @@ export function FinanzasPage() {
                   ) : (
                     <>
                       <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
-                        {tr("Estos ya tienen categoría, pero les falta el comprobante. Adjúntalo con el clip, o marca las que no van a tener boleta nunca.")}
+                        {tr("Estos ya tienen categoría, pero les falta el comprobante. Abre el lápiz y adjúntalo, o marca ahí mismo que no necesita boleta.")}
                       </p>
                       {sinBoleta.map((t) => (
                         <div key={t.id}>
                           <TxRow t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
                             onEdit={() => setEditTx(t)}
-                            onSplit={() => setSplitTx(t)}
                             hasRecibo={false}
-                            onRecibo={() => setReciboTx(t)}
                             tags={txTags.get(t.id)}
-                            onTags={() => setTagTx(t)}
                             cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null} />
-                          <button type="button" className="linklike" style={{ fontSize: 11.5, marginBottom: 8 }}
-                            onClick={async () => { await marcarBoletaNoAplica(t.id, true); void reload(); }}>
-                            {tr("Esta no necesita boleta")}
-                          </button>
+
                         </div>
                       ))}
                     </>
@@ -710,11 +671,8 @@ export function FinanzasPage() {
                         {abierto && lista.map((t) => (
                           <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
                             onEdit={() => setEditTx(t)}
-                            onSplit={t.type !== "transfer" ? () => setSplitTx(t) : undefined}
                             hasRecibo={reciboIds.has(t.id)}
-                            onRecibo={() => setReciboTx(t)}
                             tags={txTags.get(t.id)}
-                            onTags={() => setTagTx(t)}
                             cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
                             onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
                         ))}
@@ -1058,6 +1016,8 @@ export function FinanzasPage() {
         <TxModal key={editTx?.id ?? "nuevo"} categories={categories} accounts={accounts}
           etiquetas={etiquetas} tagsActuales={editTx ? txTags.get(editTx.id) ?? [] : []}
           yaTieneBoleta={editTx ? reciboIds.has(editTx.id) : false}
+          onVerBoletas={editTx ? () => { const t = editTx; setEditTx(null); setReciboTx(t); } : undefined}
+          onDividir={editTx ? () => { const t = editTx; setEditTx(null); setSplitTx(t); } : undefined}
           cards={cards} debts={debts} goals={goals} edit={editTx}
           onEscanear={() => { setModal(null); setEscaneando(true); }}
           onClose={() => { setModal(null); setEditTx(null); }}
@@ -1762,7 +1722,7 @@ function Head() {
   );
 }
 
-function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, onSplit, hasRecibo, onRecibo, tags, onTags, cardName }: {
+function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, hasRecibo, tags, cardName }: {
   t: Tx;
   catById: Map<string, Category>;
   accById: Map<string, Account>;
@@ -1770,11 +1730,8 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
   resolveDest?: (t: Tx) => string | null;
   onDelete?: () => void;
   onEdit?: () => void;
-  onSplit?: () => void;
   hasRecibo?: boolean;
-  onRecibo?: () => void;
   tags?: Etiqueta[];
-  onTags?: () => void;
   cardName?: string | null;
 }) {
   const { t: tr } = useIdioma();
@@ -1806,19 +1763,15 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, o
         )}
       </div>
       <b className={"tnum txamt " + (esTransfer ? "neutral" : neg ? "neg" : "pos")}>{esTransfer ? "⇄ " : neg ? "−" : "+"}{fmtMoney(Number(t.amount), acc?.currency ?? currency)}</b>
-      {onRecibo && (
-        <button className="xdel" aria-label={hasRecibo ? tr("Ver boleta") : tr("Adjuntar boleta")} title={hasRecibo ? tr("Ver boleta") : tr("Adjuntar boleta")}
-          style={hasRecibo ? { color: "var(--accent-ink)" } : undefined} onClick={onRecibo}>
+      {/* Un clip, una etiqueta, una tijera, un lápiz y un basurero por fila
+          no es un sistema, es un laberinto. Todo eso vive ahora DENTRO de la
+          ventana de editar. Aquí queda lo que de verdad es distinto: abrir y
+          borrar. El clip solo se muestra como señal de que ya tiene boleta. */}
+      {hasRecibo && (
+        <span className="xdel" title={tr("Tiene boleta")} style={{ color: "var(--accent-ink)", cursor: "default" }}>
           <Paperclip size={13} />
-        </button>
+        </span>
       )}
-      {onTags && (
-        <button className="xdel" aria-label={tr("Etiquetas")} title={tr("Etiquetas")}
-          style={tags && tags.length > 0 ? { color: "var(--accent-ink)" } : undefined} onClick={onTags}>
-          <Tag size={13} />
-        </button>
-      )}
-      {onSplit && <button className="xdel" aria-label="Dividir boleta" title="Dividir en categorías" onClick={onSplit}><Scissors size={13} /></button>}
       {onEdit && <button className="xdel" aria-label="Editar" title="Editar" onClick={onEdit}><Pencil size={14} /></button>}
       {onDelete && <button className="xdel" aria-label="Eliminar" onClick={onDelete}><Trash2 size={14} /></button>}
     </div>
@@ -1911,7 +1864,7 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
   );
 }
 
-function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, tagsActuales, yaTieneBoleta, onEscanear, onClose, onSaved }: {
+function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, tagsActuales, yaTieneBoleta, onVerBoletas, onDividir, onEscanear, onClose, onSaved }: {
   categories: Category[];
   accounts: Account[];
   cards: CreditCard[];
@@ -1923,6 +1876,10 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
   tagsActuales: Etiqueta[];
   /** ¿Este movimiento ya tiene boleta? Para no pedirla dos veces. */
   yaTieneBoleta?: boolean;
+  /** Ver las boletas que ya tiene, y dividir el gasto en partes. Antes eran
+   *  dos íconos más en la fila; ahora viven aquí. */
+  onVerBoletas?: () => void;
+  onDividir?: () => void;
   /** Atajo a la foto de la boleta: registrar sin escribir nada. */
   onEscanear?: () => void;
   onClose: () => void;
@@ -1946,6 +1903,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
   // para la etiqueta. Con casi trescientos movimientos por revisar, eso no
   // se sostiene.
   const [boleta, setBoleta] = useState<File | null>(null);
+  const [sinBoletaNunca, setSinBoletaNunca] = useState(Boolean(edit?.receipt_waived));
   const fotoRef = useRef<HTMLInputElement>(null);
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
@@ -2016,6 +1974,9 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
         if (boleta) {
           const liviano = boleta.type.startsWith("image/") ? await comprimirImagen(boleta) : boleta;
           await uploadRecibo(idTx, liviano);
+        }
+        if (sinBoletaNunca !== Boolean(edit?.receipt_waived)) {
+          await marcarBoletaNoAplica(idTx, sinBoletaNunca);
         }
       }
       // La regla se ofrece al renombrar O al categorizar: transacciones
@@ -2143,13 +2104,32 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
                 </button>
               </div>
             ) : (
-              <button type="button" className="btn ghost" style={{ fontSize: 12.5, padding: "7px 14px" }}
-                onClick={() => fotoRef.current?.click()}>
-                <Paperclip size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
-                {yaTieneBoleta ? tr("Agregar otra boleta") : tr("Adjuntar la boleta")}
-              </button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className="btn ghost" style={{ fontSize: 12.5, padding: "7px 14px" }}
+                  onClick={() => fotoRef.current?.click()}>
+                  <Paperclip size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+                  {yaTieneBoleta ? tr("Agregar otra") : tr("Adjuntar la boleta")}
+                </button>
+                {yaTieneBoleta && onVerBoletas && (
+                  <button type="button" className="btn ghost" style={{ fontSize: 12.5, padding: "7px 14px" }}
+                    onClick={onVerBoletas}>{tr("Ver las que tiene")}</button>
+                )}
+              </div>
+            )}
+            {!yaTieneBoleta && !boleta && edit && (
+              <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: "var(--ink-soft)", marginTop: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={sinBoletaNunca} onChange={(e) => setSinBoletaNunca(e.target.checked)}
+                  style={{ width: 15, height: 15, accentColor: "var(--accent)" }} />
+                {tr("Esta no necesita boleta")}
+              </label>
             )}
           </div>
+        )}
+        {edit && onDividir && type !== "transfer" && (
+          <button type="button" className="btn ghost" style={{ fontSize: 12.5, padding: "7px 14px", marginBottom: 12 }}
+            onClick={onDividir}>
+            ✂️ {tr("Dividir en varias categorías")}
+          </button>
         )}
         <div className="field"><label>Fecha</label>
           <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
