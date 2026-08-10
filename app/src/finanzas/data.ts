@@ -123,6 +123,20 @@ export async function updateCategoryBudget(id: string, budget: number | null): P
   check(error);
 }
 
+/** El id del movimiento recién creado. addTransaction no lo devuelve, así que
+ *  se busca por fecha y monto entre los últimos. Se usa para pegarle las
+ *  etiquetas o la boleta justo después de crearlo. */
+export async function ultimaTransaccion(date: string, amount: number): Promise<string | null> {
+  const { data } = await sb()
+    .from("transactions")
+    .select("id,date,amount")
+    .eq("date", date)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  const mia = (data ?? []).find((t) => Math.abs(Number(t.amount) - amount) < 0.005);
+  return (mia as { id: string } | undefined)?.id ?? null;
+}
+
 /** "Este movimiento no necesita boleta". Lo dice ella, no la app. */
 export async function marcarBoletaNoAplica(id: string, valor: boolean): Promise<void> {
   const { error } = await sb().from("transactions").update({ receipt_waived: valor }).eq("id", id);

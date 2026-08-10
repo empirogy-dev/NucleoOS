@@ -33,6 +33,7 @@ import {
   deleteCard,
   deleteCategory,
   marcarBoletaNoAplica,
+  ultimaTransaccion,
   updateCategoryTaxLine,
   deleteDebt,
   deleteGoal,
@@ -1015,6 +1016,7 @@ export function FinanzasPage() {
 
       {(modal === "tx" || editTx) && (
         <TxModal key={editTx?.id ?? "nuevo"} categories={categories} accounts={accounts}
+          etiquetas={etiquetas} tagsActuales={editTx ? txTags.get(editTx.id) ?? [] : []}
           cards={cards} debts={debts} goals={goals} edit={editTx}
           onEscanear={() => { setModal(null); setEscaneando(true); }}
           onClose={() => { setModal(null); setEditTx(null); }}
@@ -1868,13 +1870,16 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
   );
 }
 
-function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, onClose, onSaved }: {
+function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, tagsActuales, onEscanear, onClose, onSaved }: {
   categories: Category[];
   accounts: Account[];
   cards: CreditCard[];
   debts: Debt[];
   goals: Goal[];
   edit?: Tx | null;
+  /** Las etiquetas de ella, y las que este movimiento ya tiene puestas. */
+  etiquetas: Etiqueta[];
+  tagsActuales: Etiqueta[];
   /** Atajo a la foto de la boleta: registrar sin escribir nada. */
   onEscanear?: () => void;
   onClose: () => void;
@@ -1889,6 +1894,10 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
     : "";
   const [type, setType] = useState<Tx["type"]>(edit?.type ?? "expense");
   const { t: tr } = useIdioma();
+  // Las etiquetas aquí mismo: separar lo personal de lo de la empresa es
+  // parte de anotar el gasto, no un segundo viaje por otro botón.
+  const [tagsElegidas, setTagsElegidas] = useState<Set<string>>(
+    () => new Set(tagsActuales.map((e) => e.id)));
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
   // La firma del banco: bank_ref (0043), o la descripción en filas antiguas.
@@ -1947,6 +1956,15 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
       };
       if (edit) await updateTransaction(edit, payload);
       else await addTransaction(payload);
+
+      // Las etiquetas: se aplica solo la diferencia, para no borrar y volver
+      // a escribir lo que ya estaba bien.
+      const idTx = edit?.id ?? (await ultimaTransaccion(payload.date, Number(payload.amount)));
+      if (idTx) {
+        const antes = new Set(tagsActuales.map((e) => e.id));
+        for (const tagId of tagsElegidas) if (!antes.has(tagId)) await etiquetarTx(idTx, tagId);
+        for (const tagId of antes) if (!tagsElegidas.has(tagId)) await desetiquetarTx(idTx, tagId);
+      }
       // La regla se ofrece al renombrar O al categorizar: transacciones
       // frecuentes (el traspaso a la tarjeta, el súper) se automatizan solas.
       if (esDelBanco && recordar && (merchant.trim() || categoryId)) {
@@ -2032,6 +2050,19 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
                 ]} /></div>
           )}
         </div>
+        {/* Las etiquetas, aquí mismo. Antes había que salir a otro botón, y
+            una etiqueta que cuesta un viaje aparte no se pone nunca. */}
+        {type !== "transfer" && etiquetas.length > 0 && (
+          <div className="field"><label>{tr("Etiquetas")}</label>
+            <ChipsEtiquetas etiquetas={etiquetas} puestas={tagsElegidas}
+              onToggle={(id) => setTagsElegidas((prev) => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
+                return next;
+              })} />
+          </div>
+        )}
         {type === "transfer" && (
           <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
             {destKind === "card" ? "El pago de la tarjeta baja lo que le debes (su saldo usado)."
