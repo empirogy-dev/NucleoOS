@@ -101,8 +101,15 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, onCambio }: 
                         disabled={Boolean(trabajando)}
                         onClick={() => {
                           const seVan = g.txs.filter((x) => x.id !== t.id);
+                          // Un movimiento del banco borrado no vuelve: el
+                          // banco lleva su propia marca de por dónde va y no
+                          // repite lo que ya entregó. Se avisa antes.
+                          const delBanco = seVan.filter((x) => x.source === "banco" || x.source === "cartola");
+                          const aviso = delBanco.length > 0
+                            ? `\n\n⚠️ ${tr("Uno de los que se borra vino del banco, y esos no vuelven a bajar solos. Conviene quedarse con el del banco.")}`
+                            : "";
                           if (!window.confirm(
-                            `${tr("Se queda este y se borran los otros")} ${seVan.length}. ${tr("Sus boletas pasan al que se queda. ¿Seguimos?")}`,
+                            `${tr("Se queda este y se borran los otros")} ${seVan.length}. ${tr("Sus boletas pasan al que se queda. ¿Seguimos?")}${aviso}`,
                           )) return;
                           void juntar(t.id, seVan.map((x) => x.id));
                         }}>
