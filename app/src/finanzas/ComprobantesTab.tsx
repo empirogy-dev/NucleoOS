@@ -4,6 +4,7 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { listTodosRecibos, signedUrlsRecibos, openRecibo, type ReciboItem } from "./recibos";
 import { fmtMoney, type Account, type Category, type Tx } from "./types";
+import { updateTransaction } from "./data";
 import type { Etiqueta } from "./tags";
 import { ExportarBoletas, type ItemExportable } from "./ExportarBoletas";
 
@@ -22,11 +23,13 @@ interface Fila {
 
 const MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas, txTags, catTags }: {
+export function ComprobantesTab({ txs, categories, accounts, currency, onCambio, etiquetas, txTags, catTags }: {
   txs: Tx[];
   categories: Category[];
   accounts: Account[];
   currency: string;
+  /** Para poder recategorizar aquí mismo y que la lista se refresque. */
+  onCambio: () => void;
   etiquetas: Etiqueta[];
   txTags: Map<string, Etiqueta[]>;
   catTags: Map<string, Etiqueta[]>;
@@ -231,6 +234,36 @@ export function ComprobantesTab({ txs, categories, accounts, currency, etiquetas
                   : tr("sin movimiento asociado")}
               </small>
               {f.tx && <div className="tnum" style={{ fontSize: 13, marginTop: 2 }}>{fmtMoney(f.monto, f.currency)}</div>}
+              {f.tx && (
+                <div style={{ marginTop: 6 }}>
+                  <Selector compacto value={f.tx.category_id ?? ""} ariaLabel={tr("Categoría")}
+                    placeholder={tr("Sin categoría")}
+                    opciones={[
+                      { value: "", label: tr("Sin categoría") },
+                      ...categories
+                        .filter((c) => (f.tx!.type === "income" ? c.type === "income" : c.type !== "income"))
+                        .map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() })),
+                    ]}
+                    onChange={async (v) => {
+                      const tx = f.tx!;
+                      await updateTransaction(tx, {
+                        date: tx.date,
+                        amount: Number(tx.amount),
+                        type: tx.type,
+                        description: tx.description,
+                        merchant: tx.merchant,
+                        bank_ref: tx.bank_ref ?? null,
+                        category_id: v || null,
+                        account_id: tx.account_id,
+                        destination_kind: tx.destination_kind,
+                        destination_ref: tx.destination_ref,
+                        payment_source_type: tx.payment_source_type ?? null,
+                        payment_source_id: tx.payment_source_id ?? null,
+                      });
+                      onCambio();
+                    }} />
+                </div>
+              )}
             </div>
           </div>
         ))}

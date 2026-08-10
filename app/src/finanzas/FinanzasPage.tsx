@@ -12,6 +12,7 @@ import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, t
 import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
+import { RepetidosPanel } from "./RepetidosPanel";
 import { LINEAS_T2125 } from "./impuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { ComprobantesTab } from "./ComprobantesTab";
@@ -438,6 +439,8 @@ export function FinanzasPage() {
             const archivadas = filteredTxs.filter((t) => t.type === "transfer" || Boolean(t.category_id));
             return (
             <>
+              <RepetidosPanel txs={txs} catById={catById} currency={currency}
+                conRecibo={reciboIds} onCambio={() => void reload()} />
               <div className="seg" style={{ maxWidth: 560 }}>
                 <button className={"segbtn" + (vistaTx === "revisar" ? " active" : "")} onClick={() => setVistaTx("revisar")}>
                   📥 {tr("Por revisar")}{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
@@ -514,7 +517,7 @@ export function FinanzasPage() {
                 );
               })()}
               {vistaTx === "comprobantes" && (
-                <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} etiquetas={etiquetas} txTags={txTags} catTags={catTags} />
+                <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} onCambio={() => void reload()} etiquetas={etiquetas} txTags={txTags} catTags={catTags} />
               )}
               {vistaTx === "cartolas" && (
                 <div className="card pad" style={{ maxWidth: 720 }}>
@@ -976,7 +979,7 @@ export function FinanzasPage() {
           onSaved={() => { setSplitTx(null); void reload(); }} />
       )}
       {escaneando && (
-        <EscanearBoleta txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency}
+        <EscanearBoleta txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency} conRecibo={reciboIds}
           onClose={() => setEscaneando(false)}
           onSaved={() => { void reload(); }} />
       )}

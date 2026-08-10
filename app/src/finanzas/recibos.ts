@@ -70,6 +70,23 @@ export async function uploadRecibo(txId: string, file: File): Promise<void> {
   }
 }
 
+/** Pasa las boletas de un movimiento a otro. Se usa al juntar repetidos: el
+ *  que se va no puede llevarse la foto, porque la foto es la prueba. */
+export async function moverRecibos(deTxId: string, aTxId: string): Promise<number> {
+  const userId = await uid();
+  const { data } = await sb().storage.from(BUCKET).list(`${userId}/${deTxId}`);
+  const archivos = (data ?? []).filter((f) => f.name !== ".emptyFolderPlaceholder");
+  let movidos = 0;
+  for (const f of archivos) {
+    const { error } = await sb().storage.from(BUCKET).move(
+      `${userId}/${deTxId}/${f.name}`,
+      `${userId}/${aTxId}/${f.name}`,
+    );
+    if (!error) movidos += 1;
+  }
+  return movidos;
+}
+
 export async function deleteRecibo(path: string): Promise<void> {
   const { error } = await sb().storage.from(BUCKET).remove([path]);
   if (error) throw new Error(error.message);

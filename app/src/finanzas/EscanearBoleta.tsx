@@ -22,12 +22,14 @@ import type { Account, Category, CreditCard, Tx } from "./types";
 
 type Paso = "leyendo" | "revisar" | "listo";
 
-export function EscanearBoleta({ txs, categories, accounts, cards, currency, onClose, onSaved }: {
+export function EscanearBoleta({ txs, categories, accounts, cards, currency, conRecibo, onClose, onSaved }: {
   txs: Tx[];
   categories: Category[];
   accounts: Account[];
   cards: CreditCard[];
   currency: string;
+  /** Qué movimientos ya tienen boleta: para avisar antes de repetir. */
+  conRecibo: Set<string>;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -291,6 +293,19 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
               </p>
             )}
 
+            {/* La forma en que esto se duplica: existe el gasto, pero se
+                crea otro igual. Antes pasaba en silencio. */}
+            {elegido === "nuevo" && principales.some((c) => c.cerco === "exacto") && (
+              <p style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 10, lineHeight: 1.45 }}>
+                ⚠️ {tr("Ya hay un gasto por este mismo monto arriba. Si creas uno nuevo, ese gasto va a quedar anotado dos veces.")}
+              </p>
+            )}
+            {elegido && elegido !== "nuevo" && conRecibo.has(elegido) && (
+              <p style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 10, lineHeight: 1.45 }}>
+                ⚠️ {tr("Ese gasto ya tiene una boleta adjunta. Si sigues, va a quedar con dos.")}
+              </p>
+            )}
+
             {elegido === "nuevo" && (
               <>
                 <div className="field"><label>{tr("Comercio")}</label>
@@ -328,6 +343,13 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, onC
                 </small>
               )}
             </div>
+
+            {elegido && elegido !== "nuevo" && !categoria
+              && !txs.find((t) => t.id === elegido)?.category_id && (
+              <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10, lineHeight: 1.45 }}>
+                {tr("Sin categoría, ese gasto se queda en Por revisar. Elígele una arriba y sale de la bandeja.")}
+              </p>
+            )}
 
             {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
