@@ -13,7 +13,8 @@ import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
-import { LINEAS_T2125 } from "./impuestos";
+import { lineasDe } from "./impuestos";
+import { usePaisImpuestos } from "./paisImpuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
@@ -88,6 +89,7 @@ import { listObjectives, updateObjective, type Objective } from "../objetivos/da
 type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "metas" | "etiquetas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
+  const [paisImpuestos] = usePaisImpuestos();
   const [tab, setTab] = useState<TabKey>("resumen");
   // El ojito: con el modo privado activo, todos los montos se enmascaran.
   const [privado, setPrivado] = useState(modoPrivado());
@@ -975,13 +977,18 @@ export function FinanzasPage() {
                     {/* A qué línea del formulario de impuestos suma esta
                         categoría. Vacío por defecto: la decisión es contable
                         y la toma ella, la app solo suma. */}
-                    {c.type === "expense" && (
+                    {c.type === "expense" && lineasDe(paisImpuestos).length > 0 && (
                       <div style={{ flexBasis: "100%" }}>
                         <Selector compacto value={c.tax_line ?? ""} ariaLabel={tr("Línea de impuestos")}
                           placeholder={tr("Sin línea de impuestos")}
                           opciones={[
                             { value: "", label: tr("Sin línea de impuestos") },
-                            ...LINEAS_T2125.map((l) => ({ value: l.numero, label: `${l.numero} · ${l.es}` })),
+                            ...lineasDe(paisImpuestos).map((l) => ({
+                              value: l.numero,
+                              // En Chile el código es de la app, no de un
+                              // formulario: mostrarlo confundiría.
+                              label: paisImpuestos === "CA" ? `${l.numero} · ${l.es}` : l.es,
+                            })),
                           ]}
                           onChange={async (v) => { await updateCategoryTaxLine(c.id, v || null); void reload(); }} />
                       </div>

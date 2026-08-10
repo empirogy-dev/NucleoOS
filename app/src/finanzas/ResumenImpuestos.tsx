@@ -4,7 +4,8 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { sinRobarFoco } from "../components/cierreDeFondo";
 import { fmtMoney, type Account, type Category, type Tx } from "./types";
-import { LINEAS_T2125, resumenImpuestos } from "./impuestos";
+import { FORMULARIO, NOMBRE_PAIS, lineasDe, resumenImpuestos } from "./impuestos";
+import { usePaisImpuestos } from "./paisImpuestos";
 
 // Los gastos del año sumados por línea del formulario de impuestos.
 //
@@ -32,6 +33,8 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
     return [...set].filter(Boolean);
   }, [accounts, currency]);
 
+  const [pais] = usePaisImpuestos();
+  const [guia, setGuia] = useState(false);
   const [anio, setAnio] = useState(anios[0] ?? String(new Date().getFullYear()));
   const [moneda, setMoneda] = useState(currency);
   const [abierto, setAbierto] = useState(false);
@@ -43,12 +46,26 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
 
   const r = useMemo(
     () => resumenImpuestos(txs, categories, {
-      desde: `${anio}-01-01`, hasta: `${anio}-12-31`, moneda, monedaDe,
+      desde: `${anio}-01-01`, hasta: `${anio}-12-31`, moneda, pais, monedaDe,
     }),
-    [txs, categories, anio, moneda, monedaDe],
+    [txs, categories, anio, moneda, pais, monedaDe],
   );
 
-  const asignadas = categories.filter((c) => c.type === "expense" && c.tax_line).length;
+  const lineas = lineasDe(pais);
+  const asignadas = categories.filter((c) => c.type === "expense" && c.tax_line
+    && lineas.some((l) => l.numero === c.tax_line)).length;
+
+  // Sin país elegido no hay líneas que mostrar, y no se inventan.
+  if (lineas.length === 0) {
+    return (
+      <div className="card panel" style={{ marginBottom: 16 }}>
+        <h3>{tr("Gastos por línea de impuestos")}</h3>
+        <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.55 }}>
+          {tr("Elige en Ajustes el país donde declaras impuestos y aquí aparecen sus líneas. Por ahora están hechas para Canadá y Chile.")}
+        </p>
+      </div>
+    );
+  }
 
   function exportar() {
     const esc = (x: string) => `"${String(x).replace(/"/g, '""')}"`;
@@ -65,7 +82,7 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
         filas.push(["", "", c.cat?.name ?? tr("Sin categoría"), c.total.toFixed(2), r.moneda, String(c.cuantos)]);
       }
     }
-    const cab = ["Line", "T2125 line name", "Category", "Amount", "Currency", "Transactions"];
+    const cab = ["Line", "Line name", "Category", "Amount", "Currency", "Transactions"];
     const csv = "﻿" + [cab, ...filas].map((f) => f.map(esc).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -80,7 +97,10 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
   return (
     <div className="card panel" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
-        <h3 style={{ flex: 1, minWidth: 190 }}>{tr("Gastos por línea de impuestos")}</h3>
+        <h3 style={{ flex: 1, minWidth: 190 }}>
+          {tr("Gastos por línea de impuestos")}
+          <span style={{ fontSize: 12, fontWeight: 400, color: "var(--muted)" }}> · {tr(NOMBRE_PAIS[pais])}</span>
+        </h3>
         <div style={{ width: 110 }}>
           <Selector compacto value={anio} ariaLabel={tr("Año")}
             opciones={anios.map((a) => ({ value: a, label: a }))} onChange={setAnio} />
@@ -94,9 +114,26 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
       </div>
 
       {asignadas === 0 ? (
-        <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.55 }}>
-          {tr("Todavía ninguna categoría tiene línea de impuestos. Ve a Categorías y elige a cuál corresponde cada una: desde ahí se arma este resumen. Esa decisión es contable, así que la tomas tú o tu contador, y la app solo suma.")}
-        </p>
+        <>
+          <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.55 }}>
+            {tr("Todavía ninguna categoría tiene línea de impuestos. Ve a Categorías y elige a cuál corresponde cada una: desde ahí se arma este resumen. Esa decisión es contable, así que la tomas tú o tu contador, y la app solo suma.")}
+          </p>
+          <button type="button" className="linklike" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 8 }}
+            onClick={() => setGuia(!guia)}>
+            {guia ? "▾" : "▸"} {tr("¿Qué gasto va en cada línea?")}
+          </button>
+          {guia && (
+            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+              {lineas.map((l) => (
+                <div key={l.numero} style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                  <b>{pais === "CA" ? `${l.numero} · ` : ""}{tr(l.es)}</b>
+                  {l.ejemplos && <div style={{ color: "var(--ink-soft)" }}>{tr(l.ejemplos)}</div>}
+                  {l.ojo && <div style={{ color: "var(--warn)", fontSize: 11.5 }}>⚠️ {tr(l.ojo)}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -149,6 +186,40 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
             </div>
           )}
 
+          {/* La guía. Saber que existe la línea 8521 no sirve de nada si uno
+              no sabe qué gasto va ahí, y esa es justo la parte difícil. */}
+          <div style={{ marginTop: 14, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+            <button type="button" className="linklike" style={{ fontSize: 12.5, fontWeight: 600 }}
+              onClick={() => setGuia(!guia)}>
+              {guia ? "▾" : "▸"} {tr("¿Qué gasto va en cada línea?")}
+            </button>
+            {guia && (
+              <>
+                <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "8px 0 10px", lineHeight: 1.5 }}>
+                  {tr(FORMULARIO[pais])}
+                </p>
+                <div style={{ display: "grid", gap: 10 }}>
+                  {lineas.map((l) => (
+                    <div key={l.numero} style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                      <b style={{ fontSize: 12.5 }}>
+                        {pais === "CA" ? `${l.numero} · ` : ""}{tr(l.es)}
+                      </b>
+                      {pais === "CA" && (
+                        <span style={{ color: "var(--muted)", fontSize: 11.5 }}> ({l.oficial})</span>
+                      )}
+                      {l.ejemplos && (
+                        <div style={{ color: "var(--ink-soft)" }}>{tr(l.ejemplos)}</div>
+                      )}
+                      {l.ojo && (
+                        <div style={{ color: "var(--warn)", fontSize: 11.5 }}>⚠️ {tr(l.ojo)}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
             <button className="btn ghost" {...sinRobarFoco} onClick={exportar}>
               <FileSpreadsheet size={14} style={{ verticalAlign: "-2px", marginRight: 5 }} />
@@ -164,6 +235,3 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
     </div>
   );
 }
-
-/** Cuántas líneas del formulario existen, para la ayuda de la pestaña. */
-export const CUANTAS_LINEAS = LINEAS_T2125.length;

@@ -12,6 +12,8 @@ import { Selector } from "../components/Selector";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
+import { usePaisImpuestos } from "../finanzas/paisImpuestos";
+import { FORMULARIO, type PaisImpuestos } from "../finanzas/impuestos";
 import { useModulos } from "../modulos/ModulosProvider";
 import { GRUPOS_MODULOS } from "../modulos/modulos";
 import { Toggle } from "../components/Toggle";
@@ -55,6 +57,7 @@ export function Ajustes() {
         <NameCard />
         <CumpleCard />
         <MonedaCard />
+        <PaisImpuestosCard />
         <IdiomaCard />
         <ModulosCard />
         <DiaPasadoCard />
@@ -91,6 +94,37 @@ function MonedaCard() {
           onChange={(v) => void onCurrency(v)} />
       </div>
       {saved && <span className="chip" style={{ marginTop: 4 }}>✓ {tr("Guardado")}</span>}
+    </div>
+  );
+}
+
+/** En qué país declaras impuestos. Manda sobre las líneas del formulario que
+ *  aparecen en Finanzas, y no se deduce de la moneda: se puede tener cuentas
+ *  en dólares y declarar en Chile. */
+function PaisImpuestosCard() {
+  const { t: tr } = useIdioma();
+  const [pais, setPais] = usePaisImpuestos();
+
+  return (
+    <div className="card pad">
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("País donde declaras impuestos")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        {tr("Define qué líneas de impuestos aparecen en Finanzas. Por ahora están hechas para Canadá y Chile; para otros países la sección queda apagada, porque una lista inventada en algo que termina en una declaración sería peor que nada.")}
+      </p>
+      <div className="field" style={{ maxWidth: 320 }}>
+        <Selector value={pais} ariaLabel={tr("País donde declaras impuestos")}
+          opciones={[
+            { value: "otro", label: tr("Otro país") },
+            { value: "CA", label: `🇨🇦 ${tr("Canadá")}` },
+            { value: "CL", label: `🇨🇱 ${tr("Chile")}` },
+          ]}
+          onChange={(v) => setPais(v as PaisImpuestos)} />
+      </div>
+      {pais !== "otro" && (
+        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
+          {tr(FORMULARIO[pais])}
+        </p>
+      )}
     </div>
   );
 }

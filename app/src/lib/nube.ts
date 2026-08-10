@@ -21,6 +21,7 @@ export const CLAVES_NUBE: string[] = [
   "nucleoos-modulos-ocultos", // qué módulos escondió la persona del menú
   "nucleoos-onboarding", // la bienvenida ya hecha, para no repetirla en otro aparato
   "nucleoos-fin-no-repetidos", // los grupos que ella ya dijo que NO son repetidos
+  "nucleoos-pais-impuestos", // en qué país declara impuestos
 ];
 
 // Guardamos los métodos originales para leer y escribir sin eco:
