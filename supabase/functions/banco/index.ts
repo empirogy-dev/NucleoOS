@@ -364,6 +364,62 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, nuevas: total, ...(errores.length ? { aviso: errores.join(" | ") } : {}) });
     }
 
+    // ---------- Diagnóstico ----------
+    // Cuando un banco se conecta pero no aparece ni un movimiento, hay que
+    // poder ver dónde se cortó: si el banco entregó las cuentas, en qué
+    // estado está el vínculo, y cuántos movimientos tenemos de cada cuenta.
+    // Sin esto, la única respuesta posible es "no sé".
+    if (accion === "diagnostico") {
+      const { data: cons } = await db.from("bank_connections")
+        .select("id,institution_name,access_token,cursor,status,last_sync").eq("user_id", userId);
+      const salida: Array<Record<string, unknown>> = [];
+      for (const c of cons ?? []) {
+        const fila: Record<string, unknown> = {
+          id: c.id,
+          banco: c.institution_name ?? "Banco",
+          estado: c.status,
+          ultima_sync: c.last_sync,
+          trajo_algo_alguna_vez: Boolean(c.cursor),
+        };
+        try {
+          const item = await plaid("/item/get", { access_token: c.access_token });
+          const it = (item.item ?? {}) as Record<string, unknown>;
+          fila.error_del_banco = (it.error as Record<string, unknown>)?.error_code ?? null;
+          fila.productos = it.billed_products ?? it.available_products ?? null;
+        } catch (e) {
+          fila.error_del_banco = String(e).slice(0, 160);
+        }
+        try {
+          const r = await plaid("/accounts/get", { access_token: c.access_token });
+          const cuentas: Array<Record<string, unknown>> = [];
+          for (const a of (r.accounts ?? []) as Array<Record<string, unknown>>) {
+            const externo = String(a.account_id);
+            // Cuántos movimientos tenemos guardados de esa cuenta.
+            const tarjeta = String(a.type) === "credit";
+            const { data: local } = await db.from(tarjeta ? "credit_cards" : "accounts")
+              .select("id").eq("user_id", userId).eq("external_id", externo).maybeSingle();
+            let guardados = 0;
+            if (local) {
+              const { count } = await db.from("transactions")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", userId)
+                .eq(tarjeta ? "payment_source_id" : "account_id", local.id);
+              guardados = count ?? 0;
+            }
+            cuentas.push({
+              nombre: a.name, tipo: a.type, subtipo: a.subtype, ultimos4: a.mask,
+              en_nucleoos: Boolean(local), movimientos_guardados: guardados,
+            });
+          }
+          fila.cuentas = cuentas;
+        } catch (e) {
+          fila.cuentas = String(e).slice(0, 160);
+        }
+        salida.push(fila);
+      }
+      return json({ conexiones: salida });
+    }
+
     if (accion === "estado") {
       const { data } = await db.from("bank_connections")
         .select("id,institution_name,status,last_sync").eq("user_id", userId);

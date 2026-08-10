@@ -7,6 +7,7 @@ import {
   canjearToken,
   crearLinkToken,
   desconectarBanco,
+  diagnosticoBanco,
   listConexiones,
   limpiarOAuth,
   sincronizarBanco,
@@ -25,6 +26,7 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
   const [cargando, setCargando] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [diag, setDiag] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [disponible, setDisponible] = useState(true);
   // Cuánta historia traer del banco al conectar. Tres meses es el punto
@@ -98,13 +100,31 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
     }
   }
 
+  async function verDiagnostico() {
+    setBusy(true);
+    setErr(null);
+    try {
+      setDiag(JSON.stringify(await diagnosticoBanco(), null, 2));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function actualizar(desdeCero = false) {
     setBusy(true);
     setErr(null);
     setMsg(null);
     try {
-      const nuevas = await sincronizarBanco(desdeCero);
-      setMsg(nuevas > 0 ? `${nuevas} ${tr("movimientos nuevos")}.` : tr("Todo al día."));
+      const { nuevas, aviso } = await sincronizarBanco(desdeCero);
+      // Si el banco se quejó, se dice. Antes se botaba el aviso y salía
+      // "Todo al día" aunque no hubiera llegado nada, que es lo peor que
+      // puede hacer una app: parecer que funcionó.
+      if (aviso) setErr(aviso);
+      setMsg(nuevas > 0
+        ? `${nuevas} ${tr("movimientos nuevos")}.`
+        : aviso ? tr("El banco no entregó movimientos.") : tr("Todo al día."));
       await cargar();
       onCambio();
     } catch (e) {
@@ -231,8 +251,25 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
           </button>
         </p>
       )}
+      {conexiones.length > 0 && (
+        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+          {tr("¿Un banco conectado que no trae nada?")}{" "}
+          <button type="button" disabled={busy}
+            style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "var(--accent-ink)", textDecoration: "underline", cursor: "pointer" }}
+            onClick={() => void verDiagnostico()}>
+            {tr("Ver qué dice el banco")}
+          </button>
+        </p>
+      )}
       {msg && <p style={{ fontSize: 13, color: "var(--ok)", marginTop: 10 }}>{msg}</p>}
       {err && <p style={{ fontSize: 13, color: "var(--err)", marginTop: 10 }}>{err}</p>}
+      {diag && (
+        <pre style={{
+          marginTop: 10, padding: 10, borderRadius: 10, background: "var(--surface)",
+          border: "1px solid var(--line)", fontSize: 11, lineHeight: 1.45,
+          maxHeight: 320, overflow: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word",
+        }}>{diag}</pre>
+      )}
     </div>
   );
 }

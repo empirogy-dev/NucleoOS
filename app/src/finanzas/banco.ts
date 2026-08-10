@@ -56,9 +56,18 @@ export async function tokenAgregarCuentas(id: string): Promise<string> {
   return r.link_token;
 }
 
-export async function sincronizarBanco(desdeCero = false): Promise<number> {
-  const r = await llamar<{ nuevas: number }>({ accion: "sync", desde_cero: desdeCero });
-  return r.nuevas ?? 0;
+export async function sincronizarBanco(desdeCero = false): Promise<{ nuevas: number; aviso?: string }> {
+  // El aviso viaja hasta la pantalla. Antes se botaba, y cuando el banco
+  // fallaba la app decía "Todo al día", que es la peor respuesta posible:
+  // parece que todo está bien y en realidad no llegó nada.
+  const r = await llamar<{ nuevas: number; aviso?: string }>({ accion: "sync", desde_cero: desdeCero });
+  return { nuevas: r.nuevas ?? 0, aviso: r.aviso };
+}
+
+/** Qué dice el banco de verdad: sus cuentas, el estado del vínculo y cuántos
+ *  movimientos tenemos de cada una. Para cuando "no aparece nada". */
+export async function diagnosticoBanco(): Promise<unknown> {
+  return llamar<{ conexiones: unknown }>({ accion: "diagnostico" });
 }
 
 export async function desconectarBanco(id: string, borrarDatos = false): Promise<number> {
