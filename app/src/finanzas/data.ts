@@ -123,6 +123,15 @@ export async function updateCategoryBudget(id: string, budget: number | null): P
   check(error);
 }
 
+/** "Este movimiento no necesita boleta". Lo dice ella, no la app. */
+export async function marcarBoletaNoAplica(id: string, valor: boolean): Promise<void> {
+  const { error } = await sb().from("transactions").update({ receipt_waived: valor }).eq("id", id);
+  if (error && /receipt_waived/.test(error.message)) {
+    throw new Error("Falta la migración 0061 en Supabase (supabase/migrations/0061_boleta_no_aplica.sql).");
+  }
+  check(error);
+}
+
 /** A qué línea del formulario de impuestos suma esta categoría. */
 export async function updateCategoryTaxLine(id: string, tax_line: string | null): Promise<void> {
   const { error } = await sb().from("categories").update({ tax_line }).eq("id", id);
@@ -410,10 +419,20 @@ function columnasTx(t: TxInput) {
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()
     .from("transactions")
-    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id")
+    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id,receipt_waived")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (error && /receipt_waived/.test(error.message)) {
+    // Sin la 0061: se lee sin la marca y la app sigue igual.
+    const sinMarca = await sb()
+      .from("transactions")
+      .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (!sinMarca.error) return (sinMarca.data ?? []) as Tx[];
+  }
   if (error && /bank_ref|payment_source/.test(error.message)) {
     // La migración 0043 aún no se corre: leemos sin el texto del banco.
     const sinBankRef = await sb()

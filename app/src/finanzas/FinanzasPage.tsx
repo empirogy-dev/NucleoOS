@@ -32,6 +32,7 @@ import {
   deleteAccount,
   deleteCard,
   deleteCategory,
+  marcarBoletaNoAplica,
   updateCategoryTaxLine,
   deleteDebt,
   deleteGoal,
@@ -436,12 +437,19 @@ export function FinanzasPage() {
             // Consolidación de gastos: lo sin categoría espera en la bandeja,
             // y al categorizarlo pasa solo al archivo mensual.
             const pendientes = filteredTxs.filter((t) => t.type !== "transfer" && !t.category_id);
-            const archivadas = filteredTxs.filter((t) => t.type === "transfer" || Boolean(t.category_id));
-            // Categorizado no es lo mismo que listo. Un gasto con categoría
-            // pero sin boleta se veía "archivado", y para los impuestos no
-            // sirve de nada sin su comprobante.
+            // Un gasto está listo cuando tiene categoría Y su comprobante.
+            // Categorizado no basta: para los impuestos, un gasto sin boleta
+            // no sirve. Por eso el Archivo ya no los deja pasar.
+            //
+            // Y hay una salida, porque si no la bandeja no llegaría nunca a
+            // cero: Spotify, Google One o el interés del banco no van a tener
+            // boleta jamás, y una bandeja que no baja se deja de mirar.
+            const listo = (t: Tx) =>
+              t.type !== "expense" || reciboIds.has(t.id) || Boolean(t.receipt_waived);
+            const archivadas = filteredTxs.filter((t) =>
+              t.type === "transfer" || (Boolean(t.category_id) && listo(t)));
             const sinBoleta = filteredTxs.filter((t) =>
-              t.type === "expense" && Boolean(t.category_id) && !reciboIds.has(t.id));
+              t.type === "expense" && Boolean(t.category_id) && !listo(t));
             return (
             <>
               <RepetidosPanel txs={txs} catById={catById} currency={currency}
@@ -599,17 +607,23 @@ export function FinanzasPage() {
                   ) : (
                     <>
                       <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
-                        {tr("Estos ya tienen categoría, pero les falta el comprobante. Adjúntalo con el clip.")}
+                        {tr("Estos ya tienen categoría, pero les falta el comprobante. Adjúntalo con el clip, o marca las que no van a tener boleta nunca.")}
                       </p>
                       {sinBoleta.map((t) => (
-                        <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
-                          onEdit={() => setEditTx(t)}
-                          onSplit={() => setSplitTx(t)}
-                          hasRecibo={false}
-                          onRecibo={() => setReciboTx(t)}
-                          tags={txTags.get(t.id)}
-                          onTags={() => setTagTx(t)}
-                          cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null} />
+                        <div key={t.id}>
+                          <TxRow t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                            onEdit={() => setEditTx(t)}
+                            onSplit={() => setSplitTx(t)}
+                            hasRecibo={false}
+                            onRecibo={() => setReciboTx(t)}
+                            tags={txTags.get(t.id)}
+                            onTags={() => setTagTx(t)}
+                            cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null} />
+                          <button type="button" className="linklike" style={{ fontSize: 11.5, marginBottom: 8 }}
+                            onClick={async () => { await marcarBoletaNoAplica(t.id, true); void reload(); }}>
+                            {tr("Esta no necesita boleta")}
+                          </button>
+                        </div>
                       ))}
                     </>
                   )}
