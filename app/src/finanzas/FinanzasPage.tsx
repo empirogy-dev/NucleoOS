@@ -76,6 +76,7 @@ import {
   daysUntil,
   dueLabel,
   fmtMoney,
+  monedaDeTx,
   modoPrivado,
   setModoPrivado,
   nextOccurrence,
@@ -229,7 +230,6 @@ export function FinanzasPage() {
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
   const gastos = monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
-  const balanceTotal = accounts.reduce((s, a) => s + Number(a.balance), 0);
   const currency = accounts[0]?.currency ?? defaultCurrency;
 
   const budgetCats = categories.filter((c) => c.type === "expense" && Number(c.budget) > 0 && !c.exclude_from_budget);
@@ -256,11 +256,12 @@ export function FinanzasPage() {
   })();
 
   // Cada moneda vive aparte: sumar CAD con CLP daría un número mentiroso.
-  // Las deudas sin moneda propia se cuentan en la moneda principal.
-  const monedaDeTx = (t: Tx): string =>
-    t.payment_source_type === "credit_card"
-      ? cards.find((c) => c.id === t.payment_source_id)?.currency ?? defaultCurrency
-      : (t.account_id ? accById.get(t.account_id)?.currency : null) ?? defaultCurrency;
+  // La regla vive en un solo lugar (monedaDeTx en types): había dos copias y
+  // una se quedó atrás, que es como los gastos de tarjeta terminaron
+  // reportando la moneda equivocada.
+  const curDeCuenta = new Map(accounts.map((a) => [a.id, a.currency || defaultCurrency]));
+  const curDeTarjeta = new Map(cards.map((c) => [c.id, c.currency || defaultCurrency]));
+  const monedaDeMovimiento = (t: Tx): string => monedaDeTx(t, curDeCuenta, curDeTarjeta, defaultCurrency);
   const monedas = [...new Set([
     ...accounts.map((a) => a.currency || defaultCurrency),
     ...cards.map((c) => c.currency || defaultCurrency),
@@ -269,8 +270,8 @@ export function FinanzasPage() {
     const bal = accounts.filter((a) => (a.currency || defaultCurrency) === cur).reduce((s, a) => s + Number(a.balance), 0);
     const deu = cards.filter((c) => (c.currency || defaultCurrency) === cur).reduce((s, c) => s + Number(c.balance), 0)
       + (cur === currency ? debts.reduce((s, d) => s + Number(d.balance), 0) : 0);
-    const ing = monthTxs.filter((t) => t.type === "income" && monedaDeTx(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
-    const gas = monthTxs.filter((t) => t.type === "expense" && monedaDeTx(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
+    const ing = monthTxs.filter((t) => t.type === "income" && monedaDeMovimiento(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
+    const gas = monthTxs.filter((t) => t.type === "expense" && monedaDeMovimiento(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
     return { cur, balance: bal, deuda: deu, patrimonio: bal - deu, ingresos: ing, gastos: gas };
   });
 
@@ -911,7 +912,7 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
           {tab === "reporte" && (
             <>
               <ResumenImpuestosPanel txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency} />
-              <ReporteTab txs={txs} categories={categories} currency={currency} balance={balanceTotal} />
+              <ReporteTab txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency} />
             </>
           )}
 
@@ -1133,21 +1134,47 @@ function monthAdd(ym: string, delta: number): string {
   return fmtFechaLocal(d).slice(0, 7);
 }
 
-function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categories: Category[]; currency: string; balance: number }) {
+// Un reporte es de UNA moneda. Sumar dólares canadienses con pesos chilenos
+// da un número que no existe en ninguna parte, y peor: se ve razonable.
+function ReporteTab({ txs, categories, accounts, cards, currency }: {
+  txs: Tx[];
+  categories: Category[];
+  accounts: Account[];
+  cards: CreditCard[];
+  currency: string;
+}) {
   const { t: tr } = useIdioma();
   const [ym, setYm] = useState(mesActualLocal());
   const prev = monthAdd(ym, -1);
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+
+  const monedas = useMemo(() => {
+    const set = new Set<string>([currency, ...accounts.map((a) => a.currency), ...cards.map((c) => c.currency)]);
+    return [...set].filter(Boolean);
+  }, [accounts, cards, currency]);
+  const [moneda, setMoneda] = useState(currency);
+
+  // Solo los movimientos de esta moneda, y el saldo solo de sus cuentas.
+  const suyos = useMemo(() => {
+    const porCuenta = new Map(accounts.map((a) => [a.id, a.currency]));
+    const porTarjeta = new Map(cards.map((c) => [c.id, c.currency]));
+    return txs.filter((t) => monedaDeTx(t, porCuenta, porTarjeta, currency) === moneda);
+  }, [txs, accounts, cards, currency, moneda]);
+
+  const balance = useMemo(
+    () => accounts.filter((a) => a.currency === moneda).reduce((s, a) => s + Number(a.balance), 0),
+    [accounts, moneda],
+  );
 
   // Proyección de flujo de caja (portada de Fluxney): promedio de los últimos
   // 3 meses con arrastre de saldo hacia los próximos 3 meses.
   const proyeccion = useMemo(() => {
     const hoyMes = mesActualLocal();
     const mesesBase = [monthAdd(hoyMes, -1), monthAdd(hoyMes, -2), monthAdd(hoyMes, -3)];
-    const conDatos = mesesBase.filter((m) => txs.some((t) => t.date.startsWith(m)));
+    const conDatos = mesesBase.filter((m) => suyos.some((t) => t.date.startsWith(m)));
     if (conDatos.length === 0) return null;
     const suma = (m: string, tipo: "income" | "expense") =>
-      txs.filter((t) => t.date.startsWith(m) && t.type === tipo).reduce((s, t) => s + Number(t.amount), 0);
+      suyos.filter((t) => t.date.startsWith(m) && t.type === tipo).reduce((s, t) => s + Number(t.amount), 0);
     const promIngresos = conDatos.reduce((s, m) => s + suma(m, "income"), 0) / conDatos.length;
     const promGastos = conDatos.reduce((s, m) => s + suma(m, "expense"), 0) / conDatos.length;
     let saldo = balance;
@@ -1157,10 +1184,10 @@ function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categor
       filas.push({ mes: monthAdd(hoyMes, i), saldo });
     }
     return { filas, promIngresos, promGastos, mesesUsados: conDatos.length };
-  }, [txs, balance]);
+  }, [suyos, balance]);
 
   function totals(month: string) {
-    const rows = txs.filter((t) => t.date.startsWith(month));
+    const rows = suyos.filter((t) => t.date.startsWith(month));
     const ingresos = rows.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
     const gastos = rows.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
     return { rows, ingresos, gastos, neto: ingresos - gastos };
@@ -1189,24 +1216,29 @@ function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categor
 
   return (
     <>
-      <div className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
-        <label>Mes del reporte</label>
-        <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} />
+      <div className="frow" style={{ maxWidth: 460, marginBottom: 16 }}>
+        <div className="field"><label>{tr("Mes del reporte")}</label>
+          <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} /></div>
+        {monedas.length > 1 && (
+          <div className="field" style={{ maxWidth: 150 }}><label>{tr("Moneda")}</label>
+            <Selector value={moneda} ariaLabel={tr("Moneda")}
+              opciones={monedas.map((m) => ({ value: m, label: m }))} onChange={setMoneda} /></div>
+        )}
       </div>
       <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
         <div className="card stat">
           <div className="k">{tr("Ingresos")}</div>
-          <div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(actual.ingresos, currency)}</div>
+          <div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(actual.ingresos, moneda)}</div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.ingresos, anterior.ingresos)}</div>
         </div>
         <div className="card stat">
           <div className="k">{tr("Gastos")}</div>
-          <div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(actual.gastos, currency)}</div>
+          <div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(actual.gastos, moneda)}</div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.gastos, anterior.gastos)}</div>
         </div>
         <div className="card stat">
           <div className="k">{tr("Resultado del mes")}</div>
-          <div className="v tnum" style={{ color: actual.neto >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(actual.neto, currency)}</div>
+          <div className="v tnum" style={{ color: actual.neto >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(actual.neto, moneda)}</div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{actual.rows.length} {tr("movimientos")}</div>
         </div>
       </div>
@@ -1217,7 +1249,7 @@ function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categor
           <div className="bar" key={cat?.id ?? "sin"}>
             <div className="top">
               <span className="lbl">{cat?.icon} {cat?.name ?? tr("Sin categoría")}</span>
-              <b className="tnum">{fmtMoney(total, currency)}</b>
+              <b className="tnum">{fmtMoney(total, moneda)}</b>
             </div>
             <div className="track">
               <div className="fill" style={{ width: `${actual.gastos ? Math.round((total / actual.gastos) * 100) : 0}%`, background: "var(--fin)" }} />
@@ -1230,12 +1262,12 @@ function ReporteTab({ txs, categories, currency, balance }: { txs: Tx[]; categor
         <div className="card panel" style={{ marginTop: 14 }}>
           <h3>🔮 Proyección de saldo</h3>
           <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
-            Si sigues como en {proyeccion.mesesUsados === 1 ? "el último mes" : `los últimos ${proyeccion.mesesUsados} meses`} (ingresos {fmtMoney(Math.round(proyeccion.promIngresos), currency)} y gastos {fmtMoney(Math.round(proyeccion.promGastos), currency)} al mes), tu saldo arrastrado sería:
+            Si sigues como en {proyeccion.mesesUsados === 1 ? "el último mes" : `los últimos ${proyeccion.mesesUsados} meses`} (ingresos {fmtMoney(Math.round(proyeccion.promIngresos), moneda)} y gastos {fmtMoney(Math.round(proyeccion.promGastos), moneda)} al mes), tu saldo arrastrado sería:
           </p>
           {proyeccion.filas.map((f) => (
             <div className="txrow" key={f.mes} style={{ padding: "7px 0" }}>
               <div className="txmeta"><b style={{ fontSize: 13 }}>{f.mes}</b></div>
-              <b className={"tnum txamt " + (f.saldo >= 0 ? "pos" : "neg")}>{fmtMoney(Math.round(f.saldo), currency)}</b>
+              <b className={"tnum txamt " + (f.saldo >= 0 ? "pos" : "neg")}>{fmtMoney(Math.round(f.saldo), moneda)}</b>
             </div>
           ))}
         </div>
