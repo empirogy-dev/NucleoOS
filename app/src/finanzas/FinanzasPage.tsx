@@ -979,7 +979,7 @@ export function FinanzasPage() {
                         categoría. Vacío por defecto: la decisión es contable
                         y la toma ella, la app solo suma. */}
                     {c.type === "expense" && lineasDe(paisImpuestos).length > 0 && (
-                      <div style={{ flexBasis: "100%" }}>
+                      <div style={{ flexBasis: "100%", minWidth: 0 }}>
                         <Selector compacto value={c.tax_line ?? ""} ariaLabel={tr("Línea de impuestos")}
                           placeholder={tr("Sin línea de impuestos")}
                           opciones={[
@@ -995,7 +995,7 @@ export function FinanzasPage() {
                       </div>
                     )}
                     {etiquetas.length > 0 && (
-                      <div style={{ flexBasis: "100%" }}>
+                      <div style={{ flexBasis: "100%", minWidth: 0 }}>
                         <ChipsEtiquetas
                           etiquetas={etiquetas}
                           puestas={new Set((catTags.get(c.id) ?? []).map((e) => e.id))}
