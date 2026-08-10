@@ -511,8 +511,14 @@ export function FinanzasPage() {
                   <Selector compacto value={fAcc} ariaLabel="Filtrar por cuenta o tarjeta"
                     opciones={[
                       { value: "all", label: "Todas las cuentas y tarjetas" },
-                      ...accounts.map((a) => ({ value: a.id, label: a.name })),
-                      ...cards.map((c) => ({ value: c.id, label: `💳 ${c.name}` })),
+                      ...accounts.map((a) => ({
+                        value: a.id,
+                        label: [a.name, a.bank_name, a.currency].filter(Boolean).join(" · "),
+                      })),
+                      ...cards.map((c) => ({
+                        value: c.id,
+                        label: `💳 ${[c.name, c.bank, c.last_four ? `••••${c.last_four}` : null, c.currency].filter(Boolean).join(" · ")}`,
+                      })),
                     ]}
                     onChange={setFAcc} />
                 </div>
