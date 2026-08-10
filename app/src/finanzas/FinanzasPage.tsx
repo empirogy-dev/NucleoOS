@@ -1263,11 +1263,12 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
   const accountId = fuenteImp.startsWith("acc:") ? fuenteImp.slice(4) : "";
   const cardImpId = fuenteImp.startsWith("card:") ? fuenteImp.slice(5) : "";
   const [mesCartola, setMesCartola] = useState(mesActualLocal());
-  const [archivo, setArchivo] = useState<File | null>(null);
+  const [archivos, setArchivos] = useState<File[]>([]);
   const [rows, setRows] = useState<Array<StatementImportRow & { dup: boolean }> | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [tipoArchivo, setTipoArchivo] = useState<"csv" | "ofx" | "pdf" | "xlsx">("csv");
   const [leyendo, setLeyendo] = useState(false);
+  const [paso, setPaso] = useState("");
   const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1276,42 +1277,67 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
   const dups = rows ? rows.filter((r) => r.dup).length : 0;
   const incluidas = rows ? rows.filter((r) => !excluidos.has(r.id)) : [];
 
+  // Varias cartolas de una vez: el mes se arma de más de un archivo (la
+  // cuenta, la tarjeta, el mes partido en dos descargas). Hacerlo de a uno
+  // significaba abrir la ventana seis veces.
+  const TOPE_ARCHIVOS = 6;
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const elegidos = [...(e.target.files ?? [])].slice(0, TOPE_ARCHIVOS);
+    if (elegidos.length === 0) return;
     setErr(null);
     setRows(null);
     setResult(null);
     setLeyendo(true);
     try {
-      const parsed = await parseStatementFile(file, categories);
-      // Lector de duplicados: marca las filas que ya están en el sistema o que
-      // se repiten dentro del mismo archivo. La firma es fecha, monto y texto.
+      // El detector de repetidos vale para TODOS los archivos juntos: si el
+      // mismo movimiento viene en dos descargas, entra una sola vez.
       const yaEstan = new Set(existing.map(firmaTx));
       const vistas = new Set<string>();
-      const conDup = parsed.rows.map((r) => {
-        const firma = firmaMovimiento(r.date, r.amount, r.description);
-        const dup = yaEstan.has(firma) || vistas.has(firma);
-        vistas.add(firma);
-        return { ...r, dup };
-      });
-      setRows(conDup);
-      setTipoArchivo(parsed.fileType);
-      setWarnings(parsed.warnings);
-      // Por defecto los duplicados quedan desmarcados: no entran salvo que ella
-      // los marque a propósito.
-      setExcluidos(new Set(conDup.filter((r) => r.dup).map((r) => r.id)));
-    } catch (ex) {
-      if (ex instanceof StatementImportError && ex.code === "UNRECOGNIZED_COLUMNS") {
-        setErr(tr("No reconocí las columnas del archivo. Exporta la cartola de tu banco como CSV con columnas de fecha, descripción y monto, e intenta de nuevo."));
-      } else if (ex instanceof StatementImportError && ex.humano) {
-        // Estos mensajes ya están escritos para ella: se muestran tal cual.
-        setErr(tr(ex.message));
-      } else {
-        setErr(tr("No pude leer el archivo. Verifica que sea la cartola en formato CSV, OFX, QFX o PDF de tu banco."));
+      const todas: Array<StatementImportRow & { dup: boolean }> = [];
+      const avisos: string[] = [];
+      const fallaron: string[] = [];
+      let tipo: "csv" | "ofx" | "pdf" | "xlsx" = "csv";
+
+      for (const [i, file] of elegidos.entries()) {
+        setPaso(`${file.name} (${i + 1}/${elegidos.length})`);
+        try {
+          const parsed = await parseStatementFile(file, categories);
+          tipo = parsed.fileType;
+          avisos.push(...parsed.warnings);
+          for (const r of parsed.rows) {
+            const firma = firmaMovimiento(r.date, r.amount, r.description);
+            const dup = yaEstan.has(firma) || vistas.has(firma);
+            vistas.add(firma);
+            // El id lleva el número del archivo: dos archivos distintos
+            // pueden traer su propia fila 3 y no deben pisarse.
+            todas.push({ ...r, id: `a${i}-${r.id}`, dup });
+          }
+        } catch (ex) {
+          // Un archivo que falla no bota a los demás: se dice cuál fue.
+          const msg = ex instanceof StatementImportError && ex.humano ? tr(ex.message)
+            : ex instanceof StatementImportError && ex.code === "UNRECOGNIZED_COLUMNS"
+              ? tr("No reconocí las columnas del archivo. Exporta la cartola de tu banco como CSV con columnas de fecha, descripción y monto, e intenta de nuevo.")
+              : tr("No pude leer el archivo. Verifica que sea la cartola en formato CSV, OFX, QFX o PDF de tu banco.");
+          fallaron.push(`${file.name}: ${msg}`);
+        }
       }
+
+      if (todas.length === 0) {
+        setErr(fallaron.join(" | ") || tr("No encontré movimientos en esos archivos."));
+        return;
+      }
+      if (fallaron.length > 0) setErr(fallaron.join(" | "));
+
+      // Ordenadas por fecha, no por archivo: se revisa como un solo mes.
+      todas.sort((a, b) => b.date.localeCompare(a.date));
+      setRows(todas);
+      setTipoArchivo(tipo);
+      setWarnings(avisos);
+      setExcluidos(new Set(todas.filter((r) => r.dup).map((r) => r.id)));
     } finally {
       setLeyendo(false);
+      setPaso("");
     }
   }
 
@@ -1332,13 +1358,17 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
       const res = await importStatementRows(incluidas, accountId || null, categories, cardImpId || null);
       // La cartola queda archivada con su fuente, su mes y el archivo original.
       try {
-        await addCartola({
-          file: archivo,
-          account_id: accountId || null,
-          credit_card_id: cardImpId || null,
-          period_month: mesCartola,
-          transactions_count: res.imported,
-        });
+        // Cada archivo se guarda por separado: el archivo de cartolas tiene
+        // que reflejar lo que ella descargó del banco, no una suma.
+        for (const f of archivos) {
+          await addCartola({
+            file: f,
+            account_id: accountId || null,
+            credit_card_id: cardImpId || null,
+            period_month: mesCartola,
+            transactions_count: archivos.length === 1 ? res.imported : 0,
+          });
+        }
       } catch { /* sin la 0057, el import igual vale */ }
       setResult({ imported: res.imported, excluidos: rows.length - incluidas.length });
     } catch (ex) {
@@ -1361,7 +1391,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
       ) : (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-            {tr("Descarga la cartola desde tu banco y súbela aquí. Si es CSV, OFX o QFX la leo tal cual; si es PDF la lee la IA y tú revisas antes de importar. En cualquier caso miro cuáles ya tienes y marco los repetidos para que no entren dos veces.")}
+            {tr("Descarga tus cartolas del banco y súbelas aquí, de a una o varias juntas. Si es CSV, OFX o QFX la leo tal cual; si es PDF la lee la IA y tú revisas antes de importar. En cualquier caso miro cuáles ya tienes y marco los repetidos para que no entren dos veces.")}
           </p>
           <div className="frow">
             <div className="field"><label>{tr("¿De qué cuenta o tarjeta es?")}</label>
@@ -1374,12 +1404,17 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
               <input type="month" className="input-inline" value={mesCartola} onChange={(e) => setMesCartola(e.target.value)} aria-label={tr("Mes de la cartola")} /></div>
           </div>
           <div className="field"><label>{tr("Archivo")}</label>
-            <input type="file" accept=".csv,.ofx,.qfx,.pdf,.xlsx,text/csv,application/pdf" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivo(e.target.files?.[0] ?? null); void onFile(e); }} /></div>
+            <input type="file" multiple accept=".csv,.ofx,.qfx,.pdf,.xlsx,text/csv,application/pdf" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivos([...(e.target.files ?? [])].slice(0, TOPE_ARCHIVOS)); void onFile(e); }} />
+            <small style={{ color: "var(--muted)", fontSize: 11.5 }}>
+              {tr("Puedes elegir varios de una vez, hasta")} {TOPE_ARCHIVOS}.
+            </small></div>
           {(!fuenteImp || !mesCartola) && (
             <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>{tr("Primero elige la cuenta o tarjeta y el mes: así la cartola queda bien archivada.")}</p>
           )}
           {leyendo && (
-            <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>{tr("Leyendo la cartola…")}</p>
+            <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+              {tr("Leyendo la cartola…")}{paso ? ` ${paso}` : ""}
+            </p>
           )}
           {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
           {rows && (
