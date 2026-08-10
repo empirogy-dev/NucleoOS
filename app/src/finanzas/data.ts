@@ -530,7 +530,7 @@ export async function importStatementRows(
       user_id,
       date: r.date,
       amount: Math.abs(r.amount),
-      type: r.type,
+      type: regla?.tx_type ?? r.type,
       // El texto del banco va a bank_ref; la descripción nace vacía. El
       // comercio solo lo pone una regla (así las reglas nuevas pueden
       // seguir aplicándose a los movimientos que aún no tienen comercio).
@@ -646,6 +646,12 @@ export interface MerchantRule {
   pattern: string;
   merchant: string;
   category_id: string | null;
+  /** La regla también puede fijar QUÉ ES el movimiento. Vacío deja el tipo
+   *  que traiga el banco. Con esto, marcar un "PAYMENT" como transferencia
+   *  hacia la tarjeta vale para todos los meses siguientes. */
+  tx_type?: "income" | "expense" | "transfer" | null;
+  destination_kind?: string | null;
+  destination_ref?: string | null;
 }
 
 /** Normaliza el texto del banco: minúsculas, sin tildes ni símbolos. */
@@ -682,9 +688,16 @@ export function sugerenciaComercio(texto: string): string {
 export async function listMerchantRules(): Promise<MerchantRule[]> {
   const { data, error } = await sb()
     .from("merchant_rules")
-    .select("id,pattern,merchant,category_id")
+    .select("id,pattern,merchant,category_id,tx_type,destination_kind,destination_ref")
     .order("created_at");
-  if (error) return []; // tabla aún no migrada: sin reglas
+  if (error) {
+    // Sin la 0061, la regla existe pero sin el tipo. La app sigue igual.
+    const previo = await sb()
+      .from("merchant_rules")
+      .select("id,pattern,merchant,category_id")
+      .order("created_at");
+    return (previo.data ?? []) as MerchantRule[];
+  }
   return (data ?? []) as MerchantRule[];
 }
 
@@ -702,15 +715,22 @@ export async function saveMerchantRule(
   textoOriginal: string,
   merchant: string,
   categoryId: string | null,
+  /** Qué es el movimiento, cuando la regla también debe fijarlo. */
+  comoEs?: { tipo: "income" | "expense" | "transfer"; destinoKind: string | null; destinoRef: string | null },
 ): Promise<number> {
   const pattern = patronDesde(textoOriginal);
   if (!pattern || !merchant.trim()) return 0;
-  const { error } = await sb()
+  const base = { user_id: await uid(), pattern, merchant: merchant.trim(), category_id: categoryId };
+  const conTipo = comoEs
+    ? { ...base, tx_type: comoEs.tipo, destination_kind: comoEs.destinoKind, destination_ref: comoEs.destinoRef }
+    : base;
+  let { error } = await sb()
     .from("merchant_rules")
-    .upsert(
-      { user_id: await uid(), pattern, merchant: merchant.trim(), category_id: categoryId },
-      { onConflict: "user_id,pattern" },
-    );
+    .upsert(conTipo, { onConflict: "user_id,pattern" });
+  if (error && /tx_type|destination_kind/.test(error.message)) {
+    // Sin la 0061 se guarda lo de siempre: mejor una regla a medias que ninguna.
+    ({ error } = await sb().from("merchant_rules").upsert(base, { onConflict: "user_id,pattern" }));
+  }
   if (error && /merchant_rules/.test(error.message)) {
     throw new Error("Falta la migración 0013 en Supabase (supabase/migrations/0013_comercios.sql).");
   }
@@ -740,6 +760,17 @@ export async function saveMerchantRule(
       if (sinCategoria.length > 0) {
         await sb().from("transactions").update({ category_id: categoryId }).in("id", sinCategoria);
       }
+    }
+    // Y si la regla dice QUÉ ES, se aplica a todos los que calzan. Este es el
+    // caso del pago de la tarjeta: marcarlo transferencia una vez tiene que
+    // valer para los de todos los meses, no solo para el que se está viendo.
+    if (comoEs) {
+      await sb().from("transactions").update({
+        type: comoEs.tipo,
+        ...(comoEs.tipo === "transfer" ? { category_id: null } : {}),
+        destination_kind: comoEs.destinoKind,
+        destination_ref: comoEs.destinoRef,
+      }).in("id", ids);
     }
   }
   return calzan.length;

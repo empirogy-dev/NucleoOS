@@ -164,8 +164,15 @@ async function sincronizar(db: SupabaseClient, conexion: {
   }
 
   // Las reglas de comercio de la usuaria mandan sobre la categoría de Plaid.
-  const { data: reglas } = await db.from("merchant_rules")
-    .select("pattern,merchant,category_id").eq("user_id", conexion.user_id);
+  let { data: reglas } = await db.from("merchant_rules")
+    .select("pattern,merchant,category_id,tx_type,destination_kind,destination_ref")
+    .eq("user_id", conexion.user_id);
+  if (!reglas) {
+    // Sin la 0062 la regla existe pero sin el tipo: se lee lo de siempre.
+    const previo = await db.from("merchant_rules")
+      .select("pattern,merchant,category_id").eq("user_id", conexion.user_id);
+    reglas = previo.data;
+  }
 
   // transactions/sync: página a página hasta que no haya más.
   for (let vuelta = 0; vuelta < 10; vuelta++) {
@@ -191,6 +198,8 @@ async function sincronizar(db: SupabaseClient, conexion: {
       // se mueve de un bolsillo propio a otro. El banco lo publica dos veces,
       // una en la cuenta que paga y otra en la tarjeta que recibe, y sin esto
       // el lado de la tarjeta entraba como INGRESO e inflaba el mes.
+      const regla = (reglas ?? []).find((r: { pattern: string }) =>
+        r.pattern && texto.toLowerCase().includes(String(r.pattern).toLowerCase()));
       const cat = (t.personal_finance_category ?? {}) as Record<string, unknown>;
       const detalle = String(cat.detailed ?? "").toUpperCase();
       const esPagoDeTarjeta =
@@ -199,10 +208,9 @@ async function sincronizar(db: SupabaseClient, conexion: {
         // que ENTRA a una tarjeta y se llama pago, solo puede ser esto.
         || (cuenta?.tabla === "credit_cards" && monto < 0 && /(payment|paiement|pago)/i.test(texto));
 
-      const tipo = esPagoDeTarjeta ? "transfer" : monto >= 0 ? "expense" : "income";
-      const regla = (reglas ?? []).find((r: { pattern: string }) =>
-        r.pattern && texto.toLowerCase().includes(String(r.pattern).toLowerCase()));
-      const categoria = esPagoDeTarjeta
+      // Lo que ella decidió una vez manda sobre lo que diga el banco.
+      const tipo = regla?.tx_type ?? (esPagoDeTarjeta ? "transfer" : monto >= 0 ? "expense" : "income");
+      const categoria = tipo === "transfer"
         ? null
         : regla?.category_id
           ?? await categoriaPara(db, conexion.user_id, String(cat.primary ?? ""), tipo);
@@ -223,9 +231,14 @@ async function sincronizar(db: SupabaseClient, conexion: {
           payment_source_type: cuenta.tabla === "credit_cards" ? "credit_card" : "account",
           payment_source_id: cuenta.id,
         } : {}),
-        ...(esPagoDeTarjeta && cuenta?.tabla === "credit_cards"
-          // El lado de la tarjeta: la plata llega AQUÍ.
-          ? { destination_kind: "card", destination_ref: cuenta.id }
+        ...(tipo === "transfer"
+          ? regla?.destination_kind
+            // El destino que ella eligió al automatizar la regla.
+            ? { destination_kind: regla.destination_kind, destination_ref: regla.destination_ref }
+            : cuenta?.tabla === "credit_cards"
+              // El lado de la tarjeta: la plata llega AQUÍ.
+              ? { destination_kind: "card", destination_ref: cuenta.id }
+              : {}
           : {}),
       };
       // El índice único por external_id hace el resto: si ya estaba, no entra.

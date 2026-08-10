@@ -2004,7 +2004,15 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
       if (esDelBanco && recordar && (merchant.trim() || categoryId)) {
         const nombreRegla = merchant.trim() || edit?.merchant || patronDesde(textoOriginal);
         if (nombreRegla) {
-          await saveMerchantRule(textoOriginal, nombreRegla, type === "transfer" ? null : (categoryId || null));
+          // La regla también recuerda QUÉ ES. Sin esto, marcar el pago de la
+          // tarjeta como transferencia servía solo para ese movimiento y los
+          // del mes siguiente volvían a entrar como ingreso.
+          await saveMerchantRule(
+            textoOriginal,
+            nombreRegla,
+            type === "transfer" ? null : (categoryId || null),
+            { tipo: type, destinoKind: type === "transfer" ? destKind : null, destinoRef: type === "transfer" ? destRef : null },
+          );
         }
       }
       onSaved();
@@ -2052,7 +2060,11 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
             <input type="checkbox" checked={recordar} onChange={(e) => setRecordar(e.target.checked)} style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
             <span>
               Automatizar: cuando llegue un movimiento parecido a "{textoOriginal.slice(0, 40)}{textoOriginal.length > 40 ? "…" : ""}",
-              {merchant.trim() ? <> llamarlo <b>{merchant.trim()}</b> y</> : ""} usar esta categoría solo. También se aplica a los que ya tienes: solo apruebas, no categorizas de nuevo.
+              {merchant.trim() ? <> llamarlo <b>{merchant.trim()}</b> y</> : ""}{" "}
+              {type === "transfer"
+                ? <>tratarlo como <b>transferencia</b> hacia el mismo destino.</>
+                : "usar esta categoría solo."}{" "}
+              También se aplica a los que ya tienes: solo apruebas, no repites el trabajo.
             </span>
           </label>
         )}
