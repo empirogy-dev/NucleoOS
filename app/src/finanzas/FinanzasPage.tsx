@@ -13,6 +13,7 @@ import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
+import { PagosTarjetaPanel } from "./PagosTarjetaPanel";
 import { lineasDe } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
 import { GuiaImpuestos } from "./GuiaImpuestos";
@@ -459,6 +460,7 @@ export function FinanzasPage() {
               t.type === "expense" && Boolean(t.category_id) && !listo(t));
             return (
             <>
+              <PagosTarjetaPanel txs={txs} cards={cards} currency={currency} onCambio={() => void reload()} />
               <RepetidosPanel txs={txs} catById={catById} currency={currency}
                 conRecibo={reciboIds}
                 fuenteDe={(t) => {

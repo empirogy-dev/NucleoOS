@@ -184,13 +184,28 @@ async function sincronizar(db: SupabaseClient, conexion: {
     for (const t of agregadas) {
       const monto = Number(t.amount);
       // En Plaid, positivo = sale plata de la cuenta.
-      const tipo = monto >= 0 ? "expense" : "income";
       const texto = String(t.merchant_name ?? t.name ?? "");
       const cuenta = mapaCuentas.get(String(t.account_id));
+
+      // Pagar la tarjeta de crédito NO es un ingreso ni un gasto: es plata que
+      // se mueve de un bolsillo propio a otro. El banco lo publica dos veces,
+      // una en la cuenta que paga y otra en la tarjeta que recibe, y sin esto
+      // el lado de la tarjeta entraba como INGRESO e inflaba el mes.
+      const cat = (t.personal_finance_category ?? {}) as Record<string, unknown>;
+      const detalle = String(cat.detailed ?? "").toUpperCase();
+      const esPagoDeTarjeta =
+        detalle.includes("CREDIT_CARD_PAYMENT")
+        // Red de seguridad para cuando el banco no manda la categoría: plata
+        // que ENTRA a una tarjeta y se llama pago, solo puede ser esto.
+        || (cuenta?.tabla === "credit_cards" && monto < 0 && /(payment|paiement|pago)/i.test(texto));
+
+      const tipo = esPagoDeTarjeta ? "transfer" : monto >= 0 ? "expense" : "income";
       const regla = (reglas ?? []).find((r: { pattern: string }) =>
         r.pattern && texto.toLowerCase().includes(String(r.pattern).toLowerCase()));
-      const categoria = regla?.category_id
-        ?? await categoriaPara(db, conexion.user_id, String((t.personal_finance_category as Record<string, unknown>)?.primary ?? ""), tipo);
+      const categoria = esPagoDeTarjeta
+        ? null
+        : regla?.category_id
+          ?? await categoriaPara(db, conexion.user_id, String(cat.primary ?? ""), tipo);
 
       const fila: Record<string, unknown> = {
         user_id: conexion.user_id,
@@ -208,6 +223,10 @@ async function sincronizar(db: SupabaseClient, conexion: {
           payment_source_type: cuenta.tabla === "credit_cards" ? "credit_card" : "account",
           payment_source_id: cuenta.id,
         } : {}),
+        ...(esPagoDeTarjeta && cuenta?.tabla === "credit_cards"
+          // El lado de la tarjeta: la plata llega AQUÍ.
+          ? { destination_kind: "card", destination_ref: cuenta.id }
+          : {}),
       };
       // El índice único por external_id hace el resto: si ya estaba, no entra.
       const { data: creada, error } = await db.from("transactions").insert(fila).select("id").single();
