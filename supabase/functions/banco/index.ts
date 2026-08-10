@@ -246,6 +246,19 @@ async function sincronizar(db: SupabaseClient, conexion: {
       if (!error && creada) {
         nuevas++;
         if (tipo === "expense") recienLlegados.push({ id: creada.id, monto: Math.abs(monto), texto });
+      } else if (error && cuenta) {
+        // Ya existía. No se toca lo que ella escribió (categoría, comercio,
+        // etiquetas), pero SÍ se rehace el vínculo con su cuenta: si la
+        // tarjeta se borró y se volvió a crear, sus movimientos quedaron
+        // colgando y el banco es quien sabe a cuál pertenecen.
+        await db.from("transactions")
+          .update({
+            payment_source_type: cuenta.tabla === "credit_cards" ? "credit_card" : "account",
+            payment_source_id: cuenta.id,
+            ...(cuenta.tabla === "accounts" ? { account_id: cuenta.id } : { account_id: null }),
+          })
+          .eq("user_id", conexion.user_id)
+          .eq("external_id", String(t.transaction_id));
       }
     }
 

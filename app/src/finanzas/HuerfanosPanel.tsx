@@ -23,6 +23,7 @@ export function HuerfanosPanel({ txs, accounts, cards, currency, onCambio }: {
   const { t: tr } = useIdioma();
   const [destinos, setDestinos] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
+  const [abierto, setAbierto] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const grupos = useMemo(() => {
@@ -65,6 +66,9 @@ export function HuerfanosPanel({ txs, accounts, cards, currency, onCambio }: {
       <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "6px 0 12px", lineHeight: 1.5 }}>
         {tr("Se borró la cuenta o la tarjeta, pero sus movimientos siguen aquí: no se perdió nada. Solo hay que decirles a cuál pertenecen ahora, y vuelven a aparecer en los filtros y en los totales.")}
       </p>
+      <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 12, lineHeight: 1.5 }}>
+        💡 {tr("Si vinieron de un banco conectado, no tienes que adivinar: anda a Cuentas y aprieta “Traer todo de nuevo”. El banco sabe a qué cuenta pertenece cada uno y los devuelve solo, sin tocar tus categorías.")}
+      </p>
       {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 8 }}>{err}</p>}
 
       {grupos.map((g) => {
@@ -79,11 +83,34 @@ export function HuerfanosPanel({ txs, accounts, cards, currency, onCambio }: {
                 {" · "}{fmtMoney(total, currency)}{" · "}{desde} {tr("a")} {hasta}
               </span>
             </div>
-            {/* Los primeros, para reconocer de cuál cuenta eran. */}
-            <div style={{ fontSize: 11.5, color: "var(--muted)", margin: "3px 0 8px" }}>
-              {g.txs.slice(0, 3).map((t) => t.merchant || t.bank_ref || t.description || tr("Movimiento")).join(", ")}
-              {g.txs.length > 3 ? "…" : ""}
-            </div>
+            {/* Verlos todos, con su fecha y su monto: con tres nombres no
+                alcanza para saber de qué cuenta eran, y sin eso la decisión
+                es a ciegas. */}
+            <button type="button" className="linklike" style={{ fontSize: 11.5, margin: "3px 0 8px" }}
+              onClick={() => setAbierto(abierto === g.fuente ? "" : g.fuente)}>
+              {abierto === g.fuente ? "▾" : "▸"} {tr("Ver los")} {g.txs.length}
+            </button>
+            {abierto === g.fuente ? (
+              <div style={{
+                maxHeight: 220, overflowY: "auto", border: "1px solid var(--line)",
+                borderRadius: 9, padding: "6px 10px", margin: "0 0 10px",
+              }}>
+                {[...g.txs].sort((a, b) => b.date.localeCompare(a.date)).map((t) => (
+                  <div key={t.id} style={{ display: "flex", gap: 8, fontSize: 11.5, padding: "3px 0" }}>
+                    <span className="tnum" style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>{t.date}</span>
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {t.merchant || t.bank_ref || t.description || tr("Movimiento")}
+                    </span>
+                    <span className="tnum" style={{ whiteSpace: "nowrap" }}>{fmtMoney(Number(t.amount), currency)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 11.5, color: "var(--muted)", margin: "0 0 8px" }}>
+                {g.txs.slice(0, 3).map((t) => t.merchant || t.bank_ref || t.description || tr("Movimiento")).join(", ")}
+                {g.txs.length > 3 ? "…" : ""}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <div style={{ width: 240 }}>
                 <Selector compacto value={destinos[g.fuente] ?? ""} ariaLabel={tr("Moverlos a")}
