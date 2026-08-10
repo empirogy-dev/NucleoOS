@@ -20,6 +20,7 @@ export const CLAVES_NUBE: string[] = [
   "nucleoos-idioma", // el idioma elegido para la app
   "nucleoos-modulos-ocultos", // qué módulos escondió la persona del menú
   "nucleoos-onboarding", // la bienvenida ya hecha, para no repetirla en otro aparato
+  "nucleoos-fin-no-repetidos", // los grupos que ella ya dijo que NO son repetidos
 ];
 
 // Guardamos los métodos originales para leer y escribir sin eco:

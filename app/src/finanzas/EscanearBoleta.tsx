@@ -238,7 +238,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, con
 
             <div className="frow">
               <div className="field"><label>{tr("Monto")}</label>
-                <input type="number" step="any" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" /></div>
+                <input type="number" step="any" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder={tr("0")} /></div>
               <div className="field"><label>{tr("Fecha")}</label>
                 <CampoFecha value={fecha} onChange={setFecha} ariaLabel={tr("Fecha")} conBorrar={false} /></div>
             </div>
@@ -309,7 +309,7 @@ export function EscanearBoleta({ txs, categories, accounts, cards, currency, con
             {elegido === "nuevo" && (
               <>
                 <div className="field"><label>{tr("Comercio")}</label>
-                  <input value={comercio} onChange={(e) => setComercio(e.target.value)} placeholder="Starlink" /></div>
+                  <input value={comercio} onChange={(e) => setComercio(e.target.value)} placeholder={tr("Starlink")} /></div>
                 <div className="field"><label>{tr("Pagado con")}</label>
                   <Selector value={fuente} ariaLabel={tr("Pagado con")} placeholder={tr("Sin cuenta")} onChange={setFuente}
                     opciones={[

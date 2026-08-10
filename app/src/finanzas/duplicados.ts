@@ -21,6 +21,32 @@ export interface GrupoRepetido {
 const dias = (a: string, b: string): number =>
   Math.abs(new Date(`${a}T00:00:00Z`).getTime() - new Date(`${b}T00:00:00Z`).getTime()) / 86400000;
 
+const normal = (x: string): string =>
+  x.toLowerCase().replace(/[^a-z0-9áéíóúñ ]/g, " ").replace(/\s+/g, " ").trim();
+
+const textoDe = (t: Tx): string =>
+  normal(`${t.merchant ?? ""} ${t.bank_ref ?? ""} ${t.description ?? ""}`);
+
+/** ¿Estos dos hablan del mismo comercio?
+ *
+ *  Sin esto, el monto solo alcanzaba para acusar: setenta y cinco dólares del
+ *  doctor y setenta y cinco de bencina caían en el mismo grupo, y eso no es
+ *  un repetido, son dos gastos distintos que costaron lo mismo. Ahora tienen
+ *  que compartir una palabra de peso, o que el nombre de uno esté dentro del
+ *  otro ("Hims & Hers" y "Hers", que es el banco escribiéndolo de dos formas).
+ */
+export function mismoComercio(a: Tx, b: Tx): boolean {
+  const ta = textoDe(a);
+  const tb = textoDe(b);
+  if (!ta || !tb) return false;
+  if (ta === tb) return true;
+  if (ta.includes(tb) || tb.includes(ta)) return true;
+  const palabras = (x: string) => new Set(x.split(" ").filter((p) => p.length >= 4));
+  const pa = palabras(ta);
+  for (const p of palabras(tb)) if (pa.has(p)) return true;
+  return false;
+}
+
 /** Grupos de dos o más movimientos que parecen ser el mismo. */
 export function buscarRepetidos(txs: Tx[], ventanaDias = 4): GrupoRepetido[] {
   const gastos = txs.filter((t) => t.type !== "transfer");
@@ -39,15 +65,24 @@ export function buscarRepetidos(txs: Tx[], ventanaDias = 4): GrupoRepetido[] {
     if (lista.length < 2) continue;
     const orden = [...lista].sort((a, b) => a.date.localeCompare(b.date));
     let actual: Tx[] = [];
+    const cerrar = () => {
+      if (actual.length >= 2) {
+        grupos.push({ clave: `${clave}:${actual[0].id}`, txs: actual, monto: Number(actual[0].amount) });
+      }
+      actual = [];
+    };
     for (const t of orden) {
-      if (actual.length === 0 || dias(actual[actual.length - 1].date, t.date) <= ventanaDias) {
+      const ultimo = actual[actual.length - 1];
+      // Mismo monto NO basta: además tiene que caer cerca en el tiempo Y
+      // hablar del mismo comercio.
+      if (!ultimo || (dias(ultimo.date, t.date) <= ventanaDias && mismoComercio(ultimo, t))) {
         actual.push(t);
       } else {
-        if (actual.length >= 2) grupos.push({ clave: `${clave}:${actual[0].id}`, txs: actual, monto: Number(actual[0].amount) });
+        cerrar();
         actual = [t];
       }
     }
-    if (actual.length >= 2) grupos.push({ clave: `${clave}:${actual[0].id}`, txs: actual, monto: Number(actual[0].amount) });
+    cerrar();
   }
 
   // Los más caros primero: ahí es donde un doble conteo duele.

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Trash2 } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
-import { listTodosRecibos, signedUrlsRecibos, openRecibo, type ReciboItem } from "./recibos";
+import { listTodosRecibos, signedUrlsRecibos, openRecibo, deleteRecibo, type ReciboItem } from "./recibos";
 import { fmtMoney, type Account, type Category, type Tx } from "./types";
 import { updateTransaction } from "./data";
 import type { Etiqueta } from "./tags";
@@ -218,7 +218,15 @@ export function ComprobantesTab({ txs, categories, accounts, currency, onCambio,
 
       <div className="comp-grid">
         {visibles.map((f) => (
-          <div className="card pad comp-card" key={f.item.path}>
+          <div className="card pad comp-card" key={f.item.path} style={{ position: "relative" }}>
+            <button className="xdel" aria-label={tr("Eliminar comprobante")}
+              style={{ position: "absolute", top: 6, right: 6, zIndex: 1 }}
+              onClick={async () => {
+                if (!window.confirm(`${tr("¿Eliminar este comprobante?")} ${f.item.name}`)) return;
+                await deleteRecibo(f.item.path);
+                await cargar();
+                onCambio();
+              }}><Trash2 size={13} /></button>
             <button className="comp-thumb" onClick={() => void openRecibo(f.item.path)} aria-label={tr("Ver comprobante")}>
               {f.item.isImage && urls.get(f.item.path)
                 ? <img src={urls.get(f.item.path)} alt={f.item.name} loading="lazy" />

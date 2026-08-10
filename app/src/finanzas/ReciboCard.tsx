@@ -158,7 +158,7 @@ export function ReciboCard({
           )}
           <div className="frow">
             <div className="field"><label>{tr("Monto")} ({currency})</label>
-              <input type="number" min="0" step="1" value={borrador.monto} onChange={(e) => editar("monto", e.target.value)} placeholder="0" autoFocus /></div>
+              <input type="number" min="0" step="1" value={borrador.monto} onChange={(e) => editar("monto", e.target.value)} placeholder={tr("0")} autoFocus /></div>
             <div className="field"><label>{tr("Fecha")}</label>
               <CampoFecha value={borrador.fecha} onChange={(v) => editar("fecha", v || fechaRegistro())} ariaLabel={tr("Fecha")} conBorrar={false} /></div>
           </div>

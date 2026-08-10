@@ -116,7 +116,7 @@ export function FinanzasPage() {
   const [catTags, setCatTags] = useState<Map<string, Etiqueta[]>>(new Map());
   const [cartolas, setCartolas] = useState<Cartola[]>([]);
   const [escaneando, setEscaneando] = useState(false);
-  const [vistaTx, setVistaTx] = useState<"revisar" | "archivo" | "comprobantes" | "cartolas">("revisar");
+  const [vistaTx, setVistaTx] = useState<"revisar" | "sinboleta" | "archivo" | "comprobantes" | "cartolas">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
@@ -437,6 +437,11 @@ export function FinanzasPage() {
             // y al categorizarlo pasa solo al archivo mensual.
             const pendientes = filteredTxs.filter((t) => t.type !== "transfer" && !t.category_id);
             const archivadas = filteredTxs.filter((t) => t.type === "transfer" || Boolean(t.category_id));
+            // Categorizado no es lo mismo que listo. Un gasto con categoría
+            // pero sin boleta se veía "archivado", y para los impuestos no
+            // sirve de nada sin su comprobante.
+            const sinBoleta = filteredTxs.filter((t) =>
+              t.type === "expense" && Boolean(t.category_id) && !reciboIds.has(t.id));
             return (
             <>
               <RepetidosPanel txs={txs} catById={catById} currency={currency}
@@ -444,6 +449,9 @@ export function FinanzasPage() {
               <div className="seg" style={{ maxWidth: 560 }}>
                 <button className={"segbtn" + (vistaTx === "revisar" ? " active" : "")} onClick={() => setVistaTx("revisar")}>
                   📥 {tr("Por revisar")}{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
+                </button>
+                <button className={"segbtn" + (vistaTx === "sinboleta" ? " active" : "")} onClick={() => setVistaTx("sinboleta")}>
+                  📎 {tr("Sin boleta")}{sinBoleta.length > 0 ? ` (${sinBoleta.length})` : ""}
                 </button>
                 <button className={"segbtn" + (vistaTx === "archivo" ? " active" : "")} onClick={() => setVistaTx("archivo")}>
                   🗂 {tr("Archivo")}
@@ -458,7 +466,7 @@ export function FinanzasPage() {
               {vistaTx !== "comprobantes" && vistaTx !== "cartolas" && (
               <div className="filterbar">
                 <div className="searchbox" style={{ minWidth: 200 }}>
-                  <input value={fq} onChange={(e) => setFq(e.target.value)} placeholder="Buscar movimientos…" aria-label="Buscar movimientos" />
+                  <input value={fq} onChange={(e) => setFq(e.target.value)} placeholder={tr("Buscar movimientos…")} aria-label="Buscar movimientos" />
                 </div>
                 <div style={{ width: 150 }}>
                   <Selector compacto value={fType} ariaLabel="Filtrar por tipo"
@@ -577,6 +585,31 @@ export function FinanzasPage() {
                           onTags={() => setTagTx(t)}
                           cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
                           onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              {vistaTx === "sinboleta" && (
+                <div className="card pad">
+                  {sinBoleta.length === 0 ? (
+                    <p style={{ color: "var(--muted)", fontSize: 14 }}>
+                      📎 {tr("Todos los gastos categorizados tienen su boleta. Eso es lo que necesitas para los impuestos.")}
+                    </p>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
+                        {tr("Estos ya tienen categoría, pero les falta el comprobante. Adjúntalo con el clip.")}
+                      </p>
+                      {sinBoleta.map((t) => (
+                        <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                          onEdit={() => setEditTx(t)}
+                          onSplit={() => setSplitTx(t)}
+                          hasRecibo={false}
+                          onRecibo={() => setReciboTx(t)}
+                          tags={txTags.get(t.id)}
+                          onTags={() => setTagTx(t)}
+                          cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null} />
                       ))}
                     </>
                   )}
@@ -1341,6 +1374,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
 }
 
 function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edit?: Debt | null; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [name, setName] = useState(edit?.name ?? "");
   const [institution, setInstitution] = useState(edit?.institution ?? "");
   const [balance, setBalance] = useState(edit ? String(edit.balance) : "");
@@ -1368,9 +1402,9 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
     <Modal title={edit ? "Editar deuda" : "Agregar deuda"} onClose={onClose}>
       <form onSubmit={save}>
         <div className="field"><label>Nombre</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Crédito de consumo" autoFocus /></div>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Crédito de consumo")} autoFocus /></div>
         <div className="field"><label>Institución (opcional)</label>
-          <input value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Banco…" /></div>
+          <input value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder={tr("Banco…")} /></div>
         <div className="frow">
           <div className="field"><label>Saldo adeudado</label>
             <input type="number" required min="0" step="any" value={balance} onChange={(e) => setBalance(e.target.value)} /></div>
@@ -1384,7 +1418,7 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
             <CampoFecha value={dueDate} onChange={setDueDate} ariaLabel="Próximo pago" /></div>
         </div>
         <div className="field"><label>Notas (opcional)</label>
-          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Cuotas restantes, condiciones…" /></div>
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={tr("Cuotas restantes, condiciones…")} /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual.</p>
         <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
@@ -1393,6 +1427,7 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
 }
 
 function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edit?: CreditCard | null; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [name, setName] = useState(edit?.name ?? "");
   const [bank, setBank] = useState(edit?.bank ?? "");
   const [lastFour, setLastFour] = useState(edit?.last_four ?? "");
@@ -1426,12 +1461,12 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
           <Selector value={moneda} ariaLabel="Moneda de la tarjeta" onChange={setMoneda}
             opciones={CURRENCIES.map((c) => ({ value: c, label: c }))} /></div>
         <div className="field"><label>Nombre</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Visa" autoFocus /></div>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Visa")} autoFocus /></div>
         <div className="frow">
           <div className="field"><label>Banco (opcional)</label>
             <input value={bank} onChange={(e) => setBank(e.target.value)} /></div>
           <div className="field" style={{ width: 110 }}><label>Últimos 4</label>
-            <input maxLength={4} value={lastFour} onChange={(e) => setLastFour(e.target.value.replace(/\D/g, ""))} placeholder="1234" /></div>
+            <input maxLength={4} value={lastFour} onChange={(e) => setLastFour(e.target.value.replace(/\D/g, ""))} placeholder={tr("1234")} /></div>
         </div>
         <div className="frow">
           <div className="field"><label>Cupo (opcional)</label>
@@ -1446,7 +1481,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
             <CampoFecha value={dueDate} onChange={setDueDate} ariaLabel="Próximo pago" /></div>
         </div>
         <div className="field"><label>Interés anual % (opcional)</label>
-          <input type="number" min="0" step="any" value={apr} onChange={(e) => setApr(e.target.value)} placeholder="21.99" /></div>
+          <input type="number" min="0" step="any" value={apr} onChange={(e) => setApr(e.target.value)} placeholder={tr("21.99")} /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>💡 Si pones fecha de pago, se crea solo un recordatorio mensual. El interés alimenta el plan para salir de deudas.</p>
         <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%" }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
@@ -1455,6 +1490,7 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
 }
 
 function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(hoyLocal());
@@ -1474,7 +1510,7 @@ function ReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     <Modal title="Recordatorio de pago" onClose={onClose}>
       <form onSubmit={save}>
         <div className="field"><label>¿Qué hay que pagar?</label>
-          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Plan del celular" autoFocus /></div>
+          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Plan del celular")} autoFocus /></div>
         <div className="frow">
           <div className="field"><label>Monto (opcional)</label>
             <input type="number" min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
@@ -1535,12 +1571,12 @@ function GoalModal({ edit, metasDireccion, onClose, onSaved }: { edit?: Goal | n
       <form onSubmit={save}>
         <div className="frow">
           <div className="field" style={{ flex: 1 }}><label>{tr("com.nombre")}</label>
-            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Viaje a Chile" autoFocus /></div>
+            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Viaje a Chile")} autoFocus /></div>
           <IconField value={icon} onChange={setIcon} />
         </div>
         <div className="frow">
           <div className="field"><label>{tr("m.gol.monto")}</label>
-            <input type="number" required min="1" step="any" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="2000" /></div>
+            <input type="number" required min="1" step="any" value={target} onChange={(e) => setTarget(e.target.value)} placeholder={tr("2000")} /></div>
           {edit && (
             <div className="field"><label>{tr("m.gol.llevo")}</label>
               <input type="number" min="0" step="any" value={current} onChange={(e) => setCurrent(e.target.value)} /></div>
@@ -1574,6 +1610,7 @@ function ContributeModal({ goal, accounts, currency, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const [amount, setAmount] = useState("");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
@@ -1610,9 +1647,9 @@ function ContributeModal({ goal, accounts, currency, onClose, onSaved }: {
       </p>
       <form onSubmit={save}>
         <div className="field"><label>Monto a aportar</label>
-          <input type="number" required min="1" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" autoFocus /></div>
+          <input type="number" required min="1" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={tr("100")} autoFocus /></div>
         <div className="field"><label>Desde la cuenta</label>
-          <Selector value={accountId} ariaLabel="Cuenta de origen del aporte" placeholder="Sin cuenta (solo anota el avance)" onChange={setAccountId}
+          <Selector value={accountId} ariaLabel="Cuenta de origen del aporte" placeholder={tr("Sin cuenta (solo anota el avance)")} onChange={setAccountId}
             opciones={[{ value: "", label: "Sin cuenta (solo anota el avance)" }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]} /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           Con una cuenta elegida, el aporte queda como transferencia: descuenta de la cuenta y suma a la meta.
@@ -1629,6 +1666,7 @@ function BudgetModal({ cat, currency, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t: tr } = useIdioma();
   const [value, setValue] = useState(cat.budget ? String(cat.budget) : "");
   const [busy, setBusy] = useState(false);
 
@@ -1647,7 +1685,7 @@ function BudgetModal({ cat, currency, onClose, onSaved }: {
       </p>
       <form onSubmit={save}>
         <div className="field"><label>Monto mensual</label>
-          <input type="number" min="0" step="any" value={value} onChange={(e) => setValue(e.target.value)} placeholder="300000" autoFocus /></div>
+          <input type="number" min="0" step="any" value={value} onChange={(e) => setValue(e.target.value)} placeholder={tr("300000")} autoFocus /></div>
         <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
@@ -1738,6 +1776,7 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t: tr } = useIdioma();
   interface Parte { description: string; category_id: string; amount: string }
   const [partes, setPartes] = useState<Parte[]>([
     { description: tx.description || tx.merchant || "", category_id: tx.category_id ?? "", amount: "" },
@@ -1785,12 +1824,12 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
           <input className="input-inline" style={{ flex: "1 1 120px" }} value={p.description} placeholder={i === 0 ? "Calcetines" : "Frutillas"}
             aria-label={`Descripción de la parte ${i + 1}`} onChange={(e) => cambiar(i, { description: e.target.value })} />
           <div style={{ width: 145, flex: "none" }}>
-            <Selector compacto value={p.category_id} ariaLabel={`Categoría de la parte ${i + 1}`} placeholder="Sin categoría"
+            <Selector compacto value={p.category_id} ariaLabel={`Categoría de la parte ${i + 1}`} placeholder={tr("Sin categoría")}
               opciones={[{ value: "", label: "Sin categoría" }, ...cats.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]}
               onChange={(v) => cambiar(i, { category_id: v })} />
           </div>
           <input className="input-inline tnum" type="number" min="0" step="any" style={{ maxWidth: 95, flex: "none" }} value={p.amount}
-            placeholder="monto" aria-label={`Monto de la parte ${i + 1}`} onChange={(e) => cambiar(i, { amount: e.target.value })} />
+            placeholder={tr("monto")} aria-label={`Monto de la parte ${i + 1}`} onChange={(e) => cambiar(i, { amount: e.target.value })} />
           {restante > 0 && !p.amount && (
             <button type="button" className="linklike" style={{ fontSize: 11.5 }} onClick={() => cambiar(i, { amount: String(restante) })}>
               el resto
@@ -1937,11 +1976,11 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
       {err && <div className="msg err" style={{ fontSize: 12.5, padding: "8px 10px", borderRadius: 8, background: "color-mix(in srgb,var(--err) 12%,var(--paper))", borderLeft: "3px solid var(--err)", marginBottom: 10 }}>{err}</div>}
       <form onSubmit={save}>
         <div className="field"><label>{tr("m.tx.monto")}</label>
-          <input type="number" required min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="36000" autoFocus /></div>
+          <input type="number" required min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={tr("36000")} autoFocus /></div>
         <div className="field"><label>{tr("m.tx.comercio")}</label>
-          <input value={merchant} onChange={(e) => setMerchant(e.target.value)} placeholder="Amazon, Spice Sex, Metro…" /></div>
+          <input value={merchant} onChange={(e) => setMerchant(e.target.value)} placeholder={tr("Costco, Netflix, la farmacia…")} /></div>
         <div className="field"><label>{tr("m.tx.desc")}</label>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="el internet, frutillas, regalo…" /></div>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={tr("qué fue, en tus palabras")} /></div>
         {esDelBanco && (merchant.trim() !== "" || categoryId !== "") && (
           <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer", lineHeight: 1.45 }}>
             <input type="checkbox" checked={recordar} onChange={(e) => setRecordar(e.target.checked)} style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
@@ -1954,7 +1993,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
         <div className="frow">
           {type !== "transfer" && (
             <div className="field"><label>{tr("m.tx.categoria")}</label>
-              <Selector value={categoryId} ariaLabel="Categoría" placeholder="Sin categoría" onChange={setCategoryId}
+              <Selector value={categoryId} ariaLabel="Categoría" placeholder={tr("Sin categoría")} onChange={setCategoryId}
                 opciones={[{ value: "", label: "Sin categoría" }, ...cats.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} /></div>
           )}
           <div className="field"><label>{type === "transfer" ? tr("Desde la cuenta") : tr("Pagado con")}</label>
@@ -1969,7 +2008,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
               ]} /></div>
           {type === "transfer" && (
             <div className="field"><label>Hacia</label>
-              <Selector value={destino} ariaLabel="Destino de la transferencia" placeholder="Fuera de la app (otro banco)" onChange={setDestino}
+              <Selector value={destino} ariaLabel="Destino de la transferencia" placeholder={tr("Fuera de la app (otro banco)")} onChange={setDestino}
                 opciones={[
                   { value: "", label: "Fuera de la app (otro banco)" },
                   ...accounts.filter((a) => a.id !== accountId).map((a) => ({ value: `account:${a.id}`, label: `🏦 ${a.name}` })),
@@ -1998,6 +2037,7 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, onEscanear, 
 }
 
 function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const { currency: defaultCurrency } = useSettings();
   const [name, setName] = useState(edit?.name ?? "");
   const [bank, setBank] = useState(edit?.bank_name ?? "");
@@ -2019,9 +2059,9 @@ function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClo
     <Modal title={edit ? "Editar cuenta" : "Agregar cuenta"} onClose={onClose}>
       <form onSubmit={save}>
         <div className="field"><label>Nombre</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Cuenta corriente" autoFocus /></div>
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Cuenta corriente")} autoFocus /></div>
         <div className="field"><label>Banco (opcional)</label>
-          <input value={bank} onChange={(e) => setBank(e.target.value)} placeholder="Banco Estado" /></div>
+          <input value={bank} onChange={(e) => setBank(e.target.value)} placeholder={tr("Banco Estado")} /></div>
         <div className="frow">
           <div className="field"><label>Tipo</label>
             <Selector value={type} ariaLabel="Tipo de cuenta" onChange={setType}
@@ -2036,7 +2076,7 @@ function AccountModal({ edit, onClose, onSaved }: { edit?: Account | null; onClo
           </p>
         )}
         <div className="field"><label>{edit ? "Saldo" : "Saldo inicial"}</label>
-          <input type="number" step="any" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0" /></div>
+          <input type="number" step="any" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder={tr("0")} /></div>
         <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
@@ -2084,7 +2124,7 @@ function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onC
       <form onSubmit={save}>
         <div className="frow">
           <div className="field" style={{ flex: 1 }}><label>{tr("com.nombre")}</label>
-            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Mascotas" autoFocus /></div>
+            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Mascotas")} autoFocus /></div>
           <IconField value={icon} onChange={setIcon} />
         </div>
         <div className="field"><label>Tipo</label>
@@ -2098,9 +2138,9 @@ function CategoryModal({ edit, onClose, onSaved }: { edit?: Category | null; onC
         {edit && type === "expense" && (
           <>
             <div className="field"><label>Presupuesto mensual (vacío para quitarlo)</label>
-              <input type="number" min="0" step="any" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="300" /></div>
+              <input type="number" min="0" step="any" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder={tr("300")} /></div>
             <div className="field"><label>Modo de presupuesto</label>
-              <Selector value={budgetMode} ariaLabel="Modo de presupuesto" placeholder="Sin modo" onChange={setBudgetMode}
+              <Selector value={budgetMode} ariaLabel="Modo de presupuesto" placeholder={tr("Sin modo")} onChange={setBudgetMode}
                 opciones={[
                   { value: "", label: "Sin modo" },
                   { value: "fixed", label: "Fijo (mismo monto cada mes, como el arriendo)" },
@@ -2337,7 +2377,7 @@ function PlanDeudas({ debts, cards, currency }: { debts: Debt[]; cards: CreditCa
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
           <label style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 500 }}>{tr("Dinero extra al mes:")}</label>
           <input className="input-inline" style={{ maxWidth: 140, flex: "none" }} type="number" min="0" step="any"
-            value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="100" aria-label="Dinero extra mensual" />
+            value={extra} onChange={(e) => setExtra(e.target.value)} placeholder={tr("100")} aria-label="Dinero extra mensual" />
         </div>
         {orden.map((d, i) => (
           <div className="txrow" key={d.id} style={{ padding: "8px 0" }}>

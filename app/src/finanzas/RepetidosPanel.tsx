@@ -3,13 +3,20 @@ import { Copy, Paperclip } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { sinRobarFoco } from "../components/cierreDeFondo";
 import { fmtMoney, type Category, type Tx } from "./types";
-import { buscarRepetidos, cualConservar } from "./duplicados";
+import { buscarRepetidos, cualConservar, type GrupoRepetido } from "./duplicados";
 import { deleteTransaction } from "./data";
 import { moverRecibos } from "./recibos";
 
 // El mismo gasto anotado dos veces. Se junta, no se borra a ciegas: el que se
 // queda hereda las boletas del que se va, porque la foto es la prueba y no se
 // puede perder al limpiar.
+
+const CLAVE = "nucleoos-fin-no-repetidos";
+
+/** La firma de un grupo: sus ids ordenados. Si cambia alguno, vuelve a
+ *  preguntar, que es lo correcto: ya no es el mismo grupo. */
+const firma2 = (ids: string[]) => [...ids].sort().join("|");
+const firma = (txs: GrupoRepetido["txs"]) => firma2(txs.map((t) => t.id));
 
 const DE_DONDE: Record<string, string> = {
   banco: "del banco",
@@ -29,8 +36,24 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, onCambio }: 
   const [trabajando, setTrabajando] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
-  const grupos = useMemo(() => buscarRepetidos(txs), [txs]);
+  // Los grupos que ella ya revisó y dijo que no son repetidos. Se guardan
+  // por los ids del grupo, así no vuelven a aparecer nunca más, y viajan a
+  // sus otros aparatos.
+  const [descartados, setDescartados] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(CLAVE) ?? "[]") as string[]; } catch { return []; }
+  });
+
+  const grupos = useMemo(
+    () => buscarRepetidos(txs).filter((g) => !descartados.includes(firma(g.txs))),
+    [txs, descartados],
+  );
   if (grupos.length === 0) return null;
+
+  function noSonRepetidos(ids: string[]) {
+    const next = [...descartados, firma2(ids)];
+    setDescartados(next);
+    localStorage.setItem(CLAVE, JSON.stringify(next));
+  }
 
   const plataDeMas = grupos.reduce((s, g) => s + g.monto * (g.txs.length - 1), 0);
 
@@ -71,7 +94,7 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, onCambio }: 
       {abierto && (
         <>
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 12px", lineHeight: 1.5 }}>
-            {tr("Mismo monto y fechas cercanas. Elige cuál se queda: el que elijas hereda las boletas de los otros, y los otros se borran.")}
+            {tr("Mismo monto, mismo comercio y fechas cercanas. Elige cuál se queda: el que elijas hereda las boletas de los otros, y los otros se borran.")}
           </p>
           {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
 
@@ -79,8 +102,17 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, onCambio }: 
             const sugerido = cualConservar(g, conRecibo);
             return (
               <div key={g.clave} style={{ borderTop: "1px solid var(--line)", padding: "10px 0" }}>
-                <b className="tnum" style={{ fontSize: 13.5 }}>{fmtMoney(g.monto, currency)}</b>
-                <span style={{ fontSize: 12, color: "var(--muted)" }}> · {g.txs.length} {tr("veces")}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <b className="tnum" style={{ fontSize: 13.5 }}>{fmtMoney(g.monto, currency)}</b>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>· {g.txs.length} {tr("veces")}</span>
+                  <span style={{ flex: 1 }} />
+                  {/* Que dos gastos cuesten lo mismo no los hace el mismo
+                      gasto. Si ella dice que no, no se vuelve a preguntar. */}
+                  <button type="button" className="linklike" style={{ fontSize: 12 }}
+                    onClick={() => noSonRepetidos(g.txs.map((t) => t.id))}>
+                    {tr("No son repetidos, déjalos")}
+                  </button>
+                </div>
                 <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
                   {g.txs.map((t) => (
                     <div key={t.id} style={{
