@@ -15,6 +15,7 @@ import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
 import { lineasDe } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
+import { GuiaImpuestos } from "./GuiaImpuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
@@ -987,7 +988,7 @@ export function FinanzasPage() {
                               value: l.numero,
                               // En Chile el código es de la app, no de un
                               // formulario: mostrarlo confundiría.
-                              label: paisImpuestos === "CA" ? `${l.numero} · ${l.es}` : l.es,
+                              label: paisImpuestos === "CA" ? `${l.es} · ${l.numero}` : l.es,
                             })),
                           ]}
                           onChange={async (v) => { await updateCategoryTaxLine(c.id, v || null); void reload(); }} />
@@ -1014,6 +1015,7 @@ export function FinanzasPage() {
               <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => setModal("category")}>
                 <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> {tr("Agregar categoría")}
               </button>
+              <GuiaImpuestos pais={paisImpuestos} />
             </>
           )}
         </>
