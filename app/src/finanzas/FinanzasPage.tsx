@@ -203,7 +203,10 @@ export function FinanzasPage() {
       if (fCat !== "all" && t.category_id !== (fCat === "none" ? null : fCat)) return false;
       if (fTag !== "all" && !(txTags.get(t.id) ?? []).some((e) => e.id === fTag)) return false;
       if (fAcc !== "all") {
-        const enOrigen = t.account_id === fAcc;
+        // La tarjeta de crédito es fuente de pago, no cuenta. Sin esto,
+        // filtrar por una tarjeta no devolvía NADA, aunque tuviera cien
+        // movimientos.
+        const enOrigen = t.account_id === fAcc || t.payment_source_id === fAcc;
         const enDestino = (t.destination_ref ?? t.destination_account_id) === fAcc;
         if (!enOrigen && !enDestino) return false;
       }
@@ -551,7 +554,7 @@ export function FinanzasPage() {
                 );
               })()}
               {vistaTx === "comprobantes" && (
-                <ComprobantesTab txs={txs} categories={categories} accounts={accounts} currency={currency} onCambio={() => void reload()} etiquetas={etiquetas} txTags={txTags} catTags={catTags} />
+                <ComprobantesTab txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency} onCambio={() => void reload()} etiquetas={etiquetas} txTags={txTags} catTags={catTags} />
               )}
               {vistaTx === "cartolas" && (
                 <div className="card pad" style={{ maxWidth: 720 }}>
@@ -890,7 +893,7 @@ export function FinanzasPage() {
 
           {tab === "reporte" && (
             <>
-              <ResumenImpuestosPanel txs={txs} categories={categories} accounts={accounts} currency={currency} />
+              <ResumenImpuestosPanel txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency} />
               <ReporteTab txs={txs} categories={categories} currency={currency} balance={balanceTotal} />
             </>
           )}

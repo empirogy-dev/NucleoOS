@@ -3,7 +3,7 @@ import { Download, FileText, Trash2 } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { listTodosRecibos, signedUrlsRecibos, openRecibo, deleteRecibo, type ReciboItem } from "./recibos";
-import { fmtMoney, type Account, type Category, type Tx } from "./types";
+import { fmtMoney, monedaDeTx, type Account, type Category, type CreditCard, type Tx } from "./types";
 import { updateTransaction } from "./data";
 import type { Etiqueta } from "./tags";
 import { ExportarBoletas, type ItemExportable } from "./ExportarBoletas";
@@ -23,10 +23,11 @@ interface Fila {
 
 const MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-export function ComprobantesTab({ txs, categories, accounts, currency, onCambio, etiquetas, txTags, catTags }: {
+export function ComprobantesTab({ txs, categories, accounts, cards, currency, onCambio, etiquetas, txTags, catTags }: {
   txs: Tx[];
   categories: Category[];
   accounts: Account[];
+  cards: CreditCard[];
   currency: string;
   /** Para poder recategorizar aquí mismo y que la lista se refresque. */
   onCambio: () => void;
@@ -45,7 +46,8 @@ export function ComprobantesTab({ txs, categories, accounts, currency, onCambio,
   const [exportando, setExportando] = useState(false);
 
   const txById = useMemo(() => new Map(txs.map((t) => [t.id, t])), [txs]);
-  const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a.currency])), [accounts]);
+  const cardById = useMemo(() => new Map(cards.map((c) => [c.id, c.currency])), [cards]);
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const cargar = useCallback(async () => {
@@ -70,7 +72,7 @@ export function ComprobantesTab({ txs, categories, accounts, currency, onCambio,
           tx,
           fecha,
           cat: tx?.category_id ? catById.get(tx.category_id) : undefined,
-          currency: (tx?.account_id ? accById.get(tx.account_id)?.currency : undefined) ?? currency,
+          currency: tx ? monedaDeTx(tx, accById, cardById, currency) : currency,
           monto: tx ? Number(tx.amount) : 0,
         };
       })

@@ -199,6 +199,25 @@ export function setModoPrivado(v: boolean): void {
 
 export const MONTO_OCULTO = "✱✱✱✱✱";
 
+/** La moneda de un movimiento.
+ *
+ *  Un gasto pagado con tarjeta NO tiene cuenta: tiene fuente de pago. Mirar
+ *  solo account_id deja fuera todo lo de las tarjetas, y eso ya rompió el
+ *  filtro de cuentas y le puso la moneda equivocada a más de un total.
+ */
+export function monedaDeTx(
+  t: Pick<Tx, "account_id" | "payment_source_type" | "payment_source_id">,
+  cuentas: Map<string, string>,
+  tarjetas: Map<string, string>,
+  porDefecto: string,
+): string {
+  if (t.payment_source_type === "credit_card" && t.payment_source_id) {
+    return tarjetas.get(t.payment_source_id) ?? porDefecto;
+  }
+  const id = t.account_id ?? t.payment_source_id ?? null;
+  return (id ? cuentas.get(id) : null) ?? porDefecto;
+}
+
 export function fmtMoney(n: number, currency = "CLP"): string {
   if (privado) return MONTO_OCULTO;
   try {

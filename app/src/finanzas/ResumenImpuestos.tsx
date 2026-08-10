@@ -3,7 +3,7 @@ import { FileSpreadsheet } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { sinRobarFoco } from "../components/cierreDeFondo";
-import { fmtMoney, type Account, type Category, type Tx } from "./types";
+import { fmtMoney, monedaDeTx, type Account, type Category, type CreditCard, type Tx } from "./types";
 import { FORMULARIO, NOMBRE_PAIS, lineasDe, resumenImpuestos } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
 
@@ -13,10 +13,11 @@ import { usePaisImpuestos } from "./paisImpuestos";
 // si ella misma hace la declaración. La app suma; quién decide a qué línea va
 // cada categoría es ella, en la pestaña Categorías.
 
-export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
+export function ResumenImpuestosPanel({ txs, categories, accounts, cards, currency }: {
   txs: Tx[];
   categories: Category[];
   accounts: Account[];
+  cards: CreditCard[];
   currency: string;
 }) {
   const { t: tr } = useIdioma();
@@ -29,9 +30,9 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
   }, [txs]);
 
   const monedas = useMemo(() => {
-    const set = new Set<string>([currency, ...accounts.map((a) => a.currency)]);
+    const set = new Set<string>([currency, ...accounts.map((a) => a.currency), ...cards.map((c) => c.currency)]);
     return [...set].filter(Boolean);
-  }, [accounts, currency]);
+  }, [accounts, cards, currency]);
 
   const [pais] = usePaisImpuestos();
   const [guia, setGuia] = useState(false);
@@ -41,8 +42,9 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, currency }: {
 
   const monedaDe = useMemo(() => {
     const porCuenta = new Map(accounts.map((a) => [a.id, a.currency]));
-    return (t: Tx) => (t.account_id ? porCuenta.get(t.account_id) ?? currency : currency);
-  }, [accounts, currency]);
+    const porTarjeta = new Map(cards.map((c) => [c.id, c.currency]));
+    return (t: Tx) => monedaDeTx(t, porCuenta, porTarjeta, currency);
+  }, [accounts, cards, currency]);
 
   const r = useMemo(
     () => resumenImpuestos(txs, categories, {
