@@ -321,6 +321,21 @@ export async function updateCard(id: string, c: {
   await syncReminderPago(id, "creditCard", `Pago de la tarjeta ${c.name}`, c.min_payment, c.due_date);
 }
 
+/** Devuelve unos movimientos a una cuenta o tarjeta. Se usa cuando se borró
+ *  la cuenta a la que pertenecían y quedaron colgando: la columna que los une
+ *  no tiene llave foránea, así que los movimientos sobreviven al borrado. */
+export async function reasignarFuente(ids: string[], destinoId: string, esTarjeta: boolean): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await sb().from("transactions").update({
+    payment_source_type: esTarjeta ? "credit_card" : "account",
+    payment_source_id: destinoId,
+    // account_id solo aplica a las cuentas: en una tarjeta debe quedar vacío,
+    // o el saldo de la cuenta se descuadra.
+    account_id: esTarjeta ? null : destinoId,
+  }).in("id", ids);
+  check(error);
+}
+
 export async function deleteCard(id: string): Promise<void> {
   await sb().from("reminders").delete().eq("source_id", id);
   const { error } = await sb().from("credit_cards").delete().eq("id", id);

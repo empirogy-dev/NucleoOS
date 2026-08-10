@@ -14,6 +14,7 @@ import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, 
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
 import { PagosTarjetaPanel } from "./PagosTarjetaPanel";
+import { HuerfanosPanel } from "./HuerfanosPanel";
 import { lineasDe } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
 import { GuiaImpuestos } from "./GuiaImpuestos";
@@ -460,6 +461,7 @@ export function FinanzasPage() {
               t.type === "expense" && Boolean(t.category_id) && !listo(t));
             return (
             <>
+              <HuerfanosPanel txs={txs} accounts={accounts} cards={cards} currency={currency} onCambio={() => void reload()} />
               <PagosTarjetaPanel txs={txs} cards={cards} currency={currency} onCambio={() => void reload()} />
               <RepetidosPanel txs={txs} catById={catById} currency={currency}
                 conRecibo={reciboIds}
@@ -849,7 +851,20 @@ export function FinanzasPage() {
                           <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{c.bank ?? ""}{c.last_four ? ` •••• ${c.last_four}` : ""}</div>
                         </div>
                         <button className="xdel" aria-label="Editar tarjeta" title="Editar" onClick={() => setEditCard(c)}><Pencil size={14} /></button>
-                        <button className="xdel" aria-label="Eliminar tarjeta" onClick={async () => { if (!window.confirm(`¿Eliminar la tarjeta ${c.name}? También se borra su recordatorio de pago.`)) return; await deleteCard(c.id); void reload(); }}><Trash2 size={14} /></button>
+                        <button className="xdel" aria-label="Eliminar tarjeta" onClick={async () => {
+                          // Los movimientos NO se borran con la tarjeta, pero
+                          // quedan colgando y desaparecen de los filtros. Se
+                          // dice antes, y se dice cuántos son.
+                          const suyos = txs.filter((t) => t.payment_source_id === c.id).length;
+                          const aviso = suyos > 0
+                            ? `
+
+${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr("sin tarjeta. No se borran: los vas a poder devolver desde el aviso que aparece en Transacciones.")}`
+                            : "";
+                          if (!window.confirm(`${tr("¿Eliminar la tarjeta")} ${c.name}? ${tr("También se borra su recordatorio de pago.")}${aviso}`)) return;
+                          await deleteCard(c.id);
+                          void reload();
+                        }}><Trash2 size={14} /></button>
                       </div>
                       <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(usado, c.currency)}</div>
                       {limite > 0 && (
