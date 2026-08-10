@@ -23,6 +23,8 @@ export interface Category {
   exclude_from_budget: boolean | null;
   icon: string | null;
   color: string | null;
+  /** Línea del formulario de impuestos a la que suma esta categoría (0060). */
+  tax_line: string | null;
 }
 
 export const BUDGET_MODE_LABELS: Record<string, string> = {

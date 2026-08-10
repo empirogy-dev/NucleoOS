@@ -73,16 +73,24 @@ export async function deleteAccount(id: string): Promise<void> {
 export async function listCategories(): Promise<Category[]> {
   const { data, error } = await sb()
     .from("categories")
-    .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color")
+    .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color,tax_line")
     .order("created_at");
-  if (error && /exclude_from_budget|rollover_fund/.test(error.message)) {
+  if (error && /exclude_from_budget|rollover_fund|tax_line/.test(error.message)) {
+    // Sin la 0060, se lee sin la línea de impuestos y la app sigue igual.
+    const sinLinea = await sb()
+      .from("categories")
+      .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color")
+      .order("created_at");
+    if (!sinLinea.error) {
+      return (sinLinea.data ?? []).map((c) => ({ ...c, tax_line: null })) as Category[];
+    }
     // La migración 0012 aún no se corre: leemos sin los campos nuevos.
     const legado = await sb()
       .from("categories")
       .select("id,name,type,budget,budget_mode,icon,color")
       .order("created_at");
     check(legado.error);
-    return (legado.data ?? []).map((c) => ({ ...c, exclude_from_budget: false, rollover_fund: false })) as Category[];
+    return (legado.data ?? []).map((c) => ({ ...c, exclude_from_budget: false, rollover_fund: false, tax_line: null })) as Category[];
   }
   check(error);
   return (data ?? []) as Category[];
@@ -112,6 +120,15 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export async function updateCategoryBudget(id: string, budget: number | null): Promise<void> {
   const { error } = await sb().from("categories").update({ budget }).eq("id", id);
+  check(error);
+}
+
+/** A qué línea del formulario de impuestos suma esta categoría. */
+export async function updateCategoryTaxLine(id: string, tax_line: string | null): Promise<void> {
+  const { error } = await sb().from("categories").update({ tax_line }).eq("id", id);
+  if (error && /tax_line/.test(error.message)) {
+    throw new Error("Falta la migración 0060 en Supabase (supabase/migrations/0060_linea_impuestos.sql).");
+  }
   check(error);
 }
 

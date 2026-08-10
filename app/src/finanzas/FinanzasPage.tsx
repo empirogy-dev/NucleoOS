@@ -12,6 +12,8 @@ import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, t
 import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
+import { LINEAS_T2125 } from "./impuestos";
+import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
 import { BancoPanel } from "./BancoPanel";
@@ -29,6 +31,7 @@ import {
   deleteAccount,
   deleteCard,
   deleteCategory,
+  updateCategoryTaxLine,
   deleteDebt,
   deleteGoal,
   deleteReminder,
@@ -828,7 +831,10 @@ export function FinanzasPage() {
           )}
 
           {tab === "reporte" && (
-            <ReporteTab txs={txs} categories={categories} currency={currency} balance={balanceTotal} />
+            <>
+              <ResumenImpuestosPanel txs={txs} categories={categories} accounts={accounts} currency={currency} />
+              <ReporteTab txs={txs} categories={categories} currency={currency} balance={balanceTotal} />
+            </>
           )}
 
           {tab === "cuentas" && (
@@ -917,6 +923,20 @@ export function FinanzasPage() {
                     {/* La etiqueta puesta aquí vale para todo lo que caiga en
                         esta categoría: así se separa lo personal de lo de la
                         empresa sin marcar gasto por gasto. */}
+                    {/* A qué línea del formulario de impuestos suma esta
+                        categoría. Vacío por defecto: la decisión es contable
+                        y la toma ella, la app solo suma. */}
+                    {c.type === "expense" && (
+                      <div style={{ flexBasis: "100%" }}>
+                        <Selector compacto value={c.tax_line ?? ""} ariaLabel={tr("Línea de impuestos")}
+                          placeholder={tr("Sin línea de impuestos")}
+                          opciones={[
+                            { value: "", label: tr("Sin línea de impuestos") },
+                            ...LINEAS_T2125.map((l) => ({ value: l.numero, label: `${l.numero} · ${l.es}` })),
+                          ]}
+                          onChange={async (v) => { await updateCategoryTaxLine(c.id, v || null); void reload(); }} />
+                      </div>
+                    )}
                     {etiquetas.length > 0 && (
                       <div style={{ flexBasis: "100%" }}>
                         <ChipsEtiquetas
