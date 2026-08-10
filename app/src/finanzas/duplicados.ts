@@ -47,6 +47,21 @@ export function mismoComercio(a: Tx, b: Tx): boolean {
   return false;
 }
 
+/** ¿Pudieron salir del mismo bolsillo?
+ *
+ *  Si los dos dicen de qué cuenta o tarjeta salieron y son distintas, no son
+ *  el mismo gasto: una compra se paga una vez, desde un lado. Cuando alguno
+ *  no lo dice, se deja pasar, porque un gasto creado desde una boleta suele
+ *  venir sin cuenta y ese es justo el caso que hay que encontrar.
+ */
+export function mismaFuente(a: Tx, b: Tx): boolean {
+  const de = (t: Tx) => t.payment_source_id ?? t.account_id ?? null;
+  const fa = de(a);
+  const fb = de(b);
+  if (!fa || !fb) return true;
+  return fa === fb;
+}
+
 /** Grupos de dos o más movimientos que parecen ser el mismo. */
 export function buscarRepetidos(txs: Tx[], ventanaDias = 4): GrupoRepetido[] {
   const gastos = txs.filter((t) => t.type !== "transfer");
@@ -75,7 +90,7 @@ export function buscarRepetidos(txs: Tx[], ventanaDias = 4): GrupoRepetido[] {
       const ultimo = actual[actual.length - 1];
       // Mismo monto NO basta: además tiene que caer cerca en el tiempo Y
       // hablar del mismo comercio.
-      if (!ultimo || (dias(ultimo.date, t.date) <= ventanaDias && mismoComercio(ultimo, t))) {
+      if (!ultimo || (dias(ultimo.date, t.date) <= ventanaDias && mismoComercio(ultimo, t) && mismaFuente(ultimo, t))) {
         actual.push(t);
       } else {
         cerrar();

@@ -24,11 +24,14 @@ const DE_DONDE: Record<string, string> = {
   recibo: "de una boleta",
 };
 
-export function RepetidosPanel({ txs, catById, currency, conRecibo, onCambio }: {
+export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, onCambio }: {
   txs: Tx[];
   catById: Map<string, Category>;
   currency: string;
   conRecibo: Set<string>;
+  /** De qué cuenta o tarjeta salió. Con cinco cuentas, "del banco" no dice
+   *  nada, y sin saber cuál es no se puede decidir cuál se queda. */
+  fuenteDe: (t: Tx) => string | null;
   onCambio: () => void;
 }) {
   const { t: tr } = useIdioma();
@@ -125,6 +128,7 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, onCambio }: 
                         <div style={{ color: "var(--muted)", fontSize: 11.5 }}>
                           {t.date}
                           {t.category_id ? `, ${catById.get(t.category_id)?.name ?? ""}` : `, ${tr("sin categoría")}`}
+                          {fuenteDe(t) ? `, ${fuenteDe(t)}` : ""}
                           {t.source && DE_DONDE[t.source] ? `, ${tr(DE_DONDE[t.source])}` : ""}
                           {conRecibo.has(t.id) && <> · <Paperclip size={11} style={{ verticalAlign: "-1px" }} /></>}
                         </div>

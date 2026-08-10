@@ -454,7 +454,15 @@ export function FinanzasPage() {
             return (
             <>
               <RepetidosPanel txs={txs} catById={catById} currency={currency}
-                conRecibo={reciboIds} onCambio={() => void reload()} />
+                conRecibo={reciboIds}
+                fuenteDe={(t) => {
+                  if (t.payment_source_type === "credit_card") {
+                    const c = cards.find((x) => x.id === t.payment_source_id);
+                    return c ? `💳 ${c.name}${c.last_four ? ` ••••${c.last_four}` : ""}` : null;
+                  }
+                  return t.account_id ? accById.get(t.account_id)?.name ?? null : null;
+                }}
+                onCambio={() => void reload()} />
               <div className="seg" style={{ maxWidth: 560 }}>
                 <button className={"segbtn" + (vistaTx === "revisar" ? " active" : "")} onClick={() => setVistaTx("revisar")}>
                   📥 {tr("Por revisar")}{pendientes.length > 0 ? ` (${pendientes.length})` : ""}
