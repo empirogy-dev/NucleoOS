@@ -4,7 +4,7 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
 import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Scissors, Tag, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
@@ -585,15 +585,47 @@ export function FinanzasPage() {
                         Ponles categoría con el lápiz (o divídelas con la tijera) y se archivan solas.
                       </p>
                       {pendientes.map((t) => (
-                        <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
-                          onEdit={() => setEditTx(t)}
-                          onSplit={() => setSplitTx(t)}
-                          hasRecibo={reciboIds.has(t.id)}
-                          onRecibo={() => setReciboTx(t)}
-                          tags={txTags.get(t.id)}
-                          onTags={() => setTagTx(t)}
-                          cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
-                          onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                        <div key={t.id}>
+                          <TxRow t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                            onEdit={() => setEditTx(t)}
+                            onSplit={() => setSplitTx(t)}
+                            hasRecibo={reciboIds.has(t.id)}
+                            onRecibo={() => setReciboTx(t)}
+                            tags={txTags.get(t.id)}
+                            onTags={() => setTagTx(t)}
+                            cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
+                            onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                          {/* La categoría en la misma fila: con casi
+                              trescientos por revisar, abrir una ventana por
+                              cada uno es lo que hace que uno lo abandone. */}
+                          {t.type !== "transfer" && (
+                            <div style={{ maxWidth: 260, margin: "-2px 0 10px 44px" }}>
+                              <Selector compacto value="" ariaLabel={tr("Ponerle categoría")}
+                                placeholder={tr("Ponerle categoría…")}
+                                opciones={categories
+                                  .filter((c) => (t.type === "income" ? c.type === "income" : c.type !== "income"))
+                                  .map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() }))}
+                                onChange={async (v) => {
+                                  if (!v) return;
+                                  await updateTransaction(t, {
+                                    date: t.date,
+                                    amount: Number(t.amount),
+                                    type: t.type,
+                                    description: t.description,
+                                    merchant: t.merchant,
+                                    bank_ref: t.bank_ref ?? null,
+                                    category_id: v,
+                                    account_id: t.account_id,
+                                    destination_kind: t.destination_kind,
+                                    destination_ref: t.destination_ref,
+                                    payment_source_type: t.payment_source_type ?? null,
+                                    payment_source_id: t.payment_source_id ?? null,
+                                  });
+                                  void reload();
+                                }} />
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </>
                   )}
@@ -1017,6 +1049,7 @@ export function FinanzasPage() {
       {(modal === "tx" || editTx) && (
         <TxModal key={editTx?.id ?? "nuevo"} categories={categories} accounts={accounts}
           etiquetas={etiquetas} tagsActuales={editTx ? txTags.get(editTx.id) ?? [] : []}
+          yaTieneBoleta={editTx ? reciboIds.has(editTx.id) : false}
           cards={cards} debts={debts} goals={goals} edit={editTx}
           onEscanear={() => { setModal(null); setEscaneando(true); }}
           onClose={() => { setModal(null); setEditTx(null); }}
@@ -1870,7 +1903,7 @@ function SplitModal({ tx, categories, currency, onClose, onSaved }: {
   );
 }
 
-function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, tagsActuales, onEscanear, onClose, onSaved }: {
+function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, tagsActuales, yaTieneBoleta, onEscanear, onClose, onSaved }: {
   categories: Category[];
   accounts: Account[];
   cards: CreditCard[];
@@ -1880,6 +1913,8 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
   /** Las etiquetas de ella, y las que este movimiento ya tiene puestas. */
   etiquetas: Etiqueta[];
   tagsActuales: Etiqueta[];
+  /** ¿Este movimiento ya tiene boleta? Para no pedirla dos veces. */
+  yaTieneBoleta?: boolean;
   /** Atajo a la foto de la boleta: registrar sin escribir nada. */
   onEscanear?: () => void;
   onClose: () => void;
@@ -1898,6 +1933,12 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
   // parte de anotar el gasto, no un segundo viaje por otro botón.
   const [tagsElegidas, setTagsElegidas] = useState<Set<string>>(
     () => new Set(tagsActuales.map((e) => e.id)));
+  // La boleta, en la misma ventana. Antes eran tres viajes para un solo
+  // gasto: el clip para la foto, el lápiz para la categoría y otra pantalla
+  // para la etiqueta. Con casi trescientos movimientos por revisar, eso no
+  // se sostiene.
+  const [boleta, setBoleta] = useState<File | null>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
   // La firma del banco: bank_ref (0043), o la descripción en filas antiguas.
@@ -1964,6 +2005,10 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
         const antes = new Set(tagsActuales.map((e) => e.id));
         for (const tagId of tagsElegidas) if (!antes.has(tagId)) await etiquetarTx(idTx, tagId);
         for (const tagId of antes) if (!tagsElegidas.has(tagId)) await desetiquetarTx(idTx, tagId);
+        if (boleta) {
+          const liviano = boleta.type.startsWith("image/") ? await comprimirImagen(boleta) : boleta;
+          await uploadRecibo(idTx, liviano);
+        }
       }
       // La regla se ofrece al renombrar O al categorizar: transacciones
       // frecuentes (el traspaso a la tarjeta, el súper) se automatizan solas.
@@ -2072,6 +2117,31 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
               : "Solo se descuenta de la cuenta de origen."}
             {" "}Una transferencia no cuenta como gasto ni ingreso.
           </p>
+        )}
+        {/* La boleta, en la misma ventana. Antes eran tres viajes para un
+            solo gasto: el clip para la foto, el lápiz para la categoría y
+            otra pantalla para la etiqueta. */}
+        {type !== "transfer" && (
+          <div className="field"><label>{tr("Boleta")}</label>
+            <input ref={fotoRef} type="file" accept="image/*,application/pdf" hidden
+              onChange={(e) => { setBoleta(e.target.files?.[0] ?? null); e.target.value = ""; }} />
+            {boleta ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  📎 {boleta.name}
+                </span>
+                <button type="button" className="linklike" style={{ fontSize: 12 }} onClick={() => setBoleta(null)}>
+                  {tr("quitar")}
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="btn ghost" style={{ fontSize: 12.5, padding: "7px 14px" }}
+                onClick={() => fotoRef.current?.click()}>
+                <Paperclip size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+                {yaTieneBoleta ? tr("Agregar otra boleta") : tr("Adjuntar la boleta")}
+              </button>
+            )}
+          </div>
         )}
         <div className="field"><label>Fecha</label>
           <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha" conBorrar={false} /></div>
