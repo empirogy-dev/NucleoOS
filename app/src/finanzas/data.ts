@@ -146,6 +146,15 @@ export async function marcarBoletaNoAplica(id: string, valor: boolean): Promise<
   check(error);
 }
 
+/** Le pone la misma categoría a varios movimientos de una vez. Con 240 por
+ *  revisar, decidir una vez por comercio es lo que hace que la tarea se
+ *  termine en vez de abandonarse. */
+export async function categorizarVarias(ids: string[], categoryId: string): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await sb().from("transactions").update({ category_id: categoryId }).in("id", ids);
+  check(error);
+}
+
 /** A qué línea del formulario de impuestos suma esta categoría. */
 export async function updateCategoryTaxLine(id: string, tax_line: string | null): Promise<void> {
   const { error } = await sb().from("categories").update({ tax_line }).eq("id", id);

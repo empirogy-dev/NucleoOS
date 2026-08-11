@@ -14,6 +14,7 @@ import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, 
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
 import { PagosTarjetaPanel } from "./PagosTarjetaPanel";
+import { PorRevisarAgrupado } from "./PorRevisarAgrupado";
 import { HuerfanosPanel } from "./HuerfanosPanel";
 import { lineasDe } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
@@ -124,6 +125,8 @@ export function FinanzasPage() {
   const [catTags, setCatTags] = useState<Map<string, Etiqueta[]>>(new Map());
   const [cartolas, setCartolas] = useState<Cartola[]>([]);
   const [escaneando, setEscaneando] = useState(false);
+  // Con muchos pendientes conviene empezar agrupado.
+  const [agrupado, setAgrupado] = useState(true);
   const [vistaTx, setVistaTx] = useState<"revisar" | "sinboleta" | "archivo" | "comprobantes" | "cartolas">("revisar");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
@@ -639,19 +642,35 @@ export function FinanzasPage() {
                     </p>
                   ) : (
                     <>
-                      <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
-                        Abre el lápiz y ahí está todo: categoría, etiquetas, con qué se pagó y la boleta. Guardas una vez y sale de la bandeja.
-                      </p>
-                      {pendientes.map((t) => (
-                        <div key={t.id}>
-                          <TxRow t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
-                            onEdit={() => setEditTx(t)}
-                            hasRecibo={reciboIds.has(t.id)}
-                            tags={txTags.get(t.id)}
-                            cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
-                            onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
-                        </div>
-                      ))}
+                      {/* Agrupado por comercio es lo que hace posible una
+                          bandeja de doscientos: se decide una vez por
+                          comercio, no una vez por movimiento. */}
+                      <div className="seg" style={{ maxWidth: 340, marginBottom: 10 }}>
+                        <button className={"segbtn" + (agrupado ? " active" : "")} onClick={() => setAgrupado(true)}>
+                          {tr("Por comercio")}
+                        </button>
+                        <button className={"segbtn" + (!agrupado ? " active" : "")} onClick={() => setAgrupado(false)}>
+                          {tr("Uno por uno")}
+                        </button>
+                      </div>
+                      {agrupado ? (
+                        <PorRevisarAgrupado txs={pendientes} categories={categories} currency={currency}
+                          onCambio={() => void reload()} />
+                      ) : (
+                        <>
+                          <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
+                            {tr("Abre el lápiz y ahí está todo: categoría, etiquetas, con qué se pagó y la boleta. Guardas una vez y sale de la bandeja.")}
+                          </p>
+                          {pendientes.map((t) => (
+                            <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                              onEdit={() => setEditTx(t)}
+                              hasRecibo={reciboIds.has(t.id)}
+                              tags={txTags.get(t.id)}
+                              cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
+                              onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                          ))}
+                        </>
+                      )}
                     </>
                   )}
                 </div>
