@@ -617,24 +617,38 @@ export function FinanzasPage() {
                   })}
                 </div>
               )}
-              {buscando && vistaTx !== "comprobantes" && vistaTx !== "cartolas" ? (
-                <div className="card pad">
-                  <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
-                    {filteredTxs.length === 0
-                      ? tr("No hay ningún movimiento que calce con esa búsqueda.")
-                      : <>{filteredTxs.length} {filteredTxs.length === 1 ? tr("resultado") : tr("resultados")}, {tr("de todas las bandejas.")}</>}
+              {/* Buscar NO se salta la bandeja. Antes mostraba todo junto y
+                  eso confundía: uno está en Por revisar y le aparecían
+                  movimientos ya archivados. Cada bandeja filtra lo suyo, y si
+                  hay resultados en otras, se dice y se puede saltar allá. */}
+              {buscando && vistaTx !== "comprobantes" && vistaTx !== "cartolas" && (() => {
+                const aqui = vistaTx === "revisar" ? pendientes.length
+                  : vistaTx === "sinboleta" ? sinBoleta.length
+                  : archivadas.length;
+                const otras = [
+                  { k: "revisar" as const, n: pendientes.length, t: tr("Por revisar") },
+                  { k: "sinboleta" as const, n: sinBoleta.length, t: tr("Sin boleta") },
+                  { k: "archivo" as const, n: archivadas.length, t: tr("Archivo") },
+                ].filter((x) => x.k !== vistaTx && x.n > 0);
+                return (
+                  <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>
+                    {aqui} {aqui === 1 ? tr("resultado aquí") : tr("resultados aquí")}
+                    {otras.length > 0 && (
+                      <>
+                        {". "}{tr("También hay en")}{" "}
+                        {otras.map((x, i) => (
+                          <span key={x.k}>
+                            {i > 0 ? ", " : ""}
+                            <button type="button" className="linklike" style={{ fontSize: 12.5 }}
+                              onClick={() => setVistaTx(x.k)}>{x.t} ({x.n})</button>
+                          </span>
+                        ))}
+                      </>
+                    )}
                   </p>
-                  {filteredTxs.map((t) => (
-                    <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
-                      onEdit={() => setEditTx(t)}
-                      hasRecibo={reciboIds.has(t.id)}
-                      tags={txTags.get(t.id)}
-                      cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
-                      onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
-                  ))}
-                </div>
-              ) : null}
-              {(!buscando) && vistaTx === "revisar" && (
+                );
+              })()}
+              {vistaTx === "revisar" && (
                 <div className="card pad">
                   {pendientes.length === 0 ? (
                     <p style={{ color: "var(--muted)", fontSize: 14 }}>
@@ -645,7 +659,7 @@ export function FinanzasPage() {
                       {/* Agrupado por comercio es lo que hace posible una
                           bandeja de doscientos: se decide una vez por
                           comercio, no una vez por movimiento. */}
-                      <div className="seg" style={{ maxWidth: 340, marginBottom: 10 }}>
+                      <div className="seg" style={{ maxWidth: 340, marginBottom: 10, display: buscando ? "none" : undefined }}>
                         <button className={"segbtn" + (agrupado ? " active" : "")} onClick={() => setAgrupado(true)}>
                           {tr("Por comercio")}
                         </button>
@@ -653,7 +667,7 @@ export function FinanzasPage() {
                           {tr("Uno por uno")}
                         </button>
                       </div>
-                      {agrupado ? (
+                      {agrupado && !buscando ? (
                         <PorRevisarAgrupado txs={pendientes} categories={categories} currency={currency}
                           onCambio={() => void reload()} />
                       ) : (
@@ -675,7 +689,7 @@ export function FinanzasPage() {
                   )}
                 </div>
               )}
-              {!buscando && vistaTx === "sinboleta" && (
+              {vistaTx === "sinboleta" && (
                 <div className="card pad">
                   {sinBoleta.length === 0 ? (
                     <p style={{ color: "var(--muted)", fontSize: 14 }}>
@@ -700,7 +714,7 @@ export function FinanzasPage() {
                   )}
                 </div>
               )}
-              {!buscando && vistaTx === "archivo" && (
+              {vistaTx === "archivo" && (
               <div className="card pad">
                 {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
                 {txs.length > 0 && archivadas.length === 0 && <p style={{ color: "var(--muted)" }}>Aún no hay movimientos archivados: categoriza los de la bandeja y llegan solos aquí.</p>}
