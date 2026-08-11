@@ -214,18 +214,31 @@ export function FinanzasPage() {
         if (!enOrigen && !enDestino) return false;
       }
       if (q) {
+        // Se busca por lo que la persona escribiría: el nombre, el monto o la
+        // fecha. El monto no estaba, así que buscar "156.79" no encontraba
+        // nada aunque el movimiento estuviera ahí en pantalla. Y se acepta
+        // tanto el punto como la coma, porque uno escribe como le sale.
+        const monto = Number(t.amount);
         const texto = [
           t.description,
           t.merchant,
           t.bank_ref,
           t.category_id ? catById.get(t.category_id)?.name : "",
           t.account_id ? accById.get(t.account_id)?.name : "",
+          t.payment_source_id ? cards.find((c) => c.id === t.payment_source_id)?.name : "",
+          t.date,
+          monto.toFixed(2),
+          monto.toFixed(2).replace(".", ","),
+          String(monto),
         ].filter(Boolean).join(" ").toLowerCase();
-        if (!texto.includes(q)) return false;
+        // Y se busca por palabras sueltas: "amazon 156.79" encuentra igual,
+        // no importa el orden en que se escriban.
+        const partes = q.split(/\s+/).filter(Boolean);
+        if (!partes.every((parte) => texto.includes(parte))) return false;
       }
       return true;
     });
-  }, [txs, fq, fType, fCat, fAcc, fTag, txTags, catById, accById]);
+  }, [txs, fq, fType, fCat, fAcc, fTag, txTags, catById, accById, cards]);
 
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
@@ -446,6 +459,9 @@ export function FinanzasPage() {
           {tab === "transacciones" && (() => {
             // Consolidación de gastos: lo sin categoría espera en la bandeja,
             // y al categorizarlo pasa solo al archivo mensual.
+            // Con una búsqueda escrita, las bandejas estorban: lo que se
+            // quiere es el movimiento, esté donde esté.
+            const buscando = fq.trim().length > 0;
             const pendientes = filteredTxs.filter((t) => t.type !== "transfer" && !t.category_id);
             // Un gasto está listo cuando tiene categoría Y su comprobante.
             // Categorizado no basta: para los impuestos, un gasto sin boleta
@@ -598,7 +614,24 @@ export function FinanzasPage() {
                   })}
                 </div>
               )}
-              {vistaTx === "revisar" && (
+              {buscando && vistaTx !== "comprobantes" && vistaTx !== "cartolas" ? (
+                <div className="card pad">
+                  <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
+                    {filteredTxs.length === 0
+                      ? tr("No hay ningún movimiento que calce con esa búsqueda.")
+                      : <>{filteredTxs.length} {filteredTxs.length === 1 ? tr("resultado") : tr("resultados")}, {tr("de todas las bandejas.")}</>}
+                  </p>
+                  {filteredTxs.map((t) => (
+                    <TxRow key={t.id} t={t} catById={catById} accById={accById} currency={currency} resolveDest={resolveDest}
+                      onEdit={() => setEditTx(t)}
+                      hasRecibo={reciboIds.has(t.id)}
+                      tags={txTags.get(t.id)}
+                      cardName={t.payment_source_type === "credit_card" ? cards.find((c) => c.id === t.payment_source_id)?.name ?? null : null}
+                      onDelete={async () => { if (!window.confirm("¿Eliminar este movimiento? El saldo de la cuenta se ajustará.")) return; await deleteTransaction(t); void reload(); }} />
+                  ))}
+                </div>
+              ) : null}
+              {(!buscando) && vistaTx === "revisar" && (
                 <div className="card pad">
                   {pendientes.length === 0 ? (
                     <p style={{ color: "var(--muted)", fontSize: 14 }}>
@@ -623,7 +656,7 @@ export function FinanzasPage() {
                   )}
                 </div>
               )}
-              {vistaTx === "sinboleta" && (
+              {!buscando && vistaTx === "sinboleta" && (
                 <div className="card pad">
                   {sinBoleta.length === 0 ? (
                     <p style={{ color: "var(--muted)", fontSize: 14 }}>
@@ -648,7 +681,7 @@ export function FinanzasPage() {
                   )}
                 </div>
               )}
-              {vistaTx === "archivo" && (
+              {!buscando && vistaTx === "archivo" && (
               <div className="card pad">
                 {txs.length === 0 && <p style={{ color: "var(--muted)" }}>Sin transacciones. Presiona "Registrar" para la primera.</p>}
                 {txs.length > 0 && archivadas.length === 0 && <p style={{ color: "var(--muted)" }}>Aún no hay movimientos archivados: categoriza los de la bandeja y llegan solos aquí.</p>}
@@ -2156,13 +2189,20 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
               <Selector value={categoryId} ariaLabel="Categoría" placeholder={tr("Sin categoría")} onChange={setCategoryId}
                 opciones={[{ value: "", label: "Sin categoría" }, ...cats.map((c) => ({ value: c.id, label: `${c.icon} ${c.name}` }))]} /></div>
           )}
-          <div className="field"><label>{type === "transfer" ? tr("Desde la cuenta") : tr("Pagado con")}</label>
-            <Selector value={fuente} ariaLabel={tr("Pagado con")} placeholder={tr("Sin cuenta")}
+          <div className="field">
+            {/* En un ingreso no se "paga con": se RECIBE en. Y un reembolso
+                vuelve a la tarjeta con la que se compró, así que las tarjetas
+                también tienen que estar en la lista. Sin eso, la plata que
+                devuelve Amazon quedaba en el aire, sin cuenta ni tarjeta. */}
+            <label>{type === "transfer" ? tr("Desde la cuenta") : type === "income" ? tr("Recibido en") : tr("Pagado con")}</label>
+            <Selector value={fuente}
+              ariaLabel={type === "income" ? tr("Recibido en") : tr("Pagado con")}
+              placeholder={tr("Sin cuenta")}
               onChange={setFuente}
               opciones={[
                 { value: "", label: tr("Sin cuenta") },
                 ...accounts.map((a) => ({ value: `acc:${a.id}`, label: a.name })),
-                ...(type === "expense"
+                ...(type !== "transfer"
                   ? cards.map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` •••• ${c.last_four}` : ""}` }))
                   : []),
               ]} /></div>
