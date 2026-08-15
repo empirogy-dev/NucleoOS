@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { fmtMoney, type Account, type Category, type CreditCard, type Debt, type Goal, type Tx } from "./types";
-import { categorizarVarias, marcarTransferencias, patronDesde, sugerenciaComercio } from "./data";
+import { categorizarVarias, marcarTransferencias, marcarTransferenciasEntrantes, patronDesde, sugerenciaComercio } from "./data";
 
 // Categorizar de a montones, no de a uno.
 //
@@ -94,7 +94,8 @@ export function AccionesMasivas(props: {
   const [err, setErr] = useState<string | null>(null);
   if (lista.length === 0) return null;
 
-  const cats = categories.filter((c) => (lista[0].type === "income" ? c.type === "income" : c.type !== "income"));
+  const entra = lista[0].type === "income";
+  const cats = categories.filter((c) => (entra ? c.type === "income" : c.type !== "income"));
   const sugerida = tarjetaEnElTexto(lista[0].bank_ref ?? lista[0].description ?? "", cards);
 
   async function aplicar(v: string) {
@@ -104,8 +105,13 @@ export function AccionesMasivas(props: {
     setErr(null);
     try {
       if (transf) {
-        const [kind, ref] = v === "fuera" ? [null, null] : v.split(":");
-        await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+        if (entra) {
+          // Llegó: el destino es donde cayó, y ella elige de dónde vino.
+          await marcarTransferenciasEntrantes(lista, v === "fuera" ? null : v.split(":")[1]);
+        } else {
+          const [kind, ref] = v === "fuera" ? [null, null] : v.split(":");
+          await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+        }
       } else {
         await categorizarVarias(lista.map((t) => t.id), v);
       }
@@ -124,8 +130,8 @@ export function AccionesMasivas(props: {
         {tr("Aplicar a los")} <b style={{ color: "var(--ink)" }}>{lista.length}</b> {tr("resultados:")}
       </span>
       <div style={{ width: 230 }}>
-        <Selector compacto value="" ariaLabel={transf ? tr("¿Hacia dónde?") : tr("Ponerle categoría")}
-          placeholder={busy ? tr("com.guardando") : transf ? tr("¿Hacia dónde?") : tr("Ponerle categoría…")}
+        <Selector compacto value="" ariaLabel={transf ? (entra ? tr("¿De dónde viene?") : tr("¿Hacia dónde?")) : tr("Ponerle categoría")}
+          placeholder={busy ? tr("com.guardando") : transf ? (entra ? tr("¿De dónde viene?") : tr("¿Hacia dónde?")) : tr("Ponerle categoría…")}
           opciones={transf ? [
             ...(sugerida ? [{ value: `card:${sugerida.id}`, label: `💳 ${sugerida.name} ••••${sugerida.last_four} · ${tr("la del texto")}` }] : []),
             { value: "fuera", label: tr("Fuera de la app (otro banco)") },
@@ -173,9 +179,14 @@ export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, go
     setBusy(clave);
     setErr(null);
     try {
-      // "fuera" es plata que se va a otro banco: no tiene destino adentro.
-      const [kind, ref] = destino === "fuera" ? [null, null] : destino.split(":");
-      await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+      if (lista[0].type === "income") {
+        // Llegó: el destino es la cuenta donde cayó, y ella elige el origen.
+        await marcarTransferenciasEntrantes(lista, destino === "fuera" ? null : destino.split(":")[1]);
+      } else {
+        // "fuera" es plata que se va a otro banco: no tiene destino adentro.
+        const [kind, ref] = destino === "fuera" ? [null, null] : destino.split(":");
+        await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+      }
       setComoTransfer((p) => p.filter((x) => x !== clave));
       onCambio();
     } catch (e) {
@@ -208,12 +219,16 @@ export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, go
   function Acciones({ clave, lista, cats }: { clave: string; lista: Tx[]; cats: Category[] }) {
     // Si el banco nombra la tarjeta en el texto, se propone esa.
     const sugerida = tarjetaEnElTexto(lista[0].bank_ref ?? lista[0].description ?? "", cards);
+    // Si la plata LLEGA, la pregunta es de dónde viene: hacia dónde ya se
+    // sabe, es la cuenta donde cayó.
+    const entra = lista[0].type === "income";
+    const pregunta = entra ? tr("¿De dónde viene?") : tr("¿Hacia dónde?");
     return (
       <div style={{ width: 215 }}>
         {comoTransfer.includes(clave) ? (
           <>
-            <Selector compacto value="" ariaLabel={tr("¿Hacia dónde?")}
-              placeholder={busy === clave ? tr("com.guardando") : tr("¿Hacia dónde?")}
+            <Selector compacto value="" ariaLabel={pregunta}
+              placeholder={busy === clave ? tr("com.guardando") : pregunta}
               opciones={[
                 ...(sugerida
                   ? [{ value: `card:${sugerida.id}`, label: `💳 ${sugerida.name} ••••${sugerida.last_four} · ${tr("la del texto")}` }]

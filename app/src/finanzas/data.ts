@@ -174,6 +174,36 @@ export async function marcarTransferencias(
   check(error);
 }
 
+/** Transferencias que LLEGAN. La pregunta es al revés: el destino no se
+ *  elige, es la cuenta donde cayó la plata; lo que se elige es de dónde vino.
+ *  Preguntar "hacia dónde" por algo que ya llegó no tiene sentido. */
+export async function marcarTransferenciasEntrantes(
+  txs: Array<Pick<Tx, "id" | "account_id" | "payment_source_type" | "payment_source_id">>,
+  origenId: string | null,
+): Promise<void> {
+  // Cada movimiento cayó en su propia cuenta, así que el destino se resuelve
+  // uno por uno y se agrupa para no hacer una llamada por fila.
+  const porDestino = new Map<string, string[]>();
+  for (const t of txs) {
+    const esTarjeta = t.payment_source_type === "credit_card";
+    const destino = (esTarjeta ? t.payment_source_id : t.account_id) ?? "";
+    const clave = `${esTarjeta ? "card" : "account"}:${destino}`;
+    porDestino.set(clave, [...(porDestino.get(clave) ?? []), t.id]);
+  }
+  for (const [clave, ids] of porDestino) {
+    const [kind, ref] = clave.split(":");
+    const { error } = await sb().from("transactions").update({
+      type: "transfer",
+      category_id: null,
+      // El origen: la cuenta de donde salió, o vacío si vino de otro banco.
+      account_id: origenId,
+      destination_kind: ref ? kind : null,
+      destination_ref: ref || null,
+    }).in("id", ids);
+    check(error);
+  }
+}
+
 /** A qué línea del formulario de impuestos suma esta categoría. */
 export async function updateCategoryTaxLine(id: string, tax_line: string | null): Promise<void> {
   const { error } = await sb().from("categories").update({ tax_line }).eq("id", id);
