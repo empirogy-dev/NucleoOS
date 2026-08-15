@@ -47,7 +47,10 @@ export interface Debt {
   id: string;
   name: string;
   institution: string | null;
+  /** El saldo de hoy. Ya viene calculado: es el original menos los abonos. */
   balance: number;
+  /** El monto original, que no cambia. De aquí sale el saldo (0064). */
+  initial_balance?: number | null;
   interest_rate: number | null;
   min_payment: number | null;
   due_date: string | null;

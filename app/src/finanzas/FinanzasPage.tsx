@@ -42,6 +42,7 @@ import {
   marcarReembolsado,
   ultimaTransaccion,
   updateCategoryTaxLine,
+  saldoDeuda,
   deleteDebt,
   deleteGoal,
   deleteReminder,
@@ -105,7 +106,7 @@ export function FinanzasPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [debts, setDebts] = useState<Debt[]>([]);
+  const [debtsCrudas, setDebts] = useState<Debt[]>([]);
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
@@ -185,6 +186,13 @@ export function FinanzasPage() {
 
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+
+  // El saldo de cada deuda sale de sus pagos, no de un número guardado. Se
+  // calcula una vez aquí y baja ya corregido a todas las pantallas.
+  const debts = useMemo(
+    () => debtsCrudas.map((d) => ({ ...d, balance: saldoDeuda(d, txs) })),
+    [debtsCrudas, txs],
+  );
 
   const resolveDest = useCallback((t: Tx): string | null => {
     const kind = t.destination_kind ?? (t.destination_account_id ? "account" : null);

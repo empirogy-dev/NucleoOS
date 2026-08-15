@@ -158,6 +158,23 @@ export async function marcarReembolsado(ids: string[], valor: boolean): Promise<
   check(error);
 }
 
+/** El saldo de hoy de una deuda: lo original menos todo lo que se le abonó.
+ *
+ *  Se calcula, no se guarda. Guardarlo obligaba a que cada pago se acordara
+ *  de restarlo, y bastaba que una sola operación se saltara ese paso para que
+ *  el número quedara mal para siempre. Así, si un pago se borra la deuda sube
+ *  sola, y si se agrega baja sola: no hay nada que mantener sincronizado.
+ */
+export function saldoDeuda(d: Debt, txs: Tx[]): number {
+  // Sin la 0064 no hay monto original: se respeta lo que esté guardado.
+  if (d.initial_balance === null || d.initial_balance === undefined) return Number(d.balance);
+  const abonado = txs
+    .filter((t) => t.type === "transfer" && t.destination_kind === "debt" && t.destination_ref === d.id)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  // Nunca menos de cero: pagar de más no te deja con deuda negativa.
+  return Math.max(0, Number(d.initial_balance) - abonado);
+}
+
 /** Le pone la misma categoría a varios movimientos de una vez. Con 240 por
  *  revisar, decidir una vez por comercio es lo que hace que la tarea se
  *  termine en vez de abandonarse. */
@@ -296,8 +313,17 @@ export async function deleteGoal(id: string): Promise<void> {
 export async function listDebts(): Promise<Debt[]> {
   const { data, error } = await sb()
     .from("debts")
-    .select("id,name,institution,balance,interest_rate,min_payment,due_date,currency,notes")
+    .select("id,name,institution,balance,initial_balance,interest_rate,min_payment,due_date,currency,notes")
     .order("created_at");
+  if (error && /initial_balance/.test(error.message)) {
+    // Sin la 0064 se lee como antes y el saldo queda como esté guardado.
+    const previo = await sb()
+      .from("debts")
+      .select("id,name,institution,balance,interest_rate,min_payment,due_date,currency,notes")
+      .order("created_at");
+    check(previo.error);
+    return (previo.data ?? []) as Debt[];
+  }
   check(error);
   return (data ?? []) as Debt[];
 }

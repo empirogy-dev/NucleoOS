@@ -127,7 +127,11 @@ async function sincronizar(db: SupabaseClient, conexion: {
       const externo = String(c.account_id);
       const nombre = String(c.name ?? c.official_name ?? "Cuenta");
       const tipo = String(c.type ?? "");
-      const saldo = Number((c.balances as Record<string, unknown>)?.current ?? 0);
+      // Si el banco no manda saldo, NO se escribe cero. Escribir cero borra
+      // el saldo bueno y deja una tarjeta con deuda real diciendo que no
+      // debes nada: peor que no actualizar. Pasó con la American Express.
+      const saldoCrudo = (c.balances as Record<string, unknown>)?.current;
+      const saldo = saldoCrudo === null || saldoCrudo === undefined ? null : Number(saldoCrudo);
       const moneda = String((c.balances as Record<string, unknown>)?.iso_currency_code ?? "CAD");
       const ultimos4 = String(c.mask ?? "");
 
@@ -135,12 +139,14 @@ async function sincronizar(db: SupabaseClient, conexion: {
         const { data: ya } = await db.from("credit_cards").select("id")
           .eq("user_id", conexion.user_id).eq("external_id", externo).maybeSingle();
         if (ya) {
-          await db.from("credit_cards").update({ balance: Math.abs(saldo) }).eq("id", ya.id);
+          if (saldo !== null) {
+            await db.from("credit_cards").update({ balance: Math.abs(saldo) }).eq("id", ya.id);
+          }
           mapaCuentas.set(externo, { id: ya.id, tabla: "credit_cards" });
         } else {
           const { data: nueva } = await db.from("credit_cards").insert({
             user_id: conexion.user_id, name: nombre, last_four: ultimos4 || null,
-            balance: Math.abs(saldo), currency: moneda, external_id: externo,
+            balance: Math.abs(saldo ?? 0), currency: moneda, external_id: externo,
           }).select("id").single();
           if (nueva) mapaCuentas.set(externo, { id: nueva.id, tabla: "credit_cards" });
         }
@@ -148,12 +154,14 @@ async function sincronizar(db: SupabaseClient, conexion: {
         const { data: ya } = await db.from("accounts").select("id")
           .eq("user_id", conexion.user_id).eq("external_id", externo).maybeSingle();
         if (ya) {
-          await db.from("accounts").update({ balance: saldo }).eq("id", ya.id);
+          if (saldo !== null) {
+            await db.from("accounts").update({ balance: saldo }).eq("id", ya.id);
+          }
           mapaCuentas.set(externo, { id: ya.id, tabla: "accounts" });
         } else {
           const { data: nueva } = await db.from("accounts").insert({
             user_id: conexion.user_id, name: nombre, account_type: tipo === "depository" ? "Checking" : "Savings",
-            balance: saldo, currency: moneda, is_connected: true, external_id: externo,
+            balance: saldo ?? 0, currency: moneda, is_connected: true, external_id: externo,
           }).select("id").single();
           if (nueva) mapaCuentas.set(externo, { id: nueva.id, tabla: "accounts" });
         }
