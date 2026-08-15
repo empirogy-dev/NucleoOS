@@ -56,6 +56,11 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
     [txs, descartados, amplio],
   );
 
+  function restaurarDescartados() {
+    setDescartados([]);
+    localStorage.removeItem(CLAVE);
+  }
+
   function noSonRepetidos(ids: string[]) {
     const next = [...descartados, firma2(ids)];
     setDescartados(next);
@@ -106,39 +111,50 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
         onClick={() => setAbierto(!abierto)}>
         {abierto ? "▾" : "▸"} <Copy size={13} style={{ verticalAlign: "-2px" }} />{" "}
         {hay
-          ? <>{grupos.length} {grupos.length === 1 ? tr("posible repetido") : tr("posibles repetidos")}{", "}{fmtMoney(plataDeMas, currency)} {tr("contados de más")}</>
-          : tr("Buscar gastos repetidos")}
+          ? <>{grupos.length} {grupos.length === 1 ? tr("posible duplicado") : tr("posibles duplicados")}{", "}{fmtMoney(plataDeMas, currency)} {tr("contados dos veces")}</>
+          : tr("Revisar duplicados")}
       </button>
 
       {!abierto && (
         <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
           {hay
-            ? tr("Ábrelo para revisarlos uno por uno. Nada se toca hasta que tú elijas cuál se queda.")
-            : tr("No encontré ninguno con las reglas de siempre. Ábrelo para buscar más amplio.")}
+            ? tr("Ábrelo para revisarlos uno por uno. No se modifica nada hasta que tú lo decidas.")
+            : tr("Sin duplicados con los criterios habituales. Ábrelo para ampliar la búsqueda.")}
         </p>
       )}
 
       {abierto && (
         <>
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 12px", lineHeight: 1.5 }}>
-            {tr("Mismo monto, mismo comercio y fechas cercanas. Elige cuál se queda: el que elijas hereda las boletas de los otros, y los otros se borran.")}
+            {tr("Mismo monto, mismo comercio y fechas cercanas. El que conserves hereda los comprobantes de los demás.")}
           </p>
           <label style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12, color: "var(--ink-soft)", marginBottom: 10, cursor: "pointer", lineHeight: 1.45 }}>
             <input type="checkbox" checked={amplio} onChange={(e) => setAmplio(e.target.checked)}
               style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
             <span>
-              {tr("Buscar también con nombres distintos.")}{" "}
+              {tr("Ampliar la búsqueda a nombres distintos.")}{" "}
               <span style={{ color: "var(--muted)" }}>
                 {tr("Encuentra el mismo gasto cuando llega con dos nombres que no se parecen, como Starlink cobrado por Klarna. Trae más candidatos falsos: revísalos uno por uno.")}
               </span>
             </span>
           </label>
+          {/* Nada queda escondido para siempre: lo descartado se recupera. */}
+          {descartados.length > 0 && (
+            <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+              {descartados.length} {descartados.length === 1
+                ? tr("grupo marcado como no duplicado.")
+                : tr("grupos marcados como no duplicados.")}{" "}
+              <button type="button" className="linklike" style={{ fontSize: 12 }} onClick={restaurarDescartados}>
+                {tr("Volver a mostrarlos")}
+              </button>
+            </p>
+          )}
           {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
           {!hay && (
             <p style={{ fontSize: 13, color: "var(--ok)" }}>
               ✓ {amplio
-                ? tr("Tampoco con la búsqueda amplia: no hay gastos repetidos.")
-                : tr("Ninguno repetido. Si sospechas de uno que llegó con otro nombre, marca la casilla de arriba.")}
+                ? tr("Tampoco con la búsqueda ampliada: no hay duplicados.")
+                : tr("Sin duplicados. Si sospechas de alguno que llegó con otro nombre, amplía la búsqueda arriba.")}
             </p>
           )}
 
@@ -157,16 +173,14 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
                       gasto. Si ella dice que no, no se vuelve a preguntar. */}
                   <button type="button" className="linklike" style={{ fontSize: 12 }}
                     onClick={() => noSonRepetidos(g.txs.map((t) => t.id))}>
-                    {tr("No son repetidos, déjalos")}
+                    {tr("No son duplicados")}
                   </button>
                 </div>
                 {esPagoTarjeta && (
                   <div style={{ fontSize: 11.5, color: "var(--ink-soft)", margin: "4px 0 0", lineHeight: 1.45 }}>
-                    ⇄ {tr("Los dos lados de un mismo traspaso. Con “Este manda”, los otros se quedan a la vista como el reflejo, igual que en la cartola de cada cuenta, pero cuentan una sola vez.")}
+                    ⇄ {tr("Las dos caras de una misma transferencia. Al marcar una como principal, las demás quedan visibles como su contrapartida, igual que en la cartola de cada cuenta, pero se contabilizan una sola vez.")}
                   </div>
                 )}
-                <div style={{ display: "none" }}>
-                </div>
                 <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
                   {g.txs.map((t) => (
                     <div key={t.id} style={{
@@ -188,7 +202,7 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
                         <button className="btn ghost" {...sinRobarFoco} style={{ fontSize: 12, padding: "5px 12px" }}
                           disabled={Boolean(trabajando)}
                           onClick={() => void enlazar(t.id, g.txs.map((x) => x.id))}>
-                          {trabajando === t.id ? tr("com.guardando") : tr("Este manda")}
+                          {trabajando === t.id ? tr("com.guardando") : tr("Usar este como principal")}
                         </button>
                       )}
                       <button className="btn ghost" {...sinRobarFoco} style={{ fontSize: 12, padding: "5px 12px" }}
@@ -203,13 +217,13 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
                             ? `\n\n⚠️ ${tr("Uno de los que se borra vino del banco, y esos no vuelven a bajar solos. Conviene quedarse con el del banco.")}`
                             : "";
                           if (!window.confirm(
-                            `${tr("Se queda este y se borran los otros")} ${seVan.length}. ${tr("Sus boletas pasan al que se queda. ¿Seguimos?")}${aviso}`,
+                            `${tr("Se conserva este y se eliminan los otros")} ${seVan.length}. ${tr("Sus comprobantes pasan al que se conserva. ¿Continuamos?")}${aviso}`,
                           )) return;
                           void juntar(t.id, seVan.map((x) => x.id));
                         }}>
                         {trabajando === t.id ? tr("com.guardando")
-                          : esPagoTarjeta ? tr("Borrar los otros")
-                          : t.id === sugerido.id ? tr("Dejar este (sugerido)") : tr("Dejar este")}
+                          : esPagoTarjeta ? tr("Eliminar los duplicados")
+                          : t.id === sugerido.id ? tr("Conservar este (recomendado)") : tr("Conservar este")}
                       </button>
                     </div>
                   ))}
