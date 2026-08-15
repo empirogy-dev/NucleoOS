@@ -13,6 +13,7 @@ import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
+import { GastoPorEtiqueta } from "./GastoPorEtiqueta";
 import { PagosTarjetaPanel } from "./PagosTarjetaPanel";
 import { AccionesMasivas, PorRevisarAgrupado } from "./PorRevisarAgrupado";
 import { HuerfanosPanel } from "./HuerfanosPanel";
@@ -457,6 +458,8 @@ export function FinanzasPage() {
                   </div>
                 ))}
               </div>
+              <GastoPorEtiqueta txs={txs} accounts={accounts} cards={cards}
+                currency={currency} etiquetas={etiquetas} txTags={txTags} catTags={catTags} />
             </>
           )}
 
