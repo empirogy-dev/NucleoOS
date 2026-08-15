@@ -62,13 +62,56 @@ export function mismaFuente(a: Tx, b: Tx): boolean {
   return fa === fb;
 }
 
+/** El mismo pago de tarjeta anotado varias veces.
+ *
+ *  Este caso necesita su propia regla, y por eso el buscador normal no lo
+ *  encontraba nunca. Un pago de tarjeta llega por hasta TRES caminos: el
+ *  banco lo publica en la cuenta que paga, lo publica otra vez en la tarjeta
+ *  que recibe, y encima aparece en la cartola si se importó. Las reglas de
+ *  siempre los descartaban porque vienen de bolsillos distintos y con nombres
+ *  distintos ("Payment" y "Capital One").
+ *
+ *  Lo que sí comparten, y es lo que los delata: son transferencias del MISMO
+ *  monto, hacia la MISMA tarjeta, en días cercanos. Dos pagos de 863,78 a la
+ *  misma tarjeta con un día de diferencia no son dos pagos.
+ */
+function repetidosDePagoTarjeta(txs: Tx[], ventanaDias: number): GrupoRepetido[] {
+  const pagos = txs.filter((t) =>
+    t.type === "transfer" && t.destination_kind === "card" && t.destination_ref);
+  const porDestinoYMonto = new Map<string, Tx[]>();
+  for (const t of pagos) {
+    const clave = `${t.destination_ref}:${Number(t.amount).toFixed(2)}`;
+    porDestinoYMonto.set(clave, [...(porDestinoYMonto.get(clave) ?? []), t]);
+  }
+
+  const grupos: GrupoRepetido[] = [];
+  for (const [clave, lista] of porDestinoYMonto) {
+    if (lista.length < 2) continue;
+    const orden = [...lista].sort((a, b) => a.date.localeCompare(b.date));
+    let actual: Tx[] = [];
+    const cerrar = () => {
+      if (actual.length >= 2) {
+        grupos.push({ clave: `pago:${clave}:${actual[0].id}`, txs: actual, monto: Number(actual[0].amount) });
+      }
+      actual = [];
+    };
+    for (const t of orden) {
+      const ultimo = actual[actual.length - 1];
+      if (!ultimo || dias(ultimo.date, t.date) <= ventanaDias) actual.push(t);
+      else { cerrar(); actual = [t]; }
+    }
+    cerrar();
+  }
+  return grupos;
+}
+
 /** Grupos de dos o más movimientos que parecen ser el mismo. */
 export function buscarRepetidos(txs: Tx[], ventanaDias = 4, exigirComercio = true): GrupoRepetido[] {
-  // Las transferencias también entran. El pago de la tarjeta llega DOS veces,
-  // una desde la cuenta que paga y otra en la tarjeta que recibe, y las dos
-  // son transferencias: dejarlas fuera era esconder justo el repetido que más
-  // desordena los saldos.
-  const gastos = txs;
+  // Los pagos de tarjeta van por su propia regla, siempre, aunque la búsqueda
+  // esté en modo estricto: es el repetido que más desordena los saldos.
+  const dePago = repetidosDePagoTarjeta(txs, ventanaDias);
+  const yaAgrupados = new Set(dePago.flatMap((g) => g.txs.map((t) => t.id)));
+  const gastos = txs.filter((t) => !yaAgrupados.has(t.id));
 
   // Primero por monto exacto, que es la señal fuerte. Dos gastos del mismo
   // monto en días distintos pueden ser reales (el café de todos los días),
@@ -110,7 +153,7 @@ export function buscarRepetidos(txs: Tx[], ventanaDias = 4, exigirComercio = tru
   }
 
   // Los más caros primero: ahí es donde un doble conteo duele.
-  return grupos.sort((a, b) => b.monto - a.monto);
+  return [...dePago, ...grupos].sort((a, b) => b.monto - a.monto);
 }
 
 /** Cuál conviene conservar: el del banco manda, porque es el que cuadra con
@@ -118,6 +161,9 @@ export function buscarRepetidos(txs: Tx[], ventanaDias = 4, exigirComercio = tru
 export function cualConservar(grupo: GrupoRepetido, conRecibo: Set<string>): Tx {
   const puntaje = (t: Tx): number => {
     let p = 0;
+    // En un pago de tarjeta, el bueno es el que sale de la cuenta que paga:
+    // ese tiene el origen y el destino completos.
+    if (t.type === "transfer" && t.account_id && t.destination_ref) p += 200;
     if (t.source === "banco") p += 100;
     else if (t.source === "cartola") p += 80;
     if (t.category_id) p += 10;

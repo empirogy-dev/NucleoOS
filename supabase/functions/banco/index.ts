@@ -249,6 +249,28 @@ async function sincronizar(db: SupabaseClient, conexion: {
               : {}
           : {}),
       };
+      // El pago de la tarjeta llega por los dos lados: el banco lo publica en
+      // la cuenta que paga Y en la tarjeta que recibe. Es el mismo movimiento
+      // visto dos veces, y anotarlo dos veces desordena todos los saldos.
+      //
+      // Se guarda el lado de la CUENTA, que es el que sabe de dónde salió la
+      // plata. El lado de la tarjeta se descarta si ya está su pariente: mismo
+      // monto, misma tarjeta de destino, en días cercanos.
+      if (esPagoDeTarjeta && cuenta?.tabla === "credit_cards") {
+        const dia = new Date(`${String(t.date)}T00:00:00Z`).getTime();
+        const desde = new Date(dia - 4 * 86400000).toISOString().slice(0, 10);
+        const hasta = new Date(dia + 4 * 86400000).toISOString().slice(0, 10);
+        const { data: pariente } = await db.from("transactions")
+          .select("id")
+          .eq("user_id", conexion.user_id)
+          .eq("type", "transfer")
+          .eq("amount", Math.abs(monto))
+          .eq("destination_ref", cuenta.id)
+          .gte("date", desde).lte("date", hasta)
+          .limit(1);
+        if (pariente && pariente.length > 0) continue;
+      }
+
       // Un cargo pasa por dos vidas: primero pendiente, después firme. Cuando
       // se hace firme, el banco le da un id NUEVO y apunta al pendiente con
       // pending_transaction_id. Si eso se ignora, el mismo gasto queda dos
