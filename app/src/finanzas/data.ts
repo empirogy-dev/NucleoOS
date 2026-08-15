@@ -175,6 +175,33 @@ export function saldoDeuda(d: Debt, txs: Tx[]): number {
   return Math.max(0, Number(d.initial_balance) - abonado);
 }
 
+/** Lo adeudado hoy en una tarjeta, y de dónde sale cada peso.
+ *
+ *  Se devuelve el desglose completo a propósito: cuando un saldo se ve raro,
+ *  poder ver "partías en X, compraste Y, pagaste Z" es la diferencia entre
+ *  arreglarlo y adivinar.
+ *
+ *  En una tarjeta conectada al banco no se calcula nada: manda el banco.
+ */
+export function saldoTarjeta(c: CreditCard, txs: Tx[]): {
+  saldo: number; inicial: number; cargos: number; pagos: number; delBanco: boolean;
+} {
+  const delBanco = Boolean(c.external_id);
+  const inicial = c.initial_balance === null || c.initial_balance === undefined
+    ? Number(c.balance)
+    : Number(c.initial_balance);
+  if (delBanco || c.initial_balance === null || c.initial_balance === undefined) {
+    return { saldo: Number(c.balance), inicial, cargos: 0, pagos: 0, delBanco };
+  }
+  const cargos = txs
+    .filter((t) => t.type === "expense" && t.payment_source_type === "credit_card" && t.payment_source_id === c.id)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const pagos = txs
+    .filter((t) => t.type === "transfer" && t.destination_kind === "card" && t.destination_ref === c.id)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  return { saldo: inicial + cargos - pagos, inicial, cargos, pagos, delBanco };
+}
+
 /** Le pone la misma categoría a varios movimientos de una vez. Con 240 por
  *  revisar, decidir una vez por comercio es lo que hace que la tarea se
  *  termine en vez de abandonarse. */
@@ -334,7 +361,11 @@ export async function addDebt(d: {
   due_date: string | null; currency: string; notes: string | null;
 }): Promise<void> {
   const user_id = await uid();
-  const { data, error } = await sb().from("debts").insert({ ...d, user_id }).select("id").single();
+  // Igual que en las tarjetas: lo que ella escribe es el punto de partida.
+  let { data, error } = await sb().from("debts").insert({ ...d, initial_balance: d.balance, user_id }).select("id").single();
+  if (error && /initial_balance/.test(error.message)) {
+    ({ data, error } = await sb().from("debts").insert({ ...d, user_id }).select("id").single());
+  }
   check(error);
   if (d.due_date && data) {
     await addReminder({
@@ -375,7 +406,10 @@ export async function updateDebt(id: string, d: {
   interest_rate: number | null; min_payment: number | null;
   due_date: string | null; currency: string; notes: string | null;
 }): Promise<void> {
-  const { error } = await sb().from("debts").update(d).eq("id", id);
+  let { error } = await sb().from("debts").update({ ...d, initial_balance: d.balance }).eq("id", id);
+  if (error && /initial_balance/.test(error.message)) {
+    ({ error } = await sb().from("debts").update(d).eq("id", id));
+  }
   check(error);
   await syncReminderPago(id, "debt", `Pago de ${d.name}`, d.min_payment, d.due_date);
 }
@@ -390,8 +424,17 @@ export async function deleteDebt(id: string): Promise<void> {
 export async function listCards(): Promise<CreditCard[]> {
   const { data, error } = await sb()
     .from("credit_cards")
-    .select("id,name,bank,last_four,credit_limit,balance,min_payment,due_date,apr,currency")
+    .select("id,name,bank,last_four,credit_limit,balance,initial_balance,external_id,min_payment,due_date,apr,currency")
     .order("created_at");
+  if (error && /initial_balance|external_id/.test(error.message)) {
+    // Sin la 0065 se lee como antes y el saldo queda como esté guardado.
+    const previo = await sb()
+      .from("credit_cards")
+      .select("id,name,bank,last_four,credit_limit,balance,min_payment,due_date,apr,currency")
+      .order("created_at");
+    check(previo.error);
+    return (previo.data ?? []) as CreditCard[];
+  }
   check(error);
   return (data ?? []) as CreditCard[];
 }
@@ -402,7 +445,13 @@ export async function addCard(c: {
   due_date: string | null; apr: number | null; currency: string;
 }): Promise<void> {
   const user_id = await uid();
-  const { data, error } = await sb().from("credit_cards").insert({ ...c, user_id }).select("id").single();
+  // El saldo que ella escribe es el punto de partida: de ahí en adelante lo
+  // mueven sus compras y sus pagos, no un número que haya que mantener.
+  const conInicial = { ...c, initial_balance: c.balance };
+  let { data, error } = await sb().from("credit_cards").insert({ ...conInicial, user_id }).select("id").single();
+  if (error && /initial_balance/.test(error.message)) {
+    ({ data, error } = await sb().from("credit_cards").insert({ ...c, user_id }).select("id").single());
+  }
   check(error);
   if (c.due_date && data) {
     await addReminder({
@@ -421,7 +470,10 @@ export async function updateCard(id: string, c: {
   credit_limit: number | null; balance: number; min_payment: number | null;
   due_date: string | null; apr: number | null; currency: string;
 }): Promise<void> {
-  const { error } = await sb().from("credit_cards").update(c).eq("id", id);
+  let { error } = await sb().from("credit_cards").update({ ...c, initial_balance: c.balance }).eq("id", id);
+  if (error && /initial_balance/.test(error.message)) {
+    ({ error } = await sb().from("credit_cards").update(c).eq("id", id));
+  }
   check(error);
   await syncReminderPago(id, "creditCard", `Pago de la tarjeta ${c.name}`, c.min_payment, c.due_date);
 }

@@ -43,6 +43,7 @@ import {
   ultimaTransaccion,
   updateCategoryTaxLine,
   saldoDeuda,
+  saldoTarjeta,
   deleteDebt,
   deleteGoal,
   deleteReminder,
@@ -107,7 +108,7 @@ export function FinanzasPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [debtsCrudas, setDebts] = useState<Debt[]>([]);
-  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [cardsCrudas, setCards] = useState<CreditCard[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,11 +188,16 @@ export function FinanzasPage() {
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const accById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
-  // El saldo de cada deuda sale de sus pagos, no de un número guardado. Se
-  // calcula una vez aquí y baja ya corregido a todas las pantallas.
+  // El saldo de cada deuda y de cada tarjeta sale de sus movimientos, no de
+  // un número guardado. Se calcula una vez aquí y baja ya corregido a todas
+  // las pantallas. En las tarjetas del banco manda el banco.
   const debts = useMemo(
     () => debtsCrudas.map((d) => ({ ...d, balance: saldoDeuda(d, txs) })),
     [debtsCrudas, txs],
+  );
+  const cards = useMemo(
+    () => cardsCrudas.map((c) => ({ ...c, balance: saldoTarjeta(c, txs).saldo })),
+    [cardsCrudas, txs],
   );
 
   const resolveDest = useCallback((t: Tx): string | null => {
@@ -934,9 +940,11 @@ export function FinanzasPage() {
               <h3 style={{ fontSize: 15, margin: "4px 0 10px" }}>Tarjetas de crédito</h3>
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))" }}>
                 {cards.map((c) => {
+                  const desglose = saldoTarjeta(c, txs);
                   const usado = Number(c.balance);
                   const limite = Number(c.credit_limit ?? 0);
-                  const pct = limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
+                  // Nunca menos de cero: un cupo usado en negativo no existe.
+                  const pct = limite > 0 ? Math.max(0, Math.min(100, Math.round((usado / limite) * 100))) : 0;
                   return (
                     <div className="card pad" key={c.id}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -961,7 +969,29 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
                           void reload();
                         }}><Trash2 size={14} /></button>
                       </div>
-                      <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500 }}>{fmtMoney(usado, c.currency)}</div>
+                      <div className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 500, color: usado < 0 ? "var(--err)" : undefined }}>
+                        {fmtMoney(usado, c.currency)}
+                      </div>
+                      {/* De dónde sale ese número. Cuando un saldo se ve raro,
+                          ver la cuenta completa es la diferencia entre
+                          arreglarlo y adivinar. */}
+                      {!desglose.delBanco && (desglose.cargos > 0 || desglose.pagos > 0) && (
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, lineHeight: 1.5 }}>
+                          {tr("Partías en")} {fmtMoney(desglose.inicial, c.currency)}
+                          {" · "}{tr("compraste")} {fmtMoney(desglose.cargos, c.currency)}
+                          {" · "}{tr("pagaste")} {fmtMoney(desglose.pagos, c.currency)}
+                        </div>
+                      )}
+                      {desglose.delBanco && (
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                          {tr("Saldo entregado por el banco")}
+                        </div>
+                      )}
+                      {usado < 0 && (
+                        <div style={{ fontSize: 11.5, color: "var(--err)", marginTop: 4, lineHeight: 1.45 }}>
+                          ⚠️ {tr("Saldo negativo: hay pagos anotados dos veces, o falta el saldo con el que partiste. Ábrela con el lápiz y corrige el saldo inicial.")}
+                        </div>
+                      )}
                       {limite > 0 && (
                         <div className="bar" style={{ marginTop: 8, marginBottom: 0 }}>
                           <div className="top"><span>usado del cupo</span><b className="tnum">{pct}%</b></div>

@@ -64,7 +64,12 @@ export interface CreditCard {
   bank: string | null;
   last_four: string | null;
   credit_limit: number | null;
+  /** Lo adeudado hoy. Ya viene calculado, salvo en tarjetas del banco. */
   balance: number;
+  /** El punto de partida. De aquí sale el saldo (0065). */
+  initial_balance?: number | null;
+  /** Si viene de un banco conectado, el saldo lo manda el banco. */
+  external_id?: string | null;
   min_payment: number | null;
   due_date: string | null;
   apr: number | null;
