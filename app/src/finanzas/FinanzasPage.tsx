@@ -14,7 +14,7 @@ import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, 
 import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
 import { PagosTarjetaPanel } from "./PagosTarjetaPanel";
-import { PorRevisarAgrupado } from "./PorRevisarAgrupado";
+import { AccionesMasivas, PorRevisarAgrupado } from "./PorRevisarAgrupado";
 import { HuerfanosPanel } from "./HuerfanosPanel";
 import { lineasDe } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
@@ -630,7 +630,17 @@ export function FinanzasPage() {
                   { k: "sinboleta" as const, n: sinBoleta.length, t: tr("Sin boleta") },
                   { k: "archivo" as const, n: archivadas.length, t: tr("Archivo") },
                 ].filter((x) => x.k !== vistaTx && x.n > 0);
+                const enVista = vistaTx === "revisar" ? pendientes
+                  : vistaTx === "sinboleta" ? sinBoleta : archivadas;
                 return (
+                  <>
+                  {/* Arreglar en bloque lo que la búsqueda encontró. Es la
+                      salida cuando algo quedó mal en masa: se busca, se ve lo
+                      que salió, y se corrige de una vez. */}
+                  {enVista.length > 1 && (
+                    <AccionesMasivas lista={enVista} categories={categories} accounts={accounts}
+                      cards={cards} debts={debts} goals={goals} onCambio={() => void reload()} />
+                  )}
                   <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>
                     {aqui} {aqui === 1 ? tr("resultado aquí") : tr("resultados aquí")}
                     {otras.length > 0 && (
@@ -646,6 +656,7 @@ export function FinanzasPage() {
                       </>
                     )}
                   </p>
+                  </>
                 );
               })()}
               {vistaTx === "revisar" && (

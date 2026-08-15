@@ -75,6 +75,80 @@ export function agruparPorComercio(txs: Tx[]): Grupo[] {
 
 const ES_TRANSFERENCIA = "__transferencia__";
 
+/** Los mismos dos selectores, sueltos, para aplicar a cualquier lista de
+ *  movimientos. Se usa en los grupos y también sobre los resultados de una
+ *  búsqueda, que es como se arregla en bloque algo que quedó mal. */
+export function AccionesMasivas(props: {
+  lista: Tx[];
+  categories: Category[];
+  accounts: Account[];
+  cards: CreditCard[];
+  debts: Debt[];
+  goals: Goal[];
+  onCambio: () => void;
+}) {
+  const { t: tr } = useIdioma();
+  const { lista, categories, accounts, cards, debts, goals, onCambio } = props;
+  const [transf, setTransf] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (lista.length === 0) return null;
+
+  const cats = categories.filter((c) => (lista[0].type === "income" ? c.type === "income" : c.type !== "income"));
+  const sugerida = tarjetaEnElTexto(lista[0].bank_ref ?? lista[0].description ?? "", cards);
+
+  async function aplicar(v: string) {
+    if (!v) return;
+    if (v === ES_TRANSFERENCIA) { setTransf(true); return; }
+    setBusy(true);
+    setErr(null);
+    try {
+      if (transf) {
+        const [kind, ref] = v === "fuera" ? [null, null] : v.split(":");
+        await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+      } else {
+        await categorizarVarias(lista.map((t) => t.id), v);
+      }
+      setTransf(false);
+      onCambio();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+      <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
+        {tr("Aplicar a los")} <b style={{ color: "var(--ink)" }}>{lista.length}</b> {tr("resultados:")}
+      </span>
+      <div style={{ width: 230 }}>
+        <Selector compacto value="" ariaLabel={transf ? tr("¿Hacia dónde?") : tr("Ponerle categoría")}
+          placeholder={busy ? tr("com.guardando") : transf ? tr("¿Hacia dónde?") : tr("Ponerle categoría…")}
+          opciones={transf ? [
+            ...(sugerida ? [{ value: `card:${sugerida.id}`, label: `💳 ${sugerida.name} ••••${sugerida.last_four} · ${tr("la del texto")}` }] : []),
+            { value: "fuera", label: tr("Fuera de la app (otro banco)") },
+            ...cards.filter((c) => c.id !== sugerida?.id).map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` ••••${c.last_four}` : ""}` })),
+            ...accounts.map((a) => ({ value: `account:${a.id}`, label: `🏦 ${a.name}` })),
+            ...debts.map((d) => ({ value: `debt:${d.id}`, label: `📉 ${d.name}` })),
+            ...goals.map((x) => ({ value: `goal:${x.id}`, label: `${x.icon ?? "🎯"} ${x.name}` })),
+          ] : [
+            { value: ES_TRANSFERENCIA, label: `⇄ ${tr("Es una transferencia")}` },
+            ...cats.map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() })),
+          ]}
+          onChange={(v) => void aplicar(v)} />
+      </div>
+      {transf && (
+        <button type="button" className="linklike" style={{ fontSize: 12 }} onClick={() => setTransf(false)}>
+          {tr("cancelar")}
+        </button>
+      )}
+      {err && <span style={{ color: "var(--err)", fontSize: 12.5 }}>{err}</span>}
+    </div>
+  );
+}
+
 export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, goals, currency, onCambio }: {
   txs: Tx[];
   categories: Category[];
@@ -197,7 +271,16 @@ export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, go
               <b className="tnum" style={{ fontSize: 13.5, whiteSpace: "nowrap" }}>
                 {fmtMoney(g.total, currency)}
               </b>
-              <Acciones clave={g.clave} lista={g.txs} cats={cats} />
+              {g.subgrupos.length > 1 ? (
+                // Con más de un destino adentro, un botón que los mande a
+                // todos al mismo lado es una trampa: se ve arriba, se usa, y
+                // se lleva movimientos que iban a otra parte. Se decide abajo.
+                <span style={{ fontSize: 11.5, color: "var(--warn)", width: 215, textAlign: "right" }}>
+                  {tr("Se decide abajo, uno por destino")}
+                </span>
+              ) : (
+                <Acciones clave={g.clave} lista={g.txs} cats={cats} />
+              )}
             </div>
             {/* El mismo nombre con destinos distintos: se parten y cada
                 parte se decide sola. Sin esto, los 30 que van a una tarjeta y
