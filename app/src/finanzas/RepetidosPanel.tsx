@@ -46,9 +46,14 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
     try { return JSON.parse(localStorage.getItem(CLAVE) ?? "[]") as string[]; } catch { return []; }
   });
 
+  // Por defecto se exige que el comercio se parezca, que es lo que evita
+  // acusar dos gastos distintos del mismo monto. Pero un mismo gasto puede
+  // llegar con dos nombres que no se parecen en nada, así que hay una segunda
+  // pasada más amplia que ella activa cuando la necesita.
+  const [amplio, setAmplio] = useState(false);
   const grupos = useMemo(
-    () => buscarRepetidos(txs).filter((g) => !descartados.includes(firma(g.txs))),
-    [txs, descartados],
+    () => buscarRepetidos(txs, 4, !amplio).filter((g) => !descartados.includes(firma(g.txs))),
+    [txs, descartados, amplio],
   );
   if (grupos.length === 0) return null;
 
@@ -99,6 +104,16 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 12px", lineHeight: 1.5 }}>
             {tr("Mismo monto, mismo comercio y fechas cercanas. Elige cuál se queda: el que elijas hereda las boletas de los otros, y los otros se borran.")}
           </p>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12, color: "var(--ink-soft)", marginBottom: 10, cursor: "pointer", lineHeight: 1.45 }}>
+            <input type="checkbox" checked={amplio} onChange={(e) => setAmplio(e.target.checked)}
+              style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+            <span>
+              {tr("Buscar también con nombres distintos.")}{" "}
+              <span style={{ color: "var(--muted)" }}>
+                {tr("Encuentra el mismo gasto cuando llega con dos nombres que no se parecen, como Starlink cobrado por Klarna. Trae más candidatos falsos: revísalos uno por uno.")}
+              </span>
+            </span>
+          </label>
           {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
 
           {grupos.map((g) => {

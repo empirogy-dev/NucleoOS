@@ -241,6 +241,36 @@ async function sincronizar(db: SupabaseClient, conexion: {
               : {}
           : {}),
       };
+      // Un cargo pasa por dos vidas: primero pendiente, después firme. Cuando
+      // se hace firme, el banco le da un id NUEVO y apunta al pendiente con
+      // pending_transaction_id. Si eso se ignora, el mismo gasto queda dos
+      // veces: el pendiente que ella ya categorizó y el firme recién llegado,
+      // muchas veces con otro nombre (Starlink pasa a llamarse Klarna, que es
+      // quien cobra) y otra fecha.
+      //
+      // Así que no se inserta: se ACTUALIZA el pendiente. Se le pone el id
+      // nuevo, la fecha y el monto definitivos, y se respeta todo lo que ella
+      // escribió encima: su categoría, su comercio, sus etiquetas, su boleta.
+      const idPendiente = t.pending_transaction_id ? String(t.pending_transaction_id) : "";
+      if (idPendiente) {
+        const { data: antes } = await db.from("transactions")
+          .select("id,category_id,merchant")
+          .eq("user_id", conexion.user_id).eq("external_id", idPendiente).maybeSingle();
+        if (antes) {
+          await db.from("transactions").update({
+            external_id: String(t.transaction_id),
+            date: String(t.date),
+            amount: Math.abs(monto),
+            type: tipo,
+            bank_ref: texto,
+            // Lo suyo manda: solo se rellena lo que estaba vacío.
+            ...(antes.merchant ? {} : { merchant: fila.merchant }),
+            ...(antes.category_id ? {} : { category_id: categoria }),
+          }).eq("id", antes.id);
+          continue;
+        }
+      }
+
       // El índice único por external_id hace el resto: si ya estaba, no entra.
       const { data: creada, error } = await db.from("transactions").insert(fila).select("id").single();
       if (!error && creada) {
@@ -262,7 +292,19 @@ async function sincronizar(db: SupabaseClient, conexion: {
       }
     }
 
-    // Lo que el banco corrigió o borró después de publicarlo.
+    // Lo que el banco corrigió después de publicarlo: la propina que subió el
+    // monto, la fecha que se movió. Se corrige el dato del banco y no se toca
+    // lo que ella escribió.
+    for (const t of (pagina.modified ?? []) as Array<Record<string, unknown>>) {
+      const monto = Number(t.amount);
+      await db.from("transactions").update({
+        date: String(t.date),
+        amount: Math.abs(monto),
+        bank_ref: String(t.merchant_name ?? t.name ?? ""),
+      }).eq("user_id", conexion.user_id).eq("external_id", String(t.transaction_id));
+    }
+
+    // Lo que el banco borró después de publicarlo.
     for (const t of (pagina.removed ?? []) as Array<Record<string, unknown>>) {
       await db.from("transactions").delete()
         .eq("user_id", conexion.user_id).eq("external_id", String(t.transaction_id));

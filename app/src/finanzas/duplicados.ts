@@ -63,7 +63,7 @@ export function mismaFuente(a: Tx, b: Tx): boolean {
 }
 
 /** Grupos de dos o más movimientos que parecen ser el mismo. */
-export function buscarRepetidos(txs: Tx[], ventanaDias = 4): GrupoRepetido[] {
+export function buscarRepetidos(txs: Tx[], ventanaDias = 4, exigirComercio = true): GrupoRepetido[] {
   const gastos = txs.filter((t) => t.type !== "transfer");
 
   // Primero por monto exacto, que es la señal fuerte. Dos gastos del mismo
@@ -90,7 +90,12 @@ export function buscarRepetidos(txs: Tx[], ventanaDias = 4): GrupoRepetido[] {
       const ultimo = actual[actual.length - 1];
       // Mismo monto NO basta: además tiene que caer cerca en el tiempo Y
       // hablar del mismo comercio.
-      if (!ultimo || (dias(ultimo.date, t.date) <= ventanaDias && mismoComercio(ultimo, t) && mismaFuente(ultimo, t))) {
+      // Con exigirComercio en falso basta el monto, la fecha y el bolsillo.
+      // Sirve para el caso en que el mismo gasto llega con dos nombres que no
+      // se parecen en nada: Starlink cobrado a través de Klarna, por ejemplo.
+      // Trae más ruido a propósito, así que se activa a mano.
+      if (!ultimo || (dias(ultimo.date, t.date) <= ventanaDias
+        && (!exigirComercio || mismoComercio(ultimo, t)) && mismaFuente(ultimo, t))) {
         actual.push(t);
       } else {
         cerrar();
