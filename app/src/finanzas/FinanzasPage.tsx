@@ -668,7 +668,7 @@ export function FinanzasPage() {
                         </button>
                       </div>
                       {agrupado && !buscando ? (
-                        <PorRevisarAgrupado txs={pendientes} categories={categories} currency={currency}
+                        <PorRevisarAgrupado txs={pendientes} categories={categories} accounts={accounts} cards={cards} debts={debts} goals={goals} currency={currency}
                           onCambio={() => void reload()} />
                       ) : (
                         <>

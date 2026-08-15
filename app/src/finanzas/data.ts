@@ -155,6 +155,25 @@ export async function categorizarVarias(ids: string[], categoryId: string): Prom
   check(error);
 }
 
+/** Marca varios movimientos como transferencia de una vez. Un traspaso a la
+ *  tarjeta no es un gasto ni un ingreso, y cuando llegan treinta iguales,
+ *  marcarlos uno por uno no es una opción real. */
+export async function marcarTransferencias(
+  ids: string[],
+  destinoKind: string | null,
+  destinoRef: string | null,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await sb().from("transactions").update({
+    type: "transfer",
+    // Una transferencia no lleva categoría de gasto ni de ingreso.
+    category_id: null,
+    destination_kind: destinoKind,
+    destination_ref: destinoRef,
+  }).in("id", ids);
+  check(error);
+}
+
 /** A qué línea del formulario de impuestos suma esta categoría. */
 export async function updateCategoryTaxLine(id: string, tax_line: string | null): Promise<void> {
   const { error } = await sb().from("categories").update({ tax_line }).eq("id", id);

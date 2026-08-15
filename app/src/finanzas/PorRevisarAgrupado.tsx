@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
-import { fmtMoney, type Category, type Tx } from "./types";
-import { categorizarVarias, patronDesde, sugerenciaComercio } from "./data";
+import { fmtMoney, type Account, type Category, type CreditCard, type Debt, type Goal, type Tx } from "./types";
+import { categorizarVarias, marcarTransferencias, patronDesde, sugerenciaComercio } from "./data";
 
 // Categorizar de a montones, no de a uno.
 //
@@ -39,22 +39,51 @@ export function agruparPorComercio(txs: Tx[]): Grupo[] {
     .sort((a, b) => b.txs.length - a.txs.length || b.total - a.total);
 }
 
-export function PorRevisarAgrupado({ txs, categories, currency, onCambio }: {
+const ES_TRANSFERENCIA = "__transferencia__";
+
+export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, goals, currency, onCambio }: {
   txs: Tx[];
   categories: Category[];
+  accounts: Account[];
+  cards: CreditCard[];
+  debts: Debt[];
+  goals: Goal[];
   currency: string;
   onCambio: () => void;
 }) {
   const { t: tr } = useIdioma();
   const [busy, setBusy] = useState("");
   const [abierto, setAbierto] = useState("");
+  // Qué grupos están esperando que ella diga a dónde va la transferencia.
+  const [comoTransfer, setComoTransfer] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   const grupos = useMemo(() => agruparPorComercio(txs), [txs]);
   const repetidos = grupos.filter((g) => g.txs.length > 1).length;
 
+  async function transferir(g: Grupo, destino: string) {
+    setBusy(g.clave);
+    setErr(null);
+    try {
+      // "fuera" es plata que se va a otro banco: no tiene destino adentro.
+      const [kind, ref] = destino === "fuera" ? [null, null] : destino.split(":");
+      await marcarTransferencias(g.txs.map((t) => t.id), kind, ref ?? null);
+      setComoTransfer((p) => p.filter((x) => x !== g.clave));
+      onCambio();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function categorizar(g: Grupo, categoryId: string) {
     if (!categoryId) return;
+    // Un traspaso a la tarjeta no es un gasto: primero se pregunta a dónde va.
+    if (categoryId === ES_TRANSFERENCIA) {
+      setComoTransfer((p) => [...p, g.clave]);
+      return;
+    }
     setBusy(g.clave);
     setErr(null);
     try {
@@ -94,11 +123,37 @@ export function PorRevisarAgrupado({ txs, categories, currency, onCambio }: {
               <b className="tnum" style={{ fontSize: 13.5, whiteSpace: "nowrap" }}>
                 {fmtMoney(g.total, currency)}
               </b>
-              <div style={{ width: 200 }}>
-                <Selector compacto value="" ariaLabel={tr("Ponerle categoría")}
-                  placeholder={busy === g.clave ? tr("com.guardando") : tr("Ponerle categoría…")}
-                  opciones={cats.map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() }))}
-                  onChange={(v) => void categorizar(g, v)} />
+              <div style={{ width: 210 }}>
+                {comoTransfer.includes(g.clave) ? (
+                  // A dónde va la plata. Sin esto, marcar transferencia sería
+                  // sacar el movimiento de los gastos y dejarlo en el aire.
+                  <Selector compacto value="" ariaLabel={tr("¿Hacia dónde?")}
+                    placeholder={busy === g.clave ? tr("com.guardando") : tr("¿Hacia dónde?")}
+                    opciones={[
+                      { value: "fuera", label: tr("Fuera de la app (otro banco)") },
+                      ...cards.map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` ••••${c.last_four}` : ""}` })),
+                      ...accounts.map((a) => ({ value: `account:${a.id}`, label: `🏦 ${a.name}` })),
+                      ...debts.map((d) => ({ value: `debt:${d.id}`, label: `📉 ${d.name}` })),
+                      ...goals.map((x) => ({ value: `goal:${x.id}`, label: `${x.icon ?? "🎯"} ${x.name}` })),
+                    ]}
+                    onChange={(v) => void transferir(g, v)} />
+                ) : (
+                  <Selector compacto value="" ariaLabel={tr("Ponerle categoría")}
+                    placeholder={busy === g.clave ? tr("com.guardando") : tr("Ponerle categoría…")}
+                    opciones={[
+                      // Arriba de todo, porque un traspaso entre lo tuyo no es
+                      // ninguna de las categorías de abajo.
+                      { value: ES_TRANSFERENCIA, label: `⇄ ${tr("Es una transferencia")}` },
+                      ...cats.map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() })),
+                    ]}
+                    onChange={(v) => void categorizar(g, v)} />
+                )}
+                {comoTransfer.includes(g.clave) && (
+                  <button type="button" className="linklike" style={{ fontSize: 11.5, marginTop: 3 }}
+                    onClick={() => setComoTransfer((p) => p.filter((x) => x !== g.clave))}>
+                    {tr("cancelar")}
+                  </button>
+                )}
               </div>
             </div>
             {g.txs.length > 1 && (
