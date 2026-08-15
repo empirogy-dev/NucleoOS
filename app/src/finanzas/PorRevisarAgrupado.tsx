@@ -12,11 +12,32 @@ import { categorizarVarias, marcarTransferencias, patronDesde, sugerenciaComerci
 // Decidir una vez por comercio y que se aplique a todos sus movimientos es
 // la diferencia entre terminar la tarea y abandonarla a los quince.
 
+export interface Subgrupo {
+  texto: string;
+  txs: Tx[];
+  total: number;
+}
+
 export interface Grupo {
   clave: string;
   nombre: string;
   txs: Tx[];
   total: number;
+  /** El mismo comercio puede esconder destinos distintos. Los traspasos de su
+   *  banco se llaman todos "[CW] TF", pero el número largo termina en los
+   *  cuatro dígitos de la tarjeta que recibe: unos van a la 4123 y otros a la
+   *  6360. Juntarlos en una sola decisión los mandaría todos al lugar
+   *  equivocado. */
+  subgrupos: Subgrupo[];
+}
+
+/** La tarjeta que el texto del banco está nombrando, si la nombra.
+ *  Se exige que un número del texto TERMINE en sus cuatro dígitos: así
+ *  "0005191238144544123" encuentra la tarjeta 4123 y no una coincidencia
+ *  suelta en medio de otro número. */
+export function tarjetaEnElTexto(texto: string, cards: CreditCard[]): CreditCard | undefined {
+  const numeros = texto.match(/\d{4,}/g) ?? [];
+  return cards.find((c) => c.last_four && numeros.some((n) => n.endsWith(c.last_four as string)));
 }
 
 export function agruparPorComercio(txs: Tx[]): Grupo[] {
@@ -29,12 +50,25 @@ export function agruparPorComercio(txs: Tx[]): Grupo[] {
     mapa.set(clave, [...(mapa.get(clave) ?? []), t]);
   }
   return [...mapa.entries()]
-    .map(([clave, lista]) => ({
-      clave,
-      nombre: lista[0].merchant || sugerenciaComercio(lista[0].bank_ref ?? lista[0].description ?? "") || clave,
-      txs: lista,
-      total: lista.reduce((s, t) => s + Number(t.amount), 0),
-    }))
+    .map(([clave, lista]) => {
+      // Dentro del grupo, por el texto exacto del banco: ahí es donde se ve
+      // que dos traspasos con el mismo nombre van a tarjetas distintas.
+      const porTexto = new Map<string, Tx[]>();
+      for (const t of lista) {
+        const texto = (t.bank_ref || t.description || t.merchant || "").trim();
+        porTexto.set(texto, [...(porTexto.get(texto) ?? []), t]);
+      }
+      const subgrupos = [...porTexto.entries()]
+        .map(([texto, suyas]) => ({ texto, txs: suyas, total: suyas.reduce((s, t) => s + Number(t.amount), 0) }))
+        .sort((a, b) => b.txs.length - a.txs.length);
+      return {
+        clave,
+        nombre: lista[0].merchant || sugerenciaComercio(lista[0].bank_ref ?? lista[0].description ?? "") || clave,
+        txs: lista,
+        total: lista.reduce((s, t) => s + Number(t.amount), 0),
+        subgrupos,
+      };
+    })
     // Los que más se repiten primero: ahí está el ahorro de trabajo.
     .sort((a, b) => b.txs.length - a.txs.length || b.total - a.total);
 }
@@ -61,14 +95,14 @@ export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, go
   const grupos = useMemo(() => agruparPorComercio(txs), [txs]);
   const repetidos = grupos.filter((g) => g.txs.length > 1).length;
 
-  async function transferir(g: Grupo, destino: string) {
-    setBusy(g.clave);
+  async function transferir(clave: string, lista: Tx[], destino: string) {
+    setBusy(clave);
     setErr(null);
     try {
       // "fuera" es plata que se va a otro banco: no tiene destino adentro.
       const [kind, ref] = destino === "fuera" ? [null, null] : destino.split(":");
-      await marcarTransferencias(g.txs.map((t) => t.id), kind, ref ?? null);
-      setComoTransfer((p) => p.filter((x) => x !== g.clave));
+      await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+      setComoTransfer((p) => p.filter((x) => x !== clave));
       onCambio();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -77,23 +111,63 @@ export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, go
     }
   }
 
-  async function categorizar(g: Grupo, categoryId: string) {
+  async function categorizar(clave: string, lista: Tx[], categoryId: string) {
     if (!categoryId) return;
     // Un traspaso a la tarjeta no es un gasto: primero se pregunta a dónde va.
     if (categoryId === ES_TRANSFERENCIA) {
-      setComoTransfer((p) => [...p, g.clave]);
+      setComoTransfer((p) => [...p, clave]);
       return;
     }
-    setBusy(g.clave);
+    setBusy(clave);
     setErr(null);
     try {
-      await categorizarVarias(g.txs.map((t) => t.id), categoryId);
+      await categorizarVarias(lista.map((t) => t.id), categoryId);
       onCambio();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy("");
     }
+  }
+
+  /** El mismo par de selectores, para un grupo o para un subgrupo. */
+  function Acciones({ clave, lista, cats }: { clave: string; lista: Tx[]; cats: Category[] }) {
+    // Si el banco nombra la tarjeta en el texto, se propone esa.
+    const sugerida = tarjetaEnElTexto(lista[0].bank_ref ?? lista[0].description ?? "", cards);
+    return (
+      <div style={{ width: 215 }}>
+        {comoTransfer.includes(clave) ? (
+          <>
+            <Selector compacto value="" ariaLabel={tr("¿Hacia dónde?")}
+              placeholder={busy === clave ? tr("com.guardando") : tr("¿Hacia dónde?")}
+              opciones={[
+                ...(sugerida
+                  ? [{ value: `card:${sugerida.id}`, label: `💳 ${sugerida.name} ••••${sugerida.last_four} · ${tr("la del texto")}` }]
+                  : []),
+                { value: "fuera", label: tr("Fuera de la app (otro banco)") },
+                ...cards.filter((c) => c.id !== sugerida?.id)
+                  .map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` ••••${c.last_four}` : ""}` })),
+                ...accounts.map((a) => ({ value: `account:${a.id}`, label: `🏦 ${a.name}` })),
+                ...debts.map((d) => ({ value: `debt:${d.id}`, label: `📉 ${d.name}` })),
+                ...goals.map((x) => ({ value: `goal:${x.id}`, label: `${x.icon ?? "🎯"} ${x.name}` })),
+              ]}
+              onChange={(v) => void transferir(clave, lista, v)} />
+            <button type="button" className="linklike" style={{ fontSize: 11.5, marginTop: 3 }}
+              onClick={() => setComoTransfer((p) => p.filter((x) => x !== clave))}>
+              {tr("cancelar")}
+            </button>
+          </>
+        ) : (
+          <Selector compacto value="" ariaLabel={tr("Ponerle categoría")}
+            placeholder={busy === clave ? tr("com.guardando") : tr("Ponerle categoría…")}
+            opciones={[
+              { value: ES_TRANSFERENCIA, label: `⇄ ${tr("Es una transferencia")}` },
+              ...cats.map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() })),
+            ]}
+            onChange={(v) => void categorizar(clave, lista, v)} />
+        )}
+      </div>
+    );
   }
 
   return (
@@ -123,39 +197,35 @@ export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, go
               <b className="tnum" style={{ fontSize: 13.5, whiteSpace: "nowrap" }}>
                 {fmtMoney(g.total, currency)}
               </b>
-              <div style={{ width: 210 }}>
-                {comoTransfer.includes(g.clave) ? (
-                  // A dónde va la plata. Sin esto, marcar transferencia sería
-                  // sacar el movimiento de los gastos y dejarlo en el aire.
-                  <Selector compacto value="" ariaLabel={tr("¿Hacia dónde?")}
-                    placeholder={busy === g.clave ? tr("com.guardando") : tr("¿Hacia dónde?")}
-                    opciones={[
-                      { value: "fuera", label: tr("Fuera de la app (otro banco)") },
-                      ...cards.map((c) => ({ value: `card:${c.id}`, label: `💳 ${c.name}${c.last_four ? ` ••••${c.last_four}` : ""}` })),
-                      ...accounts.map((a) => ({ value: `account:${a.id}`, label: `🏦 ${a.name}` })),
-                      ...debts.map((d) => ({ value: `debt:${d.id}`, label: `📉 ${d.name}` })),
-                      ...goals.map((x) => ({ value: `goal:${x.id}`, label: `${x.icon ?? "🎯"} ${x.name}` })),
-                    ]}
-                    onChange={(v) => void transferir(g, v)} />
-                ) : (
-                  <Selector compacto value="" ariaLabel={tr("Ponerle categoría")}
-                    placeholder={busy === g.clave ? tr("com.guardando") : tr("Ponerle categoría…")}
-                    opciones={[
-                      // Arriba de todo, porque un traspaso entre lo tuyo no es
-                      // ninguna de las categorías de abajo.
-                      { value: ES_TRANSFERENCIA, label: `⇄ ${tr("Es una transferencia")}` },
-                      ...cats.map((c) => ({ value: c.id, label: `${c.icon ?? ""} ${c.name}`.trim() })),
-                    ]}
-                    onChange={(v) => void categorizar(g, v)} />
-                )}
-                {comoTransfer.includes(g.clave) && (
-                  <button type="button" className="linklike" style={{ fontSize: 11.5, marginTop: 3 }}
-                    onClick={() => setComoTransfer((p) => p.filter((x) => x !== g.clave))}>
-                    {tr("cancelar")}
-                  </button>
-                )}
-              </div>
+              <Acciones clave={g.clave} lista={g.txs} cats={cats} />
             </div>
+            {/* El mismo nombre con destinos distintos: se parten y cada
+                parte se decide sola. Sin esto, los 30 que van a una tarjeta y
+                los 4 que van a otra terminaban todos en la misma. */}
+            {g.subgrupos.length > 1 && (
+              <div style={{ margin: "8px 0 0 12px", display: "grid", gap: 8 }}>
+                <div style={{ fontSize: 11.5, color: "var(--warn)" }}>
+                  ⚠️ {tr("Estos no van todos al mismo lado:")}
+                </div>
+                {g.subgrupos.map((sg) => {
+                  const tarjeta = tarjetaEnElTexto(sg.texto, cards);
+                  return (
+                    <div key={sg.texto} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                      <span style={{ flex: 1, minWidth: 140, fontSize: 12 }}>
+                        <b>{sg.txs.length}</b>{" "}
+                        {sg.txs.length === 1 ? tr("movimiento") : tr("movimientos")}
+                        {tarjeta && <> · 💳 {tarjeta.name} ••••{tarjeta.last_four}</>}
+                        <div style={{ color: "var(--muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {sg.texto}
+                        </div>
+                      </span>
+                      <b className="tnum" style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{fmtMoney(sg.total, currency)}</b>
+                      <Acciones clave={`${g.clave}::${sg.texto}`} lista={sg.txs} cats={cats} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {g.txs.length > 1 && (
               <>
                 <button type="button" className="linklike" style={{ fontSize: 11.5, marginTop: 4 }}
