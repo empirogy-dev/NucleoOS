@@ -154,6 +154,9 @@ export interface Tx {
   source: TxSource;
   /** Ella dijo que este movimiento no necesita boleta (0061). */
   receipt_waived?: boolean | null;
+  /** El otro lado de este mismo traspaso (0066). Si está lleno, esta fila es
+   *  el reflejo: se muestra, pero no suma en saldos ni en reportes. */
+  mirror_of?: string | null;
   /** Alguien le devolvió esta plata (0063). El gasto y su boleta se guardan,
    *  pero no cuenta para impuestos ni para el presupuesto. */
   reimbursed?: boolean | null;

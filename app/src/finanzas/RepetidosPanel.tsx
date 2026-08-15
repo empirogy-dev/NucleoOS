@@ -4,7 +4,7 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { sinRobarFoco } from "../components/cierreDeFondo";
 import { fmtMoney, type Category, type Tx } from "./types";
 import { buscarRepetidos, cualConservar, type GrupoRepetido } from "./duplicados";
-import { deleteTransaction } from "./data";
+import { deleteTransaction, enlazarReflejos } from "./data";
 import { moverRecibos } from "./recibos";
 
 // El mismo gasto anotado dos veces. Se junta, no se borra a ciegas: el que se
@@ -64,6 +64,22 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
 
   const hay = grupos.length > 0;
   const plataDeMas = grupos.reduce((s, g) => s + g.monto * (g.txs.length - 1), 0);
+
+  /** Los dos lados de un traspaso: se enlazan en vez de borrar uno. Los dos
+   *  se siguen viendo, como en la cartola de cada cuenta, pero cuentan una
+   *  sola vez. */
+  async function enlazar(quedaId: string, todosIds: string[]) {
+    setTrabajando(quedaId);
+    setErr(null);
+    try {
+      await enlazarReflejos(quedaId, todosIds);
+      onCambio();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTrabajando("");
+    }
+  }
 
   async function juntar(quedaId: string, seVanIds: string[]) {
     setTrabajando(quedaId);
@@ -128,6 +144,9 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
 
           {grupos.map((g) => {
             const sugerido = cualConservar(g, conRecibo);
+            // Los dos lados de un traspaso se enlazan; un gasto repetido de
+            // verdad se borra. No es lo mismo y no se ofrece lo mismo.
+            const esPagoTarjeta = g.clave.startsWith("pago:");
             return (
               <div key={g.clave} style={{ borderTop: "1px solid var(--line)", padding: "10px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -140,6 +159,13 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
                     onClick={() => noSonRepetidos(g.txs.map((t) => t.id))}>
                     {tr("No son repetidos, déjalos")}
                   </button>
+                </div>
+                {esPagoTarjeta && (
+                  <div style={{ fontSize: 11.5, color: "var(--ink-soft)", margin: "4px 0 0", lineHeight: 1.45 }}>
+                    ⇄ {tr("Los dos lados de un mismo traspaso. Con “Este manda”, los otros se quedan a la vista como el reflejo, igual que en la cartola de cada cuenta, pero cuentan una sola vez.")}
+                  </div>
+                )}
+                <div style={{ display: "none" }}>
                 </div>
                 <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
                   {g.txs.map((t) => (
@@ -158,6 +184,13 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
                           {conRecibo.has(t.id) && <> · <Paperclip size={11} style={{ verticalAlign: "-1px" }} /></>}
                         </div>
                       </span>
+                      {esPagoTarjeta && (
+                        <button className="btn ghost" {...sinRobarFoco} style={{ fontSize: 12, padding: "5px 12px" }}
+                          disabled={Boolean(trabajando)}
+                          onClick={() => void enlazar(t.id, g.txs.map((x) => x.id))}>
+                          {trabajando === t.id ? tr("com.guardando") : tr("Este manda")}
+                        </button>
+                      )}
                       <button className="btn ghost" {...sinRobarFoco} style={{ fontSize: 12, padding: "5px 12px" }}
                         disabled={Boolean(trabajando)}
                         onClick={() => {
@@ -174,7 +207,9 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
                           )) return;
                           void juntar(t.id, seVan.map((x) => x.id));
                         }}>
-                        {trabajando === t.id ? tr("com.guardando") : t.id === sugerido.id ? tr("Dejar este (sugerido)") : tr("Dejar este")}
+                        {trabajando === t.id ? tr("com.guardando")
+                          : esPagoTarjeta ? tr("Borrar los otros")
+                          : t.id === sugerido.id ? tr("Dejar este (sugerido)") : tr("Dejar este")}
                       </button>
                     </div>
                   ))}

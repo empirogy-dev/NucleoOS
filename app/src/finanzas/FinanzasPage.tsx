@@ -1967,7 +1967,7 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, h
   const esTransfer = t.type === "transfer";
   const neg = t.type === "expense";
   return (
-    <div className="txrow">
+    <div className="txrow" style={t.mirror_of ? { opacity: .58 } : undefined}>
       <span className="txicon">{esTransfer ? "🔁" : cat?.icon ?? (neg ? "💸" : "💰")}</span>
       <div className="txmeta">
         <b>{t.merchant || t.description || t.bank_ref || cat?.name || (esTransfer ? "Transferencia" : neg ? "Gasto" : "Ingreso")}</b>
@@ -1978,6 +1978,7 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, h
             : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : cardName ? `, 💳 ${cardName}` : ""}`}
           {t.source !== "manual" ? `, ${t.source}` : ""}
           {t.reimbursed ? `, ${tr("reembolsado")}` : ""}
+          {t.mirror_of ? `, ${tr("el otro lado del mismo traspaso")}` : ""}
         </small>
         {tags && tags.length > 0 && (
           <span style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>

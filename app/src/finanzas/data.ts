@@ -169,7 +169,7 @@ export function saldoDeuda(d: Debt, txs: Tx[]): number {
   // Sin la 0064 no hay monto original: se respeta lo que esté guardado.
   if (d.initial_balance === null || d.initial_balance === undefined) return Number(d.balance);
   const abonado = txs
-    .filter((t) => t.type === "transfer" && t.destination_kind === "debt" && t.destination_ref === d.id)
+    .filter((t) => t.type === "transfer" && !t.mirror_of && t.destination_kind === "debt" && t.destination_ref === d.id)
     .reduce((s, t) => s + Number(t.amount), 0);
   // Nunca menos de cero: pagar de más no te deja con deuda negativa.
   return Math.max(0, Number(d.initial_balance) - abonado);
@@ -197,9 +197,24 @@ export function saldoTarjeta(c: CreditCard, txs: Tx[]): {
     .filter((t) => t.type === "expense" && t.payment_source_type === "credit_card" && t.payment_source_id === c.id)
     .reduce((s, t) => s + Number(t.amount), 0);
   const pagos = txs
-    .filter((t) => t.type === "transfer" && t.destination_kind === "card" && t.destination_ref === c.id)
+    .filter((t) => t.type === "transfer" && !t.mirror_of && t.destination_kind === "card" && t.destination_ref === c.id)
     .reduce((s, t) => s + Number(t.amount), 0);
   return { saldo: inicial + cargos - pagos, inicial, cargos, pagos, delBanco };
+}
+
+/** Enlaza los dos lados de un mismo traspaso. El que se elige queda como el
+ *  bueno; los demás pasan a ser su reflejo: se siguen viendo, igual que en la
+ *  cartola de cada cuenta, pero dejan de sumar. */
+export async function enlazarReflejos(quedaId: string, reflejosIds: string[]): Promise<void> {
+  const otros = reflejosIds.filter((id) => id !== quedaId);
+  if (otros.length === 0) return;
+  const { error } = await sb().from("transactions").update({ mirror_of: quedaId }).in("id", otros);
+  if (error && /mirror_of/.test(error.message)) {
+    throw new Error("Falta la migración 0066 en Supabase (supabase/migrations/0066_reflejo.sql).");
+  }
+  check(error);
+  // El bueno nunca es reflejo de nadie.
+  await sb().from("transactions").update({ mirror_of: null }).eq("id", quedaId);
 }
 
 /** Le pone la misma categoría a varios movimientos de una vez. Con 240 por
@@ -551,6 +566,7 @@ interface Efecto {
  *  tarjeta, abona a una deuda o aporta a una meta de ahorro. */
 function efectosMovimiento(t: {
   type: Tx["type"];
+  mirror_of?: string | null;
   amount: number;
   account_id: string | null;
   payment_source_type?: "account" | "credit_card" | null;
@@ -560,6 +576,9 @@ function efectosMovimiento(t: {
 }): Efecto[] {
   const monto = Number(t.amount);
   const ef: Efecto[] = [];
+  // El reflejo es el mismo movimiento visto desde la otra cuenta: si sumara,
+  // todo quedaría contado dos veces.
+  if (t.mirror_of) return ef;
   if (t.type === "income") {
     if (t.account_id) ef.push({ tabla: "accounts", campo: "balance", id: t.account_id, delta: monto });
     return ef;
@@ -625,11 +644,11 @@ function columnasTx(t: TxInput) {
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()
     .from("transactions")
-    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id,receipt_waived,reimbursed")
+    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id,receipt_waived,reimbursed,mirror_of")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error && /receipt_waived|reimbursed/.test(error.message)) {
+  if (error && /receipt_waived|reimbursed|mirror_of/.test(error.message)) {
     // Sin la 0061 o la 0063: se lee sin las marcas y la app sigue igual.
     const sinMarca = await sb()
       .from("transactions")
