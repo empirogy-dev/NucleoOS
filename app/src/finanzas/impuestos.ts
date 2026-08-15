@@ -185,7 +185,9 @@ export function resumenImpuestos(
   const catPorId = new Map(categories.map((c) => [c.id, c]));
 
   const gastos = txs.filter((t) =>
-    t.type === "expense" && t.date >= desde && t.date <= hasta && monedaDe(t) === moneda);
+    t.type === "expense" && t.date >= desde && t.date <= hasta && monedaDe(t) === moneda
+    // Un gasto que otro te reembolsó no se deduce: no lo pagaste tú.
+    && !t.reimbursed);
 
   const porCategoria = new Map<string, { total: number; cuantos: number }>();
   for (const t of gastos) {

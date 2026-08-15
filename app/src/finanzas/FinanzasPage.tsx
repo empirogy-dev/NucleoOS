@@ -38,6 +38,7 @@ import {
   deleteCard,
   deleteCategory,
   marcarBoletaNoAplica,
+  marcarReembolsado,
   ultimaTransaccion,
   updateCategoryTaxLine,
   deleteDebt,
@@ -1930,6 +1931,7 @@ function TxRow({ t, catById, accById, currency, resolveDest, onDelete, onEdit, h
             ? `, transferencia${acc ? ` desde ${acc.name}` : ""}${dest ? ` hacia ${dest}` : ""}`
             : `, ${cat?.name ?? "sin categoría"}${acc ? `, ${acc.name}` : cardName ? `, 💳 ${cardName}` : ""}`}
           {t.source !== "manual" ? `, ${t.source}` : ""}
+          {t.reimbursed ? `, ${tr("reembolsado")}` : ""}
         </small>
         {tags && tags.length > 0 && (
           <span style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>
@@ -2083,6 +2085,9 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
   // se sostiene.
   const [boleta, setBoleta] = useState<File | null>(null);
   const [sinBoletaNunca, setSinBoletaNunca] = useState(Boolean(edit?.receipt_waived));
+  // "Me lo reembolsaron": el gasto y su boleta se guardan, pero no cuenta
+  // para impuestos ni para el presupuesto, porque al final no lo pagaste tú.
+  const [reembolsado, setReembolsado] = useState(Boolean(edit?.reimbursed));
   const fotoRef = useRef<HTMLInputElement>(null);
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
@@ -2156,6 +2161,9 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
         }
         if (sinBoletaNunca !== Boolean(edit?.receipt_waived)) {
           await marcarBoletaNoAplica(idTx, sinBoletaNunca);
+        }
+        if (reembolsado !== Boolean(edit?.reimbursed)) {
+          await marcarReembolsado([idTx], reembolsado);
         }
       }
       // La regla se ofrece al renombrar O al categorizar: transacciones
@@ -2322,6 +2330,18 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
               </label>
             )}
           </div>
+        )}
+        {type === "expense" && (
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 12, cursor: "pointer", lineHeight: 1.45 }}>
+            <input type="checkbox" checked={reembolsado} onChange={(e) => setReembolsado(e.target.checked)}
+              style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+            <span>
+              {tr("Me lo reembolsaron")}{" "}
+              <span style={{ color: "var(--muted)" }}>
+                {tr("Se queda con su boleta y su categoría, pero no cuenta para tus impuestos ni para tu presupuesto: al final no lo pagaste tú.")}
+              </span>
+            </span>
+          </label>
         )}
         {edit && onDividir && type !== "transfer" && (
           <button type="button" className="btn ghost" style={{ fontSize: 12.5, padding: "7px 14px", marginBottom: 12 }}

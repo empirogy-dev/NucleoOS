@@ -146,6 +146,9 @@ export interface Tx {
   source: TxSource;
   /** Ella dijo que este movimiento no necesita boleta (0061). */
   receipt_waived?: boolean | null;
+  /** Alguien le devolvió esta plata (0063). El gasto y su boleta se guardan,
+   *  pero no cuenta para impuestos ni para el presupuesto. */
+  reimbursed?: boolean | null;
   /** Fuente del pago (0057): cuenta o tarjeta de crédito. */
   payment_source_type?: "account" | "credit_card" | null;
   payment_source_id?: string | null;

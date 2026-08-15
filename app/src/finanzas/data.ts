@@ -146,6 +146,18 @@ export async function marcarBoletaNoAplica(id: string, valor: boolean): Promise<
   check(error);
 }
 
+/** "Este gasto me lo reembolsaron". La boleta se queda, el gasto se queda en
+ *  su categoría de verdad, pero deja de contar para los impuestos y para el
+ *  presupuesto: no lo pagó ella al final del día. */
+export async function marcarReembolsado(ids: string[], valor: boolean): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await sb().from("transactions").update({ reimbursed: valor }).in("id", ids);
+  if (error && /reimbursed/.test(error.message)) {
+    throw new Error("Falta la migración 0063 en Supabase (supabase/migrations/0063_reembolsado.sql).");
+  }
+  check(error);
+}
+
 /** Le pone la misma categoría a varios movimientos de una vez. Con 240 por
  *  revisar, decidir una vez por comercio es lo que hace que la tarea se
  *  termine en vez de abandonarse. */
@@ -506,12 +518,12 @@ function columnasTx(t: TxInput) {
 export async function listTransactions(limit = 200): Promise<Tx[]> {
   const { data, error } = await sb()
     .from("transactions")
-    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id,receipt_waived")
+    .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id,receipt_waived,reimbursed")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error && /receipt_waived/.test(error.message)) {
-    // Sin la 0061: se lee sin la marca y la app sigue igual.
+  if (error && /receipt_waived|reimbursed/.test(error.message)) {
+    // Sin la 0061 o la 0063: se lee sin las marcas y la app sigue igual.
     const sinMarca = await sb()
       .from("transactions")
       .select("id,date,amount,type,description,merchant,bank_ref,category_id,account_id,destination_account_id,destination_kind,destination_ref,source,payment_source_type,payment_source_id")

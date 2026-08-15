@@ -22,7 +22,8 @@ export function umbralAdvertencia(modo: BudgetMode): number {
 
 function gastoDelMes(categoryId: string, txs: Tx[], mes: string): number {
   return txs
-    .filter((t) => t.type === "expense" && t.category_id === categoryId && t.date.startsWith(mes))
+    // Lo reembolsado no gasta tu presupuesto: te devolvieron la plata.
+    .filter((t) => t.type === "expense" && !t.reimbursed && t.category_id === categoryId && t.date.startsWith(mes))
     .reduce((s, t) => s + Number(t.amount), 0);
 }
 
