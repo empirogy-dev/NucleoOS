@@ -55,7 +55,6 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
     () => buscarRepetidos(txs, 4, !amplio).filter((g) => !descartados.includes(firma(g.txs))),
     [txs, descartados, amplio],
   );
-  if (grupos.length === 0) return null;
 
   function noSonRepetidos(ids: string[]) {
     const next = [...descartados, firma2(ids)];
@@ -63,6 +62,7 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
     localStorage.setItem(CLAVE, JSON.stringify(next));
   }
 
+  const hay = grupos.length > 0;
   const plataDeMas = grupos.reduce((s, g) => s + g.monto * (g.txs.length - 1), 0);
 
   async function juntar(quedaId: string, seVanIds: string[]) {
@@ -85,17 +85,20 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
   }
 
   return (
-    <div className="card pad" style={{ marginBottom: 14, borderColor: "var(--warn)" }}>
+    <div className="card pad" style={{ marginBottom: 14, borderColor: hay ? "var(--warn)" : "var(--line)" }}>
       <button type="button" className="linklike" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}
         onClick={() => setAbierto(!abierto)}>
         {abierto ? "▾" : "▸"} <Copy size={13} style={{ verticalAlign: "-2px" }} />{" "}
-        {grupos.length} {grupos.length === 1 ? tr("posible repetido") : tr("posibles repetidos")}
-        {", "}{fmtMoney(plataDeMas, currency)} {tr("contados de más")}
+        {hay
+          ? <>{grupos.length} {grupos.length === 1 ? tr("posible repetido") : tr("posibles repetidos")}{", "}{fmtMoney(plataDeMas, currency)} {tr("contados de más")}</>
+          : tr("Buscar gastos repetidos")}
       </button>
 
       {!abierto && (
         <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-          {tr("Ábrelo para revisarlos uno por uno. Nada se toca hasta que tú elijas cuál se queda.")}
+          {hay
+            ? tr("Ábrelo para revisarlos uno por uno. Nada se toca hasta que tú elijas cuál se queda.")
+            : tr("No encontré ninguno con las reglas de siempre. Ábrelo para buscar más amplio.")}
         </p>
       )}
 
@@ -115,6 +118,13 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
             </span>
           </label>
           {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
+          {!hay && (
+            <p style={{ fontSize: 13, color: "var(--ok)" }}>
+              ✓ {amplio
+                ? tr("Tampoco con la búsqueda amplia: no hay gastos repetidos.")
+                : tr("Ninguno repetido. Si sospechas de uno que llegó con otro nombre, marca la casilla de arriba.")}
+            </p>
+          )}
 
           {grupos.map((g) => {
             const sugerido = cualConservar(g, conRecibo);
