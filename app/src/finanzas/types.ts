@@ -173,6 +173,10 @@ export const DEFAULT_CATEGORIES: Array<Pick<Category, "name" | "type" | "icon">>
   { name: "Entretención", type: "expense", icon: "🎬" },
   { name: "Compras", type: "expense", icon: "🛍️" },
   { name: "Servicios", type: "expense", icon: "💡" },
+  // Las suscripciones de software se separan de los servicios de la casa: son
+  // el gasto que uno revisa cuando quiere recortar, y en impuestos van a otra
+  // línea.
+  { name: "Software", type: "expense", icon: "💻" },
   { name: "Educación", type: "expense", icon: "📚" },
   { name: "Sueldo", type: "income", icon: "💼" },
   { name: "Otros ingresos", type: "income", icon: "✨" },
