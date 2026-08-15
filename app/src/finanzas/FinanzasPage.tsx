@@ -286,8 +286,13 @@ export function FinanzasPage() {
   ])];
   const porMoneda = monedas.map((cur) => {
     const bal = accounts.filter((a) => (a.currency || defaultCurrency) === cur).reduce((s, a) => s + Number(a.balance), 0);
-    const deu = cards.filter((c) => (c.currency || defaultCurrency) === cur).reduce((s, c) => s + Number(c.balance), 0)
-      + (cur === currency ? debts.reduce((s, d) => s + Number(d.balance), 0) : 0);
+    // Solo lo que de verdad se debe. Una tarjeta con saldo negativo está
+    // pagada de más: eso es plata a favor, no una deuda, y restarla de lo que
+    // debes en otras tarjetas da un número que no existe. La pestaña Deudas
+    // ya contaba así, y aquí decía otra cosa: 84 contra 6.416.
+    const deu = cards.filter((c) => (c.currency || defaultCurrency) === cur)
+      .reduce((s, c) => s + Math.max(0, Number(c.balance)), 0)
+      + (cur === currency ? debts.reduce((s, d) => s + Math.max(0, Number(d.balance)), 0) : 0);
     const ing = monthTxs.filter((t) => t.type === "income" && monedaDeMovimiento(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
     const gas = monthTxs.filter((t) => t.type === "expense" && monedaDeMovimiento(t) === cur).reduce((s, t) => s + Number(t.amount), 0);
     return { cur, balance: bal, deuda: deu, patrimonio: bal - deu, ingresos: ing, gastos: gas };

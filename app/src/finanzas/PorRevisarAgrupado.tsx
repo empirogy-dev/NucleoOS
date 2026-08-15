@@ -110,7 +110,7 @@ export function AccionesMasivas(props: {
           await marcarTransferenciasEntrantes(lista, v === "fuera" ? null : v.split(":")[1]);
         } else {
           const [kind, ref] = v === "fuera" ? [null, null] : v.split(":");
-          await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+          await marcarTransferencias(lista, kind as Tx["destination_kind"], ref ?? null);
         }
       } else {
         await categorizarVarias(lista.map((t) => t.id), v);
@@ -185,7 +185,7 @@ export function PorRevisarAgrupado({ txs, categories, accounts, cards, debts, go
       } else {
         // "fuera" es plata que se va a otro banco: no tiene destino adentro.
         const [kind, ref] = destino === "fuera" ? [null, null] : destino.split(":");
-        await marcarTransferencias(lista.map((t) => t.id), kind, ref ?? null);
+        await marcarTransferencias(lista, kind as Tx["destination_kind"], ref ?? null);
       }
       setComoTransfer((p) => p.filter((x) => x !== clave));
       onCambio();

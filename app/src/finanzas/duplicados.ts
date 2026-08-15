@@ -64,7 +64,11 @@ export function mismaFuente(a: Tx, b: Tx): boolean {
 
 /** Grupos de dos o más movimientos que parecen ser el mismo. */
 export function buscarRepetidos(txs: Tx[], ventanaDias = 4, exigirComercio = true): GrupoRepetido[] {
-  const gastos = txs.filter((t) => t.type !== "transfer");
+  // Las transferencias también entran. El pago de la tarjeta llega DOS veces,
+  // una desde la cuenta que paga y otra en la tarjeta que recibe, y las dos
+  // son transferencias: dejarlas fuera era esconder justo el repetido que más
+  // desordena los saldos.
+  const gastos = txs;
 
   // Primero por monto exacto, que es la señal fuerte. Dos gastos del mismo
   // monto en días distintos pueden ser reales (el café de todos los días),

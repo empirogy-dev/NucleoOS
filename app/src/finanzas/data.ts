@@ -171,48 +171,57 @@ export async function categorizarVarias(ids: string[], categoryId: string): Prom
  *  tarjeta no es un gasto ni un ingreso, y cuando llegan treinta iguales,
  *  marcarlos uno por uno no es una opción real. */
 export async function marcarTransferencias(
-  ids: string[],
-  destinoKind: string | null,
+  txs: Tx[],
+  destinoKind: Tx["destination_kind"],
   destinoRef: string | null,
 ): Promise<void> {
-  if (ids.length === 0) return;
-  const { error } = await sb().from("transactions").update({
-    type: "transfer",
-    // Una transferencia no lleva categoría de gasto ni de ingreso.
-    category_id: null,
-    destination_kind: destinoKind,
-    destination_ref: destinoRef,
-  }).in("id", ids);
-  check(error);
+  // Uno por uno y por updateTransaction a propósito: cambiar un gasto a
+  // transferencia mueve saldos, y escribir la fila a mano los dejaba mal.
+  // Así la deuda que se paga SÍ baja, que era justo lo que no pasaba.
+  for (const t of txs) {
+    await updateTransaction(t, {
+      date: t.date,
+      amount: Number(t.amount),
+      type: "transfer",
+      description: t.description,
+      merchant: t.merchant,
+      bank_ref: t.bank_ref ?? null,
+      // Una transferencia no lleva categoría de gasto ni de ingreso.
+      category_id: null,
+      account_id: t.account_id,
+      destination_kind: destinoKind,
+      destination_ref: destinoRef,
+      payment_source_type: t.payment_source_type ?? null,
+      payment_source_id: t.payment_source_id ?? null,
+    });
+  }
 }
 
 /** Transferencias que LLEGAN. La pregunta es al revés: el destino no se
  *  elige, es la cuenta donde cayó la plata; lo que se elige es de dónde vino.
  *  Preguntar "hacia dónde" por algo que ya llegó no tiene sentido. */
 export async function marcarTransferenciasEntrantes(
-  txs: Array<Pick<Tx, "id" | "account_id" | "payment_source_type" | "payment_source_id">>,
+  txs: Tx[],
   origenId: string | null,
 ): Promise<void> {
-  // Cada movimiento cayó en su propia cuenta, así que el destino se resuelve
-  // uno por uno y se agrupa para no hacer una llamada por fila.
-  const porDestino = new Map<string, string[]>();
   for (const t of txs) {
     const esTarjeta = t.payment_source_type === "credit_card";
-    const destino = (esTarjeta ? t.payment_source_id : t.account_id) ?? "";
-    const clave = `${esTarjeta ? "card" : "account"}:${destino}`;
-    porDestino.set(clave, [...(porDestino.get(clave) ?? []), t.id]);
-  }
-  for (const [clave, ids] of porDestino) {
-    const [kind, ref] = clave.split(":");
-    const { error } = await sb().from("transactions").update({
+    const destino = (esTarjeta ? t.payment_source_id : t.account_id) ?? null;
+    await updateTransaction(t, {
+      date: t.date,
+      amount: Number(t.amount),
       type: "transfer",
+      description: t.description,
+      merchant: t.merchant,
+      bank_ref: t.bank_ref ?? null,
       category_id: null,
       // El origen: la cuenta de donde salió, o vacío si vino de otro banco.
       account_id: origenId,
-      destination_kind: ref ? kind : null,
-      destination_ref: ref || null,
-    }).in("id", ids);
-    check(error);
+      destination_kind: destino ? (esTarjeta ? "card" : "account") : null,
+      destination_ref: destino,
+      payment_source_type: t.payment_source_type ?? null,
+      payment_source_id: t.payment_source_id ?? null,
+    });
   }
 }
 
@@ -497,8 +506,28 @@ function efectosMovimiento(t: {
   return ef;
 }
 
+/** El saldo de una cuenta o tarjeta conectada al banco lo manda EL BANCO.
+ *
+ *  Este fue el error de fondo: la app sumaba y restaba sus propios deltas
+ *  encima de un saldo que el banco ya trae calculado. Cada gasto y cada pago
+ *  se contaban dos veces, una por el banco y otra por nosotras, y los saldos
+ *  se iban a cualquier parte. Una American Express con casi cinco mil de
+ *  deuda aparecía en menos trescientos.
+ *
+ *  Lo manual sigue igual: las cuentas que ella creó a mano, las deudas y las
+ *  metas no tienen quién las calcule, así que ahí los deltas sí valen.
+ */
+async function esDelBanco(tabla: Efecto["tabla"], id: string): Promise<boolean> {
+  if (tabla !== "accounts" && tabla !== "credit_cards") return false;
+  const { data, error } = await sb().from(tabla).select("external_id").eq("id", id).maybeSingle();
+  // Sin la 0058 la columna no existe: se comporta como antes.
+  if (error) return false;
+  return Boolean((data as { external_id?: string | null } | null)?.external_id);
+}
+
 async function aplicarEfectos(efectos: Efecto[], signo: 1 | -1): Promise<void> {
   for (const e of efectos) {
+    if (await esDelBanco(e.tabla, e.id)) continue;
     const { data } = await sb().from(e.tabla).select(e.campo).eq("id", e.id).single();
     if (data) {
       const actual = Number((data as Record<string, unknown>)[e.campo] ?? 0);
