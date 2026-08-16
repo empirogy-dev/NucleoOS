@@ -66,3 +66,68 @@ export function resumenPresupuesto(c: Category, txs: Tx[], mesActual: string): R
   const umbral = umbralAdvertencia(modoDe(c));
   return { gastado, arrastre, disponible, restante, pct, umbral, excedido: gastado > disponible };
 }
+
+
+// ---------- Cuánto poner de tope ----------
+//
+// Un presupuesto inventado no sirve: si lo pones muy bajo lo revientas el
+// día 8 y dejas de mirarlo, y si lo pones muy alto no te avisa nunca. El
+// único número honesto sale de lo que de verdad has gastado.
+//
+// Se miran los meses COMPLETOS, no el actual: el mes en curso va a la mitad y
+// arrastraría el promedio hacia abajo, haciéndote poner un tope que no
+// alcanza.
+
+export interface HistorialCategoria {
+  meses: Array<{ mes: string; total: number }>;
+  promedio: number;
+  maximo: number;
+  /** El tope propuesto: el promedio con un respiro, redondeado a algo que se
+   *  pueda recordar. Un tope exacto al promedio se pasa la mitad de los
+   *  meses, por definición. */
+  sugerido: number;
+}
+
+export function historialCategoria(
+  cat: Category,
+  txs: Tx[],
+  mesActual: string,
+  cuantos = 3,
+): HistorialCategoria | null {
+  const mesesAtras = (m: string, n: number) => {
+    const [a, b] = m.split("-").map(Number);
+    const d = new Date(Date.UTC(a, b - 1 - n, 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const meses: Array<{ mes: string; total: number }> = [];
+  for (let i = 1; i <= cuantos; i += 1) {
+    const mes = mesesAtras(mesActual, i);
+    const hubo = txs.some((t) => t.date.startsWith(mes));
+    if (!hubo) continue; // un mes sin NINGÚN movimiento es un mes sin datos
+    const total = txs
+      .filter((t) => t.type === "expense" && !t.reimbursed
+        && t.category_id === cat.id && t.date.startsWith(mes))
+      .reduce((s, t) => s + Number(t.amount), 0);
+    meses.push({ mes, total });
+  }
+  if (meses.length === 0) return null;
+
+  const promedio = meses.reduce((s, m) => s + m.total, 0) / meses.length;
+  const maximo = Math.max(...meses.map((m) => m.total));
+  if (promedio <= 0) return null;
+
+  // Un diez por ciento de aire, y redondeado hacia arriba a una cifra
+  // redonda del tamaño del número: a 10 si es chico, a 1.000 si es grande.
+  const conAire = promedio * 1.1;
+  // Un tope es un número que uno tiene que poder recordar. 800 se recuerda,
+  // 760 no, y la diferencia entre los dos no cambia nada.
+  const escala = conAire >= 100000 ? 10000
+    : conAire >= 10000 ? 1000
+    : conAire >= 1000 ? 100
+    : conAire >= 200 ? 50
+    : 10;
+  const sugerido = Math.ceil(conAire / escala) * escala;
+
+  return { meses, promedio, maximo, sugerido };
+}

@@ -75,7 +75,7 @@ import {
 } from "./data";
 import { StatementImportError, parseStatementFile, type StatementImportRow } from "./statementImport";
 import { interesMensual, ordenarDeudas, simularPlan, type Estrategia } from "./debtPlan";
-import { modoDe, resumenPresupuesto } from "./budgeting";
+import { historialCategoria, modoDe, resumenPresupuesto } from "./budgeting";
 import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import {
   ACCOUNT_TYPES,
@@ -1228,7 +1228,7 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
           onSaved={() => { setModal(null); setEditCat(null); void reload(); }} />
       )}
       {budgetCat && (
-        <BudgetModal cat={budgetCat} currency={currency} onClose={() => setBudgetCat(null)}
+        <BudgetModal cat={budgetCat} currency={currency} txs={txs} onClose={() => setBudgetCat(null)}
           onSaved={() => { setBudgetCat(null); void reload(); }} />
       )}
       {(modal === "goal" || editGoal) && (
@@ -1923,15 +1923,21 @@ function ContributeModal({ goal, accounts, currency, onClose, onSaved }: {
   );
 }
 
-function BudgetModal({ cat, currency, onClose, onSaved }: {
+function BudgetModal({ cat, currency, txs, onClose, onSaved }: {
   cat: Category;
   currency: string;
+  txs: Tx[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const { t: tr } = useIdioma();
   const [value, setValue] = useState(cat.budget ? String(cat.budget) : "");
   const [busy, setBusy] = useState(false);
+  // Lo que de verdad gastó, para no inventar el tope.
+  const historial = useMemo(
+    () => historialCategoria(cat, txs, mesActualLocal()),
+    [cat, txs],
+  );
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -1944,8 +1950,41 @@ function BudgetModal({ cat, currency, onClose, onSaved }: {
   return (
     <Modal title={`Presupuesto de ${cat.icon ?? ""} ${cat.name}`} onClose={onClose}>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-        Tope mensual en {currency}. Déjalo vacío (o 0) para quitar el presupuesto.
+        {tr("Tope mensual en")} {currency}. {tr("Déjalo vacío (o 0) para quitar el presupuesto.")}
       </p>
+
+      {/* Un tope inventado no sirve: muy bajo lo revientas el día 8 y dejas de
+          mirarlo, muy alto no te avisa nunca. El número honesto sale de lo que
+          ya gastaste. */}
+      {historial ? (
+        <div className="card pad" style={{ marginBottom: 14, background: "var(--surface)" }}>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 8 }}>
+            {tr("Lo que gastaste aquí")}:
+          </div>
+          {historial.meses.map((m) => (
+            <div key={m.mes} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "2px 0" }}>
+              <span>{m.mes}</span>
+              <b className="tnum">{fmtMoney(m.total, currency)}</b>
+            </div>
+          ))}
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, paddingTop: 6, marginTop: 6, borderTop: "1px solid var(--line)" }}>
+            <span style={{ color: "var(--muted)" }}>{tr("Promedio")}</span>
+            <b className="tnum">{fmtMoney(historial.promedio, currency)}</b>
+          </div>
+          <button type="button" className="btn ghost" style={{ marginTop: 10, fontSize: 12.5 }}
+            onClick={() => setValue(String(historial.sugerido))}>
+            {tr("Usar")} {fmtMoney(historial.sugerido, currency)}
+          </button>
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8, lineHeight: 1.5 }}>
+            {tr("Es tu promedio con un diez por ciento de aire. Un tope exacto al promedio se pasa la mitad de los meses.")}
+          </p>
+        </div>
+      ) : (
+        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14, lineHeight: 1.5 }}>
+          {tr("Todavía no hay meses completos con gastos aquí, así que no puedo proponerte un número. Pon uno a ojo y ajústalo el próximo mes.")}
+        </p>
+      )}
+
       <form onSubmit={save}>
         <div className="field"><label>Monto mensual</label>
           <input type="number" min="0" step="any" value={value} onChange={(e) => setValue(e.target.value)} placeholder={tr("300000")} autoFocus /></div>
