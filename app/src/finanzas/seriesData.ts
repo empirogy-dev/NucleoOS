@@ -17,6 +17,9 @@ export interface DecisionSerie {
   kind: TipoSerie;
   name: string | null;
   installments_total: number | null;
+  /** Los cargos que la persona asignó a mano a esta serie (0069). Nulo o
+   *  vacío significa que la serie se calcula sola desde los movimientos. */
+  tx_ids: string[] | null;
 }
 
 function sb() {
@@ -30,7 +33,7 @@ async function uid(): Promise<string> {
   return data.user.id;
 }
 
-const COLUMNAS = "id,clave,anchor_tx_id,kind,name,installments_total";
+const COLUMNAS = "id,clave,anchor_tx_id,kind,name,installments_total,tx_ids";
 
 /** Todas las decisiones guardadas.
  *
@@ -40,8 +43,14 @@ const COLUMNAS = "id,clave,anchor_tx_id,kind,name,installments_total";
  */
 export async function listarDecisiones(): Promise<DecisionSerie[]> {
   const { data, error } = await sb().from("recurring_series").select(COLUMNAS);
-  if (error) return [];
-  return (data ?? []) as DecisionSerie[];
+  if (!error) return (data ?? []) as DecisionSerie[];
+  // Con la 0068 corrida pero no la 0069, pedir tx_ids falla y se perdería
+  // TODO lo ya marcado. Se vuelve a pedir sin esa columna: lo que hay sigue
+  // funcionando y lo único que falta es poder separar cargos a mano.
+  const reintento = await sb().from("recurring_series").select(COLUMNAS.replace(",tx_ids", ""));
+  if (reintento.error) return [];
+  const filas = (reintento.data ?? []) as unknown as Array<Omit<DecisionSerie, "tx_ids">>;
+  return filas.map((d) => ({ ...d, tx_ids: null }));
 }
 
 /** ¿Está la tabla creada? Para poder decirlo en pantalla en vez de fallar
@@ -88,28 +97,35 @@ export function decisionDeTx(t: Tx, decisiones: DecisionSerie[]): DecisionSerie 
 
 export async function guardarDecision(
   s: { clave: string; anclaId: string },
-  cambios: { kind?: TipoSerie; name?: string | null; installments_total?: number | null },
+  cambios: { kind?: TipoSerie; name?: string | null; installments_total?: number | null; tx_ids?: string[] | null },
   existente: DecisionSerie | null,
 ): Promise<void> {
   if (cambios.kind === "installments" && !cambios.installments_total) {
     throw new Error("Falta decir cuántas cuotas son en total.");
   }
+  // tx_ids solo viaja si de verdad se está usando. Mandarlo siempre haría
+  // fallar el guardado entero en quien todavía no corrió la 0069, y por una
+  // columna que en la mayoría de los casos va vacía.
+  const conTxIds = <T extends object>(fila: T) =>
+    (cambios.tx_ids && cambios.tx_ids.length ? { ...fila, tx_ids: cambios.tx_ids } : fila);
+
   if (existente) {
+    const { tx_ids: _fuera, ...resto } = cambios;
     const { error } = await sb()
       .from("recurring_series")
-      .update({ ...cambios, updated_at: new Date().toISOString() })
+      .update(conTxIds({ ...resto, updated_at: new Date().toISOString() }))
       .eq("id", existente.id);
     if (error) throw new Error(error.message);
     return;
   }
-  const { error } = await sb().from("recurring_series").insert({
+  const { error } = await sb().from("recurring_series").insert(conTxIds({
     user_id: await uid(),
     clave: s.clave,
     anchor_tx_id: s.anclaId,
     kind: cambios.kind ?? "subscription",
     name: cambios.name ?? null,
     installments_total: cambios.installments_total ?? null,
-  });
+  }));
   if (error) throw new Error(error.message);
 }
 

@@ -5,7 +5,7 @@ import { AyudaTip } from "../components/AyudaTip";
 import { cierreDeFondo } from "../components/cierreDeFondo";
 import { fmtMoney, monedaDeTx, type Account, type Category, type CreditCard, type Tx } from "./types";
 import type { Etiqueta } from "./tags";
-import { analizarRecurrentes, progresoCuotas, type Cadencia, type Serie } from "./recurrentes";
+import { analizarRecurrentes, progresoCuotas, serieElegida, type Cadencia, type Serie } from "./recurrentes";
 import {
   decisionDe, guardarDecision, listarDecisiones, olvidarDecision,
   type DecisionSerie,
@@ -81,11 +81,30 @@ export function RecurrentesTab({
     const porCuenta = new Map(accounts.map((a) => [a.id, a.currency]));
     const porTarjeta = new Map(cards.map((c) => [c.id, c.currency]));
     const catPorId = new Map(categories.map((c) => [c.id, c]));
+    const opts = { monedaDe: (t: Tx) => monedaDeTx(t, porCuenta, porTarjeta, currency) };
+    const txPorId = new Map(txs.map((t) => [t.id, t]));
 
-    return analizarRecurrentes(txs, {
-      monedaDe: (t) => monedaDeTx(t, porCuenta, porTarjeta, currency),
-    }).map(({ serie, detectada, conRitmo }) => {
-      const decision = decisionDe(serie, decisiones);
+    // Primero las series que la persona armó a mano eligiendo sus cargos.
+    // Esos cargos se apartan y NO entran al detector: así los que quedan se
+    // vuelven a agrupar solos y pueden formar su propia serie, que es
+    // justamente lo que pasa cuando un intermediario cobra dos cosas.
+    const aMano: Array<{ serie: Serie; detectada: boolean; conRitmo: boolean; decision: DecisionSerie }> = [];
+    const apartados = new Set<string>();
+    for (const d of decisiones) {
+      if (!d.tx_ids?.length) continue;
+      const cargos = d.tx_ids.map((id) => txPorId.get(id)).filter((t): t is Tx => !!t);
+      const e = serieElegida(d.clave, cargos, opts);
+      if (!e) continue;
+      for (const t of cargos) apartados.add(t.id);
+      aMano.push({ ...e, decision: d });
+    }
+
+    const detectadas = analizarRecurrentes(txs.filter((t) => !apartados.has(t.id)), opts)
+      .map((e) => ({ ...e, decision: decisionDe(e.serie, decisiones) }));
+
+    return [...aMano, ...detectadas]
+      .sort((a, b) => b.serie.alAno - a.serie.alAno)
+      .map(({ serie, detectada, conRitmo, decision }) => {
       // Un cargo lleva sus etiquetas y las de su categoría: si Software es de
       // Empirogy, todo lo que caiga ahí es de Empirogy sin marcarlo uno a uno.
       // Se miran TODOS los cargos de la serie y no solo el último: basta con
@@ -194,10 +213,11 @@ export function RecurrentesTab({
   }, [activas]);
 
   async function marcar(f: Fila, kind: "subscription" | "installments" | "ignored",
-                        total?: number, nombre?: string | null) {
+                        total?: number, nombre?: string | null, cargos?: string[] | null) {
     try {
       await guardarDecision(f.serie,
-        { kind, installments_total: total ?? null, name: nombre ?? null }, f.decision);
+        { kind, installments_total: total ?? null, name: nombre ?? null, tx_ids: cargos ?? null },
+        f.decision);
       recargar();
       setPreguntando(null);
     } catch (e) {
@@ -470,7 +490,8 @@ export function RecurrentesTab({
       {preguntando && (
         <ModalSerie f={preguntando} tr={tr}
           onClose={() => setPreguntando(null)}
-          onGuardar={(kind, total, nombre) => void marcar(preguntando, kind, total ?? undefined, nombre)} />
+          onGuardar={(kind, total, nombre, cargos) =>
+            void marcar(preguntando, kind, total ?? undefined, nombre, cargos)} />
       )}
     </>
   );
@@ -577,18 +598,25 @@ function ModalSerie({ f, tr, onClose, onGuardar }: {
   f: Fila;
   tr: (k: string) => string;
   onClose: () => void;
-  onGuardar: (kind: "subscription" | "installments", total: number | null, nombre: string | null) => void;
+  onGuardar: (kind: "subscription" | "installments", total: number | null, nombre: string | null,
+              cargos: string[] | null) => void;
 }) {
-  const yaVan = f.serie.txs.length;
   const [kind, setKind] = useState<"subscription" | "installments">(
     f.decision?.kind === "installments" ? "installments" : "subscription");
   const [texto, setTexto] = useState(String(f.decision?.installments_total ?? ""));
   const [nombre, setNombre] = useState(f.decision?.name ?? "");
+  // Qué cargos son de esta serie. Empiezan todos marcados, que es lo que la
+  // app dedujo; desmarcar es la forma de decir "ese es de otra cosa".
+  const [elegidos, setElegidos] = useState<Set<string>>(
+    () => new Set(f.serie.txs.map((t) => t.id)));
+  const [verCargos, setVerCargos] = useState(false);
+  const yaVan = elegidos.size;
+  const separando = elegidos.size !== f.serie.txs.length;
   const n = Number(texto);
   const valido = Number.isInteger(n) && n >= 2 && n <= 120;
   // Poner menos cuotas de las que ya llegaron no puede ser: son cargos reales.
   const suficiente = !valido || n >= yaVan;
-  const puedeGuardar = kind === "subscription" || (valido && suficiente);
+  const puedeGuardar = yaVan >= 2 && (kind === "subscription" || (valido && suficiente));
 
   const atajos = [3, 4, 6, 12, 24].filter((x) => x >= yaVan);
 
@@ -624,6 +652,47 @@ function ModalSerie({ f, tr, onClose, onGuardar }: {
             onClick={() => setKind("installments")}>{tr("Compra en cuotas")}</button>
         </div>
 
+        {/* Separar dos cosas que el mismo comercio cobra a la vez.
+            Klarna cobra las cuotas de la antena y el internet mensual por
+            montos casi iguales, y ninguna regla puede adivinar cuál es cuál.
+            Los que se desmarcan vuelven a la lista y arman su propia serie. */}
+        <button type="button" className="linklike" style={{ fontSize: 12.5, fontWeight: 600 }}
+          onClick={() => setVerCargos(!verCargos)}>
+          {verCargos ? "▾ " : "▸ "}{tr("¿Están todos los cargos correctos?")}
+        </button>
+        {verCargos && (
+          <div style={{ marginTop: 8, border: "1px solid var(--line)", borderRadius: 10, padding: "8px 10px" }}>
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 8, lineHeight: 1.5 }}>
+              {tr("Desmarca los que no sean de esto. Vuelven a la lista y pueden formar su propia serie, que es lo que hay que hacer cuando un mismo cobrador te cobra dos cosas distintas.")}
+            </p>
+            <div style={{ maxHeight: 190, overflowY: "auto" }}>
+              {f.serie.txs.map((t) => (
+                <label key={t.id} style={{
+                  display: "flex", alignItems: "center", gap: 8, fontSize: 12.5,
+                  padding: "5px 0", cursor: "pointer",
+                }}>
+                  <input type="checkbox" checked={elegidos.has(t.id)}
+                    style={{ width: 15, height: 15, accentColor: "var(--accent)", flex: "none" }}
+                    onChange={(e) => setElegidos((s) => {
+                      const n2 = new Set(s);
+                      if (e.target.checked) n2.add(t.id); else n2.delete(t.id);
+                      return n2;
+                    })} />
+                  <span style={{ flex: 1, minWidth: 0 }}>{t.date}</span>
+                  <span className="tnum" style={{ whiteSpace: "nowrap" }}>
+                    {fmtMoney(Number(t.amount), f.serie.currency)}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {yaVan < 2 && (
+              <p style={{ fontSize: 12, color: "var(--err)", marginTop: 6 }}>
+                {tr("Deja al menos dos cargos: con uno solo no hay nada que se repita.")}
+              </p>
+            )}
+          </div>
+        )}
+
         {kind === "installments" && (
           <>
             {atajos.length > 0 && (
@@ -644,11 +713,15 @@ function ModalSerie({ f, tr, onClose, onGuardar }: {
             {valido && suficiente && (
               <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 4, lineHeight: 1.55 }}>
                 {(() => {
-                  const p = progresoCuotas(f.serie, n);
-                  return p.completa
-                    ? tr("Con eso ya la terminaste de pagar.")
-                    : `${tr("Quedarían")} ${p.restantes} ${p.restantes === 1 ? tr("cuota") : tr("cuotas")}`
-                      + ` = ${fmtMoney(p.montoRestante, f.serie.currency)}. ${tr("La última caería el")} ${p.termina}.`;
+                  // Con cargos desmarcados el cálculo se hace sobre los que
+                  // quedan, no sobre los que la app había juntado. Y no se
+                  // promete una fecha final, porque el ritmo se recalcula
+                  // recién cuando la serie queda separada.
+                  const p = progresoCuotas({ ...f.serie, txs: f.serie.txs.filter((t) => elegidos.has(t.id)) }, n);
+                  if (p.completa) return tr("Con eso ya la terminaste de pagar.");
+                  const base = `${tr("Quedarían")} ${p.restantes} ${p.restantes === 1 ? tr("cuota") : tr("cuotas")}`
+                    + ` = ${fmtMoney(p.montoRestante, f.serie.currency)}.`;
+                  return separando ? base : `${base} ${tr("La última caería el")} ${p.termina}.`;
                 })()}
               </p>
             )}
@@ -663,7 +736,8 @@ function ModalSerie({ f, tr, onClose, onGuardar }: {
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
           <button className="btn ghost" onClick={onClose}>{tr("Cancelar")}</button>
           <button className="btn primary" disabled={!puedeGuardar}
-            onClick={() => onGuardar(kind, kind === "installments" ? n : null, nombre.trim() || null)}>
+            onClick={() => onGuardar(kind, kind === "installments" ? n : null, nombre.trim() || null,
+              separando ? [...elegidos] : null)}>
             <RefreshCw size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
             {tr("com.guardar")}
           </button>

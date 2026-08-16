@@ -369,6 +369,30 @@ export function analizarRecurrentes(txs: Tx[], opts: OpcionesRecurrentes = {}): 
     .sort((a, b) => b.serie.alAno - a.serie.alAno);
 }
 
+/**
+ * Una serie armada con los cargos que la persona eligió a mano.
+ *
+ * Existe porque hay separaciones que ninguna regla puede hacer. Klarna cobra
+ * las cuotas de la antena y el internet mensual por montos casi iguales y con
+ * las fechas intercaladas: para la app son seis cargos iguales del mismo
+ * comercio, y el ritmo que le sale es semanal, que no es ninguno de los dos.
+ * Solo lo sabe quien hizo la compra.
+ *
+ * El ritmo, el costo y las cuotas se siguen calculando desde los cargos: lo
+ * único que pone la persona es cuáles son.
+ */
+export function serieElegida(
+  clave: string, cargos: Tx[], opts: OpcionesRecurrentes = {},
+): SerieEvaluada | null {
+  if (cargos.length === 0) return null;
+  const orden = sinRepetidosSeguidos(cargos);
+  const montos = orden.map((t) => Number(t.amount));
+  const variable = Math.max(...montos) - Math.min(...montos) > Math.min(...montos) * 0.02;
+  const e = evaluar(clave, orden, opts.hoy ?? hoyLocal(), opts, variable);
+  // Lo que la persona afirma no necesita que la app lo confirme.
+  return { ...e, detectada: true, serie: { ...e.serie, clave } };
+}
+
 /** Solo las series cuyo ritmo se reconoció solo. */
 export function buscarRecurrentes(txs: Tx[], opts: OpcionesRecurrentes = {}): Serie[] {
   return analizarRecurrentes(txs, opts).filter((e) => e.detectada).map((e) => e.serie);

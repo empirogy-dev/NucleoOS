@@ -3154,6 +3154,9 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Viendo los": "Showing the",
     "cargos de": "charges from",
     "Ver todos los movimientos": "Show all transactions",
+    "¿Están todos los cargos correctos?": "Are all these charges right?",
+    "Desmarca los que no sean de esto. Vuelven a la lista y pueden formar su propia serie, que es lo que hay que hacer cuando un mismo cobrador te cobra dos cosas distintas.": "Uncheck the ones that do not belong here. They go back to the list and can form their own series, which is what you need when the same biller charges you for two different things.",
+    "Deja al menos dos cargos: con uno solo no hay nada que se repita.": "Leave at least two charges: with only one there is nothing recurring.",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -4848,6 +4851,9 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Viendo los": "Mostrando as",
     "cargos de": "cobranças de",
     "Ver todos los movimientos": "Ver todos os movimentos",
+    "¿Están todos los cargos correctos?": "As cobranças estão todas certas?",
+    "Desmarca los que no sean de esto. Vuelven a la lista y pueden formar su propia serie, que es lo que hay que hacer cuando un mismo cobrador te cobra dos cosas distintas.": "Desmarque as que não pertencem aqui. Elas voltam para a lista e podem formar a própria série, que é o que você precisa quando o mesmo cobrador cobra duas coisas diferentes.",
+    "Deja al menos dos cargos: con uno solo no hay nada que se repita.": "Deixe pelo menos duas cobranças: com uma só não há nada que se repita.",
   },
 };
 
