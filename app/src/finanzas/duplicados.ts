@@ -76,8 +76,11 @@ export function mismaFuente(a: Tx, b: Tx): boolean {
  *  misma tarjeta con un día de diferencia no son dos pagos.
  */
 function repetidosDePagoTarjeta(txs: Tx[], ventanaDias: number): GrupoRepetido[] {
+  // Lo ya enlazado no vuelve a aparecer: ese trabajo está hecho. Sin esto,
+  // marcar uno como principal no bajaba el contador y el panel se veía igual
+  // por mucho que ella lo resolviera.
   const pagos = txs.filter((t) =>
-    t.type === "transfer" && t.destination_kind === "card" && t.destination_ref);
+    t.type === "transfer" && !t.mirror_of && t.destination_kind === "card" && t.destination_ref);
   const porDestinoYMonto = new Map<string, Tx[]>();
   for (const t of pagos) {
     const clave = `${t.destination_ref}:${Number(t.amount).toFixed(2)}`;
@@ -111,7 +114,8 @@ export function buscarRepetidos(txs: Tx[], ventanaDias = 4, exigirComercio = tru
   // esté en modo estricto: es el repetido que más desordena los saldos.
   const dePago = repetidosDePagoTarjeta(txs, ventanaDias);
   const yaAgrupados = new Set(dePago.flatMap((g) => g.txs.map((t) => t.id)));
-  const gastos = txs.filter((t) => !yaAgrupados.has(t.id));
+  // Los reflejos tampoco entran en la búsqueda general: ya tienen su pareja.
+  const gastos = txs.filter((t) => !yaAgrupados.has(t.id) && !t.mirror_of);
 
   // Primero por monto exacto, que es la señal fuerte. Dos gastos del mismo
   // monto en días distintos pueden ser reales (el café de todos los días),

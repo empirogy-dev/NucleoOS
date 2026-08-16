@@ -202,6 +202,40 @@ export function saldoTarjeta(c: CreditCard, txs: Tx[]): {
   return { saldo: inicial + cargos - pagos, inicial, cargos, pagos, delBanco };
 }
 
+/** Fija el saldo que la persona VE, no el punto de partida.
+ *
+ *  Cuando ella escribe "debo 4.700" está diciendo lo que debe HOY, no con
+ *  cuánto empezó. Guardar ese número como punto de partida hacía que el saldo
+ *  mostrado quedara en otra cosa apenas se le sumaban las compras: escribías
+ *  4.700 y aparecía cualquier cifra. Así que se despeja al revés: se calcula
+ *  qué punto de partida hace que el saldo de hoy sea exactamente el que ella
+ *  escribió.
+ */
+export async function fijarSaldoTarjeta(c: CreditCard, saldoHoy: number, txs: Tx[]): Promise<void> {
+  const r = saldoTarjeta({ ...c, initial_balance: 0 }, txs);
+  const inicial = saldoHoy - (r.cargos - r.pagos);
+  const { error } = await sb().from("credit_cards")
+    .update({ balance: saldoHoy, initial_balance: inicial }).eq("id", c.id);
+  if (error && /initial_balance/.test(error.message)) {
+    check((await sb().from("credit_cards").update({ balance: saldoHoy }).eq("id", c.id)).error);
+    return;
+  }
+  check(error);
+}
+
+export async function fijarSaldoDeuda(d: Debt, saldoHoy: number, txs: Tx[]): Promise<void> {
+  const abonado = txs
+    .filter((t) => t.type === "transfer" && !t.mirror_of && t.destination_kind === "debt" && t.destination_ref === d.id)
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const { error } = await sb().from("debts")
+    .update({ balance: saldoHoy, initial_balance: saldoHoy + abonado }).eq("id", d.id);
+  if (error && /initial_balance/.test(error.message)) {
+    check((await sb().from("debts").update({ balance: saldoHoy }).eq("id", d.id)).error);
+    return;
+  }
+  check(error);
+}
+
 /** Enlaza los dos lados de un mismo traspaso. El que se elige queda como el
  *  bueno; los demás pasan a ser su reflejo: se siguen viendo, igual que en la
  *  cartola de cada cuenta, pero dejan de sumar. */
@@ -421,10 +455,8 @@ export async function updateDebt(id: string, d: {
   interest_rate: number | null; min_payment: number | null;
   due_date: string | null; currency: string; notes: string | null;
 }): Promise<void> {
-  let { error } = await sb().from("debts").update({ ...d, initial_balance: d.balance }).eq("id", id);
-  if (error && /initial_balance/.test(error.message)) {
-    ({ error } = await sb().from("debts").update(d).eq("id", id));
-  }
+  const { balance: _saldo, ...datos } = d;
+  const { error } = await sb().from("debts").update(datos).eq("id", id);
   check(error);
   await syncReminderPago(id, "debt", `Pago de ${d.name}`, d.min_payment, d.due_date);
 }
@@ -485,10 +517,10 @@ export async function updateCard(id: string, c: {
   credit_limit: number | null; balance: number; min_payment: number | null;
   due_date: string | null; apr: number | null; currency: string;
 }): Promise<void> {
-  let { error } = await sb().from("credit_cards").update({ ...c, initial_balance: c.balance }).eq("id", id);
-  if (error && /initial_balance/.test(error.message)) {
-    ({ error } = await sb().from("credit_cards").update(c).eq("id", id));
-  }
+  // El saldo se fija aparte con fijarSaldoTarjeta, que despeja el punto de
+  // partida. Aquí solo van los datos de la tarjeta.
+  const { balance: _saldo, ...datos } = c;
+  const { error } = await sb().from("credit_cards").update(datos).eq("id", id);
   check(error);
   await syncReminderPago(id, "creditCard", `Pago de la tarjeta ${c.name}`, c.min_payment, c.due_date);
 }

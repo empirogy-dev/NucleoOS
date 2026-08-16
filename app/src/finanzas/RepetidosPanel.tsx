@@ -192,7 +192,12 @@ export function RepetidosPanel({ txs, catById, currency, conRecibo, fuenteDe, on
                         <b style={{ fontWeight: 600 }}>{t.merchant || t.bank_ref || t.description || tr("Movimiento")}</b>
                         <div style={{ color: "var(--muted)", fontSize: 11.5 }}>
                           {t.date}
-                          {t.category_id ? `, ${catById.get(t.category_id)?.name ?? ""}` : `, ${tr("sin categoría")}`}
+                          {/* Una transferencia no lleva categoría por diseño:
+                              decir "sin categoría" hacía pensar que faltaba
+                              algo por hacer. */}
+                          {t.type === "transfer"
+                            ? `, ${tr("transferencia")}`
+                            : t.category_id ? `, ${catById.get(t.category_id)?.name ?? ""}` : `, ${tr("sin categoría")}`}
                           {fuenteDe(t) ? `, ${fuenteDe(t)}` : ""}
                           {t.source && DE_DONDE[t.source] ? `, ${tr(DE_DONDE[t.source])}` : ""}
                           {conRecibo.has(t.id) && <> · <Paperclip size={11} style={{ verticalAlign: "-1px" }} /></>}

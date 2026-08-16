@@ -44,6 +44,8 @@ import {
   updateCategoryTaxLine,
   saldoDeuda,
   saldoTarjeta,
+  fijarSaldoTarjeta,
+  fijarSaldoDeuda,
   deleteDebt,
   deleteGoal,
   deleteReminder,
@@ -1232,12 +1234,12 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
           onSaved={() => { setContributeGoal(null); void reload(); }} />
       )}
       {(modal === "debt" || editDebt) && (
-        <DebtModal key={editDebt?.id ?? "nueva"} currency={defaultCurrency} edit={editDebt}
+        <DebtModal key={editDebt?.id ?? "nueva"} currency={defaultCurrency} edit={editDebt} txs={txs}
           onClose={() => { setModal(null); setEditDebt(null); }}
           onSaved={() => { setModal(null); setEditDebt(null); void reload(); }} />
       )}
       {(modal === "card" || editCard) && (
-        <CardModal key={editCard?.id ?? "nueva"} currency={defaultCurrency} edit={editCard}
+        <CardModal key={editCard?.id ?? "nueva"} currency={defaultCurrency} edit={editCard} txs={txs}
           onClose={() => { setModal(null); setEditCard(null); }}
           onSaved={() => { setModal(null); setEditCard(null); void reload(); }} />
       )}
@@ -1616,7 +1618,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
   );
 }
 
-function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edit?: Debt | null; onClose: () => void; onSaved: () => void }) {
+function DebtModal({ currency, edit, txs, onClose, onSaved }: { currency: string; edit?: Debt | null; txs: Tx[]; onClose: () => void; onSaved: () => void }) {
   const { t: tr } = useIdioma();
   const [name, setName] = useState(edit?.name ?? "");
   const [institution, setInstitution] = useState(edit?.institution ?? "");
@@ -1636,8 +1638,13 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
       due_date: dueDate || null, currency: edit?.currency ?? currency,
       notes: notes.trim() || null,
     };
-    if (edit) await updateDebt(edit.id, payload);
-    else await addDebt(payload);
+    if (edit) {
+      await updateDebt(edit.id, payload);
+      // Igual que en la tarjeta: lo que escribe es lo que debe HOY.
+      await fijarSaldoDeuda(edit, Number(balance || 0), txs);
+    } else {
+      await addDebt(payload);
+    }
     onSaved();
   }
 
@@ -1669,7 +1676,7 @@ function DebtModal({ currency, edit, onClose, onSaved }: { currency: string; edi
   );
 }
 
-function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edit?: CreditCard | null; onClose: () => void; onSaved: () => void }) {
+function CardModal({ currency, edit, txs, onClose, onSaved }: { currency: string; edit?: CreditCard | null; txs: Tx[]; onClose: () => void; onSaved: () => void }) {
   const { t: tr } = useIdioma();
   const [name, setName] = useState(edit?.name ?? "");
   const [bank, setBank] = useState(edit?.bank ?? "");
@@ -1692,8 +1699,14 @@ function CardModal({ currency, edit, onClose, onSaved }: { currency: string; edi
       apr: apr ? Number(apr) : null,
       currency: moneda,
     };
-    if (edit) await updateCard(edit.id, payload);
-    else await addCard(payload);
+    if (edit) {
+      await updateCard(edit.id, payload);
+      // El saldo que ella escribe es lo que debe HOY: se fija aparte para que
+      // sea exactamente ese el número que quede a la vista.
+      await fijarSaldoTarjeta(edit, Number(balance || 0), txs);
+    } else {
+      await addCard(payload);
+    }
     onSaved();
   }
 
