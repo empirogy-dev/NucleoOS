@@ -59,6 +59,13 @@ export interface UsoDelAuto {
   /** El porcentaje que se usa para deducir. Cero si todavía no se puede. */
   porcentaje: number;
   viajes: number;
+  /** Todo lo que suma la bitácora del año, de trabajo y personal. Sirve para
+   *  contrastarla con el odómetro: la diferencia son kilómetros que el auto
+   *  anduvo y la app no registró, y esos cuentan como personales. */
+  kmBitacora: number;
+  /** Cuántos viajes personales hay registrados, que es lo que distingue una
+   *  bitácora importada de una escrita a mano. */
+  viajesPersonales: number;
   lecturaInicio: Lectura | null;
   lecturaFin: Lectura | null;
 }
@@ -107,6 +114,8 @@ export function usoDelAuto(anio: string, lecturas: Lectura[], viajes: Viaje[]): 
     anio,
     kmNegocio,
     viajes: suyos.filter((v) => v.is_business !== false).length,
+    viajesPersonales: suyos.filter((v) => v.is_business === false).length,
+    kmBitacora: kmDeLaBitacora,
     lecturaInicio,
     lecturaFin,
   };

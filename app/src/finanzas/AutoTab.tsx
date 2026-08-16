@@ -7,7 +7,7 @@ import { sinRobarFoco } from "../components/cierreDeFondo";
 import { CampoFecha } from "../components/CampoFecha";
 import { hoyLocal } from "../lib/fechas";
 import { fmtMoney, type Category } from "./types";
-import { LINEA_AUTO, lineaPorNumero } from "./impuestos";
+import { LINEA_AUTO, lineaPorNumero, type PaisImpuestos } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
 import { updateCategoryBusinessPct } from "./data";
 import {
@@ -29,6 +29,10 @@ import { leerXls } from "./xls";
 // no hay porcentaje, y sin porcentaje la deducción no se sostiene por mucho
 // que los gastos estén bien anotados. Esta pantalla existe para que llevar la
 // bitácora cueste diez segundos y no sea lo primero que se abandona.
+
+
+/** Un requisito y cómo va: cumplido, todavía no toca, o falta. */
+type Punto = { estado: "listo" | "espera" | "falta"; detalle: string };
 
 export function AutoTab({ categories, onCambio }: {
   categories: Category[];
@@ -179,6 +183,8 @@ export function AutoTab({ categories, onCambio }: {
       </div>
 
       <ResumenUso uso={uso} tr={tr} />
+
+      <RequisitosDelFisco uso={uso} anio={anio} pais={pais} tr={tr} />
 
       {uso.estado === "listo" && catsDelAuto.length > 0 && (
         <div className="card pad" style={{ marginBottom: 14 }}>
@@ -745,6 +751,124 @@ function ModalImportar({ auto, viajes, tr, onClose, onImportado }: {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Lo que el fisco pide, y cuánto de eso ya tienes.
+ *
+ * La deducción del auto no se pierde por gastar mal: se pierde por no poder
+ * probar la proporción. Y lo que se pide son tres cosas concretas, no una
+ * sensación: los kilómetros totales del año, los de trabajo, y una bitácora
+ * con fecha, destino, motivo y distancia de cada viaje.
+ *
+ * Por eso esto es una lista y no un párrafo. Un párrafo se lee una vez; una
+ * lista con lo que falta se puede ir cerrando.
+ */
+function RequisitosDelFisco({ uso, anio, pais, tr }: {
+  uso: UsoDelAuto;
+  anio: string;
+  pais: PaisImpuestos;
+  tr: (k: string) => string;
+}) {
+  const esAnioEnCurso = anio === String(new Date().getFullYear());
+  const km = (n: number) => `${Math.round(n).toLocaleString("es-CL")} km`;
+
+  // La lectura de cierre no se puede tener antes de que termine el año, así
+  // que en el año en curso se muestra pendiente y no como algo que falta.
+  const hayCierre = uso.lecturaFin && uso.lecturaFin.id !== uso.lecturaInicio?.id;
+  const cierre: Punto = hayCierre
+    // Una lectura de agosto no es la del cierre del año. Marcarla como
+    // cumplida haría creer que ya está, y en diciembre nadie se acordaría.
+    ? (esAnioEnCurso && uso.lecturaFin!.date < `${anio}-12-25`
+      ? {
+        estado: "espera",
+        detalle: `${tr("Por ahora")} ${uso.lecturaFin!.date} · ${km(uso.lecturaFin!.km)}. ${tr("Vuelve a anotarlo al terminar el año.")}`,
+      }
+      : { estado: "listo", detalle: `${uso.lecturaFin!.date} · ${km(uso.lecturaFin!.km)}` })
+    : esAnioEnCurso
+      ? { estado: "espera", detalle: tr("Se anota el 31 de diciembre.") }
+      : { estado: "falta", detalle: tr("Sin ella no se puede probar el recorrido del año.") };
+
+  const puntos: Array<{ que: string } & Punto> = [
+    {
+      que: tr("Odómetro al empezar"),
+      ...(uso.lecturaInicio
+        ? { estado: "listo" as const, detalle: `${uso.lecturaInicio.date} · ${km(uso.lecturaInicio.km)}` }
+        : { estado: "falta" as const, detalle: tr("Anótalo abajo, con el número del tablero.") }),
+    },
+    { que: tr("Odómetro al terminar"), ...cierre },
+    {
+      que: tr("Kilómetros del año"),
+      ...(uso.kmTotales > 0
+        ? {
+          estado: "listo" as const,
+          detalle: uso.fuenteTotales === "odometro"
+            ? `${km(uso.kmTotales)} · ${tr("del odómetro")}`
+            : `${km(uso.kmTotales)} · ${tr("de la bitácora, personales incluidos")}`,
+        }
+        : { estado: "falta" as const, detalle: tr("Salen del odómetro, o de una bitácora que traiga los viajes personales.") }),
+    },
+    {
+      que: tr("Kilómetros de trabajo"),
+      ...(uso.kmNegocio > 0
+        ? { estado: "listo" as const, detalle: `${km(uso.kmNegocio)} · ${uso.viajes} ${uso.viajes === 1 ? tr("viaje") : tr("viajes")}` }
+        : { estado: "falta" as const, detalle: tr("Anota o importa los viajes de trabajo.") }),
+    },
+    {
+      que: tr("Bitácora de cada viaje"),
+      ...(uso.viajes > 0
+        ? { estado: "listo" as const, detalle: tr("Fecha, destino, motivo y distancia de cada uno.") }
+        : { estado: "falta" as const, detalle: tr("Es lo que se muestra si te la piden.") }),
+    },
+  ];
+
+  // Cuando hay las dos fuentes, la diferencia es plata: son kilómetros que el
+  // auto anduvo y la app no vio, y cuentan como personales.
+  const noRegistrados = uso.fuenteTotales === "odometro" && uso.kmBitacora > 0
+    ? uso.kmTotales - uso.kmBitacora
+    : 0;
+
+  return (
+    <div className="card panel" style={{ marginBottom: 14 }}>
+      <h3 style={{ marginBottom: 4 }}>{tr("Lo que te van a pedir")}</h3>
+      <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        {pais === "CA"
+          ? tr("Para deducir el auto hay que poder probar la proporción, y eso son cuatro datos. Esto es lo que tienes de este año.")
+          : tr("Aunque las reglas cambien según el país, la proporción siempre se prueba igual: kilómetros de trabajo sobre kilómetros totales, con la bitácora detrás.")}
+      </p>
+
+      {puntos.map((p) => (
+        <div key={p.que} style={{
+          display: "flex", gap: 10, alignItems: "flex-start",
+          borderTop: "1px solid var(--line-soft)", padding: "9px 0",
+        }}>
+          <span aria-hidden style={{
+            width: 17, flex: "none", textAlign: "center", fontSize: 13,
+            color: p.estado === "listo" ? "var(--ok)" : p.estado === "espera" ? "var(--muted)" : "var(--warn)",
+          }}>
+            {p.estado === "listo" ? "✓" : p.estado === "espera" ? "·" : "!"}
+          </span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 13 }}>
+            {p.que}
+            <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>{p.detalle}</div>
+          </span>
+        </div>
+      ))}
+
+      {noRegistrados > 1 && (
+        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 10, lineHeight: 1.55 }}>
+          {tr("El odómetro dice")} <b>{km(uso.kmTotales)}</b> {tr("y la bitácora suma")} <b>{km(uso.kmBitacora)}</b>.{" "}
+          {tr("Esos")} <b>{km(noRegistrados)}</b>{" "}
+          {tr("de diferencia son viajes que el auto hizo y la app no registró. Cuentan como personales, que es lo correcto: si no se registró para qué fue, no se deduce.")}
+        </p>
+      )}
+      {noRegistrados < -1 && (
+        <p style={{ fontSize: 12, color: "var(--err)", marginTop: 10, lineHeight: 1.55 }}>
+          {tr("La bitácora suma más kilómetros que el odómetro. Revisa las lecturas: puede que le falte un dígito a alguna.")}
+        </p>
+      )}
     </div>
   );
 }
