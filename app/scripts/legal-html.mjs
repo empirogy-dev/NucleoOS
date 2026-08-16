@@ -32,7 +32,23 @@ async function leerDocumentos() {
 const escapar = (x) =>
   String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-function pagina({ doc, otro, otroHref, version, lema }) {
+// Lo que rodea al documento (títulos de navegación, pie) también va en su
+// idioma. Una página en inglés con la navegación en español se ve descuidada
+// justo donde hay que verse serio.
+const CHROME = {
+  es: {
+    lang: "es", volver: "Volver a NucleoOS", version: "Versión",
+    pie: '¿Dudas sobre esto? Escríbenos a <a href="mailto:hola@nucleoos.app">hola@nucleoos.app</a>.',
+    otroIdioma: "Read in English", otroIdiomaHref: (cual) => (cual === "terminos" ? "/terms" : "/privacy"),
+  },
+  en: {
+    lang: "en", volver: "Back to NucleoOS", version: "Version",
+    pie: 'Questions about this? Write to us at <a href="mailto:hola@nucleoos.app">hola@nucleoos.app</a>.',
+    otroIdioma: "Leer en español", otroIdiomaHref: (cual) => (cual === "terminos" ? "/terminos" : "/privacidad"),
+  },
+};
+
+function pagina({ doc, otro, otroHref, version, chrome, cual, rutaPropia }) {
   const secciones = doc.secciones.map((s) => `
     <section>
       <h2>${escapar(s.titulo)}</h2>
@@ -40,12 +56,15 @@ function pagina({ doc, otro, otroHref, version, lema }) {
     </section>`).join("\n");
 
   return `<!doctype html>
-<html lang="es">
+<html lang="${chrome.lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapar(doc.titulo)} · NucleoOS</title>
 <meta name="description" content="${escapar(doc.intro.slice(0, 155))}">
+<link rel="canonical" href="https://www.nucleoos.app${rutaPropia}">
+<link rel="alternate" hreflang="es" href="https://www.nucleoos.app${cual === "terminos" ? "/terminos" : "/privacidad"}">
+<link rel="alternate" hreflang="en" href="https://www.nucleoos.app${cual === "terminos" ? "/terms" : "/privacy"}">
 <style>
   :root{--paper:#f7f5f0;--card:#fff;--ink:#1c2b24;--ink-soft:#3f5049;--muted:#7d8b84;
         --line:#e4e6e1;--accent:#7d9b83}
@@ -77,15 +96,16 @@ function pagina({ doc, otro, otroHref, version, lema }) {
   </header>
 
   <h1>${escapar(doc.titulo)}</h1>
-  <p class="version">Versión ${escapar(version)}</p>
+  <p class="version">${escapar(chrome.version)} ${escapar(version)}</p>
   <nav>
-    <a href="/">← ${escapar(lema)}</a>
+    <a href="/">← ${escapar(chrome.volver)}</a>
     <a href="${otroHref}">${escapar(otro)}</a>
+    <a href="${chrome.otroIdiomaHref(cual)}">${escapar(chrome.otroIdioma)}</a>
   </nav>
   <p class="intro">${escapar(doc.intro)}</p>
 ${secciones}
   <footer>
-    ¿Dudas sobre esto? Escríbenos a <a href="mailto:hola@nucleoos.app">hola@nucleoos.app</a>.
+    ${chrome.pie}
   </footer>
 </div>
 </body>
@@ -93,18 +113,27 @@ ${secciones}
 }
 
 const { DOCUMENTOS, VERSION_LEGAL } = await leerDocumentos();
-const es = DOCUMENTOS.es;
 const dist = join(raiz, "dist");
 
-await writeFile(join(dist, "terminos.html"), pagina({
-  doc: es.terminos, otro: "Política de privacidad", otroHref: "/privacidad",
-  version: VERSION_LEGAL, lema: "Volver a NucleoOS",
-}), "utf8");
+const PAGINAS = [
+  { archivo: "terminos.html", ruta: "/terminos", idioma: "es", cual: "terminos", otro: "Política de privacidad", otroHref: "/privacidad" },
+  { archivo: "privacidad.html", ruta: "/privacidad", idioma: "es", cual: "privacidad", otro: "Términos de servicio", otroHref: "/terminos" },
+  { archivo: "terms.html", ruta: "/terms", idioma: "en", cual: "terminos", otro: "Privacy policy", otroHref: "/privacy" },
+  { archivo: "privacy.html", ruta: "/privacy", idioma: "en", cual: "privacidad", otro: "Terms of service", otroHref: "/terms" },
+];
 
-await writeFile(join(dist, "privacidad.html"), pagina({
-  doc: es.privacidad, otro: "Términos de servicio", otroHref: "/terminos",
-  version: VERSION_LEGAL, lema: "Volver a NucleoOS",
-}), "utf8");
+for (const p of PAGINAS) {
+  const docs = DOCUMENTOS[p.idioma];
+  await writeFile(join(dist, p.archivo), pagina({
+    doc: p.cual === "terminos" ? docs.terminos : docs.privacidad,
+    otro: p.otro,
+    otroHref: p.otroHref,
+    version: VERSION_LEGAL,
+    chrome: CHROME[p.idioma],
+    cual: p.cual,
+    rutaPropia: p.ruta,
+  }), "utf8");
+}
 
 // El pie de la landing enlaza a las dos, para que se puedan encontrar sin
 // tener una cuenta. Se hace aquí y no a mano en el HTML para que la landing
@@ -113,10 +142,11 @@ const indexPath = join(dist, "index.html");
 let landing = await readFile(indexPath, "utf8");
 const enlaces = `<p class="muted" style="margin-top:10px;font-size:13px">
         <a href="/terminos">Términos de servicio</a> · <a href="/privacidad">Política de privacidad</a>
+        <br><a href="/terms">Terms of service</a> · <a href="/privacy">Privacy policy</a>
       </p>`;
 if (!landing.includes('href="/terminos"')) {
   landing = landing.replace('<a href="/app" data-i18n="foot.link">', `${enlaces}\n      <a href="/app" data-i18n="foot.link">`);
   await writeFile(indexPath, landing, "utf8");
 }
 
-console.log("postbuild: términos y privacidad publicados en / ✔");
+console.log(`postbuild: ${PAGINAS.length} páginas legales publicadas (es, en) ✔`);
