@@ -5,7 +5,7 @@ import { AyudaTip } from "../components/AyudaTip";
 import { cierreDeFondo } from "../components/cierreDeFondo";
 import { fmtMoney, monedaDeTx, type Account, type Category, type CreditCard, type Tx } from "./types";
 import type { Etiqueta } from "./tags";
-import { buscarRecurrentes, progresoCuotas, type Cadencia, type Serie } from "./recurrentes";
+import { analizarRecurrentes, progresoCuotas, type Cadencia, type Serie } from "./recurrentes";
 import {
   decisionDe, guardarDecision, listarDecisiones, olvidarDecision,
   type DecisionSerie,
@@ -34,10 +34,21 @@ const CADENCIA_TEXTO: Record<Cadencia, string> = {
 interface Fila {
   serie: Serie;
   decision: DecisionSerie | null;
+  /** El ritmo lo reconoció la app sola. Si no, hace falta que la persona lo
+   *  confirme antes de contarla en los totales. */
+  detectada: boolean;
+  /** Las fechas caen con un ritmo reconocible aunque falte evidencia. Sin
+   *  esto, cuatro compras del mismo monto en fechas al azar se ofrecerían
+   *  como suscripción, y eso es ruido, no una sugerencia. */
+  conRitmo: boolean;
   nombre: string;
   etiquetas: Etiqueta[];
   categoria: Category | null;
 }
+
+/** Cuántas sugerencias se muestran de las que la app no reconoció sola.
+ *  Todas serían cientos, y una lista de cientos no la revisa nadie. */
+const TOPE_CANDIDATAS = 12;
 
 export function RecurrentesTab({
   txs, accounts, cards, categories, currency, txTags, catTags, onVerMovimientos,
@@ -60,29 +71,35 @@ export function RecurrentesTab({
   const [preguntando, setPreguntando] = useState<Fila | null>(null);
   const [verParadas, setVerParadas] = useState(false);
   const [verIgnoradas, setVerIgnoradas] = useState(false);
+  const [fTag, setFTag] = useState("all");
   const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => { void cargarDecisiones().then(setDecisiones); }, [cargarDecisiones]);
   const recargar = () => { void cargarDecisiones().then(setDecisiones); };
 
-  const filas: Fila[] = useMemo(() => {
+  const todas: Fila[] = useMemo(() => {
     const porCuenta = new Map(accounts.map((a) => [a.id, a.currency]));
     const porTarjeta = new Map(cards.map((c) => [c.id, c.currency]));
     const catPorId = new Map(categories.map((c) => [c.id, c]));
 
-    return buscarRecurrentes(txs, {
+    return analizarRecurrentes(txs, {
       monedaDe: (t) => monedaDeTx(t, porCuenta, porTarjeta, currency),
-    }).map((serie) => {
+    }).map(({ serie, detectada, conRitmo }) => {
       const decision = decisionDe(serie, decisiones);
       // Un cargo lleva sus etiquetas y las de su categoría: si Software es de
       // Empirogy, todo lo que caiga ahí es de Empirogy sin marcarlo uno a uno.
-      const ultima = serie.txs[serie.txs.length - 1];
-      const propias = txTags.get(ultima.id) ?? [];
-      const deCat = ultima.category_id ? catTags.get(ultima.category_id) ?? [] : [];
-      const unicas = new Map([...propias, ...deCat].map((e) => [e.id, e]));
+      // Se miran TODOS los cargos de la serie y no solo el último: basta con
+      // haber etiquetado uno para que la serie entera quede etiquetada.
+      const unicas = new Map<string, Etiqueta>();
+      for (const t of serie.txs) {
+        for (const e of txTags.get(t.id) ?? []) unicas.set(e.id, e);
+        for (const e of (t.category_id ? catTags.get(t.category_id) ?? [] : [])) unicas.set(e.id, e);
+      }
       return {
         serie,
         decision,
+        detectada,
+        conRitmo,
         nombre: decision?.name?.trim() || serie.nombre,
         etiquetas: [...unicas.values()],
         categoria: serie.categoriaId ? catPorId.get(serie.categoriaId) ?? null : null,
@@ -90,12 +107,36 @@ export function RecurrentesTab({
     });
   }, [txs, accounts, cards, categories, currency, decisiones, txTags, catTags]);
 
+  // Las etiquetas que de verdad aparecen aquí. Ofrecer las que no tienen nada
+  // que filtrar solo agrega botones que no hacen nada.
+  const etiquetasPresentes = useMemo(() => {
+    const mapa = new Map<string, Etiqueta>();
+    for (const f of todas) for (const e of f.etiquetas) mapa.set(e.id, e);
+    return [...mapa.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [todas]);
+
+  const filas = useMemo(
+    () => (fTag === "all" ? todas : todas.filter((f) => f.etiquetas.some((e) => e.id === fTag))),
+    [todas, fTag],
+  );
+
   const cuotas = filas.filter((f) => f.decision?.kind === "installments" && f.decision.installments_total);
   const ignoradas = filas.filter((f) => f.decision?.kind === "ignored");
+  // Una serie cuenta como suscripción si la app reconoció el ritmo o si la
+  // persona dijo que lo es. Lo segundo hace falta: hay suscripciones con dos
+  // cobros, o a las que les cambian el monto todos los meses, y la app no
+  // puede reconocerlas por su cuenta.
   const suscripciones = filas.filter((f) =>
-    f.decision?.kind !== "installments" && f.decision?.kind !== "ignored");
+    f.decision?.kind !== "installments" && f.decision?.kind !== "ignored"
+    && (f.detectada || f.decision?.kind === "subscription"));
   const activas = suscripciones.filter((f) => f.serie.activa);
   const paradas = suscripciones.filter((f) => !f.serie.activa);
+
+  // Las que se repiten pero sin un ritmo claro. Se muestran para confirmar,
+  // no se cuentan en ningún total mientras nadie las confirme.
+  const candidatasTodas = filas
+    .filter((f) => !f.detectada && f.conRitmo && !f.decision && f.serie.txs.length >= 2);
+  const candidatas = candidatasTodas.slice(0, TOPE_CANDIDATAS);
 
   // Los totales se cuentan por moneda: sumar dólares con pesos da un número
   // que no existe. Se muestra el de la moneda principal y, si hay otras, cada
@@ -159,7 +200,7 @@ export function RecurrentesTab({
     }
   }
 
-  if (filas.length === 0) {
+  if (todas.length === 0) {
     return (
       <div className="card pad">
         <h3 style={{ marginBottom: 8 }}>{tr("Todavía no encuentro nada que se repita")}</h3>
@@ -178,6 +219,35 @@ export function RecurrentesTab({
           {/^(relation|could not find|.*does not exist)/i.test(aviso) && (
             <> {tr("Falta correr la migración 0068.")}</>
           )}
+        </div>
+      )}
+
+      {/* El filtro por etiqueta manda sobre todo lo que sigue, totales
+          incluidos: con Empirogy puesto, "se te cobra al mes" es lo que te
+          cobra Empirogy al mes y no lo que te cobra todo junto. */}
+      {etiquetasPresentes.length > 0 && (
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>
+          <button type="button" className={"btn " + (fTag === "all" ? "primary" : "ghost")}
+            style={{ fontSize: 12.5, padding: "6px 13px" }} onClick={() => setFTag("all")}>
+            {tr("Todas")}
+          </button>
+          {etiquetasPresentes.map((e) => (
+            <button key={e.id} type="button" className={"btn " + (fTag === e.id ? "primary" : "ghost")}
+              style={fTag === e.id && e.color
+                ? { fontSize: 12.5, padding: "6px 13px", background: e.color, borderColor: e.color }
+                : { fontSize: 12.5, padding: "6px 13px" }}
+              onClick={() => setFTag(e.id)}>
+              {e.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filas.length === 0 && (
+        <div className="card pad" style={{ marginBottom: 14 }}>
+          <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
+            {tr("Con esa etiqueta no hay nada que se repita.")}
+          </p>
         </div>
       )}
 
@@ -315,6 +385,27 @@ export function RecurrentesTab({
         ))}
       </div>
 
+      {candidatas.length > 0 && (
+        <div className="card panel" style={{ marginBottom: 14 }}>
+          <h3 style={{ marginBottom: 4 }}>{tr("¿Falta alguna?")}</h3>
+          <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12, lineHeight: 1.5 }}>
+            {tr("Estos cargos se repiten pero sin un ritmo lo bastante claro para darlos por seguros: pueden ser pocos todavía, o venir con montos que cambian. Confírmalos tú y pasan a contar en los totales.")}
+          </p>
+          {candidatas.map((f) => (
+            <FilaSerie key={f.serie.clave} f={f} tr={tr} candidata
+              onSuscripcion={() => void marcar(f, "subscription")}
+              onCuotas={() => setPreguntando(f)}
+              onIgnorar={() => void marcar(f, "ignored")}
+              onVer={() => onVerMovimientos(f.serie)} />
+          ))}
+          {candidatasTodas.length > candidatas.length && (
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
+              {tr("Hay")} {candidatasTodas.length - candidatas.length} {tr("más que no se muestran, de menor monto. Si te falta una en particular, márcala desde el lápiz de cualquiera de sus movimientos.")}
+            </p>
+          )}
+        </div>
+      )}
+
       {paradas.length > 0 && (
         <div className="card panel" style={{ marginBottom: 14 }}>
           <button className="linklike" style={{ fontSize: 13.5, fontWeight: 600 }}
@@ -370,10 +461,14 @@ export function RecurrentesTab({
   );
 }
 
-function FilaSerie({ f, tr, apagada, onCuotas, onIgnorar, onVer }: {
+function FilaSerie({ f, tr, apagada, candidata, onSuscripcion, onCuotas, onIgnorar, onVer }: {
   f: Fila;
   tr: (k: string) => string;
   apagada?: boolean;
+  /** Todavía no está confirmada: los montos se muestran como estimación y no
+   *  suman en ningún total. */
+  candidata?: boolean;
+  onSuscripcion?: () => void;
   onCuotas: () => void;
   onIgnorar: () => void;
   onVer: () => void;
@@ -401,7 +496,9 @@ function FilaSerie({ f, tr, apagada, onCuotas, onIgnorar, onVer }: {
             <span>{s.txs.length} {s.txs.length === 1 ? tr("cargo") : tr("cargos")}</span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
               <CalendarClock size={11} />
-              {apagada ? <>{tr("el último")} {s.ultima}</> : <>{tr("el próximo")} {s.proxima}</>}
+              {apagada || candidata
+                ? <>{tr("el último")} {s.ultima}</>
+                : <>{tr("el próximo")} {s.proxima}</>}
             </span>
           </div>
           {subio && (
@@ -416,9 +513,16 @@ function FilaSerie({ f, tr, apagada, onCuotas, onIgnorar, onVer }: {
             {fmtMoney(s.monto, s.currency)}
           </div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap" }}>
-            {tr(CADENCIA_TEXTO[s.cadencia])}
+            {s.montoVariable
+              ? tr("el último cargo")
+              : candidata ? tr("el último cargo") : tr(CADENCIA_TEXTO[s.cadencia])}
           </div>
-          {s.cadencia !== "anual" && (
+          {s.montoVariable && (
+            <div className="tnum" style={{ fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap", marginTop: 2 }}>
+              {tr("cambia, promedio")} {fmtMoney(s.promedio, s.currency)}
+            </div>
+          )}
+          {!candidata && s.cadencia !== "anual" && (
             <div className="tnum" style={{ fontSize: 11.5, color: "var(--warn)", whiteSpace: "nowrap", marginTop: 2 }}>
               {fmtMoney(s.alAno, s.currency)} {tr("al año")}
             </div>
@@ -426,6 +530,12 @@ function FilaSerie({ f, tr, apagada, onCuotas, onIgnorar, onVer }: {
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+        {onSuscripcion && (
+          <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }} onClick={onSuscripcion}>
+            <Repeat size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+            {tr("Sí, es una suscripción")}
+          </button>
+        )}
         <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }} onClick={onCuotas}>
           <Repeat size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />
           {tr("Es una compra en cuotas")}

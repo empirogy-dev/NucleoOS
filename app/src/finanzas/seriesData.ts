@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
-import type { Serie } from "./recurrentes";
+import { claveComercio, type Serie } from "./recurrentes";
+import type { Tx } from "./types";
 
 // Lo que la persona decidió sobre una serie de cargos (migración 0068).
 //
@@ -64,8 +65,29 @@ export function decisionDe(s: Serie, decisiones: DecisionSerie[]): DecisionSerie
     ?? null;
 }
 
+/** La clave y el ancla de una serie vista desde un solo movimiento.
+ *
+ *  Sirve para marcar "esto se me cobra todos los meses" desde el lápiz de una
+ *  transacción, sin esperar a que la app junte tres cobros y lo descubra sola.
+ *  El ancla es ese movimiento: la pestaña reconoce la serie porque el ancla
+ *  cae dentro de ella, no porque la clave calce exacto.
+ */
+export type Anclaje = Pick<Tx, "id" | "amount" | "merchant" | "bank_ref" | "description">;
+
+export function serieDeUnaTx(t: Anclaje): { clave: string; anclaId: string } {
+  return { clave: `${claveComercio(t)}|${Number(t.amount).toFixed(2)}`, anclaId: t.id };
+}
+
+/** La decisión guardada para el movimiento que se está editando, si hay. */
+export function decisionDeTx(t: Tx, decisiones: DecisionSerie[]): DecisionSerie | null {
+  const { clave } = serieDeUnaTx(t);
+  return decisiones.find((d) => d.anchor_tx_id === t.id)
+    ?? decisiones.find((d) => d.clave === clave)
+    ?? null;
+}
+
 export async function guardarDecision(
-  s: Serie,
+  s: { clave: string; anclaId: string },
   cambios: { kind?: TipoSerie; name?: string | null; installments_total?: number | null },
   existente: DecisionSerie | null,
 ): Promise<void> {

@@ -23,6 +23,10 @@ import { usePaisImpuestos } from "./paisImpuestos";
 import { GuiaImpuestos } from "./GuiaImpuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { RecurrentesTab } from "./RecurrentesTab";
+import {
+  decisionDeTx, guardarDecision, listarDecisiones, olvidarDecision, serieDeUnaTx,
+  type DecisionSerie, type TipoSerie,
+} from "./seriesData";
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
 import { BancoPanel } from "./BancoPanel";
@@ -2210,6 +2214,25 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
   // "Me lo reembolsaron": el gasto y su boleta se guardan, pero no cuenta
   // para impuestos ni para el presupuesto, porque al final no lo pagaste tú.
   const [reembolsado, setReembolsado] = useState(Boolean(edit?.reimbursed));
+  // "Esto se me cobra solo": la app reconoce las series sola, pero necesita
+  // tres cobros parejos. Una suscripción recién empezada, o una a la que le
+  // cambia el monto todos los meses, no la va a reconocer nunca. Marcarla
+  // aquí, mirando el movimiento, es donde uno se acuerda de que lo es.
+  const [repite, setRepite] = useState<TipoSerie | "no">("no");
+  const [cuotasTotal, setCuotasTotal] = useState("");
+  const [decisionSerie, setDecisionSerie] = useState<DecisionSerie | null>(null);
+  useEffect(() => {
+    if (!edit) return;
+    let vivo = true;
+    void listarDecisiones().then((ds) => {
+      if (!vivo) return;
+      const d = decisionDeTx(edit, ds);
+      setDecisionSerie(d);
+      setRepite(d?.kind === "ignored" ? "no" : d?.kind ?? "no");
+      setCuotasTotal(d?.installments_total ? String(d.installments_total) : "");
+    }).catch(() => undefined);
+    return () => { vivo = false; };
+  }, [edit]);
   const fotoRef = useRef<HTMLInputElement>(null);
   const [amount, setAmount] = useState(edit ? String(edit.amount) : "");
   const esDelBanco = Boolean(edit && (edit.source === "cartola" || edit.source === "banco"));
@@ -2287,6 +2310,24 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
         if (reembolsado !== Boolean(edit?.reimbursed)) {
           await marcarReembolsado([idTx], reembolsado);
         }
+        // Lo que se repite. Solo se toca si cambió, para no reescribir la
+        // decisión cada vez que se guarda un movimiento por otra cosa.
+        const antesRepite = decisionSerie?.kind === "ignored" ? "no" : decisionSerie?.kind ?? "no";
+        const antesCuotas = decisionSerie?.installments_total ?? null;
+        const ahoraCuotas = repite === "installments" ? Number(cuotasTotal) || null : null;
+        if (repite !== antesRepite || ahoraCuotas !== antesCuotas) {
+          if (repite === "no" && decisionSerie) {
+            await olvidarDecision(decisionSerie);
+          } else if (repite !== "no") {
+            await guardarDecision(serieDeUnaTx({
+              id: idTx,
+              amount: Number(payload.amount),
+              merchant: payload.merchant,
+              bank_ref: edit?.bank_ref ?? null,
+              description: payload.description,
+            }), { kind: repite, installments_total: ahoraCuotas }, decisionSerie);
+          }
+        }
       }
       // La regla se ofrece al renombrar O al categorizar: transacciones
       // frecuentes (el traspaso a la tarjeta, el súper) se automatizan solas.
@@ -2307,7 +2348,9 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
       onSaved();
     } catch (ex) {
       const msg = ex instanceof Error ? ex.message : String(ex);
-      setErr(/destination_kind|destination_ref/.test(msg)
+      setErr(/recurring_series/.test(msg)
+        ? "El movimiento se guardó. Lo de \"se me cobra solo\" necesita la migración 0068 (supabase/migrations/0068_series_recurrentes.sql)."
+        : /destination_kind|destination_ref/.test(msg)
         ? "Falta la migración 0011 en Supabase (supabase/migrations/0011_transferencias.sql)."
         : /bank_ref/.test(msg)
           ? "Falta la migración 0043 en Supabase (supabase/migrations/0043_texto_banco.sql)."
@@ -2464,6 +2507,39 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
               </span>
             </span>
           </label>
+        )}
+        {type === "expense" && (
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12.5, color: "var(--ink-soft)", cursor: "pointer", lineHeight: 1.45 }}>
+              <input type="checkbox" checked={repite !== "no"}
+                onChange={(e) => setRepite(e.target.checked ? "subscription" : "no")}
+                style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+              <span>
+                {tr("Esto se me cobra solo")}{" "}
+                <span style={{ color: "var(--muted)" }}>
+                  {tr("Aparece en Suscripciones y cuotas con lo que te cuesta al mes y al año. Márcalo aquí cuando la app todavía no lo haya reconocido sola.")}
+                </span>
+              </span>
+            </label>
+            {repite !== "no" && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 9, marginLeft: 22 }}>
+                <button type="button" className={"btn " + (repite === "subscription" ? "primary" : "ghost")}
+                  style={{ fontSize: 12.5, padding: "6px 13px" }}
+                  onClick={() => setRepite("subscription")}>{tr("Suscripción")}</button>
+                <button type="button" className={"btn " + (repite === "installments" ? "primary" : "ghost")}
+                  style={{ fontSize: 12.5, padding: "6px 13px" }}
+                  onClick={() => setRepite("installments")}>{tr("Compra en cuotas")}</button>
+                {repite === "installments" && (
+                  <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5 }}>
+                    {tr("¿Cuántas en total?")}
+                    <input type="number" min={2} max={120} inputMode="numeric" value={cuotasTotal}
+                      onChange={(e) => setCuotasTotal(e.target.value)} required
+                      style={{ width: 78 }} aria-label={tr("¿Cuántas en total?")} />
+                  </label>
+                )}
+              </div>
+            )}
+          </div>
         )}
         {edit && onDividir && type !== "transfer" && (
           <button type="button" className="btn ghost" style={{ fontSize: 12.5, padding: "7px 14px", marginBottom: 12 }}
