@@ -156,18 +156,28 @@ const PRIVACIDAD_ES: Documento = {
     {
       titulo: "Tus derechos",
       parrafos: [
-        "Ver y descargar todo lo tuyo, en cualquier momento y sin pedir permiso, desde Ajustes.",
-        "Corregir lo que esté mal: puedes editar o borrar cualquier registro desde la propia app.",
-        "Borrar tu cuenta con todo adentro.",
+        "Acceso: ver y descargar todo lo tuyo, en cualquier momento y sin pedir permiso, desde Ajustes.",
+        "Rectificación: corregir lo que esté mal. Puedes editar cualquier registro desde la propia app.",
+        "Supresión: borrar un dato suelto, o tu cuenta entera con todo adentro, desde Ajustes.",
+        "Portabilidad: llevarte tus datos en un archivo estándar que puedas abrir o cargar en otra parte. Es el mismo botón de descarga.",
+        "Oposición: pedirnos que dejemos de tratar tus datos para algo puntual. Escríbenos y lo hacemos.",
         "Preguntar qué tenemos sobre ti y por qué. Escríbenos a hola@nucleoos.app y respondemos dentro de 30 días.",
-        "Si vives en Canadá y no quedas conforme con nuestra respuesta, puedes reclamar ante la Oficina del Comisionado de Privacidad de Canadá. Si vives en Chile o en la Unión Europea, conservas los derechos que te dé tu propia ley.",
+        "Si vives en Canadá y no quedas conforme con nuestra respuesta, puedes reclamar ante la Oficina del Comisionado de Privacidad de Canadá. Si vives en Chile, puedes reclamar ante la Agencia de Protección de Datos Personales, creada por la Ley 21.719. Si vives en la Unión Europea, conservas los derechos que te dé tu propia ley.",
+      ],
+    },
+    {
+      titulo: "Quién responde por tus datos",
+      parrafos: [
+        "Empirogy es la responsable del tratamiento de tus datos personales, y decide para qué y cómo se usan.",
+        "Para ejercer cualquiera de tus derechos, para hacer una consulta o para presentar un reclamo, escribe a hola@nucleoos.app. Toda solicitud se responde dentro de 30 días.",
       ],
     },
     {
       titulo: "Cómo protegemos esto",
       parrafos: [
         "Todo viaja cifrado. Las llaves de los servicios externos viven en el servidor y nunca en tu navegador. Las reglas por fila de la base de datos son la última línea: aunque alguien obtuviera la llave pública de la aplicación, no podría leer los datos de nadie.",
-        "Ninguna medida es perfecta. Si alguna vez ocurre una filtración que afecte tus datos, te avisaremos y avisaremos a la autoridad que corresponda.",
+        "Ninguna medida es perfecta. Si alguna vez ocurre una filtración que afecte tus datos, te avisaremos a ti y a la autoridad que corresponda dentro de las 72 horas siguientes a que la detectemos, y te diremos qué pasó, qué datos se vieron afectados y qué estamos haciendo.",
+        "El aviso se manda aunque no estemos seguros del alcance todavía. Esperar a tener el cuadro completo antes de avisar es esperar demasiado.",
       ],
     },
     {
@@ -313,18 +323,28 @@ const PRIVACIDAD_EN: Documento = {
     {
       titulo: "Your rights",
       parrafos: [
-        "See and download everything of yours, at any time and without asking, from Settings.",
-        "Correct what is wrong: you can edit or delete any record from within the app.",
-        "Delete your account with everything in it.",
+        "Access: see and download everything of yours, at any time and without asking, from Settings.",
+        "Rectification: correct what is wrong. You can edit any record from within the app.",
+        "Erasure: delete a single record, or your whole account with everything in it, from Settings.",
+        "Portability: take your data in a standard file you can open or load elsewhere. It is the same download button.",
+        "Objection: ask us to stop processing your data for something specific. Write to us and we will.",
         "Ask what we hold about you and why. Write to hola@nucleoos.app and we answer within 30 days.",
-        "If you live in Canada and are not satisfied with our answer, you can complain to the Office of the Privacy Commissioner of Canada. If you live in Chile or the European Union, you keep the rights your own law gives you.",
+        "If you live in Canada and are not satisfied with our answer, you can complain to the Office of the Privacy Commissioner of Canada. If you live in Chile, you can complain to the Personal Data Protection Agency created by Law 21.719. If you live in the European Union, you keep the rights your own law gives you.",
+      ],
+    },
+    {
+      titulo: "Who is accountable for your data",
+      parrafos: [
+        "Empirogy is the controller of your personal data and decides what it is used for and how.",
+        "To exercise any of your rights, to ask a question or to file a complaint, write to hola@nucleoos.app. Every request is answered within 30 days.",
       ],
     },
     {
       titulo: "How we protect this",
       parrafos: [
         "Everything travels encrypted. External service keys live on the server and never in your browser. The database's row level rules are the last line: even if someone obtained the app's public key, they could not read anyone's data.",
-        "No measure is perfect. If a breach ever affects your data, we will tell you and notify the relevant authority.",
+        "No measure is perfect. If a breach ever affects your data, we will notify you and the relevant authority within 72 hours of detecting it, and tell you what happened, which data was affected and what we are doing about it.",
+        "The notice goes out even if we are not sure of the full scope yet. Waiting for the complete picture before telling you is waiting too long.",
       ],
     },
     {

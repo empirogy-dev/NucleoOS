@@ -6,6 +6,7 @@ import { NotifBell } from "./NotifBell";
 import { Alarma } from "../recordatorios/Alarma";
 import { ThemePicker } from "./ThemePicker";
 import { Pomodoro } from "./Pomodoro";
+import { AvisoLegal } from "../legal/AvisoLegal";
 import { CapturaRapida } from "./CapturaRapida";
 import { fechaLarga, useFechaActiva } from "../fecha/FechaActiva";
 import { useIdioma } from "../idioma/IdiomaProvider";
@@ -72,6 +73,11 @@ export function Layout() {
           </div>
         )}
         <main>
+          {/* Arriba de todo y sin bloquear: el documento promete avisar dentro
+              de la app cuando cambie, y esto lo cumple. */}
+          <div style={{ padding: "clamp(20px,3vw,34px) clamp(20px,3vw,34px) 0", maxWidth: 1120 }}>
+            <AvisoLegal />
+          </div>
           <Outlet />
           <Alarma />
         </main>
