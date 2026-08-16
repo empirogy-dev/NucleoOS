@@ -78,9 +78,13 @@ button{font-family:inherit}
 .vision .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:600;margin-bottom:9px}
 .vision q{font-family:var(--serif);font-weight:500;font-size:20px;color:var(--ink);line-height:1.34;quotes:none}
 .statrow{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
-.stat{padding:15px 17px}
+.stat{padding:15px 17px;container-type:inline-size}
 .stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
-.stat .v{font-family:var(--serif);font-size:27px;font-weight:500;margin-top:5px}
+/* El número manda sobre el tamaño de letra, no al revés: "CAD 10.811,02" no
+   cabe en 27px dentro de una tarjeta angosta, y partirlo en dos líneas deja
+   un monto ilegible. Se mide contra el ancho de la propia tarjeta (cqi), así
+   que encoge solo lo necesario y nunca se corta. */
+.stat .v{font-family:var(--serif);font-size:clamp(13px,13cqi,27px);font-weight:500;margin-top:5px;white-space:nowrap}
 .ring{width:78px;height:78px;border-radius:50%;display:grid;place-items:center}
 .ring .in{width:58px;height:58px;border-radius:50%;background:var(--card);display:grid;place-items:center;text-align:center}
 .ring .in b{font-family:var(--serif);font-size:18px;font-weight:500;color:var(--accent-ink);line-height:1}
@@ -160,7 +164,6 @@ button{font-family:inherit}
   /* Dos columnas y no una: los números son cortos ("7.5 h", "4 de 8") y
      así no hay que bajar media pantalla para pasar las tarjetas. */
   .statrow .card.stat{padding:12px 14px}
-  .statrow .card.stat .v{font-size:20px}
 }
 .scrim{display:none}
 @media (max-width:860px){.scrim.show{display:block;position:fixed;inset:0;background:rgba(20,18,12,.3);z-index:39}}
@@ -469,7 +472,7 @@ button{font-family:inherit}
 .pulso{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-bottom:16px}
 .pulso .stat{padding:12px 14px;transition:border-color .15s;display:block}
 .pulso .stat:hover{border-color:var(--accent)}
-.pulso .stat .v{font-size:21px}
+.pulso .stat .v{font-size:clamp(13px,13cqi,21px)}
 
 /* ================= TARJETAS REORDENABLES ================= */
 /* Mosaico con columnas CSS: las tarjetas se empacan hacia arriba
