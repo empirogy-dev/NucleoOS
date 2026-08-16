@@ -33,6 +33,9 @@ export interface Viaje {
   km: number;
   destination: string | null;
   purpose: string | null;
+  /** Los personales solo existen cuando vienen importados de una app que
+   *  rastrea el auto sola (0072). A mano nadie los anota, y no hace falta. */
+  is_business: boolean;
 }
 
 // ---------- El cálculo ----------
@@ -46,8 +49,11 @@ export type EstadoUso =
 export interface UsoDelAuto {
   estado: EstadoUso;
   anio: string;
-  /** Kilómetros del año, según el odómetro. */
+  /** Kilómetros del año. Salen del odómetro, o de sumar todos los viajes
+   *  cuando la bitácora también trae los personales. */
   kmTotales: number;
+  /** De dónde salieron los totales, porque no es lo mismo y hay que decirlo. */
+  fuenteTotales: "odometro" | "bitacora" | "ninguna";
   /** Kilómetros de trabajo, según la bitácora. */
   kmNegocio: number;
   /** El porcentaje que se usa para deducir. Cero si todavía no se puede. */
@@ -60,14 +66,18 @@ export interface UsoDelAuto {
 /**
  * Qué parte del auto fue de trabajo en un año.
  *
- * Los kilómetros totales salen del odómetro y NO de sumar viajes: la bitácora
- * solo registra los de trabajo, porque anotar cada ida al supermercado es lo
- * que hace que una bitácora se abandone a la semana. Los personales salen por
- * resta, que es además como se revisa.
+ * Los kilómetros totales salen del odómetro: una lectura al empezar y otra al
+ * terminar. La bitácora escrita a mano solo registra los viajes de trabajo,
+ * porque anotar cada ida al supermercado es lo que hace que se abandone, así
+ * que los personales salen por resta.
  *
- * Hace falta una lectura al empezar y otra al terminar. Con una sola no hay
- * recorrido que medir, y el porcentaje se queda sin calcular en vez de
- * inventarse: un número inventado aquí es una deducción que no se sostiene.
+ * La excepción es una bitácora importada de una app que rastrea el auto sola:
+ * ahí los personales vienen incluidos y su suma ES el recorrido del año, sin
+ * necesidad de mirar el tablero.
+ *
+ * Cuando no hay ninguna de las dos cosas el porcentaje se queda sin calcular
+ * en vez de inventarse: un número inventado aquí es una deducción que no se
+ * sostiene.
  */
 export function usoDelAuto(anio: string, lecturas: Lectura[], viajes: Viaje[]): UsoDelAuto {
   const finDeAnio = `${anio}-12-31`;
@@ -84,38 +94,54 @@ export function usoDelAuto(anio: string, lecturas: Lectura[], viajes: Viaje[]): 
   const lecturaFin = delAnio[delAnio.length - 1] ?? null;
 
   const suyos = viajes.filter((v) => v.date.startsWith(anio));
-  const kmNegocio = suyos.reduce((s, v) => s + Number(v.km), 0);
+  const kmNegocio = suyos
+    .filter((v) => v.is_business !== false)
+    .reduce((s, v) => s + Number(v.km), 0);
+  // Si la bitácora trae también los viajes personales, la suma de todos ES el
+  // recorrido del año y no hace falta el odómetro. Es lo que pasa cuando los
+  // viajes vienen importados de una app que rastrea el auto sola.
+  const hayPersonales = suyos.some((v) => v.is_business === false);
+  const kmDeLaBitacora = suyos.reduce((s, v) => s + Number(v.km), 0);
 
   const base = {
     anio,
     kmNegocio,
-    viajes: suyos.length,
+    viajes: suyos.filter((v) => v.is_business !== false).length,
     lecturaInicio,
     lecturaFin,
   };
 
-  if (!lecturaInicio || !lecturaFin || lecturaInicio.id === lecturaFin.id) {
-    return { ...base, estado: "faltanLecturas", kmTotales: 0, porcentaje: 0 };
-  }
+  // El odómetro manda cuando está: es la prueba de cuánto anduvo el auto de
+  // verdad, incluidos los viajes que ninguna app alcanzó a registrar.
+  const conOdometro = lecturaInicio && lecturaFin && lecturaInicio.id !== lecturaFin.id
+    ? Number(lecturaFin.km) - Number(lecturaInicio.km)
+    : 0;
 
-  const kmTotales = Number(lecturaFin.km) - Number(lecturaInicio.km);
-  if (kmTotales <= 0) {
-    return { ...base, estado: "faltanLecturas", kmTotales: 0, porcentaje: 0 };
+  let kmTotales = 0;
+  let fuenteTotales: UsoDelAuto["fuenteTotales"] = "ninguna";
+  if (conOdometro > 0) { kmTotales = conOdometro; fuenteTotales = "odometro"; }
+  else if (hayPersonales && kmDeLaBitacora > 0) { kmTotales = kmDeLaBitacora; fuenteTotales = "bitacora"; }
+
+  if (fuenteTotales === "ninguna") {
+    return { ...base, estado: "faltanLecturas", kmTotales: 0, porcentaje: 0, fuenteTotales };
   }
   if (kmNegocio === 0) {
-    return { ...base, estado: "sinViajes", kmTotales, porcentaje: 0 };
+    return { ...base, estado: "sinViajes", kmTotales, porcentaje: 0, fuenteTotales };
   }
   // Más kilómetros de trabajo que kilómetros recorridos es imposible, así que
   // algo está mal anotado. Se dice en vez de devolver un 130 por ciento.
-  if (kmNegocio > kmTotales) {
-    return { ...base, estado: "incoherente", kmTotales, porcentaje: 0 };
+  // Un punto de redondeo de margen: sumar cien viajes en coma flotante puede
+  // dar un pelo más que el propio total del que salieron.
+  if (kmNegocio > kmTotales + 0.01) {
+    return { ...base, estado: "incoherente", kmTotales, porcentaje: 0, fuenteTotales };
   }
 
   return {
     ...base,
     estado: "listo",
     kmTotales,
-    porcentaje: Math.round((kmNegocio / kmTotales) * 100),
+    fuenteTotales,
+    porcentaje: Math.min(100, Math.round((kmNegocio / kmTotales) * 100)),
   };
 }
 
@@ -205,15 +231,28 @@ export async function borrarLectura(id: string): Promise<void> {
 export async function listarViajes(vehicleId: string): Promise<Viaje[]> {
   const { data, error } = await sb()
     .from("vehicle_trips")
-    .select("id,vehicle_id,date,km,destination,purpose")
+    .select("id,vehicle_id,date,km,destination,purpose,is_business")
     .eq("vehicle_id", vehicleId)
     .order("date", { ascending: false });
+  if (!error) return (data ?? []) as Viaje[];
+  // Sin la 0072 no existe is_business: se lee sin esa columna y todos los
+  // viajes cuentan como de trabajo, que es lo que eran antes de importar.
+  if (/is_business/.test(error.message)) {
+    const sinColumna = await sb()
+      .from("vehicle_trips")
+      .select("id,vehicle_id,date,km,destination,purpose")
+      .eq("vehicle_id", vehicleId)
+      .order("date", { ascending: false });
+    revisar(sinColumna.error);
+    return (sinColumna.data ?? []).map((v) => ({ ...v, is_business: true })) as Viaje[];
+  }
   revisar(error);
-  return (data ?? []) as Viaje[];
+  return [];
 }
 
 export async function guardarViaje(
-  v: { vehicle_id: string; date: string; km: number; destination: string | null; purpose: string | null },
+  v: { vehicle_id: string; date: string; km: number; destination: string | null;
+       purpose: string | null; is_business?: boolean },
   id?: string,
 ): Promise<void> {
   if (!(v.km > 0)) throw new Error("El viaje necesita cuántos kilómetros fueron.");
@@ -251,4 +290,32 @@ export function bitacoraCSV(auto: Vehiculo, uso: UsoDelAuto, viajes: Viaje[]): s
   const cab = ["Date", "Km", "Destination", "Purpose"];
   return "﻿" + [cab, ...filas, ...pie]
     .map((f) => f.map(esc).join(",")).join("\r\n");
+}
+
+/** Guardar muchos viajes de una vez, que es como llegan de una importación.
+ *
+ *  En tandas: mandar mil filas en una sola llamada es lo que hace que una
+ *  importación falle entera por el peso y no por los datos. */
+export async function guardarViajes(
+  vehicleId: string,
+  viajes: Array<{ date: string; km: number; destination: string | null; purpose: string | null; is_business: boolean }>,
+): Promise<number> {
+  const user_id = await uid();
+  let guardados = 0;
+  for (let i = 0; i < viajes.length; i += 200) {
+    const tanda = viajes.slice(i, i + 200).map((v) => ({ ...v, vehicle_id: vehicleId, user_id }));
+    const { error } = await sb().from("vehicle_trips").insert(tanda);
+    revisar(error);
+    guardados += tanda.length;
+  }
+  return guardados;
+}
+
+/** Borrar todos los viajes personales de un año. Sirve para volver atrás una
+ *  importación sin perder la bitácora escrita a mano. */
+export async function borrarPersonalesDelAnio(vehicleId: string, anio: string): Promise<void> {
+  const { error } = await sb().from("vehicle_trips").delete()
+    .eq("vehicle_id", vehicleId).eq("is_business", false)
+    .gte("date", `${anio}-01-01`).lte("date", `${anio}-12-31`);
+  revisar(error);
 }

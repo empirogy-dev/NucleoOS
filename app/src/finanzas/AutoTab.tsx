@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Car, Plus, Trash2, FileSpreadsheet, Gauge } from "lucide-react";
+import { Car, Plus, Trash2, FileSpreadsheet, Gauge, Upload } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { AyudaTip } from "../components/AyudaTip";
@@ -12,9 +12,13 @@ import { usePaisImpuestos } from "./paisImpuestos";
 import { updateCategoryBusinessPct } from "./data";
 import {
   bitacoraCSV, borrarLectura, borrarViaje, guardarLectura, guardarVehiculo, guardarViaje,
-  listarLecturas, listarVehiculos, listarViajes, usoDelAuto,
+  guardarViajes, listarLecturas, listarVehiculos, listarViajes, usoDelAuto,
   type Lectura, type UsoDelAuto, type Vehiculo, type Viaje,
 } from "./auto";
+import {
+  leerReporteKm, quitarRepetidos, reinterpretarUnidad, resumirImportacion,
+  type LecturaReporte, type Unidad,
+} from "./importarKm";
 
 // El auto y sus kilómetros.
 //
@@ -39,6 +43,7 @@ export function AutoTab({ categories, onCambio }: {
   const [err, setErr] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [nuevoAuto, setNuevoAuto] = useState(false);
+  const [importando, setImportando] = useState(false);
   const [guia, setGuia] = useState(false);
 
   const anioHoy = String(new Date().getFullYear());
@@ -161,6 +166,10 @@ export function AutoTab({ categories, onCambio }: {
             opciones={anios.map((a) => ({ value: a, label: a }))} onChange={setAnio} />
         </div>
         <span style={{ flex: 1 }} />
+        <button className="btn ghost" disabled={!autoId} onClick={() => setImportando(true)}>
+          <Upload size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+          {tr("Importar de otra app")}
+        </button>
         <button className="btn ghost" onClick={() => setNuevoAuto(true)}>
           <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
           {tr("Otro auto")}
@@ -205,6 +214,16 @@ export function AutoTab({ categories, onCambio }: {
         {guia && <Guia tr={tr} pais={pais} auto={auto} />}
       </div>
 
+      {importando && auto && (
+        <ModalImportar auto={auto} viajes={viajes} tr={tr}
+          onClose={() => setImportando(false)}
+          onImportado={(n) => {
+            setImportando(false);
+            setAviso(`${tr("Se importaron")} ${n} ${n === 1 ? tr("viaje") : tr("viajes")}.`);
+            void cargarDetalle(autoId);
+          }} />
+      )}
+
       {nuevoAuto && (
         <ModalAuto tr={tr} onClose={() => setNuevoAuto(false)}
           onGuardado={() => { setNuevoAuto(false); void cargarAutos(); }}
@@ -217,7 +236,7 @@ export function AutoTab({ categories, onCambio }: {
 function ResumenUso({ uso, tr }: { uso: UsoDelAuto; tr: (k: string) => string }) {
   const mensajes: Record<UsoDelAuto["estado"], string> = {
     listo: "De cada cien kilómetros del año, esos fueron de trabajo. Es la proporción con la que se deducen los gastos del auto.",
-    faltanLecturas: "Faltan lecturas del odómetro. Hacen falta dos, una al empezar y otra al terminar, porque los kilómetros totales del año salen de la resta. Sin eso no hay porcentaje, y prefiero no inventarte uno.",
+    faltanLecturas: "Falta saber cuántos kilómetros anduvo el auto en total. Hay dos formas: dos lecturas del odómetro, una al empezar y otra al terminar, o importar la bitácora de tu app de kilómetros con los viajes personales incluidos. Sin una de las dos no hay porcentaje, y prefiero no inventarte uno.",
     sinViajes: "El odómetro está, pero no hay ningún viaje de trabajo anotado. Anota los que hiciste y el porcentaje aparece solo.",
     incoherente: "Los viajes de trabajo suman más kilómetros que los que marcó el odómetro, así que hay algo mal anotado. Revisa las lecturas o los viajes antes de usar este número.",
   };
@@ -252,10 +271,17 @@ function ResumenUso({ uso, tr }: { uso: UsoDelAuto; tr: (k: string) => string })
       </div>
       <p style={{
         fontSize: 12.5, color: tono[uso.estado], lineHeight: 1.55,
-        marginBottom: 14, maxWidth: "70ch",
+        marginBottom: uso.fuenteTotales === "bitacora" ? 4 : 14, maxWidth: "70ch",
       }}>
         {tr(mensajes[uso.estado])}
       </p>
+      {/* De dónde salió el total no es un detalle: con el odómetro se prueba
+          con el tablero, y con la bitácora se prueba con el registro. */}
+      {uso.fuenteTotales === "bitacora" && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.5, marginBottom: 14, maxWidth: "70ch" }}>
+          {tr("Los kilómetros del año salen de sumar todos los viajes de la bitácora, incluidos los personales. Si además anotas dos lecturas del odómetro, mandan esas: cubren también lo que la app no alcanzó a registrar.")}
+        </p>
+      )}
     </>
   );
 }
@@ -523,6 +549,187 @@ function ModalAuto({ tr, onClose, onGuardado, onError }: {
             <button className="btn primary" {...sinRobarFoco} disabled={ocupado}>{tr("com.guardar")}</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/** Traer la bitácora desde una app que rastrea el auto.
+ *
+ *  Ella paga MileIQ, que ya hace el rastreo y ya clasifica cada viaje. Volver
+ *  a escribir eso a mano no tiene sentido, y dejar de pagarlo tampoco si
+ *  significa perder el registro. Importarlo resuelve las dos cosas.
+ *
+ *  La pantalla enseña lo que entendió ANTES de guardar nada: cuántos viajes,
+ *  en qué unidad y qué categorías quedaron como personales. Un importador que
+ *  guarda primero y explica después es como se meten mil filas malas. */
+function ModalImportar({ auto, viajes, tr, onClose, onImportado }: {
+  auto: Vehiculo;
+  viajes: Viaje[];
+  tr: (k: string) => string;
+  onClose: () => void;
+  onImportado: (n: number) => void;
+}) {
+  const [lectura, setLectura] = useState<LecturaReporte | null>(null);
+  const [nombreArchivo, setNombreArchivo] = useState("");
+  const [unidad, setUnidad] = useState<Unidad>("mi");
+  const [conPersonales, setConPersonales] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  async function elegir(f: File | null) {
+    if (!f) return;
+    setError(null);
+    setNombreArchivo(f.name);
+    try {
+      const r = leerReporteKm(await f.text());
+      setLectura(r);
+      setUnidad(r.unidad);
+    } catch (e) {
+      setLectura(null);
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  // Si se corrige la unidad a mano, los kilómetros se recalculan desde lo que
+  // decía el archivo, no encima de la conversión anterior.
+  const viajesConUnidad = useMemo(
+    () => (lectura ? reinterpretarUnidad(lectura.viajes, lectura.unidad, unidad) : []),
+    [lectura, unidad],
+  );
+  const elegidos = useMemo(
+    () => viajesConUnidad.filter((v) => conPersonales || v.is_business),
+    [viajesConUnidad, conPersonales],
+  );
+  const { aImportar, repetidos } = useMemo(
+    () => quitarRepetidos(elegidos, viajes),
+    [elegidos, viajes],
+  );
+  const resumen = useMemo(() => resumirImportacion(viajesConUnidad), [viajesConUnidad]);
+
+  async function importar() {
+    setOcupado(true);
+    try {
+      const n = await guardarViajes(auto.id, aImportar.map((v) => ({
+        date: v.date,
+        km: Number(v.km.toFixed(2)),
+        destination: v.destination,
+        purpose: v.purpose,
+        is_business: v.is_business,
+      })));
+      onImportado(n);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setOcupado(false);
+    }
+  }
+
+  return (
+    <div className="tp-overlay" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+        <h3 style={{ marginBottom: 4 }}>
+          <Upload size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />
+          {tr("Importar la bitácora")}
+        </h3>
+        <p style={{ lineHeight: 1.55, marginBottom: 12 }}>
+          {tr("Pide en tu app de kilómetros el reporte de viajes en CSV y súbelo aquí. Está probado con MileIQ, y sirve cualquier archivo que traiga fecha, distancia y categoría.")}
+        </p>
+
+        <input type="file" accept=".csv,text/csv,text/plain"
+          aria-label={tr("El archivo del reporte")}
+          onChange={(e) => void elegir(e.target.files?.[0] ?? null)} />
+
+        {error && (
+          <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 10, lineHeight: 1.55 }}>{error}</p>
+        )}
+
+        {lectura && (
+          <div style={{ marginTop: 14 }}>
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10 }}>
+              {nombreArchivo} · {lectura.desde} → {lectura.hasta}
+            </p>
+
+            {/* La unidad primero, porque es lo que puede salir mal en grande y
+                en silencio. Millas metidas como kilómetros dan un número un
+                tercio más bajo, y ese número va a una declaración. */}
+            <div className="field">
+              <label>{tr("El archivo viene en")}</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" className={"btn " + (unidad === "mi" ? "primary" : "ghost")}
+                  style={{ fontSize: 13, padding: "6px 14px" }}
+                  onClick={() => setUnidad("mi")}>{tr("Millas")}</button>
+                <button type="button" className={"btn " + (unidad === "km" ? "primary" : "ghost")}
+                  style={{ fontSize: 13, padding: "6px 14px" }}
+                  onClick={() => setUnidad("km")}>{tr("Kilómetros")}</button>
+              </div>
+              <p style={{ fontSize: 11.5, marginTop: 6, lineHeight: 1.5,
+                color: lectura.unidadSegura ? "var(--muted)" : "var(--warn)" }}>
+                {lectura.unidadSegura
+                  ? tr("Lo dice el propio archivo. Cámbialo solo si sabes que está mal.")
+                  : tr("El archivo no dice la unidad, así que supuse millas, que es lo que usan estas apps por defecto. Revísalo: convertir de la unidad equivocada cambia todos los números.")}
+              </p>
+            </div>
+
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 10 }}>
+              <tbody>
+                {resumen.porCategoria.map((c) => (
+                  <tr key={c.categoria} style={{ borderTop: "1px solid var(--line-soft)" }}>
+                    <td style={{ padding: "7px 6px 7px 0" }}>
+                      {c.categoria}
+                      <span style={{ fontSize: 11.5, color: c.negocio ? "var(--ok)" : "var(--muted)" }}>
+                        {" · "}{c.negocio ? tr("cuenta como trabajo") : tr("no cuenta como trabajo")}
+                      </span>
+                    </td>
+                    <td className="tnum" style={{ textAlign: "right", padding: "7px 0", whiteSpace: "nowrap" }}>
+                      {Math.round(c.km).toLocaleString("es-CL")} km
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{c.cuantos}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12.5,
+              cursor: "pointer", lineHeight: 1.45, marginBottom: 10 }}>
+              <input type="checkbox" checked={conPersonales}
+                onChange={(e) => setConPersonales(e.target.checked)}
+                style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+              <span>
+                {tr("Traer también los viajes personales")}{" "}
+                <span style={{ color: "var(--muted)" }}>
+                  {tr("Conviene: con ellos los kilómetros del año salen de la propia bitácora y ya no dependes de acordarte de mirar el tablero en enero. No aparecen en la lista ni se deducen.")}
+                </span>
+              </span>
+            </label>
+
+            {lectura.descartadas.length > 0 && (
+              <p style={{ fontSize: 12, color: "var(--warn)", marginBottom: 8, lineHeight: 1.5 }}>
+                {lectura.descartadas.length} {tr("filas no se pudieron leer y quedan fuera:")}{" "}
+                {lectura.descartadas.slice(0, 4).map((d) => `${tr("fila")} ${d.fila} (${d.motivo})`).join(", ")}
+                {lectura.descartadas.length > 4 ? "…" : ""}
+              </p>
+            )}
+
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              {tr("Se van a guardar")} <b>{aImportar.length}</b>{" "}
+              {aImportar.length === 1 ? tr("viaje") : tr("viajes")}
+              {repetidos > 0 && (
+                <span style={{ color: "var(--muted)" }}>
+                  {", "}{repetidos} {tr("ya estaban y no se repiten")}
+                </span>
+              )}.
+            </p>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+          <button type="button" className="btn ghost" onClick={onClose}>{tr("Cancelar")}</button>
+          <button type="button" className="btn primary" {...sinRobarFoco}
+            disabled={ocupado || aImportar.length === 0}
+            onClick={() => void importar()}>
+            {ocupado ? tr("com.guardando") : tr("Importar")}
+          </button>
+        </div>
       </div>
     </div>
   );
