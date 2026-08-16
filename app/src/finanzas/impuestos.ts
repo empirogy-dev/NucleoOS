@@ -151,11 +151,28 @@ export const lineasDe = (pais: PaisImpuestos): LineaImpuesto[] => LINEAS_POR_PAI
 export const lineaPorNumero = (n: string | null | undefined, pais: PaisImpuestos): LineaImpuesto | undefined =>
   lineasDe(pais).find((l) => l.numero === n);
 
-export interface TotalLinea {
-  linea: LineaImpuesto;
-  categorias: Array<{ cat: Category; total: number; cuantos: number }>;
+export interface TotalCategoria {
+  cat: Category;
+  /** Lo que sale de tu bolsillo. */
+  gastado: number;
+  /** La parte que es del negocio, que es la que se deduce. Igual a lo
+   *  gastado mientras nadie ponga un porcentaje. */
   total: number;
   cuantos: number;
+}
+
+export interface TotalLinea {
+  linea: LineaImpuesto;
+  categorias: TotalCategoria[];
+  total: number;
+  gastado: number;
+  cuantos: number;
+}
+
+/** Qué parte de una categoría es del negocio. Sin porcentaje puesto, todo. */
+export function porcentajeNegocio(c: Category | null | undefined): number {
+  const p = c?.business_pct;
+  return p === null || p === undefined ? 100 : Math.min(100, Math.max(0, p));
 }
 
 export interface ResumenImpuestos {
@@ -163,12 +180,19 @@ export interface ResumenImpuestos {
   desde: string;
   hasta: string;
   lineas: TotalLinea[];
+  /** El total deducible: ya con el porcentaje de negocio aplicado. */
   total: number;
+  /** Lo gastado de verdad, antes del porcentaje. La diferencia entre los dos
+   *  es lo que la app decidió que era personal, y eso hay que poder verlo. */
+  gastado: number;
   /** Categorías con gasto en el período pero sin línea asignada todavía.
    *  Se muestran a propósito: un resumen que esconde lo que no cuadró es
    *  peor que uno que lo dice. */
   sinLinea: Array<{ cat: Category | null; total: number; cuantos: number }>;
   totalSinLinea: number;
+  /** Cuántas categorías tienen un porcentaje puesto, para poder explicar el
+   *  descuento en pantalla en vez de mostrar un número más chico sin más. */
+  conPorcentaje: number;
 }
 
 /** Los gastos del período sumados por línea del formulario.
@@ -197,16 +221,23 @@ export function resumenImpuestos(
   }
 
   const lineas: TotalLinea[] = [];
+  let conPorcentaje = 0;
   for (const linea of lineasDe(pais)) {
-    const suyas = [...porCategoria.entries()].flatMap(([catId, n]) => {
+    const suyas: TotalCategoria[] = [...porCategoria.entries()].flatMap(([catId, n]) => {
       const cat = catPorId.get(catId);
-      return cat && cat.tax_line === linea.numero ? [{ cat, total: n.total, cuantos: n.cuantos }] : [];
+      if (!cat || cat.tax_line !== linea.numero) return [];
+      // El teléfono al sesenta por ciento deduce sesenta, no cien. Se guardan
+      // los dos números: lo que pagaste y lo que se deduce.
+      const pct = porcentajeNegocio(cat);
+      if (pct !== 100) conPorcentaje += 1;
+      return [{ cat, gastado: n.total, total: (n.total * pct) / 100, cuantos: n.cuantos }];
     }).sort((a, b) => b.total - a.total);
     if (suyas.length === 0) continue;
     lineas.push({
       linea,
       categorias: suyas,
       total: suyas.reduce((s, x) => s + x.total, 0),
+      gastado: suyas.reduce((s, x) => s + x.gastado, 0),
       cuantos: suyas.reduce((s, x) => s + x.cuantos, 0),
     });
   }
@@ -226,6 +257,8 @@ export function resumenImpuestos(
     hasta,
     lineas,
     total: lineas.reduce((s, l) => s + l.total, 0),
+    gastado: lineas.reduce((s, l) => s + l.gastado, 0),
+    conPorcentaje,
     sinLinea,
     totalSinLinea: sinLinea.reduce((s, x) => s + x.total, 0),
   };

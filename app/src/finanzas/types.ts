@@ -25,6 +25,9 @@ export interface Category {
   color: string | null;
   /** Línea del formulario de impuestos a la que suma esta categoría (0060). */
   tax_line: string | null;
+  /** Qué parte de esta categoría es gasto del negocio, de 0 a 100 (0070).
+   *  Nulo es cien por ciento: el teléfono al 60 deduce 60 y no 100. */
+  business_pct?: number | null;
 }
 
 export const BUDGET_MODE_LABELS: Record<string, string> = {

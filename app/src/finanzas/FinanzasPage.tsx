@@ -48,6 +48,7 @@ import {
   marcarReembolsado,
   ultimaTransaccion,
   updateCategoryTaxLine,
+  updateCategoryBusinessPct,
   saldoDeuda,
   saldoTarjeta,
   fijarSaldoTarjeta,
@@ -1212,6 +1213,13 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
                           ]}
                           onChange={async (v) => { await updateCategoryTaxLine(c.id, v || null); void reload(); }} />
                       </div>
+                    )}
+                    {/* Qué parte de esta categoría es del negocio. Solo tiene
+                        sentido preguntarlo cuando la categoría ya va a una
+                        línea de impuestos: si no se deduce, el porcentaje no
+                        cambia nada y solo sería un campo más que llenar. */}
+                    {c.type === "expense" && c.tax_line && (
+                      <PorcentajeNegocio cat={c} tr={tr} onGuardado={() => void reload()} />
                     )}
                     {etiquetas.length > 0 && (
                       <div style={{ flexBasis: "100%", minWidth: 0 }}>
@@ -2591,6 +2599,73 @@ function TxModal({ categories, accounts, cards, debts, goals, edit, etiquetas, t
         <button className="btn primary" {...sinRobarFoco} disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Guardando…" : "Guardar"}</button>
       </form>
     </Modal>
+  );
+}
+
+/** Qué parte de una categoría es gasto del negocio.
+ *
+ *  El teléfono, el internet y la cuenta del banco son en parte de la empresa
+ *  y en parte tuyos. Antes eran todo o nada, y eso deja el resumen de
+ *  impuestos mal en las dos direcciones: deduciendo de más o de menos.
+ *
+ *  Se pone en la categoría y no en cada gasto porque nadie decide mes a mes
+ *  qué parte del teléfono fue de trabajo. Se decide una vez, con un criterio,
+ *  y ese criterio es también lo que después hay que poder defender. */
+function PorcentajeNegocio({ cat, tr, onGuardado }: {
+  cat: Category;
+  tr: (k: string) => string;
+  onGuardado: () => void;
+}) {
+  const actual = cat.business_pct ?? 100;
+  const [abierto, setAbierto] = useState(false);
+  const [valor, setValor] = useState(String(actual));
+  const [err, setErr] = useState<string | null>(null);
+  const n = Number(valor);
+  const valido = valor.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 100;
+
+  async function guardar(pct: number) {
+    try {
+      setErr(null);
+      // Cien es lo mismo que no haber puesto nada: se guarda vacío para que
+      // la fila no diga un porcentaje que no cambia nada.
+      await updateCategoryBusinessPct(cat.id, pct === 100 ? null : pct);
+      setAbierto(false);
+      onGuardado();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  return (
+    <div style={{ flexBasis: "100%", minWidth: 0 }}>
+      <button type="button" className="linklike" style={{ fontSize: 11.5, fontWeight: 600 }}
+        onClick={() => { setValor(String(actual)); setAbierto(!abierto); }}>
+        {actual === 100
+          ? `▸ ${tr("Todo es del negocio")}`
+          : `▸ ${actual}% ${tr("del negocio")}`}
+      </button>
+      {abierto && (
+        <div style={{ marginTop: 7 }}>
+          <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 7, lineHeight: 1.5 }}>
+            {tr("Si esta categoría es en parte personal, pon qué parte usas para trabajar. En el resumen de impuestos se deduce solo esa parte, y el resto se sigue viendo como gasto tuyo.")}
+          </p>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+            {[100, 80, 60, 50, 30].map((x) => (
+              <button key={x} type="button" className={"btn " + (n === x ? "primary" : "ghost")}
+                style={{ fontSize: 12, padding: "5px 11px" }}
+                onClick={() => setValor(String(x))}>{x}%</button>
+            ))}
+            <input type="number" min={0} max={100} inputMode="numeric" value={valor}
+              onChange={(e) => setValor(e.target.value)} aria-label={tr("Porcentaje del negocio")}
+              style={{ width: 78 }} />
+            <button type="button" className="btn primary" disabled={!valido}
+              style={{ fontSize: 12, padding: "5px 13px" }}
+              onClick={() => void guardar(n)}>{tr("com.guardar")}</button>
+          </div>
+          {err && <p style={{ fontSize: 11.5, color: "var(--err)", marginTop: 6 }}>{err}</p>}
+        </div>
+      )}
+    </div>
   );
 }
 

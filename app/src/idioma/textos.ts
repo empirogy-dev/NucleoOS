@@ -3157,6 +3157,13 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "¿Están todos los cargos correctos?": "Are all these charges right?",
     "Desmarca los que no sean de esto. Vuelven a la lista y pueden formar su propia serie, que es lo que hay que hacer cuando un mismo cobrador te cobra dos cosas distintas.": "Uncheck the ones that do not belong here. They go back to the list and can form their own series, which is what you need when the same biller charges you for two different things.",
     "Deja al menos dos cargos: con uno solo no hay nada que se repita.": "Leave at least two charges: with only one there is nothing recurring.",
+    "Todo es del negocio": "All of it is business",
+    "del negocio": "business use",
+    "Si esta categoría es en parte personal, pon qué parte usas para trabajar. En el resumen de impuestos se deduce solo esa parte, y el resto se sigue viendo como gasto tuyo.": "If this category is partly personal, set how much of it you use for work. The tax summary deducts only that part, and the rest still shows as your own spending.",
+    "Porcentaje del negocio": "Business percentage",
+    "Gastaste": "You spent",
+    " y se deduce ": " and the deductible part is ",
+    ", porque hay categorías que son en parte personales. El porcentaje de cada una se pone en Categorías.": ", because some categories are partly personal. You set each one's percentage under Categories.",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -4854,6 +4861,13 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "¿Están todos los cargos correctos?": "As cobranças estão todas certas?",
     "Desmarca los que no sean de esto. Vuelven a la lista y pueden formar su propia serie, que es lo que hay que hacer cuando un mismo cobrador te cobra dos cosas distintas.": "Desmarque as que não pertencem aqui. Elas voltam para a lista e podem formar a própria série, que é o que você precisa quando o mesmo cobrador cobra duas coisas diferentes.",
     "Deja al menos dos cargos: con uno solo no hay nada que se repita.": "Deixe pelo menos duas cobranças: com uma só não há nada que se repita.",
+    "Todo es del negocio": "Tudo é do negócio",
+    "del negocio": "do negócio",
+    "Si esta categoría es en parte personal, pon qué parte usas para trabajar. En el resumen de impuestos se deduce solo esa parte, y el resto se sigue viendo como gasto tuyo.": "Se esta categoria é em parte pessoal, defina quanto dela você usa para trabalhar. No resumo de impostos deduz só essa parte, e o resto continua aparecendo como gasto seu.",
+    "Porcentaje del negocio": "Porcentagem do negócio",
+    "Gastaste": "Você gastou",
+    " y se deduce ": " e a parte dedutível é ",
+    ", porque hay categorías que son en parte personales. El porcentaje de cada una se pone en Categorías.": ", porque algumas categorias são em parte pessoais. A porcentagem de cada uma se define em Categorias.",
   },
 };
 

@@ -73,16 +73,24 @@ export async function deleteAccount(id: string): Promise<void> {
 export async function listCategories(): Promise<Category[]> {
   const { data, error } = await sb()
     .from("categories")
-    .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color,tax_line")
+    .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color,tax_line,business_pct")
     .order("created_at");
-  if (error && /exclude_from_budget|rollover_fund|tax_line/.test(error.message)) {
+  if (error && /exclude_from_budget|rollover_fund|tax_line|business_pct/.test(error.message)) {
+    // Sin la 0070, se lee sin el porcentaje de negocio: todo cuenta al 100.
+    const sinPct = await sb()
+      .from("categories")
+      .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color,tax_line")
+      .order("created_at");
+    if (!sinPct.error) {
+      return (sinPct.data ?? []).map((c) => ({ ...c, business_pct: null })) as Category[];
+    }
     // Sin la 0060, se lee sin la línea de impuestos y la app sigue igual.
     const sinLinea = await sb()
       .from("categories")
       .select("id,name,type,budget,budget_mode,exclude_from_budget,rollover_fund,icon,color")
       .order("created_at");
     if (!sinLinea.error) {
-      return (sinLinea.data ?? []).map((c) => ({ ...c, tax_line: null })) as Category[];
+      return (sinLinea.data ?? []).map((c) => ({ ...c, tax_line: null, business_pct: null })) as Category[];
     }
     // La migración 0012 aún no se corre: leemos sin los campos nuevos.
     const legado = await sb()
@@ -90,7 +98,7 @@ export async function listCategories(): Promise<Category[]> {
       .select("id,name,type,budget,budget_mode,icon,color")
       .order("created_at");
     check(legado.error);
-    return (legado.data ?? []).map((c) => ({ ...c, exclude_from_budget: false, rollover_fund: false, tax_line: null })) as Category[];
+    return (legado.data ?? []).map((c) => ({ ...c, exclude_from_budget: false, rollover_fund: false, tax_line: null, business_pct: null })) as Category[];
   }
   check(error);
   return (data ?? []) as Category[];
@@ -323,6 +331,15 @@ export async function updateCategoryTaxLine(id: string, tax_line: string | null)
   const { error } = await sb().from("categories").update({ tax_line }).eq("id", id);
   if (error && /tax_line/.test(error.message)) {
     throw new Error("Falta la migración 0060 en Supabase (supabase/migrations/0060_linea_impuestos.sql).");
+  }
+  check(error);
+}
+
+/** Qué parte de esta categoría es del negocio, de 0 a 100. */
+export async function updateCategoryBusinessPct(id: string, business_pct: number | null): Promise<void> {
+  const { error } = await sb().from("categories").update({ business_pct }).eq("id", id);
+  if (error && /business_pct/.test(error.message)) {
+    throw new Error("Falta la migración 0070 en Supabase (supabase/migrations/0070_uso_de_negocio.sql).");
   }
   check(error);
 }

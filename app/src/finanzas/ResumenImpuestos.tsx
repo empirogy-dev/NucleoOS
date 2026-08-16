@@ -4,7 +4,7 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { Selector } from "../components/Selector";
 import { sinRobarFoco } from "../components/cierreDeFondo";
 import { fmtMoney, monedaDeTx, type Account, type Category, type CreditCard, type Tx } from "./types";
-import { FORMULARIO, NOMBRE_PAIS, lineasDe, resumenImpuestos } from "./impuestos";
+import { FORMULARIO, NOMBRE_PAIS, lineasDe, porcentajeNegocio, resumenImpuestos } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
 
 // Los gastos del año sumados por línea del formulario de impuestos.
@@ -73,18 +73,25 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, cards, curren
     const esc = (x: string) => `"${String(x).replace(/"/g, '""')}"`;
     const filas: string[][] = [];
     for (const l of r.lineas) {
-      filas.push([l.linea.numero, l.linea.oficial, "", l.total.toFixed(2), r.moneda, String(l.cuantos)]);
+      filas.push([l.linea.numero, l.linea.oficial, "", l.total.toFixed(2), r.moneda,
+        String(l.cuantos), "", l.gastado.toFixed(2)]);
       for (const c of l.categorias) {
-        filas.push(["", "", c.cat.name, c.total.toFixed(2), r.moneda, String(c.cuantos)]);
+        const pct = porcentajeNegocio(c.cat);
+        filas.push(["", "", c.cat.name, c.total.toFixed(2), r.moneda,
+          String(c.cuantos), String(pct), c.gastado.toFixed(2)]);
       }
     }
     if (r.sinLinea.length > 0) {
-      filas.push(["", tr("Sin línea asignada"), "", r.totalSinLinea.toFixed(2), r.moneda, ""]);
+      filas.push(["", tr("Sin línea asignada"), "", r.totalSinLinea.toFixed(2), r.moneda, "", "", ""]);
       for (const c of r.sinLinea) {
-        filas.push(["", "", c.cat?.name ?? tr("Sin categoría"), c.total.toFixed(2), r.moneda, String(c.cuantos)]);
+        filas.push(["", "", c.cat?.name ?? tr("Sin categoría"), c.total.toFixed(2), r.moneda,
+          String(c.cuantos), "", c.total.toFixed(2)]);
       }
     }
-    const cab = ["Line", "Line name", "Category", "Amount", "Currency", "Transactions"];
+    // "Amount" es lo deducible y "Spent" lo que salió del bolsillo. Un
+    // contador necesita ver las dos y el porcentaje que las separa.
+    const cab = ["Line", "Line name", "Category", "Amount", "Currency", "Transactions",
+      "Business %", "Spent"];
     const csv = "﻿" + [cab, ...filas].map((f) => f.map(esc).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -148,7 +155,10 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, cards, curren
                   <td style={{ padding: "8px 6px 8px 0" }}>
                     <b style={{ fontSize: 13 }}>{l.linea.oficial}</b>
                     <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
-                      {l.categorias.map((c) => c.cat.name).join(", ")}
+                      {l.categorias.map((c) => {
+                        const pct = porcentajeNegocio(c.cat);
+                        return pct === 100 ? c.cat.name : `${c.cat.name} (${pct}%)`;
+                      }).join(", ")}
                     </div>
                     {l.linea.ojo && (
                       <div style={{ fontSize: 11.5, color: "var(--warn)", marginTop: 2 }}>⚠️ {tr(l.linea.ojo)}</div>
@@ -156,6 +166,11 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, cards, curren
                   </td>
                   <td className="tnum" style={{ padding: "8px 0", textAlign: "right", whiteSpace: "nowrap", fontWeight: 600 }}>
                     {fmtMoney(l.total, r.moneda)}
+                    {Math.abs(l.gastado - l.total) > 0.005 && (
+                      <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>
+                        {tr("de")} {fmtMoney(l.gastado, r.moneda)}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -168,6 +183,13 @@ export function ResumenImpuestosPanel({ txs, categories, accounts, cards, curren
               </tr>
             </tbody>
           </table>
+
+          {r.conPorcentaje > 0 && (
+            <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8, lineHeight: 1.5 }}>
+              {tr("Gastaste")} {fmtMoney(r.gastado, r.moneda)}{tr(" y se deduce ")}{fmtMoney(r.total, r.moneda)}
+              {tr(", porque hay categorías que son en parte personales. El porcentaje de cada una se pone en Categorías.")}
+            </p>
+          )}
 
           {/* Lo que quedó fuera se dice. Un resumen que esconde lo que no
               cuadró es peor que uno que lo muestra. */}
