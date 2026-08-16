@@ -111,7 +111,9 @@ const normal = (x: string): string =>
 const COL_FECHA = ["start date", "date", "fecha", "trip date", "start"];
 const COL_DISTANCIA = ["miles", "kilometers", "kilometres", "km", "distance", "distancia", "millas", "kilometros"];
 const COL_CATEGORIA = ["category", "categoria", "purpose category", "type", "tipo"];
-const COL_DESTINO = ["stop", "end", "to", "destination", "name of location", "destino", "hasta"];
+// "end" a secas no: emparejaba con "End Time" antes que con "End Location",
+// y el destino salía siendo una hora.
+const COL_DESTINO = ["end location", "stop location", "stop", "destination", "name of location", "destino"];
 const COL_MOTIVO = ["purpose", "notes", "note", "motivo", "proposito", "description"];
 
 function buscar(cabeceras: string[], alias: string[]): number {
@@ -126,7 +128,9 @@ function buscar(cabeceras: string[], alias: string[]): number {
  *  cabeceras no están en la primera. Se busca la fila que más se parezca. */
 function filaDeCabeceras(filas: string[][]): { indice: number; cols: string[] } {
   let mejor: { indice: number; cols: string[]; puntos: number } | null = null;
-  for (let i = 0; i < Math.min(filas.length, 15); i += 1) {
+  // Hasta cuarenta filas hacia abajo: el reporte de MileIQ trae un resumen
+  // completo arriba y la tabla no empieza hasta la fila diecinueve.
+  for (let i = 0; i < Math.min(filas.length, 40); i += 1) {
     const cols = filas[i].map(normal);
     if (cols.length < 3) continue;
     const puntos = (buscar(cols, COL_FECHA) !== -1 ? 3 : 0)
@@ -276,6 +280,7 @@ const empiezaCon = (b: Uint8Array, bytes: number[]) => bytes.every((x, i) => b[i
 export async function leerArchivoKm(
   file: File,
   leerExcel: (f: File) => Promise<string[][]>,
+  leerExcelAntiguo: (f: File) => Promise<string[][]>,
 ): Promise<LecturaReporte> {
   const cabeza = new Uint8Array(await file.slice(0, 8).arrayBuffer());
 
@@ -285,10 +290,9 @@ export async function leerArchivoKm(
       "Esto es un PDF, y de un PDF no puedo sacar los números con la exactitud que hace falta para una declaración. En tu app de kilómetros elige exportar en Excel.");
   }
 
-  // Un .xls de los anteriores a 2007: formato binario, no se puede leer aquí.
+  // Un .xls de los anteriores a 2007: otro formato completamente distinto.
   if (empiezaCon(cabeza, [0xd0, 0xcf, 0x11, 0xe0])) {
-    throw new ReporteIlegible(
-      "Este Excel viene en el formato antiguo. Ábrelo, guárdalo como .xlsx o como CSV, y vuelve a subirlo.");
+    return leerReporteGrilla(await leerExcelAntiguo(file));
   }
 
   // Todo .xlsx es un ZIP, y todo ZIP empieza con PK.
@@ -358,13 +362,25 @@ export function quitarRepetidos(
   yaGuardados: Array<{ date: string; km: number }>,
 ): { aImportar: ViajeLeido[]; repetidos: number } {
   const firma = (d: string, km: number) => `${d}|${km.toFixed(1)}`;
-  const vistos = new Set(yaGuardados.map((v) => firma(v.date, Number(v.km))));
+
+  // Se cuenta cuántos hay de cada firma, no si la firma existe.
+  //
+  // Dos viajes del mismo día por la misma distancia son la ida y la vuelta, y
+  // son dos viajes de verdad. Con un conjunto de firmas, el segundo se perdía
+  // como si fuera un duplicado: en el reporte real de MileIQ eso borraba cien
+  // viajes de cuatrocientos dieciséis, sin decir nada.
+  const cuantos = new Map<string, number>();
+  for (const v of yaGuardados) {
+    const f = firma(v.date, Number(v.km));
+    cuantos.set(f, (cuantos.get(f) ?? 0) + 1);
+  }
+
   const aImportar: ViajeLeido[] = [];
   let repetidos = 0;
   for (const v of nuevos) {
     const f = firma(v.date, v.km);
-    if (vistos.has(f)) { repetidos += 1; continue; }
-    vistos.add(f);
+    const quedan = cuantos.get(f) ?? 0;
+    if (quedan > 0) { cuantos.set(f, quedan - 1); repetidos += 1; continue; }
     aImportar.push(v);
   }
   return { aImportar, repetidos };

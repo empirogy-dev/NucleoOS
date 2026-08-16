@@ -20,6 +20,7 @@ import {
   type LecturaReporte, type Unidad,
 } from "./importarKm";
 import { leerXlsx } from "./xlsx";
+import { leerXls } from "./xls";
 
 // El auto y sus kilómetros.
 //
@@ -586,7 +587,7 @@ function ModalImportar({ auto, viajes, tr, onClose, onImportado }: {
       // El lector de Excel se le pasa como parámetro para que el archivo que
       // interpreta reportes no dependa de las APIs del navegador y se pueda
       // probar suelto.
-      const r = await leerArchivoKm(f, leerXlsx);
+      const r = await leerArchivoKm(f, leerXlsx, leerXls);
       setLectura(r);
       setUnidad(r.unidad);
     } catch (e) {
@@ -693,18 +694,27 @@ function ModalImportar({ auto, viajes, tr, onClose, onImportado }: {
               </tbody>
             </table>
 
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12.5,
-              cursor: "pointer", lineHeight: 1.45, marginBottom: 10 }}>
-              <input type="checkbox" checked={conPersonales}
-                onChange={(e) => setConPersonales(e.target.checked)}
-                style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
-              <span>
-                {tr("Traer también los viajes personales")}{" "}
-                <span style={{ color: "var(--muted)" }}>
-                  {tr("Conviene: con ellos los kilómetros del año salen de la propia bitácora y ya no dependes de acordarte de mirar el tablero en enero. No aparecen en la lista ni se deducen.")}
+            {/* La casilla solo si el archivo trae personales. Ofrecer traer
+                algo que no existe hace creer que los kilómetros totales
+                quedaron cubiertos, y no es así. */}
+            {resumen.personales.cuantos > 0 ? (
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12.5,
+                cursor: "pointer", lineHeight: 1.45, marginBottom: 10 }}>
+                <input type="checkbox" checked={conPersonales}
+                  onChange={(e) => setConPersonales(e.target.checked)}
+                  style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+                <span>
+                  {tr("Traer también los viajes personales")}{" "}
+                  <span style={{ color: "var(--muted)" }}>
+                    {tr("Conviene: con ellos los kilómetros del año salen de la propia bitácora y ya no dependes de acordarte de mirar el tablero en enero. No aparecen en la lista ni se deducen.")}
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--warn)", marginBottom: 10, lineHeight: 1.5 }}>
+                {tr("Este reporte trae solo viajes de trabajo, ninguno personal. Con eso sé cuántos kilómetros hiciste trabajando, pero no cuántos hiciste en total, y el porcentaje sale de dividir uno por el otro. Vas a necesitar las dos lecturas del odómetro, o exportar el reporte incluyendo todas las categorías.")}
+              </p>
+            )}
 
             {lectura.descartadas.length > 0 && (
               <p style={{ fontSize: 12, color: "var(--warn)", marginBottom: 8, lineHeight: 1.5 }}>
