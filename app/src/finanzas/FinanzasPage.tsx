@@ -142,8 +142,13 @@ export function FinanzasPage() {
   const [metasDireccion, setMetasDireccion] = useState<Objective[]>([]);
   const { currency: defaultCurrency } = useSettings();
 
+  // Primera vez: pantalla de carga. Después: se refrescan los datos sin
+  // borrar lo que hay. Si no, cada acción desmonta la página entera, se
+  // cierran los paneles abiertos y se pierde el lugar donde ibas.
+  const primeraVez = useRef(true);
+
   const reload = useCallback(async () => {
-    setLoading(true);
+    if (primeraVez.current) setLoading(true);
     setError(null);
     try {
       const [a, c, t, g, d, cc, r] = await Promise.all([
@@ -163,6 +168,7 @@ export function FinanzasPage() {
       else setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
+      primeraVez.current = false;
     }
     // Metas de Dirección del área Finanzas: para que una meta de ahorro
     // nueva pueda empujarlas desde su creación. Opcional, sin drama si falta.
