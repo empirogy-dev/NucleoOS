@@ -1448,6 +1448,122 @@ function cuandoTexto(fecha: string, hoy: string): string {
   return `en ${dias} días`;
 }
 
+/** El umbral de aviso según el modo del presupuesto. Igual que
+ *  umbralAdvertencia en la app (src/finanzas/budgeting.ts): un tope fijo
+ *  avisa antes porque no tiene de dónde estirarse. */
+function umbralDe(modo: string | null, tipo: string): number {
+  const m = modo === "fixed" || modo === "flexible" || modo === "variable"
+    ? modo
+    : (tipo === "savings" ? "variable" : "flexible");
+  return m === "fixed" ? 75 : m === "flexible" ? 85 : 90;
+}
+
+const mesDe = (fecha: string) => fecha.slice(0, 7);
+
+function mesAtras(mes: string, n: number): string {
+  const [a, b] = mes.split("-").map(Number);
+  const d = new Date(Date.UTC(a, b - 1 - n, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Los presupuestos que cruzaron su tope, avisados una sola vez.
+ *
+ * El aviso vive aquí y no en la app porque en la app ya se ve: las barras se
+ * ponen naranjas solas. Lo que no existía era enterarse SIN entrar a mirar, y
+ * ese es justo el momento en que sirve, cuando todavía queda mes por delante
+ * y se puede hacer algo.
+ *
+ * Se avisa una vez por categoría, mes y nivel, y queda anotado en
+ * budget_alerts. Sin eso, el mismo aviso saldría cada mañana hasta fin de
+ * mes, que es la forma más rápida de que alguien silencie al coach.
+ *
+ * El cálculo es el mismo de resumenPresupuesto en la app: lo reembolsado no
+ * gasta presupuesto, y el fondo de arrastre suma lo que sobró de los meses
+ * anteriores.
+ */
+async function avisosDePresupuesto(
+  db: SupabaseClient, userId: string, timezone: string,
+): Promise<string> {
+  const hoy = hoyEn(timezone);
+  const mes = mesDe(hoy);
+
+  try {
+    const { data: cats } = await db.from("categories")
+      .select("id,name,icon,type,budget,budget_mode,rollover_fund,exclude_from_budget")
+      .eq("user_id", userId);
+
+    const conTope = (cats ?? []).filter((c: Record<string, unknown>) =>
+      c.type === "expense" && Number(c.budget) > 0 && c.exclude_from_budget !== true);
+    if (conTope.length === 0) return "";
+
+    // Con fondo de arrastre hay que mirar un año hacia atrás; sin él, basta
+    // el mes. Se pide lo mínimo en cada caso.
+    const hayArrastre = conTope.some((c: Record<string, unknown>) => c.rollover_fund === true);
+    const desde = hayArrastre ? `${mesAtras(mes, 12)}-01` : `${mes}-01`;
+
+    const { data: txs } = await db.from("transactions")
+      .select("category_id,amount,date,reimbursed,type")
+      .eq("user_id", userId)
+      .eq("type", "expense")
+      .gte("date", desde)
+      .lte("date", `${mes}-31`);
+
+    const gastoEn = (catId: string, m: string): number =>
+      (txs ?? [])
+        .filter((t: Record<string, unknown>) =>
+          t.category_id === catId && t.reimbursed !== true && String(t.date ?? "").startsWith(m))
+        .reduce((s: number, t: Record<string, unknown>) => s + Number(t.amount ?? 0), 0);
+
+    // Lo ya avisado este mes, para no repetirlo.
+    const { data: yaAvisados } = await db.from("budget_alerts")
+      .select("category_id,level").eq("user_id", userId).eq("month", mes);
+    const avisado = new Set((yaAvisados ?? []).map(
+      (a: Record<string, unknown>) => `${a.category_id}:${a.level}`));
+
+    const nuevos: Array<{ user_id: string; category_id: string; month: string; level: string }> = [];
+    const lineas: string[] = [];
+
+    for (const c of conTope as Array<Record<string, unknown>>) {
+      const id = String(c.id);
+      const tope = Number(c.budget);
+
+      let arrastre = 0;
+      if (c.rollover_fund === true) {
+        let acumulado = 0;
+        for (let i = 12; i >= 1; i -= 1) {
+          acumulado = Math.max(0, acumulado + tope - gastoEn(id, mesAtras(mes, i)));
+        }
+        arrastre = acumulado;
+      }
+      const disponible = Math.max(tope + arrastre, 0);
+      if (disponible <= 0) continue;
+
+      const gastado = gastoEn(id, mes);
+      const pct = (gastado / disponible) * 100;
+      const umbral = umbralDe(c.budget_mode as string | null, String(c.type));
+
+      const nivel = gastado > disponible ? "pasado" : pct >= umbral ? "cerca" : null;
+      if (!nivel || avisado.has(`${id}:${nivel}`)) continue;
+
+      nuevos.push({ user_id: userId, category_id: id, month: mes, level: nivel });
+      const nombre = `${c.icon ?? ""} ${c.name}`.trim();
+      lineas.push(nivel === "pasado"
+        ? `${nombre}: te pasaste, ${Math.round(gastado)} de ${Math.round(disponible)}`
+        : `${nombre}: vas en ${Math.round(pct)}% del tope, ${Math.round(gastado)} de ${Math.round(disponible)}`);
+    }
+
+    if (lineas.length === 0) return "";
+    // Se anota ANTES de que el mensaje se arme, y si el envío falla igual
+    // queda anotado. Es a propósito: repetir un aviso molesta más que
+    // perderlo, y el número sigue estando en la app.
+    await db.from("budget_alerts").insert(nuevos);
+    return `💸 Presupuestos: ${lineas.slice(0, 4).join(" · ")}.`;
+  } catch {
+    return ""; // sin la 0073 todavía, el resumen sale igual sin esta parte
+  }
+}
+
 /** Lo que ya está esperando en tu app y que, si nadie te lo dice, se olvida:
  *  lo mismo que muestra el Calendario (pagos con su recurrencia, citas,
  *  exámenes y cumpleaños) más las tareas de hoy y los vínculos por
@@ -1488,6 +1604,11 @@ async function loQueTeEspera(db: SupabaseClient, userId: string, timezone: strin
       lineas.push("💳 Pagos: " + proximos.slice(0, 6).map((p) =>
         `${p.title}${p.amount ? ` (${p.amount})` : ""} ${cuandoTexto(p.cuando, hoy)}`).join(", ") + ".");
     }
+
+    // Los presupuestos que cruzaron su tope. Van después de los pagos porque
+    // son la misma pregunta mirada al revés: lo que viene y lo que ya se fue.
+    const presupuesto = await avisosDePresupuesto(db, userId, timezone);
+    if (presupuesto) lineas.push(presupuesto);
 
     if (citas.length > 0) {
       lineas.push("🩺 Citas: " + citas.map((c) =>
