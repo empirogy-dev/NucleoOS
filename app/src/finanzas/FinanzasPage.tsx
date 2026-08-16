@@ -22,6 +22,7 @@ import { lineasDe } from "./impuestos";
 import { usePaisImpuestos } from "./paisImpuestos";
 import { GuiaImpuestos } from "./GuiaImpuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
+import { RecurrentesTab } from "./RecurrentesTab";
 import { ComprobantesTab } from "./ComprobantesTab";
 import { addCartola, deleteCartola, listCartolas, openCartola, type Cartola } from "./statements";
 import { BancoPanel } from "./BancoPanel";
@@ -98,7 +99,7 @@ import {
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 
-type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "metas" | "etiquetas" | "categorias" | "reporte";
+type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes" | "metas" | "etiquetas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
   const [paisImpuestos] = usePaisImpuestos();
@@ -367,6 +368,7 @@ export function FinanzasPage() {
             ["transacciones", "Transacciones"],
             ["cuentas", "Cuentas"],
             ["deudas", "Deudas y tarjetas"],
+            ["recurrentes", "Suscripciones y cuotas"],
             ["metas", "Metas"],
             ["etiquetas", "Etiquetas"],
             ["categorias", "Categorías"],
@@ -1040,6 +1042,20 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
                 <Plus size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} /> Agregar deuda
               </button>
             </>
+          )}
+
+          {tab === "recurrentes" && (
+            <RecurrentesTab
+              txs={txs} accounts={accounts} cards={cards} categories={categories}
+              currency={currency} txTags={txTags} catTags={catTags}
+              onVerMovimientos={(s) => {
+                // Al buscador va el nombre del comercio, no la clave interna:
+                // es lo que de verdad aparece escrito en los movimientos.
+                setFq(s.nombre);
+                setFTag("all");
+                setVistaTx("archivo");
+                setTab("transacciones");
+              }} />
           )}
 
           {tab === "reporte" && (
