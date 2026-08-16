@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
+import { AyudaTip } from "../components/AyudaTip";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
 import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
@@ -397,19 +398,19 @@ export function FinanzasPage() {
           {tab === "resumen" && (
             <>
               <div className="statrow" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
-                <div className="card stat"><div className="k">{tr("stat.fin.balance")}</div><div className="v tnum">
+                <div className="card stat"><div className="k">{tr("stat.fin.balance")}<AyudaTip etiqueta={tr("Qué significa")} texto={tr("Lo que tienes disponible ahora mismo, sumando todas tus cuentas. Las tarjetas de crédito no entran aquí: eso es deuda, no plata tuya.")} /></div><div className="v tnum">
                   {porMoneda.map((m) => <span key={m.cur} style={{ display: "block" }}>{fmtMoney(m.balance, m.cur)}</span>)}
                 </div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.deuda")}</div><div className="v tnum">
+                <div className="card stat"><div className="k">{tr("stat.fin.deuda")}<AyudaTip etiqueta={tr("Qué significa")} texto={tr("Todo lo que debes: el saldo usado de tus tarjetas más tus deudas. Una tarjeta pagada de más no resta, porque eso es plata a favor y no una deuda.")} /></div><div className="v tnum">
                   {porMoneda.map((m) => <span key={m.cur} style={{ display: "block", color: m.deuda > 0 ? "var(--err)" : undefined }}>{fmtMoney(m.deuda, m.cur)}</span>)}
                 </div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.patrimonio")}</div><div className="v tnum">
+                <div className="card stat"><div className="k">{tr("stat.fin.patrimonio")}<AyudaTip etiqueta={tr("Qué significa")} texto={tr("Lo que te quedaría si pagaras todas tus deudas hoy: el balance de tus cuentas menos la deuda total. Puede ser negativo, y eso solo significa que debes más de lo que tienes disponible.")} /></div><div className="v tnum">
                   {porMoneda.map((m) => <span key={m.cur} style={{ display: "block", color: m.patrimonio >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(m.patrimonio, m.cur)}</span>)}
                 </div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.ingresos")}</div><div className="v tnum" style={{ color: "var(--ok)" }}>
+                <div className="card stat"><div className="k">{tr("stat.fin.ingresos")}<AyudaTip etiqueta={tr("Qué significa")} texto={tr("La plata que entró este mes. No incluye las transferencias entre tus propias cuentas ni los pagos a tus tarjetas: eso no es ganar plata, es moverla.")} /></div><div className="v tnum" style={{ color: "var(--ok)" }}>
                   {porMoneda.filter((m) => m.ingresos > 0 || m.cur === currency).map((m) => <span key={m.cur} style={{ display: "block" }}>{fmtMoney(m.ingresos, m.cur)}</span>)}
                 </div></div>
-                <div className="card stat"><div className="k">{tr("stat.fin.gastos")}</div><div className="v tnum" style={{ color: "var(--err)" }}>
+                <div className="card stat"><div className="k">{tr("stat.fin.gastos")}<AyudaTip etiqueta={tr("Qué significa")} texto={tr("Lo que gastaste este mes. No incluye las transferencias ni lo que te reembolsaron, porque eso al final no lo pagaste tú.")} /></div><div className="v tnum" style={{ color: "var(--err)" }}>
                   {porMoneda.filter((m) => m.gastos > 0 || m.cur === currency).map((m) => <span key={m.cur} style={{ display: "block" }}>{fmtMoney(m.gastos, m.cur)}</span>)}
                 </div></div>
               </div>
