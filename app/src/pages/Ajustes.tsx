@@ -15,6 +15,7 @@ import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
 import { usePaisImpuestos } from "../finanzas/paisImpuestos";
 import { LegalModal } from "../legal/LegalModal";
 import { descargarMisDatos, reunirMisDatos } from "../legal/misDatos";
+import { FRASE_BORRAR, borrarMiCuenta } from "../legal/borrarCuenta";
 import { FORMULARIO, type PaisImpuestos } from "../finanzas/impuestos";
 import { useModulos } from "../modulos/ModulosProvider";
 import { GRUPOS_MODULOS } from "../modulos/modulos";
@@ -69,6 +70,7 @@ export function Ajustes() {
         <AvisosNavegadorCard />
         <ConexionesCard />
         <CuentaCard />
+        <BorrarCuentaCard />
       </div>
     </div>
   );
@@ -169,6 +171,78 @@ function DatosYLegalCard() {
       <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
         {tr("Las fotos de tus boletas se descargan aparte, desde Finanzas → Comprobantes → Exportar, con sus nombres puestos.")}
       </p>
+    </div>
+  );
+}
+
+/** Borrar la cuenta. Va al final, con su propio marco rojo y con los pasos
+ *  separados: primero se abre, después se escribe la frase y el correo, y
+ *  recién ahí el botón se enciende. Nada de esto se hace con un clic. */
+function BorrarCuentaCard() {
+  const { t: tr } = useIdioma();
+  const { session, signOut } = useAuth();
+  const correoCuenta = session?.user?.email ?? "";
+  const [abierto, setAbierto] = useState(false);
+  const [frase, setFrase] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const listo = frase.trim().toUpperCase() === FRASE_BORRAR
+    && correo.trim().toLowerCase() === correoCuenta.toLowerCase();
+
+  async function borrar() {
+    if (!window.confirm(tr("Esto borra tu cuenta y todo lo que hay dentro, sin vuelta atrás. ¿Seguro?"))) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await borrarMiCuenta(correo.trim());
+      if (r.avisos.length > 0) window.alert(r.avisos.join("\n"));
+      await signOut();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card pad" style={{ borderColor: "var(--err)" }}>
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Borrar mi cuenta")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, lineHeight: 1.55 }}>
+        {tr("Se borra tu cuenta y todo lo que hay dentro: movimientos, boletas, cartolas, hábitos, notas y metas. Se corta la conexión con tu banco. No hay vuelta atrás y no podemos recuperarlo después.")}
+      </p>
+      <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 12, lineHeight: 1.5 }}>
+        💡 {tr("Antes de borrar, descarga tus datos con el botón de arriba. Después ya no vas a poder.")}
+      </p>
+
+      {!abierto ? (
+        <button className="btn ghost" style={{ borderColor: "var(--err)", color: "var(--err)" }}
+          onClick={() => setAbierto(true)}>
+          {tr("Quiero borrar mi cuenta")}
+        </button>
+      ) : (
+        <>
+          <div className="field" style={{ maxWidth: 340 }}>
+            <label>{tr("Escribe")} {FRASE_BORRAR}</label>
+            <input value={frase} onChange={(e) => setFrase(e.target.value)} placeholder={FRASE_BORRAR} />
+          </div>
+          <div className="field" style={{ maxWidth: 340 }}>
+            <label>{tr("Escribe tu correo")}</label>
+            <input value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder={correoCuenta} autoComplete="off" />
+          </div>
+          {err && <p style={{ color: "var(--err)", fontSize: 13, marginBottom: 10 }}>{err}</p>}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn ghost" disabled={busy}
+              onClick={() => { setAbierto(false); setFrase(""); setCorreo(""); setErr(null); }}>
+              {tr("Cancelar")}
+            </button>
+            <button className="btn primary" disabled={!listo || busy}
+              style={{ background: "var(--err)" }} onClick={() => void borrar()}>
+              {busy ? tr("Borrando…") : tr("Borrar mi cuenta para siempre")}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
