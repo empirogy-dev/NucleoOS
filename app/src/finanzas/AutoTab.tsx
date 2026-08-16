@@ -16,9 +16,10 @@ import {
   type Lectura, type UsoDelAuto, type Vehiculo, type Viaje,
 } from "./auto";
 import {
-  leerReporteKm, quitarRepetidos, reinterpretarUnidad, resumirImportacion,
+  leerArchivoKm, quitarRepetidos, reinterpretarUnidad, resumirImportacion,
   type LecturaReporte, type Unidad,
 } from "./importarKm";
+import { leerXlsx } from "./xlsx";
 
 // El auto y sus kilómetros.
 //
@@ -582,7 +583,10 @@ function ModalImportar({ auto, viajes, tr, onClose, onImportado }: {
     setError(null);
     setNombreArchivo(f.name);
     try {
-      const r = leerReporteKm(await f.text());
+      // El lector de Excel se le pasa como parámetro para que el archivo que
+      // interpreta reportes no dependa de las APIs del navegador y se pueda
+      // probar suelto.
+      const r = await leerArchivoKm(f, leerXlsx);
       setLectura(r);
       setUnidad(r.unidad);
     } catch (e) {
@@ -632,10 +636,10 @@ function ModalImportar({ auto, viajes, tr, onClose, onImportado }: {
           {tr("Importar la bitácora")}
         </h3>
         <p style={{ lineHeight: 1.55, marginBottom: 12 }}>
-          {tr("Pide en tu app de kilómetros el reporte de viajes en CSV y súbelo aquí. Está probado con MileIQ, y sirve cualquier archivo que traiga fecha, distancia y categoría.")}
+          {tr("Pide en tu app de kilómetros el reporte de viajes y súbelo aquí, en Excel o en CSV. Está probado con MileIQ, y sirve cualquier archivo que traiga fecha, distancia y categoría.")}
         </p>
 
-        <input type="file" accept=".csv,text/csv,text/plain"
+        <input type="file" accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           aria-label={tr("El archivo del reporte")}
           onChange={(e) => void elegir(e.target.files?.[0] ?? null)} />
 

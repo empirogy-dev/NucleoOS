@@ -3244,6 +3244,7 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "ya estaban y no se repiten": "were already there and are not duplicated",
     "Falta saber cuántos kilómetros anduvo el auto en total. Hay dos formas: dos lecturas del odómetro, una al empezar y otra al terminar, o importar la bitácora de tu app de kilómetros con los viajes personales incluidos. Sin una de las dos no hay porcentaje, y prefiero no inventarte uno.": "I still need to know how many kilometres the car did in total. There are two ways: two odometer readings, one at the start and one at the end, or importing the log from your mileage app with the personal trips included. Without one of the two there is no percentage, and I would rather not invent one.",
     "Los kilómetros del año salen de sumar todos los viajes de la bitácora, incluidos los personales. Si además anotas dos lecturas del odómetro, mandan esas: cubren también lo que la app no alcanzó a registrar.": "The year's kilometres come from adding up every trip in the log, personal ones included. If you also record two odometer readings, those win: they cover what the app did not manage to record.",
+    "Pide en tu app de kilómetros el reporte de viajes y súbelo aquí, en Excel o en CSV. Está probado con MileIQ, y sirve cualquier archivo que traiga fecha, distancia y categoría.": "Ask your mileage app for the drive report and upload it here, as Excel or CSV. It is tested with MileIQ, and any file with date, distance and category works.",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -5028,6 +5029,7 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "ya estaban y no se repiten": "já estavam e não se repetem",
     "Falta saber cuántos kilómetros anduvo el auto en total. Hay dos formas: dos lecturas del odómetro, una al empezar y otra al terminar, o importar la bitácora de tu app de kilómetros con los viajes personales incluidos. Sin una de las dos no hay porcentaje, y prefiero no inventarte uno.": "Ainda falta saber quantos quilômetros o carro andou no total. Há dois caminhos: duas leituras do odômetro, uma no início e outra no fim, ou importar o registro do seu app de quilometragem com as viagens pessoais incluídas. Sem um dos dois não há porcentagem, e prefiro não inventar uma.",
     "Los kilómetros del año salen de sumar todos los viajes de la bitácora, incluidos los personales. Si además anotas dos lecturas del odómetro, mandan esas: cubren también lo que la app no alcanzó a registrar.": "Os quilômetros do ano saem da soma de todas as viagens do registro, incluindo as pessoais. Se você também anotar duas leituras do odômetro, valem essas: cobrem também o que o app não conseguiu registrar.",
+    "Pide en tu app de kilómetros el reporte de viajes y súbelo aquí, en Excel o en CSV. Está probado con MileIQ, y sirve cualquier archivo que traiga fecha, distancia y categoría.": "Peça no seu app de quilometragem o relatório de viagens e envie aqui, em Excel ou CSV. Está testado com o MileIQ, e serve qualquer arquivo que traga data, distância e categoria.",
   },
 };
 

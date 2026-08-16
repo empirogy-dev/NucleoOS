@@ -39,29 +39,68 @@ export interface LecturaReporte {
 
 export class ReporteIlegible extends Error {}
 
-// ---------- Lo básico de un CSV ----------
+// ---------- De un archivo a una grilla de texto ----------
+//
+// Todo lo de más abajo trabaja sobre una grilla de celdas, no sobre líneas de
+// texto. Así el mismo reconocimiento de columnas sirve para un CSV, para un
+// Excel y para una tabla HTML, que son las tres cosas distintas que una app
+// puede estar llamando "exportar a XLS".
 
-function partirLinea(linea: string, sep: string): string[] {
-  const valores: string[] = [];
+/** Parte un CSV entero, no línea por línea.
+ *
+ *  Una celda entre comillas puede traer un salto de línea adentro, y un motivo
+ *  de viaje escrito en dos renglones parte la tabla en dos si primero se corta
+ *  por saltos de línea y después por comas. */
+function grillaDeTexto(texto: string, sep: string): string[][] {
+  const filas: string[][] = [];
+  let fila: string[] = [];
   let actual = "";
   let entreComillas = false;
-  for (let i = 0; i < linea.length; i += 1) {
-    const c = linea[i];
+
+  const cerrarCelda = () => { fila.push(actual.trim()); actual = ""; };
+  const cerrarFila = () => { cerrarCelda(); filas.push(fila); fila = []; };
+
+  for (let i = 0; i < texto.length; i += 1) {
+    const c = texto[i];
     if (c === '"') {
-      if (entreComillas && linea[i + 1] === '"') { actual += '"'; i += 1; }
+      if (entreComillas && texto[i + 1] === '"') { actual += '"'; i += 1; }
       else entreComillas = !entreComillas;
       continue;
     }
-    if (c === sep && !entreComillas) { valores.push(actual.trim()); actual = ""; continue; }
+    if (!entreComillas) {
+      if (c === sep) { cerrarCelda(); continue; }
+      if (c === "\n") { cerrarFila(); continue; }
+      if (c === "\r") continue;
+    }
     actual += c;
   }
-  valores.push(actual.trim());
-  return valores;
+  if (actual !== "" || fila.length > 0) cerrarFila();
+  return filas.filter((f) => f.some((celda) => celda !== ""));
 }
 
-const separadorDe = (linea: string): string =>
-  [",", ";", "\t"].map((s) => ({ s, n: partirLinea(linea, s).length }))
-    .sort((a, b) => b.n - a.n)[0].s;
+/** El separador que produce más columnas. Se decide una vez para todo el
+ *  archivo: decidirlo línea por línea hacía que una fila con un punto y coma
+ *  dentro de un comentario se partiera distinto que las demás. */
+function separadorDe(texto: string): string {
+  const muestra = texto.split(/\r?\n/).slice(0, 15).join("\n");
+  return [",", ";", "\t"]
+    .map((sep) => {
+      const g = grillaDeTexto(muestra, sep);
+      return { sep, n: Math.max(0, ...g.map((f) => f.length)) };
+    })
+    .sort((a, b) => b.n - a.n)[0].sep;
+}
+
+/** Algunas apps llaman "XLS" a una tabla HTML con otra extensión. */
+function grillaDeHtml(texto: string): string[][] {
+  const doc = new DOMParser().parseFromString(texto, "text/html");
+  const tabla = [...doc.querySelectorAll("table")]
+    .sort((a, b) => b.rows.length - a.rows.length)[0];
+  if (!tabla) throw new ReporteIlegible("Ese archivo no trae ninguna tabla que pueda leer.");
+  return [...tabla.rows]
+    .map((r) => [...r.cells].map((c) => (c.textContent ?? "").replace(/\s+/g, " ").trim()))
+    .filter((f) => f.some((celda) => celda !== ""));
+}
 
 const normal = (x: string): string =>
   x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -83,22 +122,21 @@ function buscar(cabeceras: string[], alias: string[]): number {
   return cabeceras.findIndex((h) => alias.some((a) => h.includes(a)));
 }
 
-/** MileIQ pone dos o tres líneas de encabezado antes de la tabla. Se busca la
- *  primera línea que parezca cabeceras de verdad. */
-function filaDeCabeceras(lineas: string[]): { indice: number; sep: string; cols: string[] } {
-  let mejor: { indice: number; sep: string; cols: string[]; puntos: number } | null = null;
-  for (let i = 0; i < Math.min(lineas.length, 15); i += 1) {
-    const sep = separadorDe(lineas[i]);
-    const cols = partirLinea(lineas[i], sep).map(normal);
+/** MileIQ pone dos o tres filas de encabezado antes de la tabla, así que las
+ *  cabeceras no están en la primera. Se busca la fila que más se parezca. */
+function filaDeCabeceras(filas: string[][]): { indice: number; cols: string[] } {
+  let mejor: { indice: number; cols: string[]; puntos: number } | null = null;
+  for (let i = 0; i < Math.min(filas.length, 15); i += 1) {
+    const cols = filas[i].map(normal);
     if (cols.length < 3) continue;
     const puntos = (buscar(cols, COL_FECHA) !== -1 ? 3 : 0)
       + (buscar(cols, COL_DISTANCIA) !== -1 ? 3 : 0)
       + (buscar(cols, COL_CATEGORIA) !== -1 ? 2 : 0);
-    if (puntos >= 6 && (!mejor || puntos > mejor.puntos)) mejor = { indice: i, sep, cols, puntos };
+    if (puntos >= 6 && (!mejor || puntos > mejor.puntos)) mejor = { indice: i, cols, puntos };
   }
   if (!mejor) {
     throw new ReporteIlegible(
-      "No encontré las columnas de fecha y distancia en este archivo. Exporta el reporte de viajes en CSV y súbelo tal cual, sin abrirlo ni guardarlo de nuevo.");
+      "No encontré las columnas de fecha y distancia. Asegúrate de haber exportado el reporte de viajes y no un resumen.");
   }
   return mejor;
 }
@@ -147,11 +185,11 @@ const DE_TRABAJO = new Set([
   "business", "negocio", "trabajo", "work", "deductible",
 ]);
 
-export function leerReporteKm(texto: string): LecturaReporte {
-  const lineas = texto.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim() !== "");
-  if (lineas.length < 2) throw new ReporteIlegible("El archivo está vacío.");
+/** El corazón: una grilla de celdas convertida en viajes. */
+export function leerReporteGrilla(filas: string[][]): LecturaReporte {
+  if (filas.length < 2) throw new ReporteIlegible("El archivo está vacío.");
 
-  const { indice, sep, cols } = filaDeCabeceras(lineas);
+  const { indice, cols } = filaDeCabeceras(filas);
   const iFecha = buscar(cols, COL_FECHA);
   const iDist = buscar(cols, COL_DISTANCIA);
   const iCat = buscar(cols, COL_CATEGORIA);
@@ -170,8 +208,8 @@ export function leerReporteKm(texto: string): LecturaReporte {
   const viajes: ViajeLeido[] = [];
   const descartadas: Array<{ fila: number; motivo: string }> = [];
 
-  for (let i = indice + 1; i < lineas.length; i += 1) {
-    const v = partirLinea(lineas[i], sep);
+  for (let i = indice + 1; i < filas.length; i += 1) {
+    const v = filas[i];
     // Las filas de resumen del pie tienen menos columnas que la tabla.
     if (v.length < cols.length - 2) continue;
 
@@ -216,6 +254,53 @@ export function leerReporteKm(texto: string): LecturaReporte {
     desde: fechas[0],
     hasta: fechas[fechas.length - 1],
   };
+}
+
+/** Un reporte en texto: separado por comas, punto y coma o tabulaciones. */
+export function leerReporteKm(texto: string): LecturaReporte {
+  const limpio = texto.replace(/^﻿/, "");
+  return leerReporteGrilla(grillaDeTexto(limpio, separadorDe(limpio)));
+}
+
+// ---------- Qué es realmente este archivo ----------
+//
+// "Exportar a XLS" significa cosas distintas según la app: un Excel de verdad,
+// una tabla HTML con la extensión cambiada, o texto separado por tabulaciones.
+// Y a veces es un .xls de los antiguos, que es un formato binario que no se
+// puede leer sin arrastrar una librería entera.
+//
+// Se mira el contenido y no la extensión, porque la extensión miente.
+
+const empiezaCon = (b: Uint8Array, bytes: number[]) => bytes.every((x, i) => b[i] === x);
+
+export async function leerArchivoKm(
+  file: File,
+  leerExcel: (f: File) => Promise<string[][]>,
+): Promise<LecturaReporte> {
+  const cabeza = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+
+  // %PDF
+  if (empiezaCon(cabeza, [0x25, 0x50, 0x44, 0x46])) {
+    throw new ReporteIlegible(
+      "Esto es un PDF, y de un PDF no puedo sacar los números con la exactitud que hace falta para una declaración. En tu app de kilómetros elige exportar en Excel.");
+  }
+
+  // Un .xls de los anteriores a 2007: formato binario, no se puede leer aquí.
+  if (empiezaCon(cabeza, [0xd0, 0xcf, 0x11, 0xe0])) {
+    throw new ReporteIlegible(
+      "Este Excel viene en el formato antiguo. Ábrelo, guárdalo como .xlsx o como CSV, y vuelve a subirlo.");
+  }
+
+  // Todo .xlsx es un ZIP, y todo ZIP empieza con PK.
+  if (empiezaCon(cabeza, [0x50, 0x4b])) {
+    return leerReporteGrilla(await leerExcel(file));
+  }
+
+  const texto = (await file.text()).replace(/^﻿/, "");
+  if (/^\s*(<!doctype html|<html|<table)/i.test(texto)) {
+    return leerReporteGrilla(grillaDeHtml(texto));
+  }
+  return leerReporteKm(texto);
 }
 
 /**
