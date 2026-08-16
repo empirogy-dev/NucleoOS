@@ -107,7 +107,7 @@ import {
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 
-type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes" | "auto" | "metas" | "etiquetas" | "categorias" | "reporte";
+type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes" | "auto" | "metas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
   const [paisImpuestos] = usePaisImpuestos();
@@ -163,6 +163,10 @@ export function FinanzasPage() {
   // Con muchos pendientes conviene empezar agrupado.
   const [agrupado, setAgrupado] = useState(true);
   const [vistaTx, setVistaTx] = useState<"revisar" | "sinboleta" | "archivo" | "comprobantes" | "cartolas">("revisar");
+  // Categorías y etiquetas son la misma tarea, clasificar, así que comparten
+  // pestaña. Adentro se cambia con el mismo control segmentado que ya usa
+  // Transacciones, para no inventar un patrón nuevo por dos vistas.
+  const [vistaClas, setVistaClas] = useState<"categorias" | "etiquetas">("categorias");
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [editCard, setEditCard] = useState<CreditCard | null>(null);
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
@@ -419,14 +423,16 @@ export function FinanzasPage() {
             ...(mostrarAuto ? [["auto"] as [TabKey]] : []),
             ["sep"],
             ["categorias"],
-            ["etiquetas"],
           ] as Array<[TabKey | "sep"]>
         ).map(([k]) => (
           k === "sep"
             ? <span key="sep" className="fsep" aria-hidden />
             : (
               <button key={k} className={"ftab" + (tab === k ? " active" : "")} onClick={() => setTab(k)}>
-                {tr("tab.fin." + k)}
+                {/* La pestaña dice las dos cosas que hay adentro. Decir solo
+                    "Categorías" escondería las etiquetas justo después de
+                    haberles quitado su propia pestaña. */}
+                {tr(k === "categorias" ? "tab.fin.clasificar" : "tab.fin." + k)}
               </button>
             )
         ))}
@@ -882,7 +888,16 @@ export function FinanzasPage() {
             );
           })()}
 
-          {tab === "etiquetas" && (() => {
+          {tab === "categorias" && (
+            <div className="seg" style={{ maxWidth: 340 }}>
+              <button className={"segbtn" + (vistaClas === "categorias" ? " active" : "")}
+                onClick={() => setVistaClas("categorias")}>{tr("tab.fin.categorias")}</button>
+              <button className={"segbtn" + (vistaClas === "etiquetas" ? " active" : "")}
+                onClick={() => setVistaClas("etiquetas")}>{tr("tab.fin.etiquetas")}</button>
+            </div>
+          )}
+
+          {tab === "categorias" && vistaClas === "etiquetas" && (() => {
             const anio = hoyLocal().slice(0, 4);
             const stats = etiquetas.map((e) => {
               const mias = txs.filter((t) => (txTags.get(t.id) ?? []).some((x) => x.id === e.id));
@@ -1209,7 +1224,7 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
             </>
           )}
 
-          {tab === "categorias" && (
+          {tab === "categorias" && vistaClas === "categorias" && (
             <>
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))" }}>
                 {categories.map((c) => (

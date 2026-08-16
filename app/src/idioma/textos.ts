@@ -210,6 +210,7 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     // Suscripciones y cuotas (lo que se cobra solo)
     "tab.fin.recurrentes": "Suscripciones y cuotas",
     "tab.fin.auto": "Auto",
+    "tab.fin.clasificar": "Categorías y etiquetas",
   },
   en: {
     lema: "A system to change the course of your life",
@@ -3276,6 +3277,7 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Agrega la pestaña Auto en Finanzas, para llevar los kilómetros y poder deducir la parte de sus gastos que corresponde al trabajo. Si la apagas no se borra nada: los viajes siguen guardados.": "Adds the Vehicle tab under Finances, to keep the kilometres and deduct the share of its costs that belongs to work. Turning it off deletes nothing: the trips stay saved.",
     "viaje en": "trip in",
     "viajes en": "trips in",
+    "tab.fin.clasificar": "Categories and tags",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -5092,6 +5094,7 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Agrega la pestaña Auto en Finanzas, para llevar los kilómetros y poder deducir la parte de sus gastos que corresponde al trabajo. Si la apagas no se borra nada: los viajes siguen guardados.": "Adiciona a aba Veículo em Finanças, para registrar os quilômetros e deduzir a parte dos gastos que corresponde ao trabalho. Desligar não apaga nada: as viagens continuam salvas.",
     "viaje en": "viagem em",
     "viajes en": "viagens em",
+    "tab.fin.clasificar": "Categorias e etiquetas",
   },
 };
 
