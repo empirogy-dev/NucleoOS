@@ -248,7 +248,19 @@ button{font-family:inherit}
 .summary-body{font-size:13.5px;line-height:1.6;color:var(--ink-soft);white-space:pre-wrap;max-height:50vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px}
 
 /* ================= FINANZAS ================= */
+/* Las acciones van en su propia fila, separadas de las pestañas.
+   Mezcladas en la misma fila, al envolverse quedaba una pestaña suelta a la
+   izquierda y los botones a la derecha, y la barra entera se leía como un
+   montón de botones sin orden. */
+.finacciones{display:flex;gap:8px;align-items:center;justify-content:flex-end;
+  flex-wrap:wrap;margin-bottom:10px}
 .ftabs{display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+/* Lo de configurar (categorías, etiquetas) siempre empieza en su propia fila.
+   Como línea vertical se veía bien solo cuando todo cabía en un renglón, y
+   con diez pestañas eso no pasa nunca: el corte caía en cualquier parte y la
+   barra se leía como un montón de botones sueltos. Un salto fijo hace que
+   las dos filas signifiquen algo, en cualquier ancho. */
+.ftabs .fsep{flex-basis:100%;height:0;margin:0}
 .ftab{border:1.5px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:var(--r-full);padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer}
 .ftab:hover{border-color:var(--muted)}
 .ftab.active{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-wash)}

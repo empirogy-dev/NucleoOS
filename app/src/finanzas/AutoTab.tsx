@@ -362,6 +362,15 @@ function PanelViajes({ viajes, anio, autoId, tr, onCambio, onError }: {
       {suyos.length === 0 && (
         <p style={{ color: "var(--muted)", fontSize: 13 }}>{tr("Ningún viaje anotado en")} {anio}.</p>
       )}
+      {suyos.length > 0 && (
+        <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 4 }}>
+          {suyos.length} {suyos.length === 1 ? tr("viaje en") : tr("viajes en")} {anio}
+        </p>
+      )}
+      {/* La lista se desplaza dentro del panel y no arrastra la página.
+          Con cuatrocientos viajes importados, dejarla crecer significaba
+          bajar media hora para llegar a cualquier otra cosa de Finanzas. */}
+      <div style={{ maxHeight: 420, overflowY: "auto", overscrollBehavior: "contain" }}>
       {suyos.map((v) => (
         <div key={v.id} style={{
           display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
@@ -380,6 +389,7 @@ function PanelViajes({ viajes, anio, autoId, tr, onCambio, onError }: {
             }}><Trash2 size={13} /></button>
         </div>
       ))}
+      </div>
     </div>
   );
 }
@@ -466,6 +476,7 @@ function PanelOdometro({ lecturas, anio, autoId, compra, tr, onCambio, onError }
       {lecturas.length === 0 && (
         <p style={{ color: "var(--muted)", fontSize: 13 }}>{tr("Todavía no hay lecturas.")}</p>
       )}
+      <div style={{ maxHeight: 300, overflowY: "auto", overscrollBehavior: "contain" }}>
       {lecturas.map((l) => (
         <div key={l.id} style={{
           display: "flex", gap: 10, alignItems: "center",
@@ -481,6 +492,7 @@ function PanelOdometro({ lecturas, anio, autoId, compra, tr, onCambio, onError }
             }}><Trash2 size={13} /></button>
         </div>
       ))}
+      </div>
     </div>
   );
 }

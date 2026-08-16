@@ -13,6 +13,7 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
 import { usePaisImpuestos } from "../finanzas/paisImpuestos";
+import { useUsaAuto } from "../finanzas/usaAuto";
 import { LegalModal } from "../legal/LegalModal";
 import { descargarMisDatos, reunirMisDatos } from "../legal/misDatos";
 import { FRASE_BORRAR, borrarMiCuenta } from "../legal/borrarCuenta";
@@ -109,6 +110,7 @@ function MonedaCard() {
 function PaisImpuestosCard() {
   const { t: tr } = useIdioma();
   const [pais, setPais] = usePaisImpuestos();
+  const [usaAuto, setUsaAuto] = useUsaAuto();
 
   return (
     <div className="card pad">
@@ -130,6 +132,23 @@ function PaisImpuestosCard() {
           {tr(FORMULARIO[pais])}
         </p>
       )}
+
+      {/* Vive aquí y no en Finanzas porque es la misma decisión: qué parte de
+          la app tiene sentido para cómo declaras tú. */}
+      <label style={{
+        display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer",
+        fontSize: 13, lineHeight: 1.5, marginTop: 14, paddingTop: 12,
+        borderTop: "1px solid var(--line-soft)",
+      }}>
+        <input type="checkbox" checked={usaAuto} onChange={(e) => setUsaAuto(e.target.checked)}
+          style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+        <span>
+          {tr("Uso un auto para trabajar")}{" "}
+          <span style={{ color: "var(--muted)" }}>
+            {tr("Agrega la pestaña Auto en Finanzas, para llevar los kilómetros y poder deducir la parte de sus gastos que corresponde al trabajo. Si la apagas no se borra nada: los viajes siguen guardados.")}
+          </span>
+        </span>
+      </label>
     </div>
   );
 }

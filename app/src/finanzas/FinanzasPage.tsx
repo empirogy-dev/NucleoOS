@@ -24,6 +24,8 @@ import { GuiaImpuestos } from "./GuiaImpuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { RecurrentesTab } from "./RecurrentesTab";
 import { AutoTab } from "./AutoTab";
+import { useUsaAuto } from "./usaAuto";
+import { listarVehiculos } from "./auto";
 import {
   decisionDeTx, guardarDecision, listarDecisiones, olvidarDecision, serieDeUnaTx,
   type DecisionSerie, type TipoSerie,
@@ -110,6 +112,25 @@ type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes"
 export function FinanzasPage() {
   const [paisImpuestos] = usePaisImpuestos();
   const [tab, setTab] = useState<TabKey>("resumen");
+  // La pestaña del auto es opcional: le sirve a quien deduce kilómetros. Se
+  // enciende en Ajustes, pero también aparece sola si ya hay un auto
+  // guardado, porque esconder datos que alguien ya cargó sería peor que
+  // mostrar una pestaña de más.
+  const [usaAuto] = useUsaAuto();
+  const [hayAutos, setHayAutos] = useState(false);
+  const mostrarAuto = usaAuto || hayAutos;
+  useEffect(() => {
+    let vivo = true;
+    listarVehiculos()
+      .then((v) => { if (vivo) setHayAutos(v.length > 0); })
+      .catch(() => undefined);   // sin la migración del auto, simplemente no hay
+    return () => { vivo = false; };
+  }, []);
+  // Si se apaga con la pestaña abierta, no se queda mirando una pantalla que
+  // ya no está en la barra.
+  useEffect(() => {
+    if (!mostrarAuto) setTab((t) => (t === "auto" ? "resumen" : t));
+  }, [mostrarAuto]);
   // El ojito: con el modo privado activo, todos los montos se enmascaran.
   const [privado, setPrivado] = useState(modoPrivado());
   const { t: tr } = useIdioma();
@@ -381,26 +402,37 @@ export function FinanzasPage() {
     <div className="page">
       <Head />
 
+      {/* Las pestañas van agrupadas por para qué sirven, y no en el orden en
+          que se fueron construyendo: primero el día a día, después lo que
+          tienes y debes, después lo que se repite, después los impuestos, y
+          al final, separado, lo de configurar. */}
       <div className="ftabs">
         {(
           [
-            ["resumen", "Resumen"],
-            ["transacciones", "Transacciones"],
-            ["cuentas", "Cuentas"],
-            ["deudas", "Deudas y tarjetas"],
-            ["recurrentes", "Suscripciones y cuotas"],
-            ["auto", "Auto"],
-            ["metas", "Metas"],
-            ["etiquetas", "Etiquetas"],
-            ["categorias", "Categorías"],
-            ["reporte", "Reporte"],
-          ] as Array<[TabKey, string]>
+            ["resumen"],
+            ["transacciones"],
+            ["cuentas"],
+            ["deudas"],
+            ["recurrentes"],
+            ["metas"],
+            ["reporte"],
+            ...(mostrarAuto ? [["auto"] as [TabKey]] : []),
+            ["sep"],
+            ["categorias"],
+            ["etiquetas"],
+          ] as Array<[TabKey | "sep"]>
         ).map(([k]) => (
-          <button key={k} className={"ftab" + (tab === k ? " active" : "")} onClick={() => setTab(k)}>
-            {tr("tab.fin." + k)}
-          </button>
+          k === "sep"
+            ? <span key="sep" className="fsep" aria-hidden />
+            : (
+              <button key={k} className={"ftab" + (tab === k ? " active" : "")} onClick={() => setTab(k)}>
+                {tr("tab.fin." + k)}
+              </button>
+            )
         ))}
-        <span style={{ flex: 1 }} />
+      </div>
+
+      <div className="finacciones">
         <button className="btn ghost" title={privado ? "Mostrar los montos" : "Ocultar los montos para mostrar la app sin mostrar tu plata"}
           aria-label={privado ? "Mostrar los montos" : "Ocultar los montos"}
           onClick={() => { setModoPrivado(!privado); setPrivado(!privado); }}>

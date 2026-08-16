@@ -3272,6 +3272,10 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Cierre del año": "End of the year",
     "Hoy": "Today",
     "El cierre de un año es la apertura del siguiente, así que se anota una sola vez: en enero ya vas a tener el punto de partida puesto.": "The closing reading of one year is the opening of the next, so you record it once: come January the starting point is already there.",
+    "Uso un auto para trabajar": "I use a car for work",
+    "Agrega la pestaña Auto en Finanzas, para llevar los kilómetros y poder deducir la parte de sus gastos que corresponde al trabajo. Si la apagas no se borra nada: los viajes siguen guardados.": "Adds the Vehicle tab under Finances, to keep the kilometres and deduct the share of its costs that belongs to work. Turning it off deletes nothing: the trips stay saved.",
+    "viaje en": "trip in",
+    "viajes en": "trips in",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -5084,6 +5088,10 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Cierre del año": "Fechamento do ano",
     "Hoy": "Hoje",
     "El cierre de un año es la apertura del siguiente, así que se anota una sola vez: en enero ya vas a tener el punto de partida puesto.": "A leitura de fechamento de um ano é a de abertura do seguinte, então se anota uma vez só: em janeiro o ponto de partida já vai estar lá.",
+    "Uso un auto para trabajar": "Uso um carro para trabalhar",
+    "Agrega la pestaña Auto en Finanzas, para llevar los kilómetros y poder deducir la parte de sus gastos que corresponde al trabajo. Si la apagas no se borra nada: los viajes siguen guardados.": "Adiciona a aba Veículo em Finanças, para registrar os quilômetros e deduzir a parte dos gastos que corresponde ao trabalho. Desligar não apaga nada: as viagens continuam salvas.",
+    "viaje en": "viagem em",
+    "viajes en": "viagens em",
   },
 };
 
