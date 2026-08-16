@@ -148,6 +148,15 @@ export const FORMULARIO: Record<PaisImpuestos, string> = {
 
 export const lineasDe = (pais: PaisImpuestos): LineaImpuesto[] => LINEAS_POR_PAIS[pais] ?? [];
 
+/** La línea donde van los gastos del auto, que es la única que se deduce por
+ *  proporción de kilómetros. En Chile la movilización incluye el auto pero
+ *  también los pasajes, así que el porcentaje se aplica con más cuidado. */
+export const LINEA_AUTO: Record<PaisImpuestos, string | null> = {
+  CA: "9281",
+  CL: "CL-MOV",
+  otro: null,
+};
+
 export const lineaPorNumero = (n: string | null | undefined, pais: PaisImpuestos): LineaImpuesto | undefined =>
   lineasDe(pais).find((l) => l.numero === n);
 

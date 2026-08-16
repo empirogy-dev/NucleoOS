@@ -23,6 +23,7 @@ import { usePaisImpuestos } from "./paisImpuestos";
 import { GuiaImpuestos } from "./GuiaImpuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { RecurrentesTab } from "./RecurrentesTab";
+import { AutoTab } from "./AutoTab";
 import {
   decisionDeTx, guardarDecision, listarDecisiones, olvidarDecision, serieDeUnaTx,
   type DecisionSerie, type TipoSerie,
@@ -104,7 +105,7 @@ import {
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
 
-type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes" | "metas" | "etiquetas" | "categorias" | "reporte";
+type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes" | "auto" | "metas" | "etiquetas" | "categorias" | "reporte";
 
 export function FinanzasPage() {
   const [paisImpuestos] = usePaisImpuestos();
@@ -388,6 +389,7 @@ export function FinanzasPage() {
             ["cuentas", "Cuentas"],
             ["deudas", "Deudas y tarjetas"],
             ["recurrentes", "Suscripciones y cuotas"],
+            ["auto", "Auto"],
             ["metas", "Metas"],
             ["etiquetas", "Etiquetas"],
             ["categorias", "Categorías"],
@@ -1100,6 +1102,10 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
                 setVistaTx("archivo");
                 setTab("transacciones");
               }} />
+          )}
+
+          {tab === "auto" && (
+            <AutoTab categories={categories} onCambio={() => void reload()} />
           )}
 
           {tab === "reporte" && (
