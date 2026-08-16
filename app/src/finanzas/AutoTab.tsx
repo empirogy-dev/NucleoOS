@@ -204,7 +204,8 @@ export function AutoTab({ categories, onCambio }: {
       <div className="panelgrid">
         <PanelViajes viajes={viajes} anio={anio} autoId={autoId} tr={tr}
           onCambio={() => void cargarDetalle(autoId)} onError={setErr} />
-        <PanelOdometro lecturas={lecturas} anio={anio} autoId={autoId} tr={tr}
+        <PanelOdometro lecturas={lecturas} anio={anio} autoId={autoId}
+          compra={auto?.purchase_date ?? null} tr={tr}
           onCambio={() => void cargarDetalle(autoId)} onError={setErr} />
       </div>
 
@@ -383,10 +384,13 @@ function PanelViajes({ viajes, anio, autoId, tr, onCambio, onError }: {
   );
 }
 
-function PanelOdometro({ lecturas, anio, autoId, tr, onCambio, onError }: {
+function PanelOdometro({ lecturas, anio, autoId, compra, tr, onCambio, onError }: {
   lecturas: Lectura[];
   anio: string;
   autoId: string;
+  /** La fecha de compra, si el auto se compró a mitad de año: ese día es la
+   *  apertura, no el primero de enero. */
+  compra: string | null;
   tr: (k: string) => string;
   onCambio: () => void;
   onError: (m: string) => void;
@@ -394,6 +398,11 @@ function PanelOdometro({ lecturas, anio, autoId, tr, onCambio, onError }: {
   const [fecha, setFecha] = useState(hoyLocal());
   const [km, setKm] = useState("");
   const [ocupado, setOcupado] = useState(false);
+
+  // Si el auto se compró a mitad de año, la apertura de ese año es el día de
+  // la compra: antes de eso el auto no era tuyo y sus kilómetros no cuentan.
+  const apertura = compra && compra.startsWith(anio) ? compra : `${anio}-01-01`;
+  const cierre = `${anio}-12-31`;
 
   async function agregar(e: React.FormEvent) {
     e.preventDefault();
@@ -419,7 +428,25 @@ function PanelOdometro({ lecturas, anio, autoId, tr, onCambio, onError }: {
         {tr("El número que marca el tablero. Con una al empezar el año y otra al terminarlo basta: de la resta salen los kilómetros totales.")}
       </p>
 
-      <form onSubmit={(e) => void agregar(e)} style={{ marginBottom: 14 }}>
+      {/* Las dos lecturas que importan tienen fecha fija, así que van de
+          botón: la del cierre es el 31 de diciembre y la de apertura el 1 de
+          enero, salvo que el auto se haya comprado a mitad de año.
+          Solo llenan la fecha; el número lo pone ella y guarda igual que
+          siempre. Un flujo aparte para esto serían dos pantallas para lo
+          mismo. */}
+      <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 9 }}>
+        <button type="button" className={"btn " + (fecha === apertura ? "primary" : "ghost")}
+          style={{ fontSize: 12, padding: "5px 11px" }}
+          onClick={() => setFecha(apertura)}>{tr("Apertura del año")}</button>
+        <button type="button" className={"btn " + (fecha === cierre ? "primary" : "ghost")}
+          style={{ fontSize: 12, padding: "5px 11px" }}
+          onClick={() => setFecha(cierre)}>{tr("Cierre del año")}</button>
+        <button type="button" className={"btn " + (fecha === hoyLocal() ? "primary" : "ghost")}
+          style={{ fontSize: 12, padding: "5px 11px" }}
+          onClick={() => setFecha(hoyLocal())}>{tr("Hoy")}</button>
+      </div>
+
+      <form onSubmit={(e) => void agregar(e)} style={{ marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
           <div style={{ minWidth: 132, flex: 1 }}>
             <CampoFecha value={fecha} onChange={setFecha} ariaLabel={tr("Fecha")} conBorrar={false} />
@@ -431,6 +458,10 @@ function PanelOdometro({ lecturas, anio, autoId, tr, onCambio, onError }: {
             style={{ fontSize: 13, padding: "7px 15px" }}>{tr("Anotar")}</button>
         </div>
       </form>
+
+      <p style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 14, lineHeight: 1.5 }}>
+        {tr("El cierre de un año es la apertura del siguiente, así que se anota una sola vez: en enero ya vas a tener el punto de partida puesto.")}
+      </p>
 
       {lecturas.length === 0 && (
         <p style={{ color: "var(--muted)", fontSize: 13 }}>{tr("Todavía no hay lecturas.")}</p>

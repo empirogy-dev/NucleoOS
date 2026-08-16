@@ -3268,6 +3268,10 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "La bitácora suma más kilómetros que el odómetro. Revisa las lecturas: puede que le falte un dígito a alguna.": "The log adds up to more kilometres than the odometer. Check the readings: one of them may be missing a digit.",
     "Por ahora": "For now",
     "Vuelve a anotarlo al terminar el año.": "Record it again when the year ends.",
+    "Apertura del año": "Start of the year",
+    "Cierre del año": "End of the year",
+    "Hoy": "Today",
+    "El cierre de un año es la apertura del siguiente, así que se anota una sola vez: en enero ya vas a tener el punto de partida puesto.": "The closing reading of one year is the opening of the next, so you record it once: come January the starting point is already there.",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -5076,6 +5080,10 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "La bitácora suma más kilómetros que el odómetro. Revisa las lecturas: puede que le falte un dígito a alguna.": "O registro soma mais quilômetros do que o odômetro. Revise as leituras: pode faltar um dígito em alguma.",
     "Por ahora": "Por enquanto",
     "Vuelve a anotarlo al terminar el año.": "Anote de novo quando o ano terminar.",
+    "Apertura del año": "Abertura do ano",
+    "Cierre del año": "Fechamento do ano",
+    "Hoy": "Hoje",
+    "El cierre de un año es la apertura del siguiente, así que se anota una sola vez: en enero ya vas a tener el punto de partida puesto.": "A leitura de fechamento de um ano é a de abertura do seguinte, então se anota uma vez só: em janeiro o ponto de partida já vai estar lá.",
   },
 };
 
