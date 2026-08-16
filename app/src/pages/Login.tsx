@@ -4,6 +4,8 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { supabaseConfigured } from "../lib/supabase";
 import { LogoAtomo } from "../components/LogoAtomo";
+import { LegalModal } from "../legal/LegalModal";
+import { registrarAceptacion } from "../legal/aceptacion";
 
 export function Login() {
   const { signIn, signUp } = useAuth();
@@ -12,6 +14,11 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  // La aceptación de los términos: obligatoria al crear la cuenta, y queda
+  // registrada con su versión, porque una casilla marcada que no se guarda en
+  // ninguna parte no sirve de nada.
+  const [acepta, setAcepta] = useState(false);
+  const [verLegal, setVerLegal] = useState<null | "terminos" | "privacidad">(null);
   const [msg, setMsg] = useState<{ kind: "err" | "ok"; text: string } | null>(null);
 
   async function submit(e: React.FormEvent) {
@@ -19,6 +26,7 @@ export function Login() {
     setMsg(null);
     setBusy(true);
     const res = mode === "in" ? await signIn(email, password) : await signUp(email, password);
+    if (mode === "up" && !res.error) await registrarAceptacion();
     setBusy(false);
     if (res.error) {
       setMsg({ kind: "err", text: res.error });
@@ -29,6 +37,7 @@ export function Login() {
 
   return (
     <div className="auth-wrap">
+      {verLegal && <LegalModal inicial={verLegal} onClose={() => setVerLegal(null)} />}
       <div className="auth">
         <div className="auth-brand">
           <div className="logo"><LogoAtomo size={24} /></div>
@@ -62,7 +71,25 @@ export function Login() {
                 <label>{t("login.contrasena")}</label>
                 <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("login.minimo")} autoComplete={mode === "in" ? "current-password" : "new-password"} />
               </div>
-              <button className="btn primary" type="submit" disabled={busy} style={{ width: "100%", justifyContent: "center", marginTop: 4 }}>
+              {mode === "up" && (
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-soft)", margin: "4px 0 2px", cursor: "pointer" }}>
+                  <input type="checkbox" required checked={acepta} onChange={(e) => setAcepta(e.target.checked)}
+                    style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+                  <span>
+                    {t("Acepto los")}{" "}
+                    <button type="button" className="linklike enlinea" style={{ fontSize: 12.5 }}
+                      onClick={() => setVerLegal("terminos")}>{t("términos de servicio")}</button>
+                    {" "}{t("y la")}{" "}
+                    <button type="button" className="linklike enlinea" style={{ fontSize: 12.5 }}
+                      onClick={() => setVerLegal("privacidad")}>{t("política de privacidad")}</button>
+                    {". "}
+                    <span style={{ color: "var(--muted)" }}>
+                      {t("Incluye que tus boletas y cartolas se guardan en servidores en Estados Unidos.")}
+                    </span>
+                  </span>
+                </label>
+              )}
+              <button className="btn primary" type="submit" disabled={busy || (mode === "up" && !acepta)} style={{ width: "100%", justifyContent: "center", marginTop: 4 }}>
                 {busy ? t("login.unmomento") : mode === "in" ? t("login.entrar") : t("login.crearcuenta")}
               </button>
             </form>

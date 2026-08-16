@@ -13,6 +13,8 @@ import { useIdioma } from "../idioma/IdiomaProvider";
 import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
 import { usePaisImpuestos } from "../finanzas/paisImpuestos";
+import { LegalModal } from "../legal/LegalModal";
+import { descargarMisDatos, reunirMisDatos } from "../legal/misDatos";
 import { FORMULARIO, type PaisImpuestos } from "../finanzas/impuestos";
 import { useModulos } from "../modulos/ModulosProvider";
 import { GRUPOS_MODULOS } from "../modulos/modulos";
@@ -57,6 +59,7 @@ export function Ajustes() {
         <NameCard />
         <CumpleCard />
         <MonedaCard />
+        <DatosYLegalCard />
         <PaisImpuestosCard />
         <IdiomaCard />
         <ModulosCard />
@@ -125,6 +128,47 @@ function PaisImpuestosCard() {
           {tr(FORMULARIO[pais])}
         </p>
       )}
+    </div>
+  );
+}
+
+/** Tus datos y los documentos: llevártelos y leerlos, sin pedir permiso. */
+function DatosYLegalCard() {
+  const { t: tr } = useIdioma();
+  const [ver, setVer] = useState<null | "terminos" | "privacidad">(null);
+  const [bajando, setBajando] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function descargar() {
+    setBajando(true);
+    setErr(null);
+    try {
+      descargarMisDatos(await reunirMisDatos());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBajando(false);
+    }
+  }
+
+  return (
+    <div className="card pad">
+      {ver && <LegalModal inicial={ver} onClose={() => setVer(null)} />}
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("Tus datos")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        {tr("Todo lo que escribes en NucleoOS es tuyo y te lo puedes llevar cuando quieras, sin avisar y sin pedir permiso.")}
+      </p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button className="btn ghost" disabled={bajando} onClick={() => void descargar()}>
+          {bajando ? tr("Reuniendo tus datos…") : tr("Descargar todos mis datos")}
+        </button>
+        <button className="btn ghost" onClick={() => setVer("terminos")}>{tr("Términos de servicio")}</button>
+        <button className="btn ghost" onClick={() => setVer("privacidad")}>{tr("Política de privacidad")}</button>
+      </div>
+      {err && <p style={{ color: "var(--err)", fontSize: 13, marginTop: 10 }}>{err}</p>}
+      <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
+        {tr("Las fotos de tus boletas se descargan aparte, desde Finanzas → Comprobantes → Exportar, con sus nombres puestos.")}
+      </p>
     </div>
   );
 }
