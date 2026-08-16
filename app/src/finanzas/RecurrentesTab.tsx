@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { X, RefreshCw, CalendarClock, TrendingUp, EyeOff, Repeat } from "lucide-react";
+import { X, RefreshCw, CalendarClock, TrendingUp, EyeOff, Repeat, Pencil } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { AyudaTip } from "../components/AyudaTip";
 import { cierreDeFondo } from "../components/cierreDeFondo";
@@ -61,7 +61,7 @@ export function RecurrentesTab({
   currency: string;
   txTags: Map<string, Etiqueta[]>;
   catTags: Map<string, Etiqueta[]>;
-  onVerMovimientos: (s: Serie) => void;
+  onVerMovimientos: (s: Serie, nombre: string) => void;
   /** De dónde salen las decisiones ya tomadas. Se puede cambiar para poder
    *  probar la pantalla sin base de datos detrás. */
   cargarDecisiones?: () => Promise<DecisionSerie[]>;
@@ -107,17 +107,32 @@ export function RecurrentesTab({
     });
   }, [txs, accounts, cards, categories, currency, decisiones, txTags, catTags]);
 
+  // Dos series del mismo comercio con el mismo nombre son indistinguibles en
+  // pantalla, y eso pasa de verdad: Klarna cobra las cuotas de la antena y el
+  // internet, las dos veces diciendo "Klarna". Cuando el nombre se repite y
+  // nadie le puso uno propio, se le agrega el monto, que es lo que las separa.
+  const conNombreUnico: Fila[] = useMemo(() => {
+    const cuantos = new Map<string, number>();
+    for (const f of todas) cuantos.set(f.nombre, (cuantos.get(f.nombre) ?? 0) + 1);
+    return todas.map((f) => (
+      cuantos.get(f.nombre)! > 1 && !f.decision?.name?.trim()
+        ? { ...f, nombre: `${f.nombre} · ${fmtMoney(f.serie.monto, f.serie.currency)}` }
+        : f));
+  }, [todas]);
+
   // Las etiquetas que de verdad aparecen aquí. Ofrecer las que no tienen nada
   // que filtrar solo agrega botones que no hacen nada.
   const etiquetasPresentes = useMemo(() => {
     const mapa = new Map<string, Etiqueta>();
-    for (const f of todas) for (const e of f.etiquetas) mapa.set(e.id, e);
+    for (const f of conNombreUnico) for (const e of f.etiquetas) mapa.set(e.id, e);
     return [...mapa.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [todas]);
+  }, [conNombreUnico]);
 
   const filas = useMemo(
-    () => (fTag === "all" ? todas : todas.filter((f) => f.etiquetas.some((e) => e.id === fTag))),
-    [todas, fTag],
+    () => (fTag === "all"
+      ? conNombreUnico
+      : conNombreUnico.filter((f) => f.etiquetas.some((e) => e.id === fTag))),
+    [conNombreUnico, fTag],
   );
 
   const cuotas = filas.filter((f) => f.decision?.kind === "installments" && f.decision.installments_total);
@@ -357,9 +372,9 @@ export function RecurrentesTab({
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                   <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }}
-                    onClick={() => setPreguntando(f)}>{tr("Cambiar el número de cuotas")}</button>
+                    onClick={() => setPreguntando(f)}>{tr("Nombre y cuotas")}</button>
                   <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }}
-                    onClick={() => onVerMovimientos(f.serie)}>{tr("Ver los cargos")}</button>
+                    onClick={() => onVerMovimientos(f.serie, f.nombre)}>{tr("Ver los cargos")}</button>
                   <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }}
                     onClick={() => void deshacer(f)}>{tr("No son cuotas")}</button>
                 </div>
@@ -379,9 +394,9 @@ export function RecurrentesTab({
         )}
         {activas.map((f) => (
           <FilaSerie key={f.serie.clave} f={f} tr={tr}
-            onCuotas={() => setPreguntando(f)}
+            onEditar={() => setPreguntando(f)}
             onIgnorar={() => void marcar(f, "ignored")}
-            onVer={() => onVerMovimientos(f.serie)} />
+            onVer={() => onVerMovimientos(f.serie, f.nombre)} />
         ))}
       </div>
 
@@ -394,9 +409,9 @@ export function RecurrentesTab({
           {candidatas.map((f) => (
             <FilaSerie key={f.serie.clave} f={f} tr={tr} candidata
               onSuscripcion={() => void marcar(f, "subscription")}
-              onCuotas={() => setPreguntando(f)}
+              onEditar={() => setPreguntando(f)}
               onIgnorar={() => void marcar(f, "ignored")}
-              onVer={() => onVerMovimientos(f.serie)} />
+              onVer={() => onVerMovimientos(f.serie, f.nombre)} />
           ))}
           {candidatasTodas.length > candidatas.length && (
             <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.5 }}>
@@ -419,9 +434,9 @@ export function RecurrentesTab({
               </p>
               {paradas.map((f) => (
                 <FilaSerie key={f.serie.clave} f={f} tr={tr} apagada
-                  onCuotas={() => setPreguntando(f)}
+                  onEditar={() => setPreguntando(f)}
                   onIgnorar={() => void marcar(f, "ignored")}
-                  onVer={() => onVerMovimientos(f.serie)} />
+                  onVer={() => onVerMovimientos(f.serie, f.nombre)} />
               ))}
             </>
           )}
@@ -453,15 +468,15 @@ export function RecurrentesTab({
       )}
 
       {preguntando && (
-        <ModalCuotas f={preguntando} tr={tr}
+        <ModalSerie f={preguntando} tr={tr}
           onClose={() => setPreguntando(null)}
-          onGuardar={(n, nombre) => void marcar(preguntando, "installments", n, nombre)} />
+          onGuardar={(kind, total, nombre) => void marcar(preguntando, kind, total ?? undefined, nombre)} />
       )}
     </>
   );
 }
 
-function FilaSerie({ f, tr, apagada, candidata, onSuscripcion, onCuotas, onIgnorar, onVer }: {
+function FilaSerie({ f, tr, apagada, candidata, onSuscripcion, onEditar, onIgnorar, onVer }: {
   f: Fila;
   tr: (k: string) => string;
   apagada?: boolean;
@@ -469,7 +484,7 @@ function FilaSerie({ f, tr, apagada, candidata, onSuscripcion, onCuotas, onIgnor
    *  suman en ningún total. */
   candidata?: boolean;
   onSuscripcion?: () => void;
-  onCuotas: () => void;
+  onEditar: () => void;
   onIgnorar: () => void;
   onVer: () => void;
 }) {
@@ -536,9 +551,9 @@ function FilaSerie({ f, tr, apagada, candidata, onSuscripcion, onCuotas, onIgnor
             {tr("Sí, es una suscripción")}
           </button>
         )}
-        <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }} onClick={onCuotas}>
-          <Repeat size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />
-          {tr("Es una compra en cuotas")}
+        <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }} onClick={onEditar}>
+          <Pencil size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+          {tr("Nombre y tipo")}
         </button>
         <button className="btn ghost" style={{ fontSize: 12, padding: "5px 11px" }} onClick={onVer}>
           {tr("Ver los cargos")}
@@ -552,20 +567,28 @@ function FilaSerie({ f, tr, apagada, candidata, onSuscripcion, onCuotas, onIgnor
   );
 }
 
-/** Lo único que hay que preguntar: cuántas cuotas son en total. */
-function ModalCuotas({ f, tr, onClose, onGuardar }: {
+/** Ponerle nombre a una serie y decir si es suscripción o compra en cuotas.
+ *
+ *  El nombre no es un adorno: cuando un intermediario cobra dos cosas, los
+ *  dos cargos dicen lo mismo ("Klarna") y en pantalla son indistinguibles.
+ *  Poder llamarlas "Antena Starlink" e "Internet Starlink" es lo que hace que
+ *  la lista se entienda de un vistazo. */
+function ModalSerie({ f, tr, onClose, onGuardar }: {
   f: Fila;
   tr: (k: string) => string;
   onClose: () => void;
-  onGuardar: (n: number, nombre: string | null) => void;
+  onGuardar: (kind: "subscription" | "installments", total: number | null, nombre: string | null) => void;
 }) {
   const yaVan = f.serie.txs.length;
+  const [kind, setKind] = useState<"subscription" | "installments">(
+    f.decision?.kind === "installments" ? "installments" : "subscription");
   const [texto, setTexto] = useState(String(f.decision?.installments_total ?? ""));
   const [nombre, setNombre] = useState(f.decision?.name ?? "");
   const n = Number(texto);
   const valido = Number.isInteger(n) && n >= 2 && n <= 120;
   // Poner menos cuotas de las que ya llegaron no puede ser: son cargos reales.
   const suficiente = !valido || n >= yaVan;
+  const puedeGuardar = kind === "subscription" || (valido && suficiente);
 
   const atajos = [3, 4, 6, 12, 24].filter((x) => x >= yaVan);
 
@@ -573,60 +596,74 @@ function ModalCuotas({ f, tr, onClose, onGuardar }: {
     <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <h3>{tr("¿En cuántas cuotas?")}</h3>
+          <h3>{tr("Editar esto que se repite")}</h3>
           <button className="xdel" aria-label={tr("com.cerrar")} onClick={onClose}><X size={14} /></button>
         </div>
         <p style={{ lineHeight: 1.55 }}>
-          <b>{f.nombre}</b>{" · "}{fmtMoney(f.serie.monto, f.serie.currency)} {tr(CADENCIA_TEXTO[f.serie.cadencia])}
+          {/* El nombre crudo, no el de la lista: ese ya trae el monto pegado
+              cuando hay dos series del mismo comercio, y aquí saldría dos
+              veces seguidas. */}
+          <b>{f.decision?.name?.trim() || f.serie.nombre}</b>
+          {" · "}{fmtMoney(f.serie.monto, f.serie.currency)} {tr(CADENCIA_TEXTO[f.serie.cadencia])}
           <br />
-          {tr("Ya llegaron")} <b>{yaVan}</b> {yaVan === 1 ? tr("cuota") : tr("cuotas")}. {tr("Dime el total y calculo lo que falta.")}
+          {yaVan} {yaVan === 1 ? tr("cargo") : tr("cargos")}, {tr("desde el")} {f.serie.primera}.
         </p>
 
-        {atajos.length > 0 && (
-          <div style={{ display: "flex", gap: 7, flexWrap: "wrap", margin: "12px 0" }}>
-            {atajos.map((x) => (
-              <button key={x} type="button"
-                className={"btn " + (n === x ? "primary" : "ghost")}
-                style={{ fontSize: 13, padding: "6px 14px" }}
-                onClick={() => setTexto(String(x))}>{x}</button>
-            ))}
-          </div>
-        )}
-
-        <div className="field">
-          <label htmlFor="cuotas-total">{tr("Total de cuotas")}</label>
-          <input id="cuotas-total" type="number" min={Math.max(2, yaVan)} max={120} inputMode="numeric"
-            value={texto} onChange={(e) => setTexto(e.target.value)} />
-        </div>
-
-        {/* El nombre del banco suele ser ilegible. Aquí, que es donde se está
-            mirando la compra, es el momento natural de arreglarlo. */}
-        <div className="field">
-          <label htmlFor="cuotas-nombre">{tr("Ponle un nombre (opcional)")}</label>
-          <input id="cuotas-nombre" type="text" maxLength={60} value={nombre}
+        <div className="field" style={{ marginTop: 12 }}>
+          <label htmlFor="serie-nombre">{tr("Nombre")}</label>
+          <input id="serie-nombre" type="text" maxLength={60} value={nombre}
             placeholder={f.serie.nombre} onChange={(e) => setNombre(e.target.value)} />
         </div>
 
-        {valido && suficiente && (
-          <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.55 }}>
-            {(() => {
-              const p = progresoCuotas(f.serie, n);
-              return p.completa
-                ? tr("Con eso ya la terminaste de pagar.")
-                : `${tr("Quedarían")} ${p.restantes} ${p.restantes === 1 ? tr("cuota") : tr("cuotas")}`
-                  + ` = ${fmtMoney(p.montoRestante, f.serie.currency)}. ${tr("La última caería el")} ${p.termina}.`;
-            })()}
-          </p>
-        )}
-        {!suficiente && (
-          <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 10 }}>
-            {tr("No pueden ser menos de las que ya te cobraron:")} {yaVan}.
-          </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "4px 0 12px" }}>
+          <button type="button" className={"btn " + (kind === "subscription" ? "primary" : "ghost")}
+            style={{ fontSize: 13, padding: "6px 14px" }}
+            onClick={() => setKind("subscription")}>{tr("Suscripción")}</button>
+          <button type="button" className={"btn " + (kind === "installments" ? "primary" : "ghost")}
+            style={{ fontSize: 13, padding: "6px 14px" }}
+            onClick={() => setKind("installments")}>{tr("Compra en cuotas")}</button>
+        </div>
+
+        {kind === "installments" && (
+          <>
+            {atajos.length > 0 && (
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 12 }}>
+                {atajos.map((x) => (
+                  <button key={x} type="button"
+                    className={"btn " + (n === x ? "primary" : "ghost")}
+                    style={{ fontSize: 13, padding: "6px 14px" }}
+                    onClick={() => setTexto(String(x))}>{x}</button>
+                ))}
+              </div>
+            )}
+            <div className="field">
+              <label htmlFor="cuotas-total">{tr("Total de cuotas")}</label>
+              <input id="cuotas-total" type="number" min={Math.max(2, yaVan)} max={120} inputMode="numeric"
+                value={texto} onChange={(e) => setTexto(e.target.value)} />
+            </div>
+            {valido && suficiente && (
+              <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 4, lineHeight: 1.55 }}>
+                {(() => {
+                  const p = progresoCuotas(f.serie, n);
+                  return p.completa
+                    ? tr("Con eso ya la terminaste de pagar.")
+                    : `${tr("Quedarían")} ${p.restantes} ${p.restantes === 1 ? tr("cuota") : tr("cuotas")}`
+                      + ` = ${fmtMoney(p.montoRestante, f.serie.currency)}. ${tr("La última caería el")} ${p.termina}.`;
+                })()}
+              </p>
+            )}
+            {!suficiente && (
+              <p style={{ fontSize: 12.5, color: "var(--err)", marginTop: 4 }}>
+                {tr("No pueden ser menos de las que ya te cobraron:")} {yaVan}.
+              </p>
+            )}
+          </>
         )}
 
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
           <button className="btn ghost" onClick={onClose}>{tr("Cancelar")}</button>
-          <button className="btn primary" disabled={!valido || !suficiente} onClick={() => onGuardar(n, nombre.trim() || null)}>
+          <button className="btn primary" disabled={!puedeGuardar}
+            onClick={() => onGuardar(kind, kind === "installments" ? n : null, nombre.trim() || null)}>
             <RefreshCw size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
             {tr("com.guardar")}
           </button>

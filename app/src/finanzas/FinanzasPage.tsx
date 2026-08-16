@@ -232,12 +232,26 @@ export function FinanzasPage() {
   const [fCat, setFCat] = useState("all");
   const [fAcc, setFAcc] = useState("all");
   const [fTag, setFTag] = useState("all");
+  // "Ver los cargos" de una serie: los cargos EXACTOS de esa serie, no todo lo
+  // que se llame parecido. Klarna cobra las cuotas de la antena y el internet
+  // por separado, y buscar "Klarna" mezclaba las dos cosas justo cuando lo que
+  // se quería era mirar una sola.
+  const [fSerie, setFSerie] = useState<{ nombre: string; ids: Set<string> } | null>(null);
   const filteredTxs = useMemo(() => {
     const q = fq.trim().toLowerCase();
     return txs.filter((t) => {
+      if (fSerie && !fSerie.ids.has(t.id)) return false;
       if (fType !== "all" && t.type !== fType) return false;
       if (fCat !== "all" && t.category_id !== (fCat === "none" ? null : fCat)) return false;
-      if (fTag !== "all" && !(txTags.get(t.id) ?? []).some((e) => e.id === fTag)) return false;
+      // Un movimiento lleva sus etiquetas Y las de su categoría. Sin la
+      // segunda mitad, filtrar por Empirogy no devolvía nada aunque la
+      // etiqueta estuviera puesta en la categoría Software, que es
+      // justamente la forma cómoda de etiquetar: una vez, no una por gasto.
+      if (fTag !== "all") {
+        const propias = txTags.get(t.id) ?? [];
+        const deCat = t.category_id ? catTags.get(t.category_id) ?? [] : [];
+        if (![...propias, ...deCat].some((e) => e.id === fTag)) return false;
+      }
       if (fAcc !== "all") {
         // La tarjeta de crédito es fuente de pago, no cuenta. Sin esto,
         // filtrar por una tarjeta no devolvía NADA, aunque tuviera cien
@@ -271,7 +285,7 @@ export function FinanzasPage() {
       }
       return true;
     });
-  }, [txs, fq, fType, fCat, fAcc, fTag, txTags, catById, accById, cards]);
+  }, [txs, fq, fType, fCat, fAcc, fTag, fSerie, txTags, catTags, catById, accById, cards]);
 
   const month = mesActualLocal();
   const monthTxs = txs.filter((t) => t.date.startsWith(month));
@@ -548,6 +562,21 @@ export function FinanzasPage() {
                   🏦 {tr("Cartolas")}{cartolas.length > 0 ? ` (${cartolas.length})` : ""}
                 </button>
               </div>
+              {/* Cuando se llegó desde "Ver los cargos", se dice de dónde se
+                  viene y cómo salir. Una lista filtrada sin decir por qué es
+                  una lista a la que le faltan movimientos sin explicación. */}
+              {fSerie && (
+                <div className="card pad" style={{
+                  marginBottom: 12, borderLeft: "3px solid var(--fin)", display: "flex",
+                  gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 13.5,
+                }}>
+                  <span style={{ flex: 1, minWidth: 200 }}>
+                    {tr("Viendo los")} <b>{fSerie.ids.size}</b> {tr("cargos de")} <b>{fSerie.nombre}</b>
+                  </span>
+                  <button className="btn ghost" style={{ fontSize: 12.5, padding: "6px 13px" }}
+                    onClick={() => setFSerie(null)}>{tr("Ver todos los movimientos")}</button>
+                </div>
+              )}
               {vistaTx !== "comprobantes" && vistaTx !== "cartolas" && (
               <div className="filterbar">
                 <div className="searchbox" style={{ minWidth: 200 }}>
@@ -1052,11 +1081,21 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
             <RecurrentesTab
               txs={txs} accounts={accounts} cards={cards} categories={categories}
               currency={currency} txTags={txTags} catTags={catTags}
-              onVerMovimientos={(s) => {
-                // Al buscador va el nombre del comercio, no la clave interna:
-                // es lo que de verdad aparece escrito en los movimientos.
-                setFq(s.nombre);
+              onVerMovimientos={(s, nombre) => {
+                // Los cargos de ESTA serie, por identidad y no por texto. Con
+                // el buscador, "Klarna" traía las cuotas de la antena y el
+                // internet mezclados, que son dos cosas distintas cobradas por
+                // el mismo intermediario.
+                setFSerie({ nombre, ids: new Set(s.txs.map((t) => t.id)) });
+                // Los cargos de una serie caen en meses distintos por
+                // definición. Con los meses cerrados se llegaría a una
+                // pantalla que parece vacía.
+                setMesesAbiertos(new Set(s.txs.map((t) => t.date.slice(0, 7))));
+                setFq("");
                 setFTag("all");
+                setFType("all");
+                setFCat("all");
+                setFAcc("all");
                 setVistaTx("archivo");
                 setTab("transacciones");
               }} />
