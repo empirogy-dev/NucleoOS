@@ -1101,6 +1101,159 @@ const TOOLS: Record<string, { decl: Record<string, unknown>; run: ToolFn }> = {
     },
   },
 
+  ver_finanzas: {
+    decl: {
+      name: "ver_finanzas",
+      description:
+        "Lee cómo va su plata: lo que tiene en cuentas, lo que debe, lo que entró y salió este mes, " +
+        "y los presupuestos que van apretados. Úsala para '¿cuánto llevo gastado?', '¿cuánto tengo?', " +
+        "'¿cuánto debo?', '¿cómo voy este mes?'. Nunca inventes ninguna de estas cifras: si no llamas la tool, no las sabes.",
+    },
+    run: async (_args, ctx) => {
+      const hoy = hoyEn(ctx.timezone);
+      const mes = hoy.slice(0, 7);
+      const partes: string[] = [];
+
+      const [cuentas, tarjetas, deudas, cats] = await Promise.all([
+        ctx.db.from("accounts").select("name,balance,currency").eq("user_id", ctx.userId),
+        ctx.db.from("credit_cards").select("name,balance,currency").eq("user_id", ctx.userId),
+        ctx.db.from("debts").select("name,balance,currency").eq("user_id", ctx.userId),
+        ctx.db.from("categories").select("id,name,icon,type,budget,budget_mode,exclude_from_budget")
+          .eq("user_id", ctx.userId),
+      ]);
+
+      // Cada moneda por separado: sumar dólares con pesos da un número que no
+      // existe. Es la misma regla que la app.
+      const porMoneda = new Map<string, { tengo: number; debo: number; gaste: number; entro: number }>();
+      const suma = (cur: string, campo: "tengo" | "debo" | "gaste" | "entro", n: number) => {
+        const x = porMoneda.get(cur) ?? { tengo: 0, debo: 0, gaste: 0, entro: 0 };
+        x[campo] += n;
+        porMoneda.set(cur, x);
+      };
+      for (const a of cuentas.data ?? []) suma(String(a.currency ?? "CAD"), "tengo", Number(a.balance ?? 0));
+      for (const c of tarjetas.data ?? []) suma(String(c.currency ?? "CAD"), "debo", Math.max(0, Number(c.balance ?? 0)));
+      for (const d of deudas.data ?? []) suma(String(d.currency ?? "CAD"), "debo", Math.max(0, Number(d.balance ?? 0)));
+
+      const { data: txs } = await ctx.db.from("transactions")
+        .select("amount,type,category_id,reimbursed,mirror_of")
+        .eq("user_id", ctx.userId).gte("date", `${mes}-01`).lte("date", `${mes}-31`);
+
+      const moneda = (cuentas.data ?? [])[0]?.currency ?? "CAD";
+      for (const t of txs ?? []) {
+        // Las transferencias no son gasto ni ingreso: es plata que se mueve
+        // entre lo suyo. Los reflejos ya están contados en su otro lado.
+        if (t.type === "transfer" || t.mirror_of) continue;
+        if (t.type === "expense" && t.reimbursed === true) continue;
+        suma(String(moneda), t.type === "income" ? "entro" : "gaste", Number(t.amount ?? 0));
+      }
+
+      for (const [cur, x] of porMoneda) {
+        partes.push(
+          `${cur}: tienes ${Math.round(x.tengo)}, debes ${Math.round(x.debo)}, ` +
+          `este mes entró ${Math.round(x.entro)} y gastaste ${Math.round(x.gaste)}`);
+      }
+
+      // Los presupuestos apretados: solo los que van sobre el umbral, porque
+      // listarlos todos convierte la respuesta en un informe.
+      const conTope = (cats.data ?? []).filter((c) =>
+        c.type === "expense" && Number(c.budget) > 0 && c.exclude_from_budget !== true);
+      const apretados: string[] = [];
+      for (const c of conTope) {
+        const gastado = (txs ?? [])
+          .filter((t) => t.category_id === c.id && t.type === "expense" && t.reimbursed !== true)
+          .reduce((s, t) => s + Number(t.amount ?? 0), 0);
+        const tope = Number(c.budget);
+        const pct = (gastado / tope) * 100;
+        if (pct >= umbralDe(c.budget_mode as string | null, String(c.type))) {
+          apretados.push(`${c.name} ${Math.round(pct)}% (${Math.round(gastado)} de ${Math.round(tope)})`);
+        }
+      }
+      if (apretados.length > 0) partes.push(`Presupuestos apretados: ${apretados.join(", ")}`);
+
+      return partes.length > 0 ? partes.join(". ") + "." : "Todavía no hay cuentas ni movimientos cargados.";
+    },
+  },
+
+  cuanto_gaste: {
+    decl: {
+      name: "cuanto_gaste",
+      description:
+        "Suma cuánto gastó en algo, en un período. Úsala para '¿cuánto gasté en bencina?', " +
+        "'¿cuánto llevo en comida este mes?', '¿cuánto me cuesta Empirogy?', '¿cuánto gasté en el Costco en julio?'. " +
+        "Nunca inventes el número: sale de esta tool.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          en: {
+            type: "STRING",
+            description:
+              "En qué: el nombre de una categoría (comida, bencina), de una etiqueta (Empirogy, personal) " +
+              "o de un comercio (Costco, Netflix). Vacío = todo el gasto del período",
+          },
+          desde: { type: "STRING", description: "Fecha de inicio YYYY-MM-DD. Vacío = el 1 de este mes" },
+          hasta: { type: "STRING", description: "Fecha de fin YYYY-MM-DD. Vacío = hoy" },
+        },
+      },
+    },
+    run: async (args, ctx) => {
+      const hoy = hoyEn(ctx.timezone);
+      const desde = /^\d{4}-\d{2}-\d{2}$/.test(String(args.desde ?? "")) ? String(args.desde) : `${hoy.slice(0, 7)}-01`;
+      const hasta = /^\d{4}-\d{2}-\d{2}$/.test(String(args.hasta ?? "")) ? String(args.hasta) : hoy;
+      const buscado = String(args.en ?? "").trim();
+
+      const { data: txs } = await ctx.db.from("transactions")
+        .select("id,amount,type,description,merchant,bank_ref,category_id,reimbursed,mirror_of,date")
+        .eq("user_id", ctx.userId).eq("type", "expense").gte("date", desde).lte("date", hasta);
+
+      let elegidos = (txs ?? []).filter((t) => !t.mirror_of && t.reimbursed !== true);
+      let comoQue = "todo";
+
+      if (buscado) {
+        const aguja = buscado.toLowerCase();
+        // Primero categoría, después etiqueta, y al final el texto del
+        // comercio. Ese orden importa: "comida" es una categoría, y buscarla
+        // como texto traería cualquier glosa que la mencione.
+        const { data: cats } = await ctx.db.from("categories").select("id,name")
+          .eq("user_id", ctx.userId).ilike("name", `%${aguja}%`).limit(1);
+        const cat = (cats ?? [])[0];
+
+        const { data: tags } = await ctx.db.from("tags").select("id,name")
+          .eq("user_id", ctx.userId).ilike("name", `%${aguja}%`).limit(1);
+        const tag = (tags ?? [])[0];
+
+        if (cat) {
+          elegidos = elegidos.filter((t) => t.category_id === cat.id);
+          comoQue = `la categoría ${cat.name}`;
+        } else if (tag) {
+          // La etiqueta puede estar en el movimiento o en su categoría, igual
+          // que en la app: ponerla una vez en la categoría tiene que alcanzar.
+          const [{ data: enTx }, { data: enCat }] = await Promise.all([
+            ctx.db.from("transaction_tags").select("transaction_id").eq("tag_id", tag.id),
+            ctx.db.from("category_tags").select("category_id").eq("tag_id", tag.id),
+          ]);
+          const ids = new Set((enTx ?? []).map((x) => x.transaction_id));
+          const cids = new Set((enCat ?? []).map((x) => x.category_id));
+          elegidos = elegidos.filter((t) => ids.has(t.id) || (t.category_id && cids.has(t.category_id)));
+          comoQue = `la etiqueta ${tag.name}`;
+        } else {
+          elegidos = elegidos.filter((t) =>
+            `${t.merchant ?? ""} ${t.description ?? ""} ${t.bank_ref ?? ""}`.toLowerCase().includes(aguja));
+          comoQue = buscado;
+        }
+      }
+
+      const total = elegidos.reduce((s, t) => s + Number(t.amount ?? 0), 0);
+      if (elegidos.length === 0) return `No hay gastos de ${comoQue} entre ${desde} y ${hasta}.`;
+
+      // Los tres más caros, para que la respuesta se pueda mirar y no solo leer.
+      const top = [...elegidos].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 3)
+        .map((t) => `${t.merchant ?? t.description ?? "sin nombre"} ${Math.round(Number(t.amount))}`);
+      return `Entre ${desde} y ${hasta} gastaste ${Math.round(total)} en ${comoQue}, ` +
+        `en ${elegidos.length} ${elegidos.length === 1 ? "movimiento" : "movimientos"}. ` +
+        `Los más grandes: ${top.join(", ")}.`;
+    },
+  },
+
   ver_dia: {
     decl: {
       name: "ver_dia",
@@ -1236,9 +1389,13 @@ function promptSistema(idioma: string, timezone: string): string {
     "· \"gasté 25.000 en el súper con la visa\" → registrar_transaccion con monto 25000, comercio súper, cuenta visa.\n" +
     "· una foto de boleta → registrar_transaccion con lo que TÚ leas en ella (monto total, comercio, fecha, últimos 4). " +
     "PERO si le avisaste de un gasto del banco que está esperando boleta, usa adjuntar_boleta en vez de registrarlo de nuevo: el gasto ya existe.\n" +
-    "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n\n" +
+    "· \"medité 10 minutos\" → marcar_habito con el hábito de meditación si existe.\n" +
+    "· \"¿cuánto llevo gastado este mes?\", \"¿cuánto tengo?\", \"¿cuánto debo?\" → ver_finanzas.\n" +
+    "· \"¿cuánto gasté en bencina?\", \"¿cuánto me cuesta Empirogy?\" → cuanto_gaste.\n\n" +
     "Resto de las reglas:\n" +
-    "1. No inventes montos de dinero. Cantidades de comida, agua o minutos sí se estiman con criterio.\n" +
+    "1. No inventes montos de dinero, ni al registrar ni al responder. Si te preguntan cuánto tiene, " +
+    "cuánto debe o cuánto gastó, la cifra sale de ver_finanzas o cuanto_gaste y de ningún otro lado: " +
+    "sin llamar la tool, no lo sabes. Cantidades de comida, agua o minutos sí se estiman con criterio.\n" +
     "2. Un mensaje puede traer VARIAS cosas: llama a todas las tools que hagan falta.\n" +
     "3. TU TONO: 1 a 3 frases, directo y con cariño. Confirma lo guardado en UNA frase y suma máximo una " +
     "pregunta o un empujón. Nada de viñetas, nada de párrafos largos, nada de explicar cómo usarte. " +
