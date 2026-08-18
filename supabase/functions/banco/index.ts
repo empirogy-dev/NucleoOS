@@ -210,17 +210,26 @@ async function sincronizar(db: SupabaseClient, conexion: {
         r.pattern && texto.toLowerCase().includes(String(r.pattern).toLowerCase()));
       const cat = (t.personal_finance_category ?? {}) as Record<string, unknown>;
       const detalle = String(cat.detailed ?? "").toUpperCase();
-      const esPagoDeTarjeta =
-        detalle.includes("CREDIT_CARD_PAYMENT")
-        // Red de seguridad para cuando el banco no manda la categoría: plata
-        // que ENTRA a una tarjeta y se llama pago, solo puede ser esto.
-        || (cuenta?.tabla === "credit_cards" && monto < 0 && /(payment|paiement|pago)/i.test(texto));
+      // A una tarjeta de crédito NO le entra un sueldo. Lo único que le entra
+      // es un pago tuyo o la devolución de una compra. Esa es la señal fuerte,
+      // y no el nombre: sus pagos se llaman "Bmo Transit", igual que como le
+      // llega el sueldo, así que pedirle al texto que dijera "payment" dejaba
+      // pasar todos los suyos. (Y de paso: ese \\b estaba escrito como un
+      // carácter de retroceso, así que la regex no calzaba con nada.)
+      const entraATarjeta = cuenta?.tabla === "credit_cards" && monto < 0;
+      const esPagoDeTarjeta = detalle.includes("CREDIT_CARD_PAYMENT") || entraATarjeta;
 
-      // Lo que ella decidió una vez manda sobre lo que diga el banco.
-      const tipo = regla?.tx_type ?? (esPagoDeTarjeta ? "transfer" : monto >= 0 ? "expense" : "income");
+      // Lo que ella decidió una vez manda sobre lo que diga el banco, con una
+      // excepción: una regla no puede convertir en INGRESO algo que entra a
+      // una tarjeta, porque eso no existe. Su regla de "Bmo Transit = Sueldo"
+      // marcaba como sueldo el pago de la tarjeta, y un pago de 400 se contaba
+      // como si hubiera ganado 400.
+      const reglaSirve = Boolean(regla?.tx_type) && !(entraATarjeta && regla?.tx_type === "income");
+      const tipo = (reglaSirve ? regla?.tx_type : null)
+        ?? (esPagoDeTarjeta ? "transfer" : monto >= 0 ? "expense" : "income");
       const categoria = tipo === "transfer"
         ? null
-        : regla?.category_id
+        : (reglaSirve ? regla?.category_id : null)
           ?? await categoriaPara(db, conexion.user_id, String(cat.primary ?? ""), tipo);
 
       let reflejoDe: string | null = null;
@@ -228,14 +237,24 @@ async function sincronizar(db: SupabaseClient, conexion: {
         const dia = new Date(`${String(t.date)}T00:00:00Z`).getTime();
         const desde = new Date(dia - 4 * 86400000).toISOString().slice(0, 10);
         const hasta = new Date(dia + 4 * 86400000).toISOString().slice(0, 10);
-        const { data: pariente } = await db.from("transactions")
-          .select("id")
+        // Se busca por monto y fecha, no por tipo ni por destino: el lado de
+        // la cuenta llega como un gasto cualquiera, con el nombre que le puso
+        // el banco ("[CW] TF 0005191238144544123") y sin saber todavía que
+        // era un pago. Exigirle que ya fuera transferencia hacía que nunca
+        // se encontraran y los dos lados quedaran contados por separado.
+        const { data: candidatos } = await db.from("transactions")
+          .select("id,type,destination_ref,payment_source_type")
           .eq("user_id", conexion.user_id)
-          .eq("type", "transfer")
           .eq("amount", Math.abs(monto))
-          .eq("destination_ref", cuenta.id)
           .gte("date", desde).lte("date", hasta)
-          .limit(1);
+          .limit(20);
+        // De los del mismo monto, el que salió de una CUENTA. Un gasto
+        // pagado con la tarjeta no puede ser el otro lado: la plata tiene
+        // que haber salido de alguna parte.
+        const pariente = (candidatos ?? []).filter((c: Record<string, unknown>) =>
+          c.type === "transfer"
+            ? c.destination_ref === cuenta.id
+            : c.type === "expense" && c.payment_source_type === "account");
         // No se descarta: se guarda enlazado. Los dos lados se ven, como en
         // la cartola de cada cuenta, y solo el de la cuenta cuenta.
         if (pariente && pariente.length > 0) {

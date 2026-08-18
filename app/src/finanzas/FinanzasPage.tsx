@@ -16,6 +16,7 @@ import { ChipsEtiquetas } from "./ChipsEtiquetas";
 import { RepetidosPanel } from "./RepetidosPanel";
 import { GastoPorEtiqueta } from "./GastoPorEtiqueta";
 import { PagosTarjetaPanel } from "./PagosTarjetaPanel";
+import { ParesPanel } from "./ParesPanel";
 import { AccionesMasivas, PorRevisarAgrupado } from "./PorRevisarAgrupado";
 import { HuerfanosPanel } from "./HuerfanosPanel";
 import { lineasDe } from "./impuestos";
@@ -576,6 +577,7 @@ export function FinanzasPage() {
             <>
               <HuerfanosPanel txs={txs} accounts={accounts} cards={cards} currency={currency} onCambio={() => void reload()} />
               <PagosTarjetaPanel txs={txs} cards={cards} currency={currency} onCambio={() => void reload()} />
+              <ParesPanel txs={txs} accounts={accounts} cards={cards} currency={currency} onCambio={() => void reload()} />
               <RepetidosPanel txs={txs} catById={catById} currency={currency}
                 conRecibo={reciboIds}
                 fuenteDe={(t) => {
