@@ -69,7 +69,31 @@ Deno.serve(async (req: Request) => {
       },
     );
     const body = await res.text();
-    return new Response(body, { status: res.status, headers });
+    if (res.ok) return new Response(body, { status: res.status, headers });
+
+    // Lo que responde Google NO se le pasa a la usuaria.
+    //
+    // Cuando se acaban los créditos, Google contesta "Your prepayment credits
+    // are depleted, go to AI Studio to manage your billing". Eso apareció tal
+    // cual dentro de la tarjeta de "Tu plato": una clienta leyendo instrucciones
+    // de facturación de un proveedor que ni sabe que existe. El detalle queda
+    // en los registros del servidor, que es donde sirve.
+    console.error("gemini falló", res.status, body.slice(0, 500));
+
+    // Este intento no gastó nada, así que tampoco gasta su cupo del día.
+    await admin.from("ia_uso").upsert({ user_id: quien.user.id, dia, usos }, { onConflict: "user_id,dia" });
+
+    const esCupo = res.status === 429 || /quota|rate limit|resource_exhausted/i.test(body);
+    const esPago = /billing|prepayment|credits|payment required/i.test(body) || res.status === 402;
+    return responder(esCupo && !esPago ? 429 : 503, {
+      error: esPago
+        // Sin créditos no es algo que ella pueda resolver reintentando, así
+        // que se dice que está en manos nuestras y no suyas.
+        ? "La IA de NucleoOS está fuera de servicio en este momento. No es tu conexión ni tu cuenta: ya estamos avisados. Todo lo demás de la app funciona igual."
+        : esCupo
+          ? "La IA está saturada en este momento. Prueba de nuevo en unos minutos. ⏳"
+          : "La IA no pudo responder ahora. Prueba de nuevo en un rato; si sigue igual, avísanos.",
+    });
   } catch (e) {
     return responder(500, { error: String(e) });
   }
