@@ -3,7 +3,7 @@ import { cierreDeFondo, sinRobarFoco } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { idiomaActual } from "../idioma/actual";
 import { CampoFecha } from "../components/CampoFecha";
-import { fmtFechaLocal, hoyLocal, mesActualLocal } from "../lib/fechas";
+import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import { MetasDeArea } from "../components/MetasDeArea";
@@ -24,6 +24,7 @@ import { usePaisImpuestos } from "./paisImpuestos";
 import { GuiaImpuestos } from "./GuiaImpuestos";
 import { ResumenImpuestosPanel } from "./ResumenImpuestos";
 import { RecurrentesTab } from "./RecurrentesTab";
+import { ReporteTab } from "./ReporteTab";
 import { AutoTab } from "./AutoTab";
 import { useUsaAuto } from "./usaAuto";
 import { listarVehiculos } from "./auto";
@@ -1159,8 +1160,13 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
 
           {tab === "reporte" && (
             <>
+              <ReporteTab txs={txs} categories={categories} accounts={accounts} cards={cards} debts={debts}
+                currency={currency} txTags={txTags} catTags={catTags} />
+              {/* Los impuestos son otra conversación, con otro año y otro
+                  destinatario, así que van después de una línea y no pegados
+                  al informe del mes. */}
+              <div style={{ height: 1, background: "var(--line)", margin: "26px 0 20px" }} aria-hidden />
               <ResumenImpuestosPanel txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency} />
-              <ReporteTab txs={txs} categories={categories} accounts={accounts} cards={cards} currency={currency} />
             </>
           )}
 
@@ -1380,154 +1386,6 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
           onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />
       )}
     </div>
-  );
-}
-
-function monthAdd(ym: string, delta: number): string {
-  const d = new Date(ym + "-01T00:00:00");
-  d.setMonth(d.getMonth() + delta);
-  return fmtFechaLocal(d).slice(0, 7);
-}
-
-// Un reporte es de UNA moneda. Sumar dólares canadienses con pesos chilenos
-// da un número que no existe en ninguna parte, y peor: se ve razonable.
-function ReporteTab({ txs, categories, accounts, cards, currency }: {
-  txs: Tx[];
-  categories: Category[];
-  accounts: Account[];
-  cards: CreditCard[];
-  currency: string;
-}) {
-  const { t: tr } = useIdioma();
-  const [ym, setYm] = useState(mesActualLocal());
-  const prev = monthAdd(ym, -1);
-  const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
-
-  const monedas = useMemo(() => {
-    const set = new Set<string>([currency, ...accounts.map((a) => a.currency), ...cards.map((c) => c.currency)]);
-    return [...set].filter(Boolean);
-  }, [accounts, cards, currency]);
-  const [moneda, setMoneda] = useState(currency);
-
-  // Solo los movimientos de esta moneda, y el saldo solo de sus cuentas.
-  const suyos = useMemo(() => {
-    const porCuenta = new Map(accounts.map((a) => [a.id, a.currency]));
-    const porTarjeta = new Map(cards.map((c) => [c.id, c.currency]));
-    return txs.filter((t) => monedaDeTx(t, porCuenta, porTarjeta, currency) === moneda);
-  }, [txs, accounts, cards, currency, moneda]);
-
-  const balance = useMemo(
-    () => accounts.filter((a) => a.currency === moneda).reduce((s, a) => s + Number(a.balance), 0),
-    [accounts, moneda],
-  );
-
-  // Proyección de flujo de caja (portada de Fluxney): promedio de los últimos
-  // 3 meses con arrastre de saldo hacia los próximos 3 meses.
-  const proyeccion = useMemo(() => {
-    const hoyMes = mesActualLocal();
-    const mesesBase = [monthAdd(hoyMes, -1), monthAdd(hoyMes, -2), monthAdd(hoyMes, -3)];
-    const conDatos = mesesBase.filter((m) => suyos.some((t) => t.date.startsWith(m)));
-    if (conDatos.length === 0) return null;
-    const suma = (m: string, tipo: "income" | "expense") =>
-      suyos.filter((t) => t.date.startsWith(m) && t.type === tipo).reduce((s, t) => s + Number(t.amount), 0);
-    const promIngresos = conDatos.reduce((s, m) => s + suma(m, "income"), 0) / conDatos.length;
-    const promGastos = conDatos.reduce((s, m) => s + suma(m, "expense"), 0) / conDatos.length;
-    let saldo = balance;
-    const filas: Array<{ mes: string; saldo: number }> = [];
-    for (let i = 1; i <= 3; i += 1) {
-      saldo = saldo + promIngresos - promGastos;
-      filas.push({ mes: monthAdd(hoyMes, i), saldo });
-    }
-    return { filas, promIngresos, promGastos, mesesUsados: conDatos.length };
-  }, [suyos, balance]);
-
-  function totals(month: string) {
-    const rows = suyos.filter((t) => t.date.startsWith(month));
-    const ingresos = rows.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-    const gastos = rows.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
-    return { rows, ingresos, gastos, neto: ingresos - gastos };
-  }
-
-  const actual = totals(ym);
-  const anterior = totals(prev);
-
-  function deltaText(a: number, b: number): string {
-    if (b === 0) return a === 0 ? "igual que el mes anterior" : "sin datos del mes anterior";
-    const pct = Math.round(((a - b) / b) * 100);
-    if (pct === 0) return "igual que el mes anterior";
-    return pct > 0 ? `${pct}% más que el mes anterior` : `${-pct}% menos que el mes anterior`;
-  }
-
-  const porCategoria = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const t of actual.rows) {
-      if (t.type !== "expense") continue;
-      m.set(t.category_id ?? "sin", (m.get(t.category_id ?? "sin") ?? 0) + Number(t.amount));
-    }
-    return [...m.entries()]
-      .map(([id, total]) => ({ cat: id === "sin" ? undefined : catById.get(id), total }))
-      .sort((a, b) => b.total - a.total);
-  }, [actual.rows, catById]);
-
-  return (
-    <>
-      <div className="frow" style={{ maxWidth: 460, marginBottom: 16 }}>
-        <div className="field"><label>{tr("Mes del reporte")}</label>
-          <input type="month" value={ym} onChange={(e) => setYm(e.target.value)} /></div>
-        {monedas.length > 1 && (
-          <div className="field" style={{ maxWidth: 150 }}><label>{tr("Moneda")}</label>
-            <Selector value={moneda} ariaLabel={tr("Moneda")}
-              opciones={monedas.map((m) => ({ value: m, label: m }))} onChange={setMoneda} /></div>
-        )}
-      </div>
-      <div className="statrow" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-        <div className="card stat">
-          <div className="k">{tr("Ingresos")}</div>
-          <div className="v tnum" style={{ color: "var(--ok)" }}>{fmtMoney(actual.ingresos, moneda)}</div>
-          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.ingresos, anterior.ingresos)}</div>
-        </div>
-        <div className="card stat">
-          <div className="k">{tr("Gastos")}</div>
-          <div className="v tnum" style={{ color: "var(--err)" }}>{fmtMoney(actual.gastos, moneda)}</div>
-          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{deltaText(actual.gastos, anterior.gastos)}</div>
-        </div>
-        <div className="card stat">
-          <div className="k">{tr("Resultado del mes")}</div>
-          <div className="v tnum" style={{ color: actual.neto >= 0 ? "var(--ok)" : "var(--err)" }}>{fmtMoney(actual.neto, moneda)}</div>
-          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{actual.rows.length} {tr("movimientos")}</div>
-        </div>
-      </div>
-      <div className="card panel">
-        <h3>{tr("Gasto por categoría")}</h3>
-        {porCategoria.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>{tr("Sin gastos en este mes.")}</p>}
-        {porCategoria.map(({ cat, total }) => (
-          <div className="bar" key={cat?.id ?? "sin"}>
-            <div className="top">
-              <span className="lbl">{cat?.icon} {cat?.name ?? tr("Sin categoría")}</span>
-              <b className="tnum">{fmtMoney(total, moneda)}</b>
-            </div>
-            <div className="track">
-              <div className="fill" style={{ width: `${actual.gastos ? Math.round((total / actual.gastos) * 100) : 0}%`, background: "var(--fin)" }} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {proyeccion && (
-        <div className="card panel" style={{ marginTop: 14 }}>
-          <h3>🔮 Proyección de saldo</h3>
-          <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>
-            Si sigues como en {proyeccion.mesesUsados === 1 ? "el último mes" : `los últimos ${proyeccion.mesesUsados} meses`} (ingresos {fmtMoney(Math.round(proyeccion.promIngresos), moneda)} y gastos {fmtMoney(Math.round(proyeccion.promGastos), moneda)} al mes), tu saldo arrastrado sería:
-          </p>
-          {proyeccion.filas.map((f) => (
-            <div className="txrow" key={f.mes} style={{ padding: "7px 0" }}>
-              <div className="txmeta"><b style={{ fontSize: 13 }}>{f.mes}</b></div>
-              <b className={"tnum txamt " + (f.saldo >= 0 ? "pos" : "neg")}>{fmtMoney(Math.round(f.saldo), moneda)}</b>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
   );
 }
 
