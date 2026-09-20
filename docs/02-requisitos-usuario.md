@@ -62,6 +62,8 @@
 | RU-FIN-07 | Como usuaria quiero un **reporte mensual** de mis finanzas. | P1 (existe) |
 | RU-FIN-08 | Como usuaria quiero **conectar mi banco** y que los movimientos se importen y hagan *match* con mis recibos. | P2 (adaptador futuro) |
 | RU-FIN-09 | Como usuaria quiero **importar la cartola** (PDF/archivo) del banco manualmente mientras no haya conexión automática. | P1 (existe base) |
+| RU-FIN-10 | Como usuaria quiero un **informe que me explique dónde se está yendo la plata**: gráficos por categoría, mes a mes, los cargos que se repiten solos, qué cambió respecto al periodo anterior y qué puedo hacer al respecto. | P1 (existe) |
+| RU-FIN-11 | Como usuaria quiero **exportar ese informe** (PDF, planilla o paquete completo) para que lo analice un contador o un asesor. | P1 (existe) |
 
 ---
 

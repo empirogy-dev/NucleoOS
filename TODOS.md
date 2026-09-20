@@ -267,6 +267,18 @@ Resultado del barrido archivo por archivo de Fluxney/src pedido por la usuaria.
 - [ ] `[Nuevo]` Mover a Supabase lo que quedó en localStorage: menú de dopamina, rutinas guiadas, marca manual de ayuno y sesiones de Mente (importa antes del deployment para que sobrevivan al cambio de dispositivo).
 - [ ] `[Nuevo]` Deployment: publicar la app en internet (próxima sesión grande).
 
+## Coach financiero y reportes exportables (20 sep 2026)
+Pedido de la usuaria: "en Finanzas no veo un coach financiero que me diga dónde se está yendo la plata, los movimientos, cómo mejorar esto, un gráfico, las categorías, los gastos de vida, los gastos recurrentes, y que esos reportes se puedan exportar para que los analice un experto".
+
+- [x] `[Nuevo]` Motor del informe (`finanzas/reporte.ts`), separado de la pantalla: totales del periodo, comparación con el periodo anterior del mismo largo, gasto por categoría, comercios, mes a mes, presupuestos, cargos recurrentes, gasto fijo contra variable y calidad de los datos. Una sola moneda por informe, nunca sumadas.
+- [x] `[Nuevo]` Observaciones del coach: tasa de ahorro, gasto que sube, concentración en una categoría, suscripciones y su peso, alzas de precio, cargos que dejaron de llegar, presupuestos pasados, interés de tarjetas y deuda más cara, gastos sin categoría y posibles repetidos. Cada una sale de una cuenta que se puede verificar en la tabla de al lado.
+- [x] `[Nuevo]` "Dónde hay plata que recuperar": recortes estimados en rangos, calculados sobre los gastos propios (suscripciones, categorías discrecionales, volver una categoría a su nivel anterior, compras chicas, intereses de tarjeta), con el total al mes y al año.
+- [x] `[Nuevo]` Gráficos propios en SVG, sin librerías: dona de gasto por categoría, columnas de ingresos y gastos mes a mes, y barras de rango para los recortes.
+- [x] `[Nuevo]` Exportar: informe para imprimir o guardar como PDF (con gráficos, tablas, observaciones y anexo de movimientos), planilla CSV de movimientos, y paquete ZIP con el informe más las planillas de categorías, meses, recurrentes y comercios, con una nota que explica cómo se cuentan las cosas.
+- [x] `[Bug]` El informe respeta lo marcado en la pestaña Recurrentes (suscripción, cuotas, ignorada): antes el detector contaba como cargo automático la bencina y el supermercado, y las dos pantallas decían cosas distintas.
+- [ ] `[Nuevo]` Que el agente de IA lea este informe y lo converse (el objeto ya está listo para pasárselo).
+- [ ] `[Nuevo]` Comparar contra un presupuesto anual completo, no solo el tope mensual por categoría.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 
