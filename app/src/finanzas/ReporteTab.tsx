@@ -5,7 +5,7 @@ import { Selector } from "../components/Selector";
 import { AyudaTip } from "../components/AyudaTip";
 import { sinRobarFoco } from "../components/cierreDeFondo";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
-import { BarraRango, ColumnasMeses, Dona } from "./Graficos";
+import { BarraRango, ColumnasMeses, Dona } from "../informes/Graficos";
 import { ExportarReporte } from "./ExportarReporte";
 import type { ResueltoTx } from "./informeFinanzas";
 import {

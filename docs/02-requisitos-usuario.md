@@ -18,6 +18,8 @@
 | RU-GEN-07 | Como usuaria quiero un **modo claro/oscuro** para mi comodidad. | P1 (ya existe en Fluxney) |
 | RU-GEN-08 | Como usuaria quiero un **coach de IA** que me diga qué está bien y qué está mal según mis metas, proyectos y mi día a día, y que cruce información entre áreas. | P1 |
 | RU-GEN-09 | Como usuaria quiero **elegir mi propio tema de color** entre varias paletas calmadas (y ajustarlo), para que la app se sienta como un espacio personal mío. | P1 |
+| RU-GEN-10 | Como usuaria quiero un **informe de bienestar** que junte energía, movimiento, hábitos, mente y dirección en un periodo, con el día a día y lo que se cruza entre áreas. | P1 (existe) |
+| RU-GEN-11 | Como usuaria quiero **exportar ese informe** (PDF, planilla o paquete completo) para analizarlo con un psicólogo u otro profesional, y decidir yo si el texto de mi diario va incluido. | P1 (existe) |
 
 > **Las funciones de IA por módulo** (coach de metas, NotebookLM de aprendizaje, personal CRM de relaciones, captura de tiempo, hábitos, etc.) están detalladas y aprobadas en [06-ia-por-modulo.md](06-ia-por-modulo.md) y planificadas en la Fase 4. Los servicios y costos de IA, en [07-costos-servicios-ia.md](07-costos-servicios-ia.md).
 

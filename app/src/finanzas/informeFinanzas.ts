@@ -5,9 +5,18 @@ import {
   etiquetaMes,
   geometriaColumnas,
   segmentosDona,
-} from "./formasGrafico";
+} from "../informes/formas";
+import {
+  ESTILOS_INFORME, bloqueHallazgos, csvTexto, esc, generadoEl, pct,
+  descargarArchivo, imprimirInforme,
+} from "../informes/base";
 import { plata, textoCadencia, type Informe } from "./reporte";
 import type { Tx } from "./types";
+
+// Lo genérico (escapar texto, armar el CSV, mandar a imprimir, la hoja de
+// estilos) vive en `informes/base.ts` y lo comparten todos los informes.
+// Aquí queda solo lo que es propio de la plata.
+export { descargarArchivo, imprimirInforme };
 
 // El informe que sale de la app para que lo lea otra persona.
 //
@@ -25,43 +34,7 @@ import type { Tx } from "./types";
 // Nada de esto pasa por el servidor. El archivo se arma en el navegador y se
 // baja, así que la plata de la persona no viaja a ninguna parte.
 
-const esc = (s: string): string =>
-  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-const pct = (n: number): string => `${Math.round(n)}%`;
-
-export function descargarArchivo(blob: Blob, nombre: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nombre;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 6000);
-}
-
-/** Abre el informe en una pestaña y manda a imprimir. Si el navegador bloquea
- *  la ventana, se baja el archivo, que es lo segundo mejor. */
-export function imprimirInforme(html: string, nombre: string): void {
-  const v = window.open("", "_blank");
-  if (!v) {
-    descargarArchivo(new Blob([html], { type: "text/html;charset=utf-8" }), `${nombre}.html`);
-    return;
-  }
-  v.document.write(html);
-  v.document.close();
-  v.focus();
-  setTimeout(() => v.print(), 400);
-}
-
 // ---------- Las planillas ----------
-
-const celda = (s: string | number): string => `"${String(s).replace(/"/g, '""')}"`;
-/** Con el BOM adelante, Excel abre las tildes bien. Sin él, "Educación" se ve
- *  como "EducaciÃ³n" y la planilla parece rota aunque los datos estén bien. */
-const csv = (filas: Array<Array<string | number>>): string =>
-  "﻿" + filas.map((f) => f.map(celda).join(",")).join("\r\n");
 
 const TIPO_TEXTO: Record<string, string> = {
   income: "Ingreso",
@@ -109,11 +82,11 @@ export function csvMovimientos(inf: Informe, resolver: (t: Tx) => ResueltoTx): s
       t.reimbursed ? "Sí" : "No",
     ]);
   }
-  return csv(filas);
+  return csvTexto(filas);
 }
 
 export function csvCategorias(inf: Informe): string {
-  return csv([
+  return csvTexto([
     ["Categoría", "Total", "Parte del gasto", "Promedio mensual", "Periodo anterior", "Cambio", "Movimientos", "Moneda"],
     ...inf.categorias.map((c) => [
       c.nombre,
@@ -129,7 +102,7 @@ export function csvCategorias(inf: Informe): string {
 }
 
 export function csvMeses(inf: Informe): string {
-  return csv([
+  return csvTexto([
     ["Mes", "Entró", "Salió", "Diferencia", "Moneda", "Dentro del periodo"],
     ...inf.tendencia.map((m) => [
       m.mes, m.ingresos.toFixed(2), m.gastos.toFixed(2), m.neto.toFixed(2), inf.moneda, m.enRango ? "Sí" : "No",
@@ -138,7 +111,7 @@ export function csvMeses(inf: Informe): string {
 }
 
 export function csvRecurrentes(inf: Informe): string {
-  return csv([
+  return csvTexto([
     ["Cargo", "Categoría", "Monto", "Cada cuánto", "Al mes", "Al año", "Último cargo", "Próximo esperado", "Activo", "Cambio de precio", "Cargos vistos", "Moneda"],
     ...inf.recurrentes.map((r) => [
       r.nombre,
@@ -158,7 +131,7 @@ export function csvRecurrentes(inf: Informe): string {
 }
 
 export function csvComercios(inf: Informe): string {
-  return csv([
+  return csvTexto([
     ["Comercio", "Total", "Movimientos", "Último", "Moneda"],
     ...inf.comercios.map((c) => [c.nombre, c.total.toFixed(2), c.cuantos, c.ultima, inf.moneda]),
   ]);
@@ -251,12 +224,6 @@ function tablaRecurrentes(inf: Informe): string {
   </table>`;
 }
 
-function bloqueHallazgos(inf: Informe): string {
-  if (inf.hallazgos.length === 0) return "";
-  return `<ul class="hallazgos">${inf.hallazgos.map((h) => `
-    <li class="${h.tono}"><b>${esc(h.titulo)}</b><span>${esc(h.detalle)}</span></li>`).join("")}</ul>`;
-}
-
 function bloqueRecortes(inf: Informe): string {
   if (inf.recortes.length === 0) return "";
   const tope = Math.max(...inf.recortes.map((r) => r.max));
@@ -315,57 +282,7 @@ export interface OpcionesInformeHtml {
   resolver: (t: Tx) => ResueltoTx;
 }
 
-const ESTILOS = `
-  @page { margin: 15mm; }
-  * { box-sizing: border-box; }
-  body { font: 12px/1.55 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif; color: #1d2a24; margin: 0; background: #fff; }
-  header { border-bottom: 2px solid #1d2a24; padding-bottom: 10px; margin-bottom: 18px; }
-  h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: -.02em; }
-  header p { margin: 0; color: #63726a; font-size: 11.5px; }
-  h2 { font-size: 15px; margin: 22px 0 10px; letter-spacing: -.01em; }
-  section { break-inside: auto; }
-  .kpis { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
-  .kpi { border: 1px solid #e2e7e3; border-radius: 10px; padding: 10px 13px; flex: 1 1 148px; max-width: 220px; }
-  .kpi .k { font-size: 9.5px; text-transform: uppercase; letter-spacing: .09em; color: #63726a; font-weight: 600; }
-  .kpi .v { font-size: 15.5px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 3px; }
-  .kpi .d { font-size: 10.5px; color: #63726a; }
-  .dona { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-  .leyenda { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 260px; }
-  .leyenda li { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 11.5px; border-bottom: 1px solid #f0f2f0; }
-  .leyenda .punto { width: 9px; height: 9px; border-radius: 2px; flex: none; }
-  .leyenda .nom { flex: 1; }
-  .leyenda .num, .leyenda .pp { font-variant-numeric: tabular-nums; font-weight: 600; }
-  .leyenda .pp { width: 36px; text-align: right; color: #63726a; font-weight: 400; }
-  table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 6px; }
-  th { text-align: left; border-bottom: 1.5px solid #1d2a24; padding: 6px; font-size: 10px;
-       text-transform: uppercase; letter-spacing: .06em; }
-  td { padding: 5px 6px; border-bottom: 1px solid #eef1ef; vertical-align: top; }
-  tfoot td { font-weight: 700; border-bottom: none; border-top: 1.5px solid #cfd8d2; }
-  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .fecha { white-space: nowrap; }
-  .sube { color: #b4614c; }
-  .baja, .entra { color: #4d8465; }
-  tr.apagado td { color: #8a978f; }
-  .hallazgos { list-style: none; margin: 0; padding: 0; }
-  .hallazgos li { border-left: 3px solid #cfd8d2; padding: 6px 0 6px 11px; margin-bottom: 9px; break-inside: avoid; }
-  .hallazgos li b { display: block; font-size: 12.5px; margin-bottom: 2px; }
-  .hallazgos li span { color: #4a5852; }
-  .hallazgos li.alerta { border-left-color: #C57A68; }
-  .hallazgos li.ojo { border-left-color: #C69A4D; }
-  .hallazgos li.bien { border-left-color: #6BA783; }
-  .recortes td { vertical-align: middle; }
-  .recortes .detalle { color: #63726a; font-size: 11px; }
-  .recortes .track { display: block; position: relative; height: 9px; border-radius: 99px; background: #eef1ef; overflow: hidden; width: 150px; }
-  .recortes .max, .recortes .min { position: absolute; top: 0; left: 0; height: 100%; border-radius: 99px; }
-  .recortes .max { background: #d7e2d8; }
-  .recortes .min { background: #4F6B5B; }
-  .recortes .fric { font-size: 10px; color: #63726a; }
-  .pie { color: #63726a; font-size: 10.5px; margin-top: 6px; }
-  .vacio { color: #63726a; font-style: italic; }
-  .anexo { break-before: page; page-break-before: always; }
-  footer { margin-top: 26px; border-top: 1px solid #e2e7e3; padding-top: 8px; color: #8a978f; font-size: 10px; }
-  @media screen { body { max-width: 940px; margin: 26px auto; padding: 0 22px; } }
-`;
+
 
 export function armarInformeHtml(inf: Informe, op: OpcionesInformeHtml): string {
   const { moneda } = inf;
@@ -376,12 +293,12 @@ export function armarInformeHtml(inf: Informe, op: OpcionesInformeHtml): string 
     return `${Math.abs(Math.round(cambio))}% ${cambio > 0 ? "más" : "menos"} que el periodo anterior`;
   };
 
-  const generado = new Date(inf.generado).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
+  const generado = generadoEl(inf.generado);
 
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <title>Informe de finanzas, ${esc(inf.etiqueta)}</title>
-<style>${ESTILOS}</style></head>
+<style>${ESTILOS_INFORME}</style></head>
 <body>
   <header>
     <h1>Informe de finanzas</h1>
@@ -426,7 +343,7 @@ export function armarInformeHtml(inf: Informe, op: OpcionesInformeHtml): string 
 
   <section>
     <h2>Qué se ve en estos números</h2>
-    ${bloqueHallazgos(inf)}
+    ${bloqueHallazgos(inf.hallazgos)}
   </section>
 
   ${inf.recortes.length > 0 ? `<section>
