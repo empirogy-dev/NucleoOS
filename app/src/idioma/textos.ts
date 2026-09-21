@@ -3437,6 +3437,17 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "plazo": "due",
     "prácticas": "practices",
     "vasos al día": "glasses a day",
+    // El ayuno, que ahora se pregunta en vez de darse por hecho
+    "¿Haces ayuno intermitente? Si lo haces, aquí llevo las horas desde tu última comida. Si no, esta tarjeta desaparece y no te molesta más.": "Do you do intermittent fasting? If you do, I will count the hours since your last meal here. If you do not, this card disappears and stops bothering you.",
+    "Sí, hago ayuno": "Yes, I fast",
+    "No hago ayuno": "I do not fast",
+    "No hago ayuno, quitar esta tarjeta": "I do not fast, remove this card",
+    "Puedes cambiar de opinión cuando quieras, en Ajustes.": "You can change your mind any time, in Settings.",
+    "Tu último registro de comida es del": "Your last meal record is from",
+    "hace": "that is",
+    "Eso no es un ayuno, es un registro que quedó atrás. Marca abajo cuándo comiste por última vez y el contador vuelve a servir.": "That is not a fast, it is a record that fell behind. Mark below when you last ate and the counter means something again.",
+    "Hago ayuno intermitente": "I do intermittent fasting",
+    "Muestra el contador de horas desde tu última comida en Energía. Si lo apagas, la tarjeta desaparece y tus comidas se siguen registrando igual.": "Shows the hours since your last meal in Energy. If you turn it off, the card disappears and your meals keep being recorded just the same.",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -5415,6 +5426,17 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "sesión": "sessão",
     "racha de": "sequência de",
     "por semana": "por semana",
+    // El ayuno, que ahora se pregunta en vez de darse por hecho
+    "¿Haces ayuno intermitente? Si lo haces, aquí llevo las horas desde tu última comida. Si no, esta tarjeta desaparece y no te molesta más.": "Você faz jejum intermitente? Se faz, aqui eu conto as horas desde a sua última refeição. Se não, este cartão desaparece e não incomoda mais.",
+    "Sí, hago ayuno": "Sim, eu faço jejum",
+    "No hago ayuno": "Eu não faço jejum",
+    "No hago ayuno, quitar esta tarjeta": "Não faço jejum, tirar este cartão",
+    "Puedes cambiar de opinión cuando quieras, en Ajustes.": "Você pode mudar de ideia quando quiser, em Ajustes.",
+    "Tu último registro de comida es del": "Seu último registro de refeição é de",
+    "hace": "faz",
+    "Eso no es un ayuno, es un registro que quedó atrás. Marca abajo cuándo comiste por última vez y el contador vuelve a servir.": "Isso não é um jejum, é um registro que ficou para trás. Marque abaixo quando você comeu pela última vez e o contador volta a servir.",
+    "Hago ayuno intermitente": "Faço jejum intermitente",
+    "Muestra el contador de horas desde tu última comida en Energía. Si lo apagas, la tarjeta desaparece y tus comidas se siguen registrando igual.": "Mostra o contador de horas desde a sua última refeição em Energia. Se desligar, o cartão desaparece e suas refeições continuam sendo registradas igual.",
   },
 };
 

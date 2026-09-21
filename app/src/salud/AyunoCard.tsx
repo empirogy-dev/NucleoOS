@@ -4,6 +4,7 @@ import { CampoFecha } from "../components/CampoFecha";
 import { CampoHora } from "../components/CampoHora";
 import { hoyLocal } from "../lib/fechas";
 import { ultimoBocado, type Meal } from "./comidas";
+import { usePrefAyuno } from "./ayunoPref";
 
 // Contador de ayuno: horas desde tu última comida, con una meta que eliges.
 // Se alimenta solo de tus platos registrados, sin que anotes nada extra.
@@ -49,8 +50,15 @@ function ultimaComida(meals: Meal[]): Date | null {
   return delPlato ?? manual?.inicio ?? null;
 }
 
+/** Pasado este tiempo, el contador dejó de hablar de un ayuno y empezó a
+ *  hablar de un registro viejo. Treinta y seis horas es más de lo que dura
+ *  cualquier ventana razonable, así que si se pasa de ahí lo que falta no es
+ *  comida: son datos. */
+const HORAS_RANCIO = 36;
+
 export function AyunoCard({ meals }: { meals: Meal[] }) {
   const { t: tr, idioma } = useIdioma();
+  const [pref, setPref] = usePrefAyuno();
   const [meta, setMeta] = useState(metaGuardada);
   const [ahora, setAhora] = useState(() => Date.now());
   const [editandoHora, setEditandoHora] = useState(false);
@@ -104,6 +112,40 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
     </div>
   );
 
+  // Quien dijo que no, no la ve. Energía ya la saca de la cuadrícula, pero la
+  // tarjeta también se apaga sola: así no depende de quién la dibuje.
+  if (pref === "no") return null;
+
+  // Nadie ha dicho todavía si ayuna. Se pregunta una vez, y hasta entonces
+  // aquí no corre ningún contador ni se felicita a nadie por una meta que no
+  // se propuso.
+  if (pref === null) {
+    return (
+      <div className="card panel">
+        <h3>⏳ {tr("Ayuno")}</h3>
+        <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 12 }}>
+          {tr("¿Haces ayuno intermitente? Si lo haces, aquí llevo las horas desde tu última comida. Si no, esta tarjeta desaparece y no te molesta más.")}
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className="btn primary" onClick={() => setPref("si")}>{tr("Sí, hago ayuno")}</button>
+          <button type="button" className="btn ghost" onClick={() => setPref("no")}>{tr("No hago ayuno")}</button>
+        </div>
+        <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 10 }}>
+          {tr("Puedes cambiar de opinión cuando quieras, en Ajustes.")}
+        </p>
+      </div>
+    );
+  }
+
+  // La salida, siempre a la vista y sin drama: apagarla no borra nada.
+  const apagar = (
+    <button type="button" className="btn ghost"
+      style={{ fontSize: 11.5, padding: "5px 10px", marginTop: 10 }}
+      onClick={() => setPref("no")}>
+      {tr("No hago ayuno, quitar esta tarjeta")}
+    </button>
+  );
+
   const ultima = ultimaComida(meals);
 
   if (!ultima) {
@@ -114,6 +156,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
           {tr("Registra un plato o marca a qué hora comiste por última vez, y aquí verás cuántas horas llevas en ayuno.")}
         </p>
         {formularioManual}
+        {apagar}
       </div>
     );
   }
@@ -123,8 +166,18 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
   const h = Math.floor(horas);
   const min = Math.floor((ms % 3600000) / 60000);
   const pct = Math.min(100, (horas / meta) * 100);
-  const cumplida = horas >= meta;
-  const hora = ultima.toLocaleTimeString(idioma === "en" ? "en-US" : idioma === "pt" ? "pt-BR" : "es-CL", { hour: "2-digit", minute: "2-digit" });
+  // Un ayuno de días no existe: lo que hay es un registro viejo. Sin este
+  // corte, quien anotó un plato la semana pasada abre la app y le dicen que
+  // lleva 167 horas y que cumplió su meta, que es exactamente lo contrario de
+  // lo que pasó.
+  const rancio = horas > HORAS_RANCIO;
+  const dias = Math.floor(horas / 24);
+  const cumplida = horas >= meta && !rancio;
+  const loc = idioma === "en" ? "en-US" : idioma === "pt" ? "pt-BR" : "es-CL";
+  // En español y portugués la hora va en formato de 24, que además evita el
+  // "a. m.." con dos puntos que salía al pegarle el punto de la frase.
+  const hora = ultima.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit", hour12: idioma === "en" });
+  const dia = ultima.toLocaleDateString(loc, { day: "numeric", month: "long" });
 
   return (
     <div className="card panel">
@@ -133,23 +186,32 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
         {cumplida && <span className="chip">{tr("meta cumplida")}</span>}
       </div>
 
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "2px 0 8px" }}>
-        <b className="tnum" style={{ fontSize: 30, letterSpacing: "-.02em" }}>{h}</b>
-        <span style={{ color: "var(--muted)" }}>h</span>
-        <b className="tnum" style={{ fontSize: 30, letterSpacing: "-.02em" }}>{min}</b>
-        <span style={{ color: "var(--muted)" }}>min</span>
-        <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>{tr("meta")} {meta} h</span>
-      </div>
+      {rancio ? (
+        <p style={{ fontSize: 13.5, color: "var(--ink-soft)", margin: "2px 0 8px" }}>
+          {tr("Tu último registro de comida es del")} {dia}, {tr("hace")} {dias} {dias === 1 ? tr("día") : tr("días")}.
+          {" "}{tr("Eso no es un ayuno, es un registro que quedó atrás. Marca abajo cuándo comiste por última vez y el contador vuelve a servir.")}
+        </p>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "2px 0 8px" }}>
+            <b className="tnum" style={{ fontSize: 30, letterSpacing: "-.02em" }}>{h}</b>
+            <span style={{ color: "var(--muted)" }}>h</span>
+            <b className="tnum" style={{ fontSize: 30, letterSpacing: "-.02em" }}>{min}</b>
+            <span style={{ color: "var(--muted)" }}>min</span>
+            <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>{tr("meta")} {meta} h</span>
+          </div>
 
-      <div className="track" style={{ height: 8 }}>
-        <div className="fill" style={{ width: `${pct}%`, background: cumplida ? "var(--sal)" : "var(--info)" }} />
-      </div>
+          <div className="track" style={{ height: 8 }}>
+            <div className="fill" style={{ width: `${pct}%`, background: cumplida ? "var(--sal)" : "var(--info)" }} />
+          </div>
 
-      <p style={{ fontSize: 12.5, color: "var(--ink-soft)", margin: "10px 0 8px" }}>
-        {cumplida
-          ? `${tr("Completaste tu ventana de")} ${meta} ${tr("horas")}. ${tr("Come cuando tu cuerpo lo pida, sin apuro.")}`
-          : `${tr("Tu última comida fue a las")} ${hora}. ${tr("Te faltan")} ${Math.max(0, meta - h)} h ${tr("para tu meta, si es que quieres llegar.")}`}
-      </p>
+          <p style={{ fontSize: 12.5, color: "var(--ink-soft)", margin: "10px 0 8px" }}>
+            {cumplida
+              ? `${tr("Completaste tu ventana de")} ${meta} ${tr("horas")}. ${tr("Come cuando tu cuerpo lo pida, sin apuro.")}`
+              : `${tr("Tu última comida fue a las")} ${hora}. ${tr("Te faltan")} ${Math.max(0, meta - h)} h ${tr("para tu meta, si es que quieres llegar.")}`}
+          </p>
+        </>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{tr("Tu ventana")}</span>
@@ -167,6 +229,7 @@ export function AyunoCard({ meals }: { meals: Meal[] }) {
       <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
         {tr("El ayuno intermitente no le sirve a todo el mundo. Esto es una guía amable, no una regla. Si tienes dudas de salud, pregúntale a tu médico.")}
       </p>
+      {apagar}
     </div>
   );
 }

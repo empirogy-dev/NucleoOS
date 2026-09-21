@@ -41,6 +41,7 @@ import {
 } from "./energia";
 import { useSettings } from "../settings/SettingsProvider";
 import { AyunoCard } from "./AyunoCard";
+import { usePrefAyuno } from "./ayunoPref";
 import { CicloTab } from "./CicloTab";
 import { useFechaActiva } from "../fecha/FechaActiva";
 import { CampoHora } from "../components/CampoHora";
@@ -511,6 +512,7 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, fec
   onChanged: () => void;
 }) {
   const { t: tr } = useIdioma();
+  const [prefAyuno] = usePrefAyuno();
   // Antes esta pestaña leía siempre el día de hoy, así que al registrar un día
   // pasado el plato se guardaba bien pero no aparecía en ninguna parte.
   const hoy = fecha;
@@ -536,8 +538,9 @@ function NutricionTab({ energy, meals, metaProt, profile, quemadasHoy, edad, fec
       { id: "balance", el: (
         <BalanceCalorico profile={profile} edad={edad} comido={tot.kcal} quemadas={quemadasHoy} esHoy={esHoy} irAClinica={irAClinica} />
       ) },
-      // El contador de ayuno solo tiene sentido contra el reloj de ahora.
-      ...(esHoy ? [{ id: "ayuno", el: <AyunoCard meals={meals} /> }] : []),
+      // El contador de ayuno solo tiene sentido contra el reloj de ahora, y
+      // solo para quien ayuna: quien dijo que no, no lo ve más.
+      ...(esHoy && prefAyuno !== "no" ? [{ id: "ayuno", el: <AyunoCard meals={meals} /> }] : []),
       { id: "comidas", el: (
       <div className="card panel">
         <h3>{esHoy ? tr("🍽 Tus comidas de hoy") : `🍽 ${tr("Tus comidas del")} ${fmtDiaLargo(hoy)}`}</h3>

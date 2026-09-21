@@ -14,6 +14,7 @@ import { IDIOMAS, type Idioma } from "../idioma/textos";
 import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
 import { usePaisImpuestos } from "../finanzas/paisImpuestos";
 import { useUsaAuto } from "../finanzas/usaAuto";
+import { usePrefAyuno } from "../salud/ayunoPref";
 import { LegalModal } from "../legal/LegalModal";
 import { descargarMisDatos, reunirMisDatos } from "../legal/misDatos";
 import { FRASE_BORRAR, borrarMiCuenta } from "../legal/borrarCuenta";
@@ -111,6 +112,7 @@ function PaisImpuestosCard() {
   const { t: tr } = useIdioma();
   const [pais, setPais] = usePaisImpuestos();
   const [usaAuto, setUsaAuto] = useUsaAuto();
+  const [prefAyuno, setPrefAyuno] = usePrefAyuno();
 
   return (
     <div className="card pad">
@@ -146,6 +148,24 @@ function PaisImpuestosCard() {
           {tr("Uso un auto para trabajar")}{" "}
           <span style={{ color: "var(--muted)" }}>
             {tr("Agrega la pestaña Auto en Finanzas, para llevar los kilómetros y poder deducir la parte de sus gastos que corresponde al trabajo. Si la apagas no se borra nada: los viajes siguen guardados.")}
+          </span>
+        </span>
+      </label>
+
+      {/* El ayuno es la otra función que solo le sirve a quien la practica.
+          Antes el contador se encendía solo al registrar una comida, y a quien
+          no ayuna le decía todos los días que estaba ayunando. */}
+      <label style={{
+        display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer",
+        fontSize: 13, lineHeight: 1.5, marginTop: 12,
+      }}>
+        <input type="checkbox" checked={prefAyuno === "si"}
+          onChange={(e) => setPrefAyuno(e.target.checked ? "si" : "no")}
+          style={{ width: 15, height: 15, marginTop: 2, accentColor: "var(--accent)" }} />
+        <span>
+          {tr("Hago ayuno intermitente")}{" "}
+          <span style={{ color: "var(--muted)" }}>
+            {tr("Muestra el contador de horas desde tu última comida en Energía. Si lo apagas, la tarjeta desaparece y tus comidas se siguen registrando igual.")}
           </span>
         </span>
       </label>
