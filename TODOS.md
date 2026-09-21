@@ -293,6 +293,14 @@ Pedido de la usuaria, en la misma conversación del coach financiero: "las secci
 - [ ] `[Nuevo]` Que el agente de IA lea este informe y lo converse, igual que el de Finanzas.
 - [ ] `[Nuevo]` Mover las sesiones de Mente del navegador a Supabase: hoy el informe no ve las prácticas hechas en otro dispositivo.
 
+## El ayuno se pregunta, no se supone (21 sep 2026)
+Pedido de la usuaria: "en la parte de ayuno debería haber un toggle que diga hago ayuno o no hago ayuno, porque uno registra una comida y te lo marca inmediatamente como ayuno, y hay personas que no hacen ayuno y igual les está diciendo que están ayunando".
+
+- [x] `[Nuevo]` La tarjeta de Ayuno pregunta una vez: "¿Haces ayuno intermitente?", con Sí y No. Mientras nadie conteste no corre ningún contador ni se felicita a nadie por una meta que no se propuso.
+- [x] `[Nuevo]` Quien dice que no, deja de ver la tarjeta en Energía. Se vuelve a encender en Ajustes, junto al interruptor del auto, y la preferencia viaja entre dispositivos por el espejo de la nube.
+- [x] `[Bug]` Un registro viejo dejó de presentarse como ayuno cumplido. Con la última comida hace siete días la tarjeta decía "167 h, meta cumplida"; ahora dice desde cuándo es ese registro y pide marcar la última comida.
+- [x] `[Bug]` La hora de la última comida se mostraba como "04:12 a. m.." con dos puntos en español. Ahora va en formato de 24 horas, salvo en inglés.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

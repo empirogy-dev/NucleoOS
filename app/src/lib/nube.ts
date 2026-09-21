@@ -13,6 +13,7 @@ export const CLAVES_NUBE: string[] = [
   "nucleoos-dopamina", // tu menú de dopamina
   "nucleoos-pomodoro-hechos", // bloques de foco de hoy
   "nucleoos-sync-ejercicio", // memoria del automarcado de hábitos
+  "nucleoos-hace-ayuno", // si la persona hace ayuno intermitente o no
   "nucleoos-ayuno-meta", // horas de ayuno elegidas
   "nucleoos-ayuno-manual", // inicio manual del ayuno
   "nucleoos-ciclo-config", // configuración del ciclo
