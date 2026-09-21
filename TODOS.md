@@ -279,6 +279,20 @@ Pedido de la usuaria: "en Finanzas no veo un coach financiero que me diga dónde
 - [ ] `[Nuevo]` Que el agente de IA lea este informe y lo converse (el objeto ya está listo para pasárselo).
 - [ ] `[Nuevo]` Comparar contra un presupuesto anual completo, no solo el tope mensual por categoría.
 
+## Informe de bienestar exportable (21 sep 2026)
+Pedido de la usuaria, en la misma conversación del coach financiero: "las secciones de hábitos, movimiento y energía, metas o dirección, también deberían poder exportarse en caso de analizarlas con un psicólogo". Decidido con ella: un solo informe en Revisión, con Energía, Movimiento, Hábitos, Mente y Dirección.
+
+- [x] `[Nuevo]` Pestaña Informe en Revisión: periodo de 7 días a 6 meses, se elige qué áreas entran, y todo se calcula sobre el día a día real.
+- [x] `[Nuevo]` Motor en `revision/bienestar.ts`: serie diaria de sueño, energía, agua, proteína, movimiento, hábitos, Mente y diario; agregados por semana; constancia por hábito y por reto (el reto se mide contra los días en que tocaba); metas con avance y plazo.
+- [x] `[Nuevo]` Cruces entre áreas con su número de días a cada lado: la energía según si te moviste, según si dormiste 7 horas, según si practicaste Mente; el sueño según si te moviste; los hábitos según cómo dormiste. Los que no tienen suficientes días se marcan y no se presentan como hallazgo.
+- [x] `[Nuevo]` Observaciones con el mismo formato que Finanzas, empezando siempre por cuántos días del periodo están realmente registrados.
+- [x] `[Nuevo]` Exportar: informe para imprimir o PDF, planilla CSV del día a día, o ZIP con día a día, semanas, hábitos, movimiento, metas y una nota que explica cómo leer los datos.
+- [x] `[Nuevo]` El texto del diario nunca sale salvo que se marque expresamente al exportar, y cuando sale, la portada del informe lo dice.
+- [x] `[Bug]` Los días sin registro ya no se cuentan como ceros en los cruces: antes "duermes menos de 7 horas" incluía todas las noches sin anotar, y eso inventaba una relación entre el sueño y los hábitos que no estaba en los datos.
+- [x] `[Nuevo]` Lo genérico de los informes (gráficos SVG, CSV, impresión, hoja de estilos) se movió a `src/informes/`, compartido entre Finanzas y Revisión. Gráficos nuevos: línea de tiempo con huecos donde no hay registro, y barras por día.
+- [ ] `[Nuevo]` Que el agente de IA lea este informe y lo converse, igual que el de Finanzas.
+- [ ] `[Nuevo]` Mover las sesiones de Mente del navegador a Supabase: hoy el informe no ve las prácticas hechas en otro dispositivo.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

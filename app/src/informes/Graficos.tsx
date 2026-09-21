@@ -3,10 +3,12 @@ import {
   GROSOR_DONA,
   RADIO_DONA,
   colorSerie,
+  geometriaBarras,
   geometriaColumnas,
+  geometriaLinea,
   segmentosDona,
   type ColumnaMes,
-} from "./formasGrafico";
+} from "./formas";
 
 // Los gráficos del informe, dibujados a mano en SVG.
 //
@@ -191,5 +193,97 @@ export function BarraRango({ min, max, tope, etiqueta, nota, fmt }: {
       </div>
       {nota && <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4 }}>{nota}</div>}
     </div>
+  );
+}
+
+/** Una medida a lo largo del tiempo: el sueño, la energía.
+ *
+ *  Los días sin dato dejan un hueco en la línea en vez de unirse con una
+ *  recta. Ese hueco es información: dice que ahí no se registró nada.
+ */
+export function LineaTiempo({ puntos, fmt, min, max, color = "var(--accent-ink)", banda, ancho, alto }: {
+  puntos: Array<{ etiqueta: string; valor: number | null }>;
+  fmt: (n: number) => string;
+  min?: number;
+  max?: number;
+  color?: string;
+  /** Una franja de referencia al fondo, por ejemplo las 7 a 9 horas de sueño. */
+  banda?: { desde: number; hasta: number; nota: string };
+  /** El lienzo. Importa más de lo que parece: el SVG se estira al ancho de su
+   *  tarjeta, así que un lienzo angosto dentro de un panel ancho agranda las
+   *  letras y las líneas hasta que el gráfico parece un cartel. */
+  ancho?: number;
+  alto?: number;
+}) {
+  const g = geometriaLinea(puntos, { min, max, ancho, alto });
+  if (!g.hayDatos) {
+    return <p style={{ color: "var(--muted)", fontSize: 13 }}>Sin registros en este periodo.</p>;
+  }
+  const yDe = (v: number) => {
+    // La misma escala que usó la geometría, reconstruida desde sus guías.
+    const [g0, , g1] = g.guias;
+    const prop = (v - g0.valor) / (g1.valor - g0.valor);
+    return g0.y + prop * (g1.y - g0.y);
+  };
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${g.ancho} ${g.alto}`} style={{ width: "100%", height: "auto" }} aria-hidden role="presentation">
+        {banda && (
+          <rect x={0} y={Math.min(yDe(banda.hasta), yDe(banda.desde))} width={g.ancho}
+            height={Math.abs(yDe(banda.desde) - yDe(banda.hasta))} fill="var(--accent-wash)" opacity={0.55} />
+        )}
+        {g.guias.map((li, i) => (
+          <g key={i}>
+            <line x1={0} x2={g.ancho} y1={li.y} y2={li.y} stroke="var(--line)" strokeWidth={1} />
+            {/* La de más arriba va por debajo de su línea: encima se sale del
+                lienzo y no se ve ninguna cifra. */}
+            <text x={2} y={li.y + (i === g.guias.length - 1 ? 11 : -3)} fontSize={9.5}
+              fill="var(--muted)" fontFamily="var(--sans)">{fmt(li.valor)}</text>
+          </g>
+        ))}
+        {g.trazos.map((d, i) => (
+          <path key={i} d={d} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        ))}
+        {g.puntos.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={2.2} fill={color} />)}
+        {g.marcasX.map((m, i) => (
+          <text key={i} x={m.x} y={g.alto - 5} textAnchor={i === 0 ? "start" : i === g.marcasX.length - 1 ? "end" : "middle"}
+            fontSize={10} fill="var(--muted)" fontFamily="var(--sans)">{m.texto}</text>
+        ))}
+      </svg>
+      {banda && <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>{banda.nota}</p>}
+    </div>
+  );
+}
+
+/** Un valor por día o por semana, en barras. Sirve para los minutos de
+ *  movimiento, donde un cero es un cero de verdad y no un dato que falta. */
+export function BarrasTiempo({ datos, fmt, color = "var(--mov)", ancho, alto }: {
+  datos: Array<{ etiqueta: string; valor: number }>;
+  fmt: (n: number) => string;
+  color?: string;
+  ancho?: number;
+  alto?: number;
+}) {
+  const g = geometriaBarras(datos, { ancho, alto });
+  if (datos.length === 0) return null;
+  return (
+    <svg viewBox={`0 0 ${g.ancho} ${g.alto}`} style={{ width: "100%", height: "auto" }} aria-hidden role="presentation">
+      {g.guias.map((li, i) => (
+        <g key={i}>
+          <line x1={0} x2={g.ancho} y1={li.y} y2={li.y} stroke="var(--line)" strokeWidth={1} />
+          {i === g.guias.length - 1 && (
+            <text x={2} y={li.y + 11} fontSize={9.5} fill="var(--muted)" fontFamily="var(--sans)">{fmt(li.valor)}</text>
+          )}
+        </g>
+      ))}
+      {g.barras.map((b, i) => (
+        <rect key={i} x={b.x} y={b.y} width={b.ancho} height={b.alto} rx={2} fill={color} />
+      ))}
+      {g.marcasX.map((m, i) => (
+        <text key={i} x={m.x} y={g.alto - 5} textAnchor={i === 0 ? "start" : i === g.marcasX.length - 1 ? "end" : "middle"}
+          fontSize={10} fill="var(--muted)" fontFamily="var(--sans)">{m.texto}</text>
+      ))}
+    </svg>
   );
 }

@@ -14,11 +14,12 @@ import {
   type Patron,
   type Periodo,
 } from "./data";
+import { InformeTab } from "./InformeTab";
 
 // Revisión: la app no solo guarda, también explica.
 // La agenda día a día, resúmenes por semana o mes, y patrones entre módulos.
 
-type Tab = "dia" | "semana" | "mes" | "patrones";
+type Tab = "dia" | "semana" | "mes" | "patrones" | "informe";
 
 export function RevisionPage() {
   const { t: tr } = useIdioma();
@@ -41,6 +42,10 @@ export function RevisionPage() {
     setNarrativa(null);
     setError(null);
     try {
+      if (tab === "informe") {
+        // Esta pestaña se carga sola, con su propio periodo y sus áreas.
+        return;
+      }
       if (tab === "patrones") {
         setPatrones(await buscarPatrones());
       } else if (tab === "dia") {
@@ -100,11 +105,14 @@ export function RevisionPage() {
         <button className={"ftab" + (tab === "semana" ? " active" : "")} onClick={() => { setTab("semana"); setOffset(0); }}>{tr("tab.rev.semana")}</button>
         <button className={"ftab" + (tab === "mes" ? " active" : "")} onClick={() => { setTab("mes"); setOffset(0); }}>{tr("tab.rev.mes")}</button>
         <button className={"ftab" + (tab === "patrones" ? " active" : "")} onClick={() => setTab("patrones")}>{tr("tab.rev.patrones")}</button>
+        <button className={"ftab" + (tab === "informe" ? " active" : "")} onClick={() => setTab("informe")}>{tr("tab.rev.informe")}</button>
       </div>
 
       {error && <div className="card pad" style={{ borderLeft: "3px solid var(--err)", marginBottom: 14 }}>{error}</div>}
 
-      {tab !== "patrones" && (
+      {tab === "informe" && <InformeTab />}
+
+      {tab !== "patrones" && tab !== "informe" && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
             <button className="iconbtn" style={{ width: 32, height: 32 }} aria-label="Período anterior" onClick={() => setOffset(offset + 1)}>
