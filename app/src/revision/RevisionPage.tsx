@@ -15,6 +15,7 @@ import {
   type Periodo,
 } from "./data";
 import { InformeTab } from "./InformeTab";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 // Revisión: la app no solo guarda, también explica.
 // La agenda día a día, resúmenes por semana o mes, y patrones entre módulos.
@@ -96,7 +97,9 @@ export function RevisionPage() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><LineChart size={13} /> {tr("sec.panorama")}</div>
-        <h1>{tr("nav.revision")}</h1>
+        <div className="tit-fila"><h1>{tr("nav.revision")}</h1>
+          <AyudaModulo clave="/revision" />
+        </div>
         <p>{tr("head.sub.revision")}</p>
       </div>
 

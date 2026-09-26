@@ -109,6 +109,7 @@ import {
   type Tx,
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes" | "auto" | "metas" | "categorias" | "reporte";
 
@@ -1990,7 +1991,9 @@ function Head() {
       <div className="eyebrow">
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fin)", display: "inline-block" }} /> {tr("sec.mivida")}
       </div>
-      <h1>{tr("area.finanzas")}</h1>
+      <div className="tit-fila"><h1>{tr("area.finanzas")}</h1>
+        <AyudaModulo clave="/finanzas" />
+      </div>
       <p>{tr("head.sub.finanzas")}</p>
     </div>
   );

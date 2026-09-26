@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { CollageTab } from "./CollageTab";
 import { SuenosTab } from "./SuenosTab";
 import { VidaIdealTab } from "./VidaIdealTab";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 // Visión: el espacio de la inspiración. Sueños (bucket list),
 // el collage visual y la descripción de tu vida ideal.
@@ -27,7 +28,9 @@ export function VisionPage() {
     <div className="page" style={{ maxWidth: 1320 }}>
       <div className="page-head">
         <div className="eyebrow"><Sparkles size={13} /> {tr("sec.inspiracion")}</div>
-        <h1>{tr("nav.vision")}</h1>
+        <div className="tit-fila"><h1>{tr("nav.vision")}</h1>
+          <AyudaModulo clave="/vision" />
+        </div>
         <p>{tr("head.sub.vision")}</p>
       </div>
 

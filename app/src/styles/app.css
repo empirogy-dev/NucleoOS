@@ -651,3 +651,29 @@ button{font-family:inherit}
   color:var(--accent-ink);font-weight:600;text-decoration:underline;
   text-underline-offset:2px;cursor:pointer}
 .enlace-tour:hover{color:var(--ink)}
+
+/* El signo de pregunta al lado del título de cada sección, con su "para qué
+   es esto". Los nombres no empiezan con `ayuda-` a propósito: ya existe
+   `.ayuda-pop` para los globitos de los campos, y compartir prefijo terminó
+   una vez con un menú saliéndose de la pantalla. */
+.tit-fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.page-head .tit-fila h1{margin-bottom:0}
+.modayuda{position:relative;display:inline-flex}
+.modayuda-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer}
+.modayuda-btn:hover{color:var(--accent-ink);border-color:var(--accent-ink)}
+.modayuda-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:80;display:block;width:330px;
+  max-width:calc(100vw - 32px);background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-md);box-shadow:var(--sh);padding:13px 15px 12px;
+  font-family:var(--sans);letter-spacing:normal}
+.modayuda-tit{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--muted);font-weight:600;margin-bottom:6px}
+.modayuda-txt{display:block;font-size:13px;line-height:1.55;font-weight:400;color:var(--ink-soft)}
+.modayuda-ir{display:inline-flex;align-items:center;gap:7px;margin-top:11px;
+  font-size:12.5px;padding:6px 12px}
+.modayuda-ir small{color:var(--muted);font-size:11px}
+@media (max-width:560px){
+  /* En el celular se queda abajo, fija, igual que la ventanita del tour:
+     colgada del botón se salía por la derecha en cuanto el título era largo. */
+  .modayuda-pop{position:fixed;top:auto;bottom:14px;left:12px;right:12px;width:auto}
+}

@@ -26,6 +26,7 @@ import { FORMULARIO, type PaisImpuestos } from "../finanzas/impuestos";
 import { useModulos } from "../modulos/ModulosProvider";
 import { GRUPOS_MODULOS } from "../modulos/modulos";
 import { Toggle } from "../components/Toggle";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -44,7 +45,9 @@ export function Ajustes() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><Settings size={13} /> {tr("nav.ajustes")}</div>
-        <h1>{tr("nav.ajustes")}</h1>
+        <div className="tit-fila"><h1>{tr("nav.ajustes")}</h1>
+          <AyudaModulo clave="/ajustes" />
+        </div>
         <p>{tr("head.sub.ajustes")}</p>
       </div>
 

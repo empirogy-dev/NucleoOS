@@ -20,6 +20,7 @@ import { listRelationships, listRelLogs, type Relationship, type RelLog } from "
 import { LIBROS, VIAS_LIBRO, estadosLibros, librosLeidos, type Libro } from "../aprendizaje/biblioteca";
 import { comoLibro, listLibrosPropios } from "../aprendizaje/librosPropios";
 import { Selector } from "../components/Selector";
+import { AyudaModulo } from "../tour/AyudaModulo";
 import {
   METRICAS_AUTO,
   PLAZO_DEFECTO_DIAS,
@@ -357,7 +358,9 @@ function Head() {
       <div className="eyebrow">
         <Compass size={13} /> {tr("sec.mivida")}
       </div>
-      <h1>{tr("area.objetivos")}</h1>
+      <div className="tit-fila"><h1>{tr("area.objetivos")}</h1>
+        <AyudaModulo clave="/objetivos" />
+      </div>
       <p>{tr("head.sub.objetivos")}</p>
     </div>
   );

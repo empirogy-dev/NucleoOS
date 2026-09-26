@@ -14,6 +14,7 @@ import { TablesMissingError } from "../finanzas/data";
 import { listObjectives, type Objective } from "../objetivos/data";
 import { RetosTab } from "./RetosTab";
 import { RutinasTab } from "./RutinasTab";
+import { AyudaModulo } from "../tour/AyudaModulo";
 import {
   COLORES_HABITO,
   EXERCISE_KINDS,
@@ -294,7 +295,9 @@ function Head() {
   return (
     <div className="page-head">
       <div className="eyebrow"><Repeat size={13} /> {tr("sec.nucleo")}</div>
-      <h1>{tr("area.habitos")}</h1>
+      <div className="tit-fila"><h1>{tr("area.habitos")}</h1>
+        <AyudaModulo clave="/habitos" />
+      </div>
       <p>{tr("head.sub.habitos")}</p>
     </div>
   );
