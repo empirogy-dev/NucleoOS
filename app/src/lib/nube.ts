@@ -21,8 +21,10 @@ export const CLAVES_NUBE: string[] = [
   "nucleoos-idioma", // el idioma elegido para la app
   "nucleoos-modulos-ocultos", // qué módulos escondió la persona del menú
   "nucleoos-onboarding", // la bienvenida ya hecha, para no repetirla en otro aparato
+  "nucleoos-tour", // qué tours guiados ya se vieron
   "nucleoos-fin-no-repetidos", // los grupos que ella ya dijo que NO son repetidos
   "nucleoos-pais-impuestos", // en qué país declara impuestos
+  "nucleoos-pais", // en qué país vive, que decide si el banco se puede conectar
 ];
 
 // Guardamos los métodos originales para leer y escribir sin eco:

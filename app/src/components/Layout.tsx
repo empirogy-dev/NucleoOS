@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { Menu, Palette, Settings } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { NotifBell } from "./NotifBell";
+import { BotonAyuda } from "../tour/BotonAyuda";
 import { Alarma } from "../recordatorios/Alarma";
 import { ThemePicker } from "./ThemePicker";
 import { Pomodoro } from "./Pomodoro";
@@ -56,6 +57,7 @@ export function Layout() {
           <span className="crumb">NucleoOS: {current}</span>
           <span className="sp" />
           <NotifBell />
+          <BotonAyuda />
           <button className="iconbtn" aria-label={t("topbar.tema")} title={t("topbar.tema")} onClick={() => setPickerOpen(true)}>
             <Palette size={18} />
           </button>
@@ -72,7 +74,7 @@ export function Layout() {
             </button>
           </div>
         )}
-        <main>
+        <main data-tour="pagina">
           {/* Arriba de todo y sin bloquear: el documento promete avisar dentro
               de la app cuando cambie, y esto lo cumple. */}
           <div style={{ padding: "clamp(20px,3vw,34px) clamp(20px,3vw,34px) 0", maxWidth: 1120 }}>

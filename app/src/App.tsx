@@ -20,6 +20,7 @@ import { SettingsProvider } from "./settings/SettingsProvider";
 import { FechaActivaProvider } from "./fecha/FechaActiva";
 import { ModulosProvider } from "./modulos/ModulosProvider";
 import { Onboarding } from "./onboarding/Onboarding";
+import { TourProvider } from "./tour/TourProvider";
 
 // Si llegas desde la landing de finanzas (?modo=finanzas), la intención se
 // guarda antes del login y la bienvenida parte con ese modo elegido.
@@ -51,6 +52,7 @@ export default function App() {
           landing. Mismo dominio a propósito: así la sesión de quien ya
           entraba no se pierde. En desarrollo sigue en la raíz. */}
       <BrowserRouter basename={import.meta.env.DEV ? "/" : "/app"}>
+        <TourProvider>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Inicio />} />
@@ -70,6 +72,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
+        </TourProvider>
       </BrowserRouter>
       </ModulosProvider>
       </FechaActivaProvider>

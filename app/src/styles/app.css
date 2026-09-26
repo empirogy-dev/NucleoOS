@@ -602,3 +602,29 @@ button{font-family:inherit}
 }
 .notif-item{display:flex;gap:10px;align-items:center;padding:8px 6px;border-radius:9px}
 .notif-item:hover{background:var(--line-soft)}
+
+/* ==========================================================
+   El tour guiado: un velo con un agujero, y la ventanita al lado
+   ========================================================== */
+/* El agujero se hace con una sombra enorme alrededor del elemento, que es la
+   forma más simple de recortar el velo sin dibujar cuatro rectángulos que
+   nunca calzan del todo cuando la página se mueve. */
+.tour-velo{position:fixed;z-index:120;border-radius:12px;pointer-events:auto;
+  box-shadow:0 0 0 9999px rgba(24,28,26,.55);transition:top .22s ease,left .22s ease,width .22s ease,height .22s ease}
+.tour-globo{position:fixed;z-index:121;width:320px;max-width:calc(100vw - 20px);
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);
+  box-shadow:var(--sh);padding:15px 17px 13px;transition:top .22s ease,left .22s ease}
+.tour-cuenta{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.tour-titulo{display:block;font-family:var(--serif);font-size:15px;font-weight:500;margin:4px 0 5px;letter-spacing:-.01em}
+.tour-texto{font-size:13px;line-height:1.55;color:var(--ink-soft);margin:0 0 12px}
+.tour-botones{display:flex;align-items:center;gap:7px}
+.tour-botones .btn{padding:7px 13px;font-size:12.5px}
+.tour-saltar{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.tour-velo,.tour-globo{transition:none}}
+@media (max-width:560px){
+  /* En el celular la ventanita se queda abajo, fija: perseguir al elemento en
+     una pantalla angosta la dejaba medio fuera de la vista. */
+  /* El `transform` que centra el paso de bienvenida en pantalla grande hay
+     que anularlo aquí, o corre la ventanita media pantalla hacia fuera. */
+  .tour-globo{top:auto!important;left:10px!important;right:10px;bottom:14px;width:auto;transform:none!important}
+}

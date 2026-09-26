@@ -446,8 +446,8 @@ export function FinanzasPage() {
           onClick={() => { setModoPrivado(!privado); setPrivado(!privado); }}>
           {privado ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
-        <button className="btn ghost" onClick={() => setModal("import")}>{tr("btn.importarcartola")}</button>
-        <button className="btn primary" {...sinRobarFoco} onClick={() => setModal("tx")}>
+        <button className="btn ghost" data-tour="fin-cartola" onClick={() => setModal("import")}>{tr("btn.importarcartola")}</button>
+        <button className="btn primary" data-tour="fin-registrar" {...sinRobarFoco} onClick={() => setModal("tx")}>
           <Plus size={15} style={{ verticalAlign: "-2px", marginRight: 5 }} />
           {tr("btn.registrar")}
         </button>
@@ -1172,7 +1172,7 @@ ${suyos} ${suyos === 1 ? tr("movimiento queda") : tr("movimientos quedan")} ${tr
 
           {tab === "cuentas" && (
             <>
-              <BancoPanel onCambio={() => void reload()} />
+              <BancoPanel onCambio={() => void reload()} onImportar={() => setModal("import")} />
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))" }}>
                 {accounts.map((a) => (
                   <div className="card pad" key={a.id}>

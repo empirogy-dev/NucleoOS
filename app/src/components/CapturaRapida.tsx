@@ -40,6 +40,7 @@ export function CapturaRapida() {
   return (
     <>
       <button
+        data-tour="captura"
         className="captura-fab"
         aria-label={abierta ? "Cerrar captura rápida" : "Anotar algo rápido"}
         title="Anota lo que te pasó por la cabeza"

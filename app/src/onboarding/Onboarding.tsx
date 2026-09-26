@@ -4,6 +4,8 @@ import { CURRENCIES, useSettings } from "../settings/SettingsProvider";
 import { useModulos } from "../modulos/ModulosProvider";
 import { MODOS_INICIO, ocultosDeModo, type ModoInicio } from "../modulos/modulos";
 import { Selector } from "../components/Selector";
+import { PAISES, guardarPais } from "../settings/pais";
+import { pedirTourGeneral } from "../tour/tour";
 
 // La bienvenida de la primera entrada: quién eres, qué quieres ordenar
 // primero, y en qué moneda. Cuatro pantallas cortas y adentro, porque un
@@ -33,6 +35,7 @@ export function Onboarding() {
   const [tocado, setTocado] = useState(false);
   // Si vienes de la landing de finanzas (?modo=finanzas), ese modo parte elegido.
   const [modo, setModo] = useState(() => localStorage.getItem(LS_MODO_PENDIENTE) ?? "todo");
+  const [pais, setPais] = useState("");
   const [moneda, setMoneda] = useState("CAD");
   const [busy, setBusy] = useState(false);
 
@@ -55,6 +58,7 @@ export function Onboarding() {
     setBusy(true);
     try {
       if (nombre.trim()) await updateProfile({ display_name: nombre.trim() });
+      if (pais) guardarPais(pais);
       if (conFinanzas) await setCurrency(moneda);
       reemplazar(ocultosDeModo(elegido));
       // La zona horaria del navegador: la usan el coach y el corte del día.
@@ -129,10 +133,21 @@ export function Onboarding() {
 
         {paso === 3 && (
           <>
-            <h3 style={{ marginBottom: 6 }}>{tr("¿En qué moneda manejas tu plata?")}</h3>
+            <h3 style={{ marginBottom: 6 }}>{tr("¿Dónde vives y en qué moneda manejas tu plata?")}</h3>
             <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.55, marginBottom: 14 }}>
-              {tr("Es tu moneda principal. Si tienes cuentas en otro país, cada una lleva la suya y NucleoOS nunca las mezcla.")}
+              {tr("El país decide qué te puede ofrecer la app: conectar el banco funciona en algunos países y en otros todavía no, y así no te ofrezco algo que no va a andar. La moneda es la principal; si tienes cuentas en otro país, cada una lleva la suya y NucleoOS nunca las mezcla.")}
             </p>
+            <div className="field"><label>{tr("País")}</label>
+              <Selector value={pais} ariaLabel={tr("País")} placeholder={tr("Elige tu país")}
+                onChange={(v) => {
+                  setPais(v);
+                  setTocado(true);
+                  // La moneda del país elegido, para no tener que pensarla.
+                  // Se puede cambiar justo abajo si no corresponde.
+                  const p = PAISES.find((x) => x.codigo === v);
+                  if (p && CURRENCIES.includes(p.moneda as (typeof CURRENCIES)[number])) setMoneda(p.moneda);
+                }}
+                opciones={PAISES.map((p) => ({ value: p.codigo, label: tr(p.nombre) }))} /></div>
             <div className="field"><label>{tr("Moneda")}</label>
               <Selector value={moneda} ariaLabel={tr("Moneda")} onChange={setMoneda}
                 opciones={CURRENCIES.map((c) => ({ value: c, label: c }))} /></div>
@@ -172,7 +187,11 @@ export function Onboarding() {
               {tr("Todo lo que elegiste ahora se cambia cuando quieras en Ajustes.")}
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button className="btn primary" onClick={() => setVisible(false)}>{tr("Entrar")}</button>
+              {/* Entrar arranca el tour: la bienvenida dice quién eres, el
+                  tour dice qué es esto. Antes solo pasaba lo primero. */}
+              <button className="btn primary" onClick={() => { pedirTourGeneral(); setVisible(false); }}>
+                {tr("Entrar y que me muestren la app")}
+              </button>
             </div>
           </>
         )}
