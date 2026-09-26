@@ -3540,6 +3540,20 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Colombia": "Colombia",
     "Argentina": "Argentina",
     "España": "Spain",
+    // El menú de ayuda de la barra de arriba
+    "Aprende a usar la app": "Learn how to use the app",
+    "Conocer la app entera": "Get to know the whole app",
+    "El recorrido completo, siete pasos cortos": "The full tour, seven short steps",
+    "Te muestro lo de aquí en tres o cuatro pasos": "I will show you this screen in three or four steps",
+    "Esta pantalla no tiene recorrido propio": "This screen has no tour of its own",
+    "Te muestro el recorrido general": "I will show you the general tour",
+    // El recorrido de Inicio
+    "Tu día, sin abrir nada más": "Your day, without opening anything else",
+    "Las tareas de hoy, cómo vienes, y una sugerencia de por dónde seguir. Si un día no hay nada anotado, la pantalla se queda tranquila y no te pide cuentas.": "Today's tasks, how you are doing, and a suggestion for what to do next. If one day there is nothing recorded, the screen stays quiet and does not ask you for explanations.",
+    "La brújula y el pulso": "The compass and the pulse",
+    "La brújula muestra cuánto avanzan tus metas de Dirección. El pulso son los números del día que vienen de Energía, Hábitos y Movimiento, sin que tengas que ir a buscarlos.": "The compass shows how your Direction goals are advancing. The pulse is the day's numbers coming from Energy, Habits and Movement, without you having to go looking for them.",
+    "Se ordena como tú quieras": "Arrange it however you want",
+    "Las tarjetas se arrastran: pon arriba lo que de verdad miras y deja abajo lo demás. El orden se guarda y te sigue entre dispositivos.": "The cards can be dragged: put what you actually look at on top and leave the rest below. The order is saved and follows you across devices.",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -5621,6 +5635,20 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Colombia": "Colômbia",
     "Argentina": "Argentina",
     "España": "Espanha",
+    // El menú de ayuda de la barra de arriba
+    "Aprende a usar la app": "Aprenda a usar o app",
+    "Conocer la app entera": "Conhecer o app inteiro",
+    "El recorrido completo, siete pasos cortos": "O tour completo, sete passos curtos",
+    "Te muestro lo de aquí en tres o cuatro pasos": "Eu te mostro esta tela em três ou quatro passos",
+    "Esta pantalla no tiene recorrido propio": "Esta tela não tem tour próprio",
+    "Te muestro el recorrido general": "Eu te mostro o tour geral",
+    // El recorrido de Inicio
+    "Tu día, sin abrir nada más": "Seu dia, sem abrir mais nada",
+    "Las tareas de hoy, cómo vienes, y una sugerencia de por dónde seguir. Si un día no hay nada anotado, la pantalla se queda tranquila y no te pide cuentas.": "As tarefas de hoje, como você está indo, e uma sugestão de por onde seguir. Se um dia não houver nada anotado, a tela fica quieta e não te cobra nada.",
+    "La brújula y el pulso": "A bússola e o pulso",
+    "La brújula muestra cuánto avanzan tus metas de Dirección. El pulso son los números del día que vienen de Energía, Hábitos y Movimiento, sin que tengas que ir a buscarlos.": "A bússola mostra o quanto suas metas de Direção avançam. O pulso são os números do dia que vêm de Energia, Hábitos e Movimento, sem você ter que ir buscá-los.",
+    "Se ordena como tú quieras": "Organize do jeito que quiser",
+    "Las tarjetas se arrastran: pon arriba lo que de verdad miras y deja abajo lo demás. El orden se guarda y te sigue entre dispositivos.": "Os cartões podem ser arrastados: ponha em cima o que você realmente olha e deixe o resto embaixo. A ordem é salva e te acompanha entre dispositivos.",
   },
 };
 

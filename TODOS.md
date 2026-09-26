@@ -310,7 +310,10 @@ Pedido de la usuaria después de que una amiga bajara la app: "ya, ¿y ahora qu�
 - [x] `[Nuevo]` Tour propio de cada módulo (doce en total), que aparece solo la primera vez que entras a esa sección. Saltar el tour general se respeta: entonces no aparece ninguno.
 - [x] `[Nuevo]` Signo de pregunta en la barra de arriba: explica la pantalla donde estás, cuando quieras. Y en Ajustes, un botón para ver el recorrido completo otra vez.
 - [x] `[Nuevo]` Un paso que apunta a algo que no está en pantalla (un módulo escondido, una pestaña distinta) se salta solo en vez de dejar el tour colgado.
-- [ ] `[Nuevo]` Tours para las pantallas que faltan (Inicio tiene el general, pero no uno propio) y para el flujo de importar la cartola paso a paso, que es donde se perdió la amiga.
+- [x] `[Nuevo]` El botón de la barra de arriba es un menú con dos opciones, "Conocer la app entera" y "Qué es esta pantalla", con un punto en el ícono mientras nadie lo haya visto. Pedido de la usuaria: como ella ya era usuaria de antes, el tour nunca le iba a saltar solo y necesitaba encenderlo a mano.
+- [x] `[Nuevo]` Inicio tiene su propio recorrido, así el botón nunca contesta "esta pantalla no tiene nada que mostrar" justo donde más gente aterriza.
+- [x] `[Bug]` Las clases del menú de ayuda chocaban con las del globo de ayuda que ya existía (`.ayuda-pop`), y el panel se salía de la pantalla por la derecha. Renombradas a `tour-menu-*`.
+- [ ] `[Nuevo]` Un recorrido que acompañe el flujo de importar la cartola paso a paso, que es donde se perdió la amiga.
 
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
