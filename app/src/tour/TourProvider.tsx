@@ -13,8 +13,13 @@ import { marcarHecho, marcarSaltado, type PasoTour } from "./tour";
 // tour apuntando a la nada.
 
 interface Ctx {
-  /** Arranca un tour por su clave. Si ya hay uno corriendo, lo reemplaza. */
-  iniciar: (clave: string) => void;
+  /** Arranca un tour por su clave. Si ya hay uno corriendo, lo reemplaza.
+   *
+   *  `alCerrar` sirve para encadenar: dice si el tour llegó al final o si la
+   *  persona lo cortó. Lo usa la importación de cartola, que son dos tramos
+   *  (antes y después de leer el archivo) y no debe seguir con el segundo si
+   *  ya dijeron que no al primero. */
+  iniciar: (clave: string, alCerrar?: (terminado: boolean) => void) => void;
   activo: boolean;
   /** La clave del guion que corresponde a la pantalla donde estás. */
   guionDeRuta: (ruta: string) => string | null;
@@ -41,6 +46,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const [indice, setIndice] = useState(0);
   const [caja, setCaja] = useState<Caja | null>(null);
   const intentos = useRef(0);
+  const alCerrar = useRef<((terminado: boolean) => void) | null>(null);
 
   const pasos: PasoTour[] = useMemo(() => (clave ? GUIONES[clave]?.pasos ?? [] : []), [clave]);
   const paso: PasoTour | null = pasos[indice] ?? null;
@@ -55,10 +61,14 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setClave(null);
     setIndice(0);
     setCaja(null);
+    const avisar = alCerrar.current;
+    alCerrar.current = null;
+    if (avisar) avisar(terminado);
   }, [clave]);
 
-  const iniciar = useCallback((nueva: string) => {
+  const iniciar = useCallback((nueva: string, avisar?: (terminado: boolean) => void) => {
     if (!GUIONES[nueva]) return;
+    alCerrar.current = avisar ?? null;
     setClave(nueva);
     setIndice(0);
     setCaja(null);
