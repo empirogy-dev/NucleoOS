@@ -71,6 +71,27 @@ const general: PasoTour[] = [
 
 // ---------- Los módulos ----------
 
+const inicio: PasoTour[] = [
+  {
+    id: "ini-tareas",
+    objetivo: "[data-tour='pagina']",
+    titulo: "Tu día, sin abrir nada más",
+    texto: "Las tareas de hoy, cómo vienes, y una sugerencia de por dónde seguir. Si un día no hay nada anotado, la pantalla se queda tranquila y no te pide cuentas.",
+  },
+  {
+    id: "ini-brujula",
+    objetivo: "[data-tour='pagina']",
+    titulo: "La brújula y el pulso",
+    texto: "La brújula muestra cuánto avanzan tus metas de Dirección. El pulso son los números del día que vienen de Energía, Hábitos y Movimiento, sin que tengas que ir a buscarlos.",
+  },
+  {
+    id: "ini-orden",
+    objetivo: "[data-tour='pagina']",
+    titulo: "Se ordena como tú quieras",
+    texto: "Las tarjetas se arrastran: pon arriba lo que de verdad miras y deja abajo lo demás. El orden se guarda y te sigue entre dispositivos.",
+  },
+];
+
 const finanzas: PasoTour[] = [
   {
     id: "fin-tabs",
@@ -261,6 +282,7 @@ const vision: PasoTour[] = [
  *  así el tour de una pantalla se encuentra sin una tabla aparte. */
 export const GUIONES: Record<string, Guion> = {
   [TOUR_GENERAL]: { clave: TOUR_GENERAL, pasos: general },
+  "/": { clave: "/", pasos: inicio },
   "/finanzas": { clave: "/finanzas", pasos: finanzas },
   "/salud": { clave: "/salud", pasos: energia },
   "/habitos": { clave: "/habitos", pasos: habitos },
