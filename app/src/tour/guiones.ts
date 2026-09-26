@@ -278,6 +278,78 @@ const vision: PasoTour[] = [
   },
 ];
 
+// ---------- La importación de la cartola ----------
+//
+// Este es el momento donde se perdió la amiga de la usuaria: bajó la app,
+// llegó a Finanzas, vio "Importar cartola" y no supo ni qué archivo era ni de
+// dónde sacarlo. Por eso es el único recorrido que no explica una pantalla
+// sino un trámite, paso por paso, mientras lo estás haciendo.
+//
+// Son dos guiones y no uno porque la mitad de lo que hay que señalar todavía
+// no existe cuando la ventana se abre: la tabla de movimientos leídos aparece
+// recién después de elegir el archivo, y el motor salta los pasos cuyo
+// objetivo no encuentra en un segundo y medio. Así que el primero acompaña
+// hasta soltar el archivo, y el segundo arranca solo cuando la lista ya está
+// en pantalla.
+//
+// Las claves no son rutas a propósito: no queremos que estos salten al entrar
+// a Finanzas, sino solo con la ventana de importar abierta.
+
+export const TOUR_CARTOLA = "cartola";
+export const TOUR_CARTOLA_REVISION = "cartola-revision";
+
+const cartola: PasoTour[] = [
+  {
+    id: "car-que-es",
+    titulo: "Qué es una cartola",
+    texto: "Es el archivo con todos los movimientos de un mes que te da tu banco. Entras a tu banco por internet, buscas 'cartola', 'estado de cuenta' o 'statement', eliges el mes y lo descargas. Eso es lo que vas a subir aquí.",
+  },
+  {
+    id: "car-fuente",
+    objetivo: "[data-tour='cartola-fuente']",
+    titulo: "Primero, de dónde viene",
+    texto: "Dime de qué cuenta o tarjeta es la cartola y de qué mes. Con eso los movimientos quedan archivados donde corresponde y puedo avisarte si subes dos veces el mismo mes.",
+  },
+  {
+    id: "car-archivo",
+    objetivo: "[data-tour='cartola-archivo']",
+    titulo: "Ahora el archivo",
+    texto: "Sirve CSV, OFX, QFX, Excel o PDF. Si tu banco te deja elegir, prefiere CSV u OFX: esos los leo exactos. El PDF lo lee la IA y después tú revisas. Puedes subir varios archivos juntos, por ejemplo la cuenta y la tarjeta del mismo mes.",
+  },
+  {
+    id: "car-espera",
+    titulo: "Y eso es todo por ahora",
+    texto: "Cuando elijas el archivo te muestro lo que encontré, y seguimos desde ahí. Nada se guarda hasta que tú aprietes el botón del final.",
+  },
+];
+
+const cartolaRevision: PasoTour[] = [
+  {
+    id: "carv-lista",
+    objetivo: "[data-tour='cartola-revision']",
+    titulo: "Esto es lo que leí",
+    texto: "Cada línea es un movimiento con su fecha, su descripción y su monto. Todavía no está guardado: es una vista previa para que revises antes de dejarlo entrar.",
+  },
+  {
+    id: "carv-repetidos",
+    objetivo: "[data-tour='cartola-repetidos']",
+    titulo: "Los repetidos ya vienen resueltos",
+    texto: "Comparo con lo que ya tienes registrado. Si un movimiento ya estaba, lo dejo desmarcado para que no se cuente dos veces. Pasa harto cuando anotaste algo a mano y después subes la cartola del mismo mes.",
+  },
+  {
+    id: "carv-marcar",
+    objetivo: "[data-tour='cartola-revision']",
+    titulo: "Tú decides qué entra",
+    texto: "Cada línea tiene su casilla. Desmarca lo que no quieras, marca un repetido si de verdad ocurrió dos veces. Si algo salió mal leído, lo puedes corregir después en Transacciones.",
+  },
+  {
+    id: "carv-importar",
+    objetivo: "[data-tour='cartola-importar']",
+    titulo: "Y aquí se guarda",
+    texto: "El botón dice cuántos movimientos van a entrar. Después aparecen en Transacciones, listos para categorizar, y el Reporte empieza a tener de qué hablar.",
+  },
+];
+
 /** Todos los guiones por su clave. Para los módulos, la clave es la ruta:
  *  así el tour de una pantalla se encuentra sin una tabla aparte. */
 export const GUIONES: Record<string, Guion> = {
@@ -295,4 +367,6 @@ export const GUIONES: Record<string, Guion> = {
   "/calendario": { clave: "/calendario", pasos: calendario },
   "/revision": { clave: "/revision", pasos: revision },
   "/vision": { clave: "/vision", pasos: vision },
+  [TOUR_CARTOLA]: { clave: TOUR_CARTOLA, pasos: cartola },
+  [TOUR_CARTOLA_REVISION]: { clave: TOUR_CARTOLA_REVISION, pasos: cartolaRevision },
 };
