@@ -80,7 +80,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
           <X size={15} />
         </button>
       </div>
-      <nav className="nav">
+      <nav className="nav" data-tour="menu">
         <Seccion label={t("sec.panorama")} items={PANORAMA} onNavigate={onNavigate} />
         <Seccion label={t("sec.nucleo")} items={NUCLEO} onNavigate={onNavigate} />
         <Seccion label={t("sec.mivida")} items={VIDA} onNavigate={onNavigate} />

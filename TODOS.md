@@ -301,6 +301,17 @@ Pedido de la usuaria: "en la parte de ayuno debería haber un toggle que diga ha
 - [x] `[Bug]` Un registro viejo dejó de presentarse como ayuno cumplido. Con la última comida hace siete días la tarjeta decía "167 h, meta cumplida"; ahora dice desde cuándo es ese registro y pide marcar la última comida.
 - [x] `[Bug]` La hora de la última comida se mostraba como "04:12 a. m.." con dos puntos en español. Ahora va en formato de 24 horas, salvo en inglés.
 
+## Tour guiado y el país donde vives (26 sep 2026)
+Pedido de la usuaria después de que una amiga bajara la app: "ya, ¿y ahora qué hago?". No sabía subir la cartola ni para qué servía. Y de paso apareció un error: la amiga está en Chile y la app le ofrecía conectar el banco, que solo funciona en Canadá y Estados Unidos.
+
+- [x] `[Bug]` El banco ya no se ofrece donde no funciona. La conexión usa Plaid, que en el servidor pide `country_codes: ["CA", "US"]`; quien vive en otro país ve en su lugar la tarjeta para importar la cartola, explicada. Cuando el país no se sabe, se ofrece igual pero diciendo con qué países funciona.
+- [x] `[Nuevo]` El onboarding pregunta el país, y de ahí propone la moneda (antes venía fija en CAD para todo el mundo). El país también se cambia en Ajustes y viaja entre dispositivos.
+- [x] `[Nuevo]` Tour guiado: resalta un pedazo de la pantalla y lo explica al lado, con Saltar, Atrás y Siguiente. Arranca al terminar la bienvenida, con siete pasos que pasan por el menú, la captura rápida, Inicio, Revisión y Ajustes.
+- [x] `[Nuevo]` Tour propio de cada módulo (doce en total), que aparece solo la primera vez que entras a esa sección. Saltar el tour general se respeta: entonces no aparece ninguno.
+- [x] `[Nuevo]` Signo de pregunta en la barra de arriba: explica la pantalla donde estás, cuando quieras. Y en Ajustes, un botón para ver el recorrido completo otra vez.
+- [x] `[Nuevo]` Un paso que apunta a algo que no está en pantalla (un módulo escondido, una pestaña distinta) se salta solo en vez de dejar el tour colgado.
+- [ ] `[Nuevo]` Tours para las pantallas que faltan (Inicio tiene el general, pero no uno propio) y para el flujo de importar la cartola paso a paso, que es donde se perdió la amiga.
+
 ## Bloque G, al final
 - [ ] `[Nuevo]` Ajustes: idioma inglés (prioridad baja, definida por la usuaria).
 

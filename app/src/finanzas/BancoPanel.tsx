@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useIdioma } from "../idioma/IdiomaProvider";
-import { Landmark, RefreshCw, Trash2, Unlink } from "lucide-react";
+import { FileUp, Landmark, RefreshCw, Trash2, Unlink } from "lucide-react";
 import { Selector } from "../components/Selector";
 import {
   abrirPlaid,
@@ -15,13 +15,20 @@ import {
   volviendoDeOAuth,
   type ConexionBanco,
 } from "./banco";
+import { PAISES_CON_BANCO, bancoDisponibleEn, usePais } from "../settings/pais";
 
 // El puente con el banco: conectar, ver el estado y traer lo nuevo. Las
 // credenciales bancarias se escriben dentro de la ventana de Plaid, que es
 // de ellos: NucleoOS nunca las ve. Aquí solo llegan los movimientos.
 
-export function BancoPanel({ onCambio }: { onCambio: () => void }) {
+export function BancoPanel({ onCambio, onImportar }: {
+  onCambio: () => void;
+  /** Abrir el importador de cartolas. Es el camino de quien no puede
+   *  conectar el banco, y antes quedaba escondido en otro botón. */
+  onImportar?: () => void;
+}) {
   const { t: tr } = useIdioma();
+  const [pais] = usePais();
   const [conexiones, setConexiones] = useState<ConexionBanco[]>([]);
   const [cargando, setCargando] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -136,6 +143,32 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
 
   if (!disponible || cargando) return null;
 
+  // El proveedor de la conexión (Plaid) solo cubre Canadá y Estados Unidos.
+  // A quien vive en otra parte, ofrecerle "conecta tu banco" es mandarlo a
+  // una puerta cerrada: mejor mostrarle de una vez el camino que sí existe.
+  const cubierto = bancoDisponibleEn(pais);
+  if (cubierto === false && conexiones.length === 0) {
+    return (
+      <div className="card pad" style={{ marginBottom: 14, maxWidth: 720 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ width: 34, height: 34, borderRadius: 9, background: "var(--accent-wash)", display: "grid", placeItems: "center", color: "var(--accent-ink)" }}>
+            <FileUp size={16} />
+          </span>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <b style={{ fontSize: 14, display: "block" }}>{tr("Trae tus movimientos desde la cartola")}</b>
+            <small style={{ color: "var(--muted)" }}>
+              {tr("La conexión automática con el banco todavía no llega a tu país, solo funciona con bancos de")} {PAISES_CON_BANCO.join(" y ")}.
+              {" "}{tr("Mientras tanto, descarga la cartola de tu banco y súbela: se lee igual y los movimientos quedan listos para categorizar.")}
+            </small>
+          </div>
+          {onImportar && (
+            <button className="btn primary" onClick={onImportar}>{tr("Importar mi cartola")}</button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card pad" style={{ marginBottom: 14, maxWidth: 720 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -146,7 +179,8 @@ export function BancoPanel({ onCambio }: { onCambio: () => void }) {
           <b style={{ fontSize: 14, display: "block" }}>{tr("Tu banco, en vivo")}</b>
           <small style={{ color: "var(--muted)" }}>
             {conexiones.length === 0
-              ? tr("Conecta tu banco y los movimientos llegan solos, sin subir cartolas.")
+              ? `${tr("Conecta tu banco y los movimientos llegan solos, sin subir cartolas.")} ${
+                cubierto === null ? `${tr("Funciona con bancos de")} ${PAISES_CON_BANCO.join(" y ")}.` : ""}`
               : conexiones.map((c) => c.institution_name ?? tr("Banco conectado")).join(", ")}
           </small>
         </div>

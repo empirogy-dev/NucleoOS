@@ -15,6 +15,10 @@ import { WhatsAppCard } from "../whatsapp/WhatsAppCard";
 import { usePaisImpuestos } from "../finanzas/paisImpuestos";
 import { useUsaAuto } from "../finanzas/usaAuto";
 import { usePrefAyuno } from "../salud/ayunoPref";
+import { PAISES, PAISES_CON_BANCO, datosPais, usePais } from "../settings/pais";
+import { useTour } from "../tour/TourProvider";
+import { TOUR_GENERAL } from "../tour/guiones";
+import { reiniciarTour } from "../tour/tour";
 import { LegalModal } from "../legal/LegalModal";
 import { descargarMisDatos, reunirMisDatos } from "../legal/misDatos";
 import { FRASE_BORRAR, borrarMiCuenta } from "../legal/borrarCuenta";
@@ -111,11 +115,48 @@ function MonedaCard() {
 function PaisImpuestosCard() {
   const { t: tr } = useIdioma();
   const [pais, setPais] = usePaisImpuestos();
+  const [paisVives, setPaisVives] = usePais();
   const [usaAuto, setUsaAuto] = useUsaAuto();
   const [prefAyuno, setPrefAyuno] = usePrefAyuno();
+  const datos = datosPais(paisVives);
+  const { iniciar } = useTour();
 
   return (
     <div className="card pad">
+      {/* Dónde vives, que es lo que decide si la conexión con el banco se
+          puede ofrecer o no. Va antes que los impuestos porque le sirve a
+          todo el mundo, no solo a quien declara. */}
+      <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("País donde vives")}</h3>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        {tr("Decide qué te puede ofrecer la app. La conexión automática con el banco funciona con bancos de")}
+        {" "}{PAISES_CON_BANCO.join(" y ")}
+        {tr("; en el resto de los países se importa la cartola, que hace lo mismo con un paso más.")}
+      </p>
+      <div className="field" style={{ maxWidth: 320 }}>
+        <Selector value={paisVives ?? ""} ariaLabel={tr("País donde vives")} placeholder={tr("Elige tu país")}
+          opciones={PAISES.map((p) => ({ value: p.codigo, label: tr(p.nombre) }))}
+          onChange={(v) => setPaisVives(v)} />
+      </div>
+      {datos && (
+        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 8, marginBottom: 18 }}>
+          {datos.conBanco
+            ? tr("Aquí puedes conectar tu banco desde Finanzas, en Cuentas.")
+            : tr("Aquí todavía no se puede conectar el banco. En Finanzas, en Cuentas, está el botón para importar la cartola.")}
+        </p>
+      )}
+
+      {/* Volver a ver el tour. Vive en esta tarjeta y no en una propia porque
+          es la misma pregunta que el país: cómo se usa esto. */}
+      <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 14, marginBottom: 18 }}>
+        <b style={{ fontSize: 13.5, display: "block", marginBottom: 4 }}>{tr("El recorrido guiado")}</b>
+        <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10, lineHeight: 1.5 }}>
+          {tr("Te muestra para qué sirve cada parte de la app. También puedes pedirlo en cualquier pantalla con el signo de pregunta de arriba.")}
+        </p>
+        <button className="btn ghost" onClick={() => { reiniciarTour(); iniciar(TOUR_GENERAL); }}>
+          {tr("Ver el recorrido otra vez")}
+        </button>
+      </div>
+
       <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("País donde declaras impuestos")}</h3>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, lineHeight: 1.5 }}>
         {tr("Define qué líneas de impuestos aparecen en Finanzas. Por ahora están hechas para Canadá y Chile; para otros países la sección queda apagada, porque una lista inventada en algo que termina en una declaración sería peor que nada.")}
