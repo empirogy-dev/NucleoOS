@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/postbuild.mjs && node scripts/legal-html.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "i18n": "node scripts/tour-idiomas.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",

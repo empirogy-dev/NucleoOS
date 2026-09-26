@@ -27,6 +27,7 @@ import { UnPaso } from "../components/UnPaso";
 import { DopaminaCard } from "../components/DopaminaCard";
 import { RecordatoriosCard } from "../recordatorios/RecordatoriosCard";
 import { abrirPomodoro, bloquesHoyLocal } from "../foco/data";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 export function Inicio() {
   const { session } = useAuth();
@@ -228,12 +229,16 @@ export function Inicio() {
         <div className="eyebrow"><Sparkles size={13} /> {fechaLarga}</div>
         {birthday && birthday.slice(5) === hoyStr.slice(5) ? (
           <>
-            <h1>{tr("¡Feliz cumpleaños,")} {nombre}! 🎂</h1>
+            <div className="tit-fila"><h1>{tr("¡Feliz cumpleaños,")} {nombre}! 🎂</h1>
+              <AyudaModulo clave="/" />
+            </div>
             <p>{tr("Hoy el sistema celebra a su núcleo: tú. Regálate algo lindo y un día a tu ritmo.")}</p>
           </>
         ) : (
           <>
-            <h1>{tr("inicio.hola")}, {nombre}</h1>
+            <div className="tit-fila"><h1>{tr("inicio.hola")}, {nombre}</h1>
+              <AyudaModulo clave="/" />
+            </div>
             <p>{tr("head.sub.inicio")}</p>
           </>
         )}

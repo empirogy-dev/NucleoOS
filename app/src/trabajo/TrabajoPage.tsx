@@ -30,6 +30,7 @@ import { abrirPomodoro, listFocusBlocks, type FocusBlock } from "../foco/data";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Despegue } from "./Despegue";
 import { Selector } from "../components/Selector";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 const STATUS_TONES: Record<ProjectStatus, { bg: string; fg: string }> = {
   idea: { bg: "color-mix(in srgb,var(--muted) 18%,var(--paper))", fg: "var(--muted)" },
@@ -342,7 +343,9 @@ function Head() {
   return (
     <div className="page-head">
       <div className="eyebrow"><Briefcase size={13} /> {tr("sec.mivida")}</div>
-      <h1>{tr("area.trabajo")}</h1>
+      <div className="tit-fila"><h1>{tr("area.trabajo")}</h1>
+        <AyudaModulo clave="/trabajo" />
+      </div>
       <p>{tr("head.sub.trabajo")}</p>
     </div>
   );

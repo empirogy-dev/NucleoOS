@@ -11,6 +11,7 @@ import { fechaRegistro } from "../lib/fechas";
 import { EXERCISE_KINDS, addExercise, sesionPrevia } from "../habitos/data";
 import { getHealthProfile } from "../salud/data";
 import { estimarKcal } from "../salud/energia";
+import { AyudaModulo } from "../tour/AyudaModulo";
 import {
   PROGRAMAS,
   RUTINAS,
@@ -47,7 +48,9 @@ export function MovimientoPage() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><PersonStanding size={13} /> {tr("sec.nucleo")}</div>
-        <h1>{tr("nav.movimiento")}</h1>
+        <div className="tit-fila"><h1>{tr("nav.movimiento")}</h1>
+          <AyudaModulo clave="/movimiento" />
+        </div>
         <p>{tr("head.sub.movimiento")}</p>
       </div>
 

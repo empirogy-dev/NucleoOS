@@ -6,6 +6,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { AREAS } from "../areas";
 import { cargarFuentes, eventosDelMes, type EventoCal, type FuentesCal } from "./data";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 const DOW = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
 
@@ -85,7 +86,9 @@ export function CalendarioPage() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><CalendarDays size={13} /> {tr("sec.transversal")}</div>
-        <h1>{tr("nav.calendario")}</h1>
+        <div className="tit-fila"><h1>{tr("nav.calendario")}</h1>
+          <AyudaModulo clave="/calendario" />
+        </div>
         <p>{tr("head.sub.calendario")}</p>
       </div>
 

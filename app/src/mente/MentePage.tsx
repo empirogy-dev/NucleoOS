@@ -19,6 +19,7 @@ import { SadhanaPlayer } from "./SadhanaPlayer";
 import { SesionModal } from "./SesionModal";
 import { DiarioTab } from "./DiarioTab";
 import { InsightsTab } from "./InsightsTab";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 // Mente: regulación, presencia, corazón y mentalidad.
 // Las prácticas se agrupan por vía; la sadhana es la práctica central.
@@ -61,7 +62,9 @@ export function MentePage() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><Brain size={13} /> {tr("sec.nucleo")}</div>
-        <h1>{tr("nav.mente")}</h1>
+        <div className="tit-fila"><h1>{tr("nav.mente")}</h1>
+          <AyudaModulo clave="/mente" />
+        </div>
         <p>{tr("head.sub.mente")}</p>
       </div>
 
