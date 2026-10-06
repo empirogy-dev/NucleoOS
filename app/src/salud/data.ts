@@ -87,6 +87,7 @@ const UNIDADES_DIAS = {
   es: { anio: "año", anios: "años", mes: "mes", meses: "meses", dia: "día", dias: "días", primero: "primer día", y: "y" },
   en: { anio: "year", anios: "years", mes: "month", meses: "months", dia: "day", dias: "days", primero: "first day", y: "and" },
   pt: { anio: "ano", anios: "anos", mes: "mês", meses: "meses", dia: "dia", dias: "dias", primero: "primeiro dia", y: "e" },
+  fr: { anio: "an", anios: "ans", mes: "mois", meses: "mois", dia: "jour", dias: "jours", primero: "premier jour", y: "et" },
 } as const;
 
 export function humanizeDays(days: number): string {

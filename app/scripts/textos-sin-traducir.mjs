@@ -24,7 +24,7 @@ import { build } from "esbuild";
 import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 
-const IDIOMAS = ["en", "pt"];
+const IDIOMAS = ["en", "pt", "fr"];
 
 // Archivos donde el español convive con los otros idiomas a propósito, cada
 // uno con su propio revisor: no son olvidos.
@@ -74,10 +74,16 @@ await build({ entryPoints: ["src/idioma/textos.ts"], bundle: true, format: "esm"
 const { TEXTOS } = await import(tmp);
 rmSync(tmp, { force: true });
 
-// Una clave que es solo un número, un símbolo o el trozo de una clave armada
-// a pedazos (tr("tab.men." + k)) no es una frase que alguien lea.
+// Una clave que es solo un número o un símbolo no es una frase que alguien
+// lea. Tampoco lo es el trozo de una clave que se arma a pedazos, como el
+// "tab.men." de tr("tab.men." + k): esos terminan en punto.
+//
+// Las claves cortas con punto SÍ cuentan: "nav.inicio", "area.finanzas" y
+// "head.sub.salud" son el menú, los nombres de las secciones y sus
+// subtítulos. Descartarlas dejó el francés con toda la cáscara en español
+// sin que nadie lo notara.
 const claveDeVerdad = (k) =>
-  !/^[\d\s.,:%+-]*$/.test(k) && !/\.$/.test(k) && !/^[a-z]+\.[a-z.]*$/.test(k);
+  !/^[\d\s.,:%+-]*$/.test(k) && !/\.$/.test(k);
 
 // ---------- 1. Claves que se usan pero no están traducidas ----------
 const claves = new Map();

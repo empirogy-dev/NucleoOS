@@ -6,7 +6,7 @@ import { type Idioma } from "./textos";
 export function idiomaActual(): Idioma {
   try {
     const v = localStorage.getItem("nucleoos-idioma");
-    if (v === "en" || v === "pt") return v;
+    if (v === "en" || v === "pt" || v === "fr") return v;
   } catch { /* sin navegador */ }
   return "es";
 }
