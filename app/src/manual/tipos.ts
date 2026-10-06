@@ -25,6 +25,9 @@ export interface SeccionManual {
   pasos?: string[];
   /** Una lista con viñetas, para lo que no lo tiene. */
   puntos?: string[];
+  /** Un esquema de la pantalla, con sus etiquetas en este idioma. El dibujo
+   *  es el mismo en los cuatro; lo único que cambia son las palabras. */
+  figura?: { clave: string; etiquetas: string[] };
 }
 
 export interface Manual {

@@ -15,6 +15,14 @@ import { fileURLToPath } from "node:url";
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
 
+async function leerFiguras() {
+  const r = await build({
+    entryPoints: [join(raiz, "src", "manual", "figuras.ts")],
+    bundle: true, format: "esm", write: false, platform: "neutral",
+  });
+  return import("data:text/javascript;base64," + Buffer.from(r.outputFiles[0].text).toString("base64"));
+}
+
 async function leerManual() {
   const r = await build({
     entryPoints: [join(raiz, "src", "manual", "contenido.ts")],
@@ -56,6 +64,7 @@ const CHROME = {
 };
 
 function seccionHtml(s) {
+  const figura = s.figura ? `\n      <div class="figura">${dibujar(s.figura)}</div>` : "";
   const pasos = s.pasos?.length
     ? `\n      <ol>${s.pasos.map((p) => `<li>${escapar(p)}</li>`).join("")}</ol>`
     : "";
@@ -65,7 +74,7 @@ function seccionHtml(s) {
   return `
     <section id="${escapar(s.id)}">
       <h2>${escapar(s.titulo)}</h2>
-      ${s.parrafos.map((p) => `<p>${escapar(p)}</p>`).join("\n      ")}${pasos}${puntos}
+      ${s.parrafos.map((p) => `<p>${escapar(p)}</p>`).join("\n      ")}${figura}${pasos}${puntos}
     </section>`;
 }
 
@@ -119,6 +128,28 @@ ${alternos}
   ol li::marker{color:var(--accent);font-weight:700}
   footer{margin-top:30px;color:var(--muted);font-size:13.5px}
   a{color:var(--accent)}
+  .figura{margin:14px 0 4px}
+  .manual-fig{width:100%;height:auto;display:block}
+  .manual-fig .fig-caja{fill:var(--paper);stroke:var(--line);stroke-width:1.5}
+  .manual-fig .fig-suave{fill:var(--card)}
+  .manual-fig .fig-fuerte{fill:var(--accent);stroke:var(--accent);opacity:.85}
+  .manual-fig .fig-barra{fill:var(--line)}
+  .manual-fig .fig-barra.fig-fuerte{fill:var(--accent);stroke:none;opacity:.6}
+  .manual-fig .fig-barra.fig-aviso{fill:#c98a3c;opacity:.75}
+  .manual-fig .fig-punto{fill:var(--line)}
+  .manual-fig .fig-bol{fill:var(--accent)}
+  .manual-fig .fig-num{fill:#fff;font:600 12px system-ui,sans-serif;text-anchor:middle}
+  .manual-fig .fig-tit{fill:var(--ink-soft);font:600 13px system-ui,sans-serif}
+  .manual-fig .fig-txt{fill:var(--ink-soft);font:600 13px system-ui,sans-serif}
+  .manual-fig .fig-nota{fill:var(--muted);font:400 12px system-ui,sans-serif}
+  .manual-fig .fig-flecha{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3}
+  .manual-fig .fig-llave{fill:none;stroke:var(--line);stroke-width:1.5}
+  .manual-fig foreignObject .fig-nota{color:var(--muted);font:400 12.5px/1.4 system-ui,sans-serif;
+    margin:0;padding:0;overflow-wrap:break-word}
+  .manual-fig foreignObject .fig-centro{text-align:center}
+  .manual-fig foreignObject .fig-pie{font-style:italic}
+  .manual-fig .fig-sobre{fill:#fff}
+  .manual-fig .fig-destacado{fill:var(--accent);fill-opacity:.16;stroke:var(--accent);stroke-width:1.8}
   @media (max-width:700px){.indice ol{columns:1}}
   @media print{
     body{background:#fff}
@@ -159,6 +190,7 @@ ${manual.secciones.map(seccionHtml).join("\n")}
 }
 
 const { MANUAL, IDIOMAS_MANUAL, VERSION_MANUAL } = await leerManual();
+const { dibujar } = await leerFiguras();
 const dist = join(raiz, "dist");
 
 for (const idioma of IDIOMAS_MANUAL) {

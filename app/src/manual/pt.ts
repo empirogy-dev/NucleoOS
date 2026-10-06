@@ -40,6 +40,7 @@ export const MANUAL_PT: Manual = {
         "O ponto de interrogação, que abre o tour guiado. Tem duas opções: conhecer o app inteiro em sete passos, ou que ele te explique a tela onde você está.",
         "Os ajustes, onde se decide qual app você tem.",
       ],
+      figura: { clave: "pantalla", etiquetas: ["O menu, agrupado pelo que cada coisa serve", "Avisos, tema, ajuda e ajustes", "Para que serve esta seção", "O menu encolhe se você desligar seções em Ajustes"] },
     },
     {
       id: "ayuda-dentro",
@@ -83,6 +84,7 @@ export const MANUAL_PT: Manual = {
         "Padrões: cruza módulos. Como sua energia muda conforme o que você dorme, o que acontece com seu humor nas semanas em que você se move, esse tipo de coisa.",
         "Relatório: você escolhe um período e quais áreas entram, e sai um documento com gráficos e observações que você pode imprimir, salvar como PDF ou exportar como planilha.",
       ],
+      figura: { clave: "revision", etiquetas: ["O que você registra em cada módulo", "Revisão", "Um relatório que dá para entregar"] },
     },
     {
       id: "finanzas",
@@ -102,6 +104,7 @@ export const MANUAL_PT: Manual = {
         "Categorias e etiquetas: como você quer classificar o que é seu.",
         "Veículo: se você tem um veículo de trabalho, seus gastos e quilômetros à parte.",
       ],
+      figura: { clave: "finanzas-tabs", etiquetas: ["Finanças", "O dia a dia", "O que você tem e o que deve", "Configurar"] },
     },
     {
       id: "registrar-gasto",
@@ -133,6 +136,7 @@ export const MANUAL_PT: Manual = {
         "Se algo foi lido errado, corrige-se depois em Transações. Não precisa importar de novo.",
         "A conexão automática com o banco, que pula todo esse processo, funciona por enquanto com bancos do Canadá e dos Estados Unidos. No resto dos países se importa o extrato, que faz o mesmo com um passo a mais.",
       ],
+      figura: { clave: "cartola", etiquetas: ["De qual conta ou cartão é, e de que mês", "Solte aqui o arquivo que você baixou do banco", "Confira: o repetido vem desmarcado", "Só aqui é salvo"] },
     },
     {
       id: "clasificar",

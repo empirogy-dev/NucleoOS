@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { BookOpen, Printer, Search } from "lucide-react";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { manualDe, VERSION_MANUAL } from "./contenido";
+import { dibujar } from "./figuras";
 import type { SeccionManual } from "./tipos";
 
 // El manual completo, dentro de la app.
@@ -12,7 +13,7 @@ import type { SeccionManual } from "./tipos";
 // que está buscando, que es casi todo el mundo la primera semana.
 
 function textosDe(s: SeccionManual): string[] {
-  return [s.titulo, ...s.parrafos, ...(s.pasos ?? []), ...(s.puntos ?? [])];
+  return [s.titulo, ...s.parrafos, ...(s.pasos ?? []), ...(s.puntos ?? []), ...(s.figura?.etiquetas ?? [])];
 }
 
 export function ManualPage() {
@@ -72,6 +73,12 @@ export function ManualPage() {
         <section key={s.id} id={`man-${s.id}`} className="card pad manual-sec">
           <h2>{s.titulo}</h2>
           {s.parrafos.map((p, i) => <p key={i}>{p}</p>)}
+          {/* El esquema es nuestro, dibujado desde datos nuestros: no hay
+              nada de fuera que pintar aquí. */}
+          {s.figura && (
+            <div className="manual-figura"
+              dangerouslySetInnerHTML={{ __html: dibujar(s.figura) }} />
+          )}
           {s.pasos && (
             <ol className="manual-pasos">
               {s.pasos.map((p, i) => <li key={i}>{p}</li>)}

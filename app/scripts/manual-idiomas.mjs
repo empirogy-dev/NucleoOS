@@ -14,12 +14,20 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const salida = join(tmpdir(), `manual-idiomas-${process.pid}.mjs`);
+const salidaFig = join(tmpdir(), `manual-figuras-${process.pid}.mjs`);
 await build({
   entryPoints: ["src/manual/contenido.ts"],
   bundle: true, format: "esm", platform: "node", outfile: salida, logLevel: "silent",
 });
 const { MANUAL, IDIOMAS_MANUAL } = await import(salida);
 rmSync(salida, { force: true });
+
+await build({
+  entryPoints: ["src/manual/figuras.ts"],
+  bundle: true, format: "esm", platform: "node", outfile: salidaFig, logLevel: "silent",
+});
+const { ETIQUETAS_POR_FIGURA } = await import(salidaFig);
+rmSync(salidaFig, { force: true });
 
 const base = MANUAL.es;
 const forma = (s) => `${s.parrafos.length}p/${(s.pasos ?? []).length}n/${(s.puntos ?? []).length}v`;
@@ -36,6 +44,16 @@ for (const idioma of IDIOMAS_MANUAL) {
     if (!o) return;
     if (o.id !== s.id) fallas.push(`sección ${i + 1}: id ${o.id}, se esperaba ${s.id}`);
     if (forma(o) !== forma(s)) fallas.push(`${s.id}: ${forma(o)}, el español tiene ${forma(s)}`);
+    // La figura es la misma en los cuatro idiomas; lo que cambia son sus
+    // etiquetas, y tienen que estar todas o el dibujo sale con huecos.
+    if ((o.figura?.clave ?? null) !== (s.figura?.clave ?? null))
+      fallas.push(`${s.id}: figura ${o.figura?.clave ?? "ninguna"}, se esperaba ${s.figura?.clave ?? "ninguna"}`);
+    if (o.figura) {
+      const pide = ETIQUETAS_POR_FIGURA[o.figura.clave];
+      if (pide === undefined) fallas.push(`${s.id}: la figura ${o.figura.clave} no existe`);
+      else if (o.figura.etiquetas.length !== pide || o.figura.etiquetas.some((t) => !t.trim()))
+        fallas.push(`${s.id}: la figura pide ${pide} etiquetas y tiene ${o.figura.etiquetas.filter((t) => t.trim()).length}`);
+    }
     if (!o.titulo.trim()) fallas.push(`${s.id}: sin título`);
     for (const t of [...o.parrafos, ...(o.pasos ?? []), ...(o.puntos ?? [])]) {
       if (!t.trim()) fallas.push(`${s.id}: un texto vacío`);
@@ -50,7 +68,8 @@ for (const idioma of IDIOMAS_MANUAL) {
     for (const f of fallas) console.log("   " + f);
   } else {
     const n = m.secciones.reduce((a, s) => a + s.parrafos.length + (s.pasos ?? []).length + (s.puntos ?? []).length, 0);
-    console.log(`${idioma}: ${m.secciones.length} secciones, ${n} textos ✔`);
+    const figs = m.secciones.filter((s) => s.figura).length;
+    console.log(`${idioma}: ${m.secciones.length} secciones, ${n} textos, ${figs} figuras ✔`);
   }
 }
 if (malo) process.exit(1);

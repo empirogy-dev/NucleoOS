@@ -695,6 +695,32 @@ button{font-family:inherit}
 .manual-pasos li,.manual-puntos li{font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:8px}
 .manual-pasos li::marker{color:var(--accent-ink);font-weight:600}
 .manual-pie{margin-top:18px;font-size:12.5px;color:var(--muted);line-height:1.6}
+/* Los esquemas del manual. No son capturas: son dibujos nuestros, así que
+   siguen el tema de colores y se imprimen bien en blanco y negro. */
+.manual-figura{margin:14px 0 4px}
+.manual-fig{width:100%;height:auto;display:block;
+  --fig-linea:var(--line);--fig-relleno:var(--surface);--fig-ink:var(--ink-soft);
+  --fig-acc:var(--accent-ink);--fig-aviso:var(--warn)}
+.manual-fig .fig-caja{fill:var(--fig-relleno);stroke:var(--fig-linea);stroke-width:1.5}
+.manual-fig .fig-suave{fill:var(--card)}
+.manual-fig .fig-fuerte{fill:var(--fig-acc);stroke:var(--fig-acc);opacity:.85}
+.manual-fig .fig-barra{fill:var(--fig-linea)}
+.manual-fig .fig-barra.fig-fuerte{fill:var(--fig-acc);stroke:none;opacity:.6}
+.manual-fig .fig-barra.fig-aviso{fill:var(--fig-aviso);opacity:.7}
+.manual-fig .fig-punto{fill:var(--fig-linea)}
+.manual-fig .fig-bol{fill:var(--fig-acc)}
+.manual-fig .fig-num{fill:#fff;font:600 12px var(--sans);text-anchor:middle}
+.manual-fig .fig-tit{fill:var(--fig-ink);font:600 13px var(--serif)}
+.manual-fig .fig-txt{fill:var(--fig-ink);font:600 13px var(--sans)}
+.manual-fig .fig-nota{fill:var(--muted);font:400 12px var(--sans)}
+.manual-fig .fig-flecha{fill:none;stroke:var(--fig-acc);stroke-width:1.5;stroke-dasharray:4 3}
+.manual-fig .fig-llave{fill:none;stroke:var(--fig-linea);stroke-width:1.5}
+.manual-fig foreignObject .fig-nota{color:var(--muted);font:400 12.5px/1.4 var(--sans);
+  margin:0;padding:0;overflow-wrap:break-word}
+.manual-fig foreignObject .fig-centro{text-align:center}
+.manual-fig foreignObject .fig-pie{font-style:italic}
+.manual-fig .fig-sobre{fill:#fff}
+.manual-fig .fig-destacado{fill:var(--fig-acc);fill-opacity:.16;stroke:var(--fig-acc);stroke-width:1.8}
 @media (max-width:700px){.manual-indice ol{columns:1}}
 /* Impreso: el manual es largo y la gente lo va a querer en papel o en PDF.
    Fuera los controles, fuera los bordes, y que ninguna sección se corte en
