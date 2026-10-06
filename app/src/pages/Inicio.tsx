@@ -249,7 +249,7 @@ export function Inicio() {
         <div className="lb" style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {tr("Visión de vida")}
           {!editingVision && (
-            <button className="xdel" aria-label="Editar visión" style={{ width: 24, height: 24 }}
+            <button className="xdel" aria-label={tr("Editar visión")} style={{ width: 24, height: 24 }}
               onClick={() => { setVisionDraft(lifeVision); setEditingVision(true); }}>
               <Pencil size={12} />
             </button>
@@ -284,7 +284,7 @@ export function Inicio() {
         <Link to="/mente" className="card stat"><div className="k">{tr("🕊 Mente")}</div><div className="v tnum">{sesionesMenteHoy}<small style={{ fontSize: 12, color: "var(--muted)" }}> {sesionesMenteHoy === 1 ? tr("sesión") : tr("sesiones")}</small></div></Link>
         <Link to="/habitos" className="card stat"><div className="k">{tr("✓ Hábitos")}</div><div className="v tnum">{habReady ? `${hechosHoy}/${habits.length}` : "…"}</div></Link>
         <button className="card stat" style={{ textAlign: "left", cursor: "pointer", border: "1px solid var(--line)", font: "inherit" }}
-          onClick={() => abrirPomodoro()} title="Abrir el pomodoro">
+          onClick={() => abrirPomodoro()} title={tr("Abrir el pomodoro")}>
           <div className="k">{tr("🎯 Foco")}</div>
           <div className="v tnum">{bloquesHoyLocal()}<small style={{ fontSize: 12, color: "var(--muted)" }}> {bloquesHoyLocal() === 1 ? tr("bloque") : tr("bloques")}</small></div>
         </button>

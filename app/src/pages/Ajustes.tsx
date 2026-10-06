@@ -54,9 +54,9 @@ export function Ajustes() {
 
       {profileTableMissing && (
         <div className="card pad" style={{ borderLeft: "3px solid var(--warn)", marginBottom: 14, maxWidth: 640 }}>
-          <b style={{ fontSize: 14 }}>Falta la migración 0002</b>
+          <b style={{ fontSize: 14 }}>{tr("Falta la migración 0002")}</b>
           <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>
-            Para que tus ajustes se guarden en la nube (y no solo en este navegador), corre
+            {tr("Para que tus ajustes se guarden en la nube (y no solo en este navegador), corre")}
             <code> supabase/migrations/0002_perfil.sql</code> en el SQL Editor de Supabase, igual que la anterior.
             Mientras tanto, tu moneda se guarda localmente.
           </p>
@@ -445,7 +445,7 @@ function DiaPasadoCard() {
       </p>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ width: 200, flex: "none" }}>
-          <CampoFecha value={fecha} onChange={(v) => { if (v) setFecha(v); }} ariaLabel="Día que quieres registrar" min={min} max={hoy} conBorrar={false} />
+          <CampoFecha value={fecha} onChange={(v) => { if (v) setFecha(v); }} ariaLabel={tr("Día que quieres registrar")} min={min} max={hoy} conBorrar={false} />
         </div>
         {!esHoy && (
           <button className="btn ghost" onClick={volverAHoy}>{tr("Volver a hoy")}</button>
@@ -536,7 +536,7 @@ function CumpleCard() {
         {tr("Amor propio: la app también te celebra a ti. El día de tu cumpleaños, el Inicio se pone de fiesta.")}
       </p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, maxWidth: 380 }}>
-        <div style={{ flex: 1 }}><CampoFecha value={value} onChange={setValue} ariaLabel="Tu fecha de cumpleaños" /></div>
+        <div style={{ flex: 1 }}><CampoFecha value={value} onChange={setValue} ariaLabel={tr("Tu fecha de cumpleaños")} /></div>
         <button className="btn primary" type="submit">{tr("com.guardar")}</button>
       </form>
       {saved && <span className="chip" style={{ marginTop: 8 }}>✓ {tr("Guardado")}</span>}

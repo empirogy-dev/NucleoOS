@@ -44,6 +44,7 @@ export const MANUAL_FR: Manual = {
         "Le point d'interrogation, qui ouvre la visite guidée. Deux options : découvrir toute l'application en sept étapes, ou se faire expliquer l'écran où vous êtes.",
         "Les réglages, où vous décidez quelle application vous avez.",
       ],
+      figura: { clave: "pantalla", etiquetas: ["Le menu, regroupé par usage", "Alertes, thème, aide et réglages", "À quoi sert cette section", "Le menu raccourcit si vous éteignez des sections dans Réglages"] },
     },
     {
       id: "ayuda-dentro",
@@ -87,6 +88,7 @@ export const MANUAL_FR: Manual = {
         "Tendances (Patterns) : celui-ci croise les modules. Comment votre énergie change selon votre sommeil, ce qui arrive à votre humeur les semaines où vous bougez, ce genre de chose.",
         "Rapport (Report) : vous choisissez une période et les domaines concernés, et il en sort un document avec graphiques et observations, à imprimer, enregistrer en PDF ou exporter en tableur.",
       ],
+      figura: { clave: "revision", etiquetas: ["Ce que vous notez dans chaque module", "Revue", "Un rapport à remettre"] },
     },
     {
       id: "finanzas",
@@ -106,6 +108,7 @@ export const MANUAL_FR: Manual = {
         "Catégories et étiquettes (Categories and tags) : comment vous voulez classer ce qui est à vous.",
         "Véhicule (Vehicle) : si vous avez un véhicule de travail, ses dépenses et ses kilomètres à part.",
       ],
+      figura: { clave: "finanzas-tabs", etiquetas: ["Finances", "Le quotidien", "Ce que vous avez et ce que vous devez", "Configurer"] },
     },
     {
       id: "registrar-gasto",
@@ -137,6 +140,7 @@ export const MANUAL_FR: Manual = {
         "Si quelque chose a été mal lu, cela se corrige ensuite dans Transactions. Pas besoin de réimporter.",
         "La connexion automatique à la banque, qui évite toute cette démarche, fonctionne pour l'instant avec les banques du Canada et des États-Unis. Dans les autres pays on importe le relevé, ce qui fait la même chose avec une étape de plus.",
       ],
+      figura: { clave: "cartola", etiquetas: ["De quel compte ou quelle carte, et de quel mois", "Déposez ici le fichier téléchargé depuis votre banque", "Vérifiez : les doublons arrivent décochés", "C'est seulement ici que tout est enregistré"] },
     },
     {
       id: "clasificar",
@@ -247,9 +251,9 @@ export const MANUAL_FR: Manual = {
       id: "aprendizaje",
       titulo: "Apprentissage (Learning)",
       parrafos: [
-        "Pour que ce que vous apprenez ne se perde pas dans des carnets épars.",
+        "Pour que ce que vous apprenez ne se perde pas dans des carnets épars, et pour ne pas partir de zéro en vous demandant quoi lire.",
         "Les notes vivent dans des carnets par thème, pour qu'une note de cours ne finisse pas mélangée à une recette. La recherche regarde dans toutes vos notes à la fois, donc peu importe dans quel carnet vous l'avez laissée. C'est la différence entre garder quelque chose et pouvoir le retrouver un an plus tard.",
-        "La bibliothèque (Library) est à part : ce que vous voulez lire et ce que vous avez lu, avec la date. Aucun objectif de livres par an, rien qui vous fasse la morale.",
+        "La bibliothèque (Library) est autre chose, et elle est sélectionnée : des livres choisis pour ce qu'ils apportent vraiment à un cerveau TDAH, pas pour la mode. Chacun porte la raison de sa présence, ses idées principales et des exercices concrets, donc vous en tirez l'essentiel même sans jamais l'acheter. Vous cochez ce que vous voulez lire et ce que vous avez lu, sans objectif de livres par an et sans rien qui vous fasse la morale.",
       ],
     },
     {

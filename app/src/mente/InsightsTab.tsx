@@ -62,7 +62,11 @@ export function InsightsTab() {
     const ini = hace(6 + i * 7);
     const fin = hace(i * 7);
     const del = sesiones.filter((s) => s.fecha >= ini && s.fecha <= fin);
-    return { etiqueta: i === 0 ? tr("Esta semana") : i === 1 ? tr("Hace 1 semana") : `${tr("Hace")} ${i} ${tr("semanas")}`, minutos: del.reduce((a, s) => a + s.minutos, 0) };
+    // Una frase entera y no tres pedazos: traducir "hace" por su cuenta daba
+    // "About 2 weeks ago" en inglés, con el orden al revés.
+    const etiqueta = i === 0 ? tr("Esta semana") : i === 1 ? tr("Hace 1 semana")
+      : tr("Hace N semanas").replace("N", String(i));
+    return { etiqueta, minutos: del.reduce((a, s) => a + s.minutos, 0) };
   });
   const maxMin = Math.max(1, ...barras.map((b) => b.minutos));
 

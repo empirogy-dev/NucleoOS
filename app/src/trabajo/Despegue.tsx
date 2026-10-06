@@ -158,7 +158,7 @@ export function Despegue() {
           </p>
           {historial.length > 0 && (
             <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => void deshacer()}>
-              ↩︎ Deshacer la última
+              {tr("↩︎ Deshacer la última")}
             </button>
           )}
         </div>
@@ -170,16 +170,16 @@ export function Despegue() {
             <p style={{ fontSize: 12.5, color: "var(--ok)", marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <span>✓ {hechas} {hechas === 1 ? "victoria" : "victorias"} en esta pasada. El impulso ya está andando.</span>
               {historial.length > 0 && (
-                <button className="chip" style={{ border: "none", cursor: "pointer" }} title="¿Marcaste una sin querer? La devuelvo a la lista"
+                <button className="chip" style={{ border: "none", cursor: "pointer" }} title={tr("¿Marcaste una sin querer? La devuelvo a la lista")}
                   onClick={() => void deshacer()}>
-                  ↩︎ deshacer la última
+                  {tr("↩︎ deshacer la última")}
                 </button>
               )}
             </p>
           )}
           {items.slice(0, 6).map((it, i) => (
             <div key={it.id} className="txrow" style={i === 0 ? { background: "var(--accent-wash)", borderRadius: 10, padding: "10px 10px", border: "none" } : undefined}>
-              <button className="hcheck" aria-label={`Marcar ${it.texto} como hecha`} title="La hice"
+              <button className="hcheck" aria-label={`Marcar ${it.texto} como hecha`} title={tr("La hice")}
                 onClick={() => void completar(it)}>
                 {i === 0 ? <Check size={13} style={{ opacity: 0.35 }} /> : ""}
               </button>
@@ -193,7 +193,7 @@ export function Despegue() {
                 )}
               </div>
               <button className="chip" style={{ border: "none", cursor: "pointer", flex: "none" }}
-                title="Arrancar un bloque de foco con esto"
+                title={tr("Arrancar un bloque de foco con esto")}
                 onClick={() => abrirPomodoro(it.projectId ? { projectId: it.projectId } : {})}>
                 🎯 Foco
               </button>

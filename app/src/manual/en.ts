@@ -40,6 +40,7 @@ export const MANUAL_EN: Manual = {
         "The question mark, which opens the guided tour. It has two options: get to know the whole app in seven steps, or have it explain the screen you are on.",
         "Settings, where you decide which app you have.",
       ],
+      figura: { clave: "pantalla", etiquetas: ["The menu, grouped by what each thing is for", "Notices, theme, help and settings", "What this section is for", "The menu shrinks if you turn sections off in Settings"] },
     },
     {
       id: "ayuda-dentro",
@@ -83,6 +84,7 @@ export const MANUAL_EN: Manual = {
         "Patterns: this one crosses modules. How your energy changes with how you sleep, what happens to your mood in the weeks you move, that kind of thing.",
         "Report: you choose a period and which areas go in, and out comes a document with charts and notes that you can print, save as PDF or export as a spreadsheet.",
       ],
+      figura: { clave: "revision", etiquetas: ["What you record in each module", "Review", "A report you can hand over"] },
     },
     {
       id: "finanzas",
@@ -102,6 +104,7 @@ export const MANUAL_EN: Manual = {
         "Categories and tags: how you want to classify what is yours.",
         "Vehicle: if you have a work vehicle, its expenses and mileage kept apart.",
       ],
+      figura: { clave: "finanzas-tabs", etiquetas: ["Finances", "The day to day", "What you own and what you owe", "Setting up"] },
     },
     {
       id: "registrar-gasto",
@@ -133,6 +136,7 @@ export const MANUAL_EN: Manual = {
         "If something was read wrong, you fix it later in Transactions. There is no need to import again.",
         "The automatic bank connection, which skips this whole process, works for now with banks in Canada and the United States. In the rest of the countries you import the statement, which does the same with one extra step.",
       ],
+      figura: { clave: "cartola", etiquetas: ["Which account or card it is, and which month", "Drop the file you downloaded from your bank here", "Check it: duplicates come unchecked", "Only here is it saved"] },
     },
     {
       id: "clasificar",
@@ -243,9 +247,9 @@ export const MANUAL_EN: Manual = {
       id: "aprendizaje",
       titulo: "Learning",
       parrafos: [
-        "So that what you learn does not get lost in loose notebooks.",
+        "So that what you learn does not get lost in loose notebooks, and so you do not start from scratch wondering what to read.",
         "Notes live in notebooks by topic, so a note from a course does not end up mixed with a recipe. The search looks inside all your notes at once, so it does not matter which notebook you left it in. That is the difference between saving something and being able to find it a year later.",
-        "The library is separate: what you want to read and what you have read, with its date. There is no books-per-year target and nothing that scolds you.",
+        "The library is a different thing, and it is curated: books chosen for what they actually give an ADHD and ADD brain, not for being in fashion. Each one carries why it is there, its main ideas and concrete exercises, so you take away what it has even if you never buy it. You mark what you want to read and what you have read, with no books-per-year target and nothing that scolds you.",
       ],
     },
     {

@@ -68,7 +68,7 @@ export function RetosTab() {
       <div className="card pad" style={{ maxWidth: 640 }}>
         <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
         <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Para tus retos, corre <code>supabase/migrations/0022_retos.sql</code> en el SQL Editor de Supabase.
+          {tr("Para tus retos, corre")} <code>supabase/migrations/0022_retos.sql</code> en el SQL Editor de Supabase.
         </p>
         <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
       </div>
@@ -143,7 +143,7 @@ export function RetosTab() {
                       <b>{r.title}</b>
                       <small>{hechos} {tr("de")} {ventana.length} {tr("días cumplidos")}</small>
                     </div>
-                    <button className="xdel" title="Retomar este reto" aria-label="Retomar reto"
+                    <button className="xdel" title={tr("Retomar este reto")} aria-label="Retomar reto"
                       onClick={async () => { await updateReto(r.id, { status: "activo" }); void reload(); }}>
                       <Play size={13} />
                     </button>
@@ -334,7 +334,7 @@ function RetoModal({ reto, base, onClose, onSaved }: {
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
           <div className="frow">
-            <div className="field" style={{ flex: 1 }}><label>El reto</label>
+            <div className="field" style={{ flex: 1 }}><label>{tr("El reto")}</label>
               <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Caminar 20 minutos")} autoFocus /></div>
             <IconField value={icon} onChange={setIcon} />
           </div>
@@ -343,8 +343,8 @@ function RetoModal({ reto, base, onClose, onSaved }: {
           <div className="frow">
             <div className="field"><label>{tr("Duración (días)")}</label>
               <input type="number" min={3} max={365} value={duracion} onChange={(e) => setDuracion(e.target.value)} /></div>
-            <div className="field"><label>Empieza el</label>
-              <CampoFecha value={inicio} onChange={setInicio} ariaLabel="Empieza el" conBorrar={false} /></div>
+            <div className="field"><label>{tr("Empieza el")}</label>
+              <CampoFecha value={inicio} onChange={setInicio} ariaLabel={tr("Empieza el")} conBorrar={false} /></div>
           </div>
           <div className="field"><label>Frecuencia</label>
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
@@ -365,7 +365,7 @@ function RetoModal({ reto, base, onClose, onSaved }: {
           </div>
           {!reto && metas.length > 0 && (
             <div className="field"><label>{tr("¿A qué dirección de tu vida apunta? (opcional)")}</label>
-              <Selector value={metaId} ariaLabel="Meta que alimenta este reto" placeholder={tr("Ninguna meta por ahora")} onChange={setMetaId}
+              <Selector value={metaId} ariaLabel={tr("Meta que alimenta este reto")} placeholder={tr("Ninguna meta por ahora")} onChange={setMetaId}
                 opciones={[{ value: "", label: tr("Ninguna meta por ahora") }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>

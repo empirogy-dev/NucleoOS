@@ -118,11 +118,11 @@ export function RevisionPage() {
       {tab !== "patrones" && tab !== "informe" && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-            <button className="iconbtn" style={{ width: 32, height: 32 }} aria-label="Período anterior" onClick={() => setOffset(offset + 1)}>
+            <button className="iconbtn" style={{ width: 32, height: 32 }} aria-label={tr("Período anterior")} onClick={() => setOffset(offset + 1)}>
               <ChevronLeft size={15} />
             </button>
             <b style={{ fontSize: 14 }}>{periodo.etiqueta}</b>
-            <button className="iconbtn" style={{ width: 32, height: 32 }} aria-label="Período siguiente" disabled={offset === 0}
+            <button className="iconbtn" style={{ width: 32, height: 32 }} aria-label={tr("Período siguiente")} disabled={offset === 0}
               onClick={() => setOffset(Math.max(0, offset - 1))}>
               <ChevronRight size={15} />
             </button>
@@ -141,7 +141,7 @@ export function RevisionPage() {
 
           {copiado && (
             <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: -6, marginBottom: 12 }}>
-              El reporte quedó en tu portapapeles como Markdown: pégalo en Notion, en una nota o donde quieras.
+              {tr("El reporte quedó en tu portapapeles como Markdown: pégalo en Notion, en una nota o donde quieras.")}
             </p>
           )}
 
@@ -150,7 +150,7 @@ export function RevisionPage() {
           )}
 
           {loading ? (
-            <p style={{ color: "var(--muted)" }}>Reuniendo tu período…</p>
+            <p style={{ color: "var(--muted)" }}>{tr("Reuniendo tu período…")}</p>
           ) : modulos.length === 0 ? (
             <div className="card pad" style={{ maxWidth: 640 }}>
               <p style={{ color: "var(--muted)", fontSize: 14 }}>
@@ -184,7 +184,7 @@ export function RevisionPage() {
       {tab === "patrones" && (
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14, maxWidth: "62ch" }}>
-            Cruces de tus últimos 30 días. No son diagnósticos, son espejos: mientras más registres, más nítidos se ponen.
+            {tr("Cruces de tus últimos 30 días. No son diagnósticos, son espejos: mientras más registres, más nítidos se ponen.")}
           </p>
           {loading ? (
             <p style={{ color: "var(--muted)" }}>Buscando patrones…</p>
@@ -200,7 +200,7 @@ export function RevisionPage() {
                 </div>
               ))}
               <p style={{ fontSize: 12.5, color: "var(--muted)" }}>
-                Los patrones usan tu energía percibida como termómetro. Márcala cada día en Energía → Hoy y esto se vuelve mucho más certero.
+                {tr("Los patrones usan tu energía percibida como termómetro. Márcala cada día en Energía → Hoy y esto se vuelve mucho más certero.")}
               </p>
             </div>
           )}

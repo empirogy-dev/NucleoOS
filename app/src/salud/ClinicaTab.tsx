@@ -77,7 +77,7 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
       <div className="card pad" style={{ maxWidth: 640 }}>
         <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
         <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Faltan las tablas de Salud. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+          {tr("Faltan las tablas de Salud. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
           <code> supabase/migrations/0007_salud.sql</code> y presiona Run.
         </p>
         <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -136,7 +136,7 @@ export function ClinicaTab({ onProfileSaved }: { onProfileSaved?: () => void } =
 
           <div className="card panel">
             <h3>💊 Medicamentos</h3>
-            {meds.filter((m) => m.kind === "medicamento").length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Sin medicamentos registrados.</p>}
+            {meds.filter((m) => m.kind === "medicamento").length === 0 && <p style={{ color: "var(--muted)", fontSize: 13.5 }}>{tr("Sin medicamentos registrados.")}</p>}
             {meds.filter((m) => m.kind === "medicamento").map((m) => (
               <div className="txrow" key={m.id}>
                 <span className="txicon">💊</span>
@@ -261,14 +261,14 @@ function FichaCard({ profile, onSaved }: { profile: HealthProfile; onSaved: () =
         </div>
         <div className="frow">
           <div className="field"><label>{tr("Alimentación")}</label>
-            <Selector value={dieta} ariaLabel="Tipo de alimentación" placeholder={tr("Sin definir")} onChange={setDieta}
+            <Selector value={dieta} ariaLabel={tr("Tipo de alimentación")} placeholder={tr("Sin definir")} onChange={setDieta}
               opciones={[{ value: "", label: tr("Sin definir") }, ...DIETAS.map((d) => ({ value: d, label: tr(d) }))]} /></div>
           <div className="field"><label>{tr("Color de ojos")}</label>
             <input value={ojos} onChange={(e) => setOjos(e.target.value)} placeholder={tr("café, verdes…")} /></div>
         </div>
         <div className="frow">
           <div className="field" style={{ flex: "1.4 1 150px" }}><label>{tr("¿Qué tan activa es tu vida?")}</label>
-            <Selector value={actividad} ariaLabel="Nivel de actividad" placeholder={tr("Sin definir")} onChange={setActividad}
+            <Selector value={actividad} ariaLabel={tr("Nivel de actividad")} placeholder={tr("Sin definir")} onChange={setActividad}
               opciones={[{ value: "", label: tr("Sin definir") }, ...NIVELES_ACTIVIDAD.map((n) => ({ value: n.key, label: tr(n.label) }))]} /></div>
           <div className="field"><label>{tr("Sexo")}</label>
             <Selector value={sexo} ariaLabel="Sexo" placeholder={tr("Sin definir")} onChange={setSexo}
@@ -319,9 +319,9 @@ function CitaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Psicóloga, dentista, médica general…")} autoFocus /></div>
         <div className="frow">
           <div className="field"><label>{tr("Fecha")}</label>
-            <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha de la cita" conBorrar={false} /></div>
+            <CampoFecha value={date} onChange={setDate} ariaLabel={tr("Fecha de la cita")} conBorrar={false} /></div>
           <div className="field"><label>{tr("Hora (opcional)")}</label>
-            <CampoHora value={time} onChange={setTime} ariaLabel="Hora de la cita" /></div>
+            <CampoHora value={time} onChange={setTime} ariaLabel={tr("Hora de la cita")} /></div>
         </div>
         <div className="field"><label>{tr("Lugar (opcional)")}</label>
           <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={tr("Clínica, en línea…")} /></div>
@@ -352,7 +352,7 @@ function ExamModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Examen de sangre, hierro, vitamina D…")} autoFocus /></div>
         <div className="frow">
           <div className="field"><label>{tr("Para cuándo (opcional)")}</label>
-            <CampoFecha value={due} onChange={setDue} ariaLabel="Para cuándo" /></div>
+            <CampoFecha value={due} onChange={setDue} ariaLabel={tr("Para cuándo")} /></div>
           <div className="field"><label>{tr("Resultado (si ya lo tienes)")}</label>
             <input value={result} onChange={(e) => setResult(e.target.value)} placeholder={tr("normal, hierro bajo…")} /></div>
         </div>
@@ -413,6 +413,7 @@ export function ModalShell({ title, children, onClose }: { title: string; childr
 }
 
 function ExamRow({ exam, onChanged }: { exam: HealthExam; onChanged: () => void }) {
+  const { t: tr } = useIdioma();
   const [archivos, setArchivos] = useState<ExamFile[]>([]);
   const [bucketFalta, setBucketFalta] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
@@ -468,7 +469,7 @@ function ExamRow({ exam, onChanged }: { exam: HealthExam; onChanged: () => void 
       <div style={{ paddingLeft: 44 }}>
         {bucketFalta ? (
           <p style={{ fontSize: 11.5, color: "var(--muted)" }}>
-            Para adjuntar el PDF del laboratorio, corre <code>supabase/migrations/0015_salud_plus.sql</code>.
+            {tr("Para adjuntar el PDF del laboratorio, corre")} <code>supabase/migrations/0015_salud_plus.sql</code>.
           </p>
         ) : (
           <>

@@ -40,6 +40,7 @@ export const MANUAL_ES: Manual = {
         "El signo de pregunta, que abre el recorrido guiado. Tiene dos opciones: conocer la app entera en siete pasos, o que te explique la pantalla donde estás.",
         "Los ajustes, donde se decide qué app tienes.",
       ],
+      figura: { clave: "pantalla", etiquetas: ["El menú, agrupado por para qué sirve cada cosa", "Avisos, tema, ayuda y ajustes", "Para qué es esta sección", "El menú se achica si apagas secciones en Ajustes"] },
     },
     {
       id: "ayuda-dentro",
@@ -83,6 +84,7 @@ export const MANUAL_ES: Manual = {
         "Patrones: cruza módulos. Cómo cambia tu energía según lo que duermes, qué pasa con tu ánimo las semanas que te mueves, ese tipo de cosas.",
         "Informe: eliges un periodo y qué áreas entran, y sale un documento con gráficos y observaciones que puedes imprimir, guardar como PDF o exportar como planilla.",
       ],
+      figura: { clave: "revision", etiquetas: ["Lo que registras en cada módulo", "Revisión", "Un informe que puedes entregar"] },
     },
     {
       id: "finanzas",
@@ -102,6 +104,7 @@ export const MANUAL_ES: Manual = {
         "Categorías y etiquetas: cómo quieres clasificar lo tuyo.",
         "Auto: si tienes un vehículo de trabajo, sus gastos y kilómetros aparte.",
       ],
+      figura: { clave: "finanzas-tabs", etiquetas: ["Finanzas", "El día a día", "Lo que tienes y lo que debes", "Configurar"] },
     },
     {
       id: "registrar-gasto",
@@ -133,6 +136,7 @@ export const MANUAL_ES: Manual = {
         "Si algo quedó mal leído, se corrige después en Transacciones. No hay que volver a importar.",
         "La conexión automática con el banco, que se salta todo este proceso, funciona por ahora con bancos de Canadá y Estados Unidos. En el resto de los países se importa la cartola, que hace lo mismo con un paso más.",
       ],
+      figura: { clave: "cartola", etiquetas: ["De qué cuenta o tarjeta es, y de qué mes", "Suelta aquí el archivo que bajaste del banco", "Revisa: lo repetido viene desmarcado", "Recién aquí se guarda"] },
     },
     {
       id: "clasificar",
@@ -243,9 +247,9 @@ export const MANUAL_ES: Manual = {
       id: "aprendizaje",
       titulo: "Aprendizaje",
       parrafos: [
-        "Para que lo que aprendes no se pierda en cuadernos sueltos.",
+        "Para que lo que aprendes no se pierda en cuadernos sueltos, y para no partir de cero preguntándote qué leer.",
         "Las notas viven en cuadernos por tema, para que un apunte de un curso no quede mezclado con una receta. El buscador mira dentro de todas tus notas a la vez, así que da lo mismo en qué cuaderno la dejaste. Esa es la diferencia entre guardar algo y poder encontrarlo un año después.",
-        "La biblioteca es aparte: lo que quieres leer y lo que ya leíste, con su fecha. No hay meta de libros al año ni nada que te rete.",
+        "La biblioteca es otra cosa, y es curada: libros elegidos por lo que de verdad le sirven a un cerebro con TDAH y TDA, no por moda. Cada uno trae por qué está ahí, sus ideas principales y ejercicios concretos, así que te llevas lo suyo aunque nunca lo compres. Marcas lo que quieres leer y lo que ya leíste, sin meta de libros al año ni nada que te rete.",
       ],
     },
     {

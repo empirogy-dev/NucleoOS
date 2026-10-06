@@ -187,7 +187,7 @@ export function ObjetivosPage() {
         <div className="card pad" style={{ maxWidth: 640 }}>
           <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-            Faltan las tablas de metas. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+            {tr("Faltan las tablas de metas. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
             <code> supabase/migrations/0004_objetivos.sql</code> y presiona Run.
           </p>
           <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -233,7 +233,7 @@ export function ObjetivosPage() {
               {activas.length === 0 && (
                 <div className="card pad">
                   <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                    Sin metas activas. Crea una aquí, o anda a <Link to="/vision" style={{ color: "var(--accent-ink)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>Visión</Link> y convierte un sueño en meta.
+                    {tr("Sin metas activas. Crea una aquí, o anda a")} <Link to="/vision" style={{ color: "var(--accent-ink)", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}>{tr("Visión")}</Link> {tr("y convierte un sueño en meta.")}
                   </p>
                 </div>
               )}
@@ -257,8 +257,8 @@ export function ObjetivosPage() {
                 <div className="txrow" key={m.id}>
                   <button
                     className="hcheck"
-                    aria-label={`Marcar ${m.title} como hecho`}
-                    title="Marcar como hecho"
+                    aria-label={tr("Marcar X como hecho").replace("X", m.title)}
+                    title={tr("Marcar como hecho")}
                     onClick={async () => { await updateMilestoneProgress(m.id, 100); void reload(); }}
                   >
                     {m.progress > 0 ? <Check size={13} style={{ opacity: 0.35 }} /> : ""}
@@ -271,7 +271,7 @@ export function ObjetivosPage() {
                     </small>
                   </div>
                   <div style={{ width: 86, flex: "none" }}>
-                    <Selector compacto value={String(m.progress)} ariaLabel="Progreso del paso"
+                    <Selector compacto value={String(m.progress)} ariaLabel={tr("Progreso del paso")}
                       opciones={[0, 25, 50, 75, 100].map((v) => ({ value: String(v), label: `${v}%` }))}
                       onChange={async (v) => { await updateMilestoneProgress(m.id, Number(v)); void reload(); }} />
                   </div>
@@ -285,7 +285,7 @@ export function ObjetivosPage() {
               <h3>{tr("📈 Tu historia de progreso")}</h3>
               {activity.length === 0 && (
                 <p style={{ color: "var(--muted)", fontSize: 13.5 }}>
-                  Cada vez que avances en algo, regístralo. Entrenar 30 minutos, ahorrar 100 dólares, terminar una lección: todo cuenta.
+                  {tr("Cada vez que avances en algo, regístralo. Entrenar 30 minutos, ahorrar 100 dólares, terminar una lección: todo cuenta.")}
                 </p>
               )}
               <div className="tl">
@@ -443,7 +443,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
           <div style={{ fontSize: 11.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: areaColor(o.area), display: "inline-block" }} />
             {areaName(o.area)}{o.deadline ? `, para el ${o.deadline}` : ""}
-            {sueno && <span title="Esta meta nació de un sueño de Visión">🌱 nace de “{sueno.title}”</span>}
+            {sueno && <span title={tr("Esta meta nació de un sueño de Visión")}>🌱 nace de “{sueno.title}”</span>}
           </div>
         </div>
         <button className="chip" style={{ background: tone.bg, color: tone.fg, border: "none", cursor: "pointer" }}
@@ -497,7 +497,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
             if (motor.habitos.length === 0) {
               return (
                 <span style={{ display: "block", marginTop: 2 }}>
-                  Cada libro que marques como leído completa su tramo. Tip: edita tu hábito de lectura y apúntalo a esta meta para que cada día leído también empuje la barra.
+                  {tr("Cada libro que marques como leído completa su tramo. Tip: edita tu hábito de lectura y apúntalo a esta meta para que cada día leído también empuje la barra.")}
                 </span>
               );
             }
@@ -511,14 +511,14 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
       )}
       {!hasMs && !esAuto && (
         <input type="range" min={0} max={100} step={5} defaultValue={o.progress} className="slider"
-          aria-label="Progreso de la meta"
+          aria-label={tr("Progreso de la meta")}
           onMouseUp={async (e) => { await updateObjective(o.id, { progress: Number((e.target as HTMLInputElement).value) }); onChanged(); }}
           onTouchEnd={async (e) => { await updateObjective(o.id, { progress: Number((e.target as HTMLInputElement).value) }); onChanged(); }} />
       )}
 
       {!esAuto && !hasMs && !open && (
         <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-          💡 Ábrela con la flechita y conéctala a tu movimiento, tu práctica o un hábito: avanzará sola.
+          {tr("💡 Ábrela con la flechita y conéctala a tu movimiento, tu práctica o un hábito: avanzará sola.")}
         </p>
       )}
 
@@ -533,7 +533,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
                 {m.title}
               </span>
               <div style={{ width: 86, flex: "none" }}>
-                <Selector compacto value={String(m.progress)} ariaLabel="Progreso del paso"
+                <Selector compacto value={String(m.progress)} ariaLabel={tr("Progreso del paso")}
                   opciones={[0, 25, 50, 75, 100].map((v) => ({ value: String(v), label: `${v}%` }))}
                   onChange={async (v) => { await updateMilestoneProgress(m.id, Number(v)); onChanged(); }} />
               </div>
@@ -543,7 +543,7 @@ function ObjectiveCard({ o, sueno, fuentes, habitos, retos, proyectos, personas,
             </div>
           ))}
           <form onSubmit={saveMs} style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <input className="input-inline" value={newMs} onChange={(e) => setNewMs(e.target.value)} placeholder="Nuevo paso, por ejemplo: investigar costos" />
+            <input className="input-inline" value={newMs} onChange={(e) => setNewMs(e.target.value)} placeholder={tr("Nuevo paso, por ejemplo: investigar costos")} />
             <button className="btn ghost" type="submit">Agregar</button>
           </form>
         </div>
@@ -559,32 +559,32 @@ function GuiaDireccion() {
   const [abierta, setAbierta] = useState(false);
   const IDEAS = [
     {
-      titulo: "Decide el cuándo y el dónde",
-      texto: "\"Martes y jueves a las 7, en el gimnasio\" cumple mucho más que \"voy a entrenar más\". El psicólogo Peter Gollwitzer lo llamó intenciones de implementación: la decisión ya está tomada cuando llega el momento.",
+      titulo: tr("Decide el cuándo y el dónde"),
+      texto: tr("\\\"Martes y jueves a las 7, en el gimnasio\\\" cumple mucho más que \\\"voy a entrenar más\\\". El psicólogo Peter Gollwitzer lo llamó intenciones de implementación: la decisión ya está tomada cuando llega el momento."),
     },
     {
-      titulo: "Sueña con obstáculos incluidos",
-      texto: "Visualizar solo el éxito relaja al cerebro como si ya hubieras llegado. Gabriele Oettingen encontró que funciona imaginar el resultado Y el obstáculo real, con su plan: \"si llego cansada, igual me pongo las zapatillas y camino diez minutos\".",
+      titulo: tr("Sueña con obstáculos incluidos"),
+      texto: tr("Visualizar solo el éxito relaja al cerebro como si ya hubieras llegado. Gabriele Oettingen encontró que funciona imaginar el resultado Y el obstáculo real, con su plan: \\\"si llego cansada, igual me pongo las zapatillas y camino diez minutos\\\"."),
     },
     {
-      titulo: "Aprovecha los borrones y cuenta nueva",
-      texto: "Lunes, inicio de mes, la vuelta de un viaje: Katy Milkman mostró que los comienzos con frontera clara le dan al cerebro permiso de reinventarse. Si un reto se cayó, no lo arrastres: reinícialo en el próximo punto de partida.",
+      titulo: tr("Aprovecha los borrones y cuenta nueva"),
+      texto: tr("Lunes, inicio de mes, la vuelta de un viaje: Katy Milkman mostró que los comienzos con frontera clara le dan al cerebro permiso de reinventarse. Si un reto se cayó, no lo arrastres: reinícialo en el próximo punto de partida."),
     },
     {
-      titulo: "Junta lo que debes con lo que amas",
-      texto: "Tu serie favorita solo mientras caminas, el podcast solo en el gimnasio. La tentación empaquetada convierte la fuerza de voluntad en ganas.",
+      titulo: tr("Junta lo que debes con lo que amas"),
+      texto: tr("Tu serie favorita solo mientras caminas, el podcast solo en el gimnasio. La tentación empaquetada convierte la fuerza de voluntad en ganas."),
     },
     {
-      titulo: "Persigue el proceso, no solo el resultado",
-      texto: "\"Entrenar tres veces por semana\" depende de ti; \"bajar cinco kilos\" no del todo. La investigación en metas (Locke y Latham) favorece lo específico y controlable: por eso las metas de la app se alimentan de acciones, no de deseos.",
+      titulo: tr("Persigue el proceso, no solo el resultado"),
+      texto: tr("\\\"Entrenar tres veces por semana\\\" depende de ti; \\\"bajar cinco kilos\\\" no del todo. La investigación en metas (Locke y Latham) favorece lo específico y controlable: por eso las metas de la app se alimentan de acciones, no de deseos."),
     },
     {
-      titulo: "Mientras más cerca, más empuja",
-      texto: "La motivación crece al acercarse al final, es el gradiente de meta que se observa hasta en las tarjetas de café. Mirar tu barra de progreso no es vanidad, es combustible.",
+      titulo: tr("Mientras más cerca, más empuja"),
+      texto: tr("La motivación crece al acercarse al final, es el gradiente de meta que se observa hasta en las tarjetas de café. Mirar tu barra de progreso no es vanidad, es combustible."),
     },
     {
-      titulo: "Sé alguien, no solo logres algo",
-      texto: "Sostener \"soy una persona que entrena\" pesa menos que \"tengo que entrenar\". Cada registro que haces aquí es evidencia a favor de esa persona.",
+      titulo: tr("Sé alguien, no solo logres algo"),
+      texto: tr("Sostener \\\"soy una persona que entrena\\\" pesa menos que \\\"tengo que entrenar\\\". Cada registro que haces aquí es evidencia a favor de esa persona."),
     },
   ];
   return (
@@ -634,36 +634,36 @@ function SelectorDeRef({ metric, refVal, onRef, cx, compacto }: { metric: string
   const { t: tr } = useIdioma();
   const props = { compacto, value: refVal, onChange: onRef };
   if (metric === "habito_marcas") {
-    return <Selector {...props} ariaLabel="Hábito que alimenta la meta" placeholder="¿Qué hábito?"
+    return <Selector {...props} ariaLabel={tr("Hábito que alimenta la meta")} placeholder={tr("¿Qué hábito?")}
       opciones={cx.habitos.map((h) => ({ value: h.id, label: `${h.icon ?? "✓"} ${h.name}` }))} />;
   }
   if (metric === "reto_dias") {
-    return <Selector {...props} ariaLabel="Reto que alimenta la meta" placeholder="¿Qué reto?"
+    return <Selector {...props} ariaLabel={tr("Reto que alimenta la meta")} placeholder={tr("¿Qué reto?")}
       opciones={cx.retos.filter((r) => r.status !== "terminado").map((r) => ({ value: r.id, label: `${r.icon ?? "🎯"} ${r.title}` }))} />;
   }
   if (metric === "trabajo_horas") {
-    return <Selector {...props} ariaLabel="Proyecto que alimenta la meta" placeholder="¿Qué proyecto?"
+    return <Selector {...props} ariaLabel={tr("Proyecto que alimenta la meta")} placeholder={tr("¿Qué proyecto?")}
       opciones={cx.proyectos.map((p) => ({ value: p.id, label: `💼 ${p.name}` }))} />;
   }
   if (metric === "foco_minutos") {
-    return <Selector {...props} ariaLabel="Proyecto o área que alimenta la meta" placeholder="¿A qué liga tu foco?"
+    return <Selector {...props} ariaLabel={tr("Proyecto o área que alimenta la meta")} placeholder={tr("¿A qué liga tu foco?")}
       opciones={focoRefOpciones(cx.proyectos)} />;
   }
   if (metric === "ahorro_meta") {
-    return <Selector {...props} ariaLabel="Meta de ahorro que alimenta esta meta" placeholder="¿Qué meta de ahorro?"
+    return <Selector {...props} ariaLabel={tr("Meta de ahorro que alimenta esta meta")} placeholder={tr("¿Qué meta de ahorro?")}
       opciones={cx.goals.map((g) => ({ value: g.id, label: `${g.icon ?? "🎯"} ${g.name}` }))} />;
   }
   if (metric === "rel_momentos") {
-    return <Selector {...props} ariaLabel="Persona cuyos momentos alimentan esta meta"
-      opciones={[{ value: "", label: "💞 Con cualquier persona" }, ...cx.personas.map((p) => ({ value: p.id, label: `💞 ${p.name}` }))]} />;
+    return <Selector {...props} ariaLabel={tr("Persona cuyos momentos alimentan esta meta")}
+      opciones={[{ value: "", label: tr("💞 Con cualquier persona") }, ...cx.personas.map((p) => ({ value: p.id, label: `💞 ${p.name}` }))]} />;
   }
   if (metric === "libros_leidos") {
     // El modo: los libros exactos que ella elige, una vía, o toda la biblioteca.
     const modo = refVal.startsWith("l:") ? "l:" : refVal;
-    return <Selector {...props} value={modo} onChange={onRef} ariaLabel="Libros que alimentan esta meta"
+    return <Selector {...props} value={modo} onChange={onRef} ariaLabel={tr("Libros que alimentan esta meta")}
       opciones={[
-        { value: "l:", label: "🎯 Elegir los libros exactos" },
-        { value: "", label: "📚 Cualquier libro de la biblioteca" },
+        { value: "l:", label: tr("🎯 Elegir los libros exactos") },
+        { value: "", label: tr("📚 Cualquier libro de la biblioteca") },
         ...VIAS_LIBRO.map((v) => ({ value: `v:${v.key}`, label: `📚 ${tr("Los de")} ${tr(v.label)}` })),
       ]} />;
   }
@@ -673,6 +673,7 @@ function SelectorDeRef({ metric, refVal, onRef, cx, compacto }: { metric: string
 /** La lista para marcar los libros exactos de una meta "Leer libros".
  *  Los de "Mi lista" (los que quieres leer) aparecen primero. */
 function ChecklistLibros({ refVal, onRef, libros }: { refVal: string; onRef: (v: string) => void; libros: Libro[] }) {
+  const { t: tr } = useIdioma();
   const [filtro, setFiltro] = useState("");
   const sel = new Set(refVal.slice(2).split(",").filter(Boolean));
   const estados = estadosLibros();
@@ -692,7 +693,7 @@ function ChecklistLibros({ refVal, onRef, libros }: { refVal: string; onRef: (v:
   return (
     <div style={{ marginTop: 8 }}>
       <input className="input-inline" value={filtro} onChange={(e) => setFiltro(e.target.value)}
-        placeholder="Buscar por título o autor…" aria-label="Buscar un libro" style={{ marginBottom: 6, width: "100%" }} />
+        placeholder={tr("Buscar por título o autor…")} aria-label={tr("Buscar un libro")} style={{ marginBottom: 6, width: "100%" }} />
       <div style={{ maxHeight: 172, overflowY: "auto", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: 4, background: "var(--surface)" }}>
         {visibles.map((l) => (
           <button key={l.id} type="button" className={"sel-opt" + (sel.has(l.id) ? " on" : "")}
@@ -705,7 +706,7 @@ function ChecklistLibros({ refVal, onRef, libros }: { refVal: string; onRef: (v:
             </span>
           </button>
         ))}
-        {visibles.length === 0 && <p style={{ fontSize: 12.5, color: "var(--muted)", padding: 8 }}>Ningún libro calza con esa búsqueda.</p>}
+        {visibles.length === 0 && <p style={{ fontSize: 12.5, color: "var(--muted)", padding: 8 }}>{tr("Ningún libro calza con esa búsqueda.")}</p>}
       </div>
       <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
         {sel.size === 0
@@ -772,17 +773,17 @@ function AutoConfig({ o, cx, activaLabel, onChanged }: { o: Objective; cx: Conex
   return (
     <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid var(--line-soft)" }}>
       <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>
-        ⚡ Progreso automático
+        {tr("⚡ Progreso automático")}
       </div>
       {activaLabel && (
         <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>
-          Conectada ahora a: <b>{activaLabel}</b>. Cambia la selección de abajo solo si quieres reconectarla a otra cosa.
+          Conectada ahora a: <b>{activaLabel}</b>{tr(". Cambia la selección de abajo solo si quieres reconectarla a otra cosa.")}
         </p>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: "1 1 210px", minWidth: 190 }}>
-          <Selector compacto value={metric} ariaLabel="Métrica automática" placeholder="Sin conexión automática"
-            opciones={[{ value: "", label: "Sin conexión automática" }, ...metricasParaArea(o.area).map((m) => ({ value: m.key, label: tr(m.label) }))]}
+          <Selector compacto value={metric} ariaLabel={tr("Métrica automática")} placeholder={tr("Sin conexión automática")}
+            opciones={[{ value: "", label: tr("Sin conexión automática") }, ...metricasParaArea(o.area).map((m) => ({ value: m.key, label: tr(m.label) }))]}
             onChange={(v) => { setMetric(v); setRef(v === "libros_leidos" ? "l:" : ""); }} />
         </div>
         {METRICAS_CON_REF.includes(metric) && (
@@ -865,12 +866,12 @@ function EditObjectiveModal({ o, onClose, onSaved }: { o: Objective; onClose: ()
         <div className="field"><label>{tr("m.meta.lameta")}</label>
           <input required value={title} onChange={(e) => setTitle(e.target.value)} autoFocus /></div>
         <div className="field"><label>{tr("m.meta.area")}</label>
-          <Selector value={area} ariaLabel="Área de la vida" onChange={setArea}
+          <Selector value={area} ariaLabel={tr("Área de la vida")} onChange={setArea}
             opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
         <div className="field"><label>{tr("m.meta.fecha")}</label>
           <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-          La fecha límite también define el plazo del progreso automático: con ella la meta sabe cuántas semanas tiene.
+          {tr("La fecha límite también define el plazo del progreso automático: con ella la meta sabe cuántas semanas tiene.")}
         </p>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("m.meta.cambios")}</button>
       </form>
@@ -923,15 +924,15 @@ function ObjectiveModal({ cx, onClose, onSaved }: { cx: Conexiones; onClose: () 
       {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
       <form onSubmit={save}>
         <div className="field"><label>{tr("m.meta.que")}</label>
-          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ahorrar para el viaje a Japón" autoFocus /></div>
+          <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Ahorrar para el viaje a Japón")} autoFocus /></div>
         <div className="field"><label>{tr("m.meta.area")}</label>
-          <Selector value={area} ariaLabel="Área de la vida" onChange={(v) => { setArea(v); setMetric(""); setRef(""); }}
+          <Selector value={area} ariaLabel={tr("Área de la vida")} onChange={(v) => { setArea(v); setMetric(""); setRef(""); }}
             opciones={AREA_OPTIONS.map((a) => ({ value: a.key, label: a.name }))} /></div>
         <div className="field"><label>{tr("m.meta.fechaop")}</label>
           <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha límite" /></div>
         <div className="frow">
           <div className="field"><label>{tr("m.meta.alimenta")}</label>
-            <Selector value={metric} ariaLabel="Métrica que alimenta la meta" placeholder={tr("m.meta.nada")}
+            <Selector value={metric} ariaLabel={tr("Métrica que alimenta la meta")} placeholder={tr("m.meta.nada")}
               opciones={[{ value: "", label: tr("m.meta.nada") }, ...metricasParaArea(area || null).map((m) => ({ value: m.key, label: tr(m.label) }))]}
               onChange={(v) => { setMetric(v); setRef(v === "libros_leidos" ? "l:" : ""); }} /></div>
           {metric && metric !== "ahorro_meta" && !(metric === "libros_leidos" && ref.startsWith("l:")) && (
@@ -980,14 +981,14 @@ function AvanceModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
       <form onSubmit={save}>
         <div className="field"><label>{tr("m.avance.que")}</label>
           <textarea className="vision-edit" rows={3} required value={description} autoFocus
-            placeholder="Por ejemplo: hoy entrené 30 minutos, o ahorré 100 dólares."
+            placeholder={tr("Por ejemplo: hoy entrené 30 minutos, o ahorré 100 dólares.")}
             onChange={(e) => setDescription(e.target.value)} /></div>
         <div className="frow">
           <div className="field"><label>{tr("m.avance.area")}</label>
-            <Selector value={area} ariaLabel="Área del avance" onChange={setArea}
+            <Selector value={area} ariaLabel={tr("Área del avance")} onChange={setArea}
               opciones={AREAS.map((a) => ({ value: a.key, label: a.name }))} /></div>
           <div className="field"><label>{tr("m.avance.fecha")}</label>
-            <CampoFecha value={date} onChange={setDate} ariaLabel="Fecha del avance" conBorrar={false} /></div>
+            <CampoFecha value={date} onChange={setDate} ariaLabel={tr("Fecha del avance")} conBorrar={false} /></div>
         </div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("m.avance.guardar")}</button>
       </form>

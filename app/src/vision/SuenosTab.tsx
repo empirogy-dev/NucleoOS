@@ -62,7 +62,7 @@ export function SuenosTab() {
       <div className="card pad" style={{ maxWidth: 640 }}>
         <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
         <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Falta la tabla de sueños. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+          {tr("Falta la tabla de sueños. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
           <code> supabase/migrations/0019_suenos_vida_ideal.sql</code> y presiona Run.
         </p>
         <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -127,14 +127,14 @@ export function SuenosTab() {
                   )}
                   <span style={{ flex: 1 }} />
                   {!meta && d.status !== "meta" && (
-                    <button className="xdel" title="Convertir en meta" aria-label="Convertir en meta" onClick={() => setModal({ tipo: "convertir", dream: d })}>
+                    <button className="xdel" title={tr("Convertir en meta")} aria-label={tr("Convertir en meta")} onClick={() => setModal({ tipo: "convertir", dream: d })}>
                       <Rocket size={14} />
                     </button>
                   )}
                   <button className="xdel" title="Editar" aria-label="Editar sueño" onClick={() => setModal({ tipo: "editar", dream: d })}>
                     <Pencil size={13} />
                   </button>
-                  <button className="xdel" title="Eliminar" aria-label="Eliminar sueño"
+                  <button className="xdel" title="Eliminar" aria-label={tr("Eliminar sueño")}
                     onClick={async () => { if (!window.confirm(`¿Soltar el sueño ${d.title}?`)) return; await deleteDream(d.id); void reload(); }}>
                     <Trash2 size={13} />
                   </button>
@@ -190,23 +190,23 @@ function DreamModal({ dream, onClose, onSaved }: { dream: Dream | null; onClose:
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
         <h3 style={{ marginBottom: 4 }}>{dream ? tr("Editar sueño") : tr("Nuevo sueño")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
-          Sin presión: esto es deseo, no compromiso. Convertirlo en meta es otro paso.
+          {tr("Sin presión: esto es deseo, no compromiso. Convertirlo en meta es otro paso.")}
         </p>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
           <div className="field"><label>{tr("¿Qué quieres vivir?")}</label>
-            <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Viajar a Japón, escribir un libro…" autoFocus /></div>
+            <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Viajar a Japón, escribir un libro…")} autoFocus /></div>
           <div className="frow">
             <div className="field"><label>{tr("Categoría")}</label>
-              <Selector value={category} ariaLabel="Categoría del sueño" onChange={setCategory}
+              <Selector value={category} ariaLabel={tr("Categoría del sueño")} onChange={setCategory}
                 opciones={CATEGORIAS_SUENO.map((c) => ({ value: c.key, label: `${c.emoji} ${tr(c.label)}` }))} /></div>
             <div className="field"><label>{tr("Estado")}</label>
-              <Selector value={status} ariaLabel="Estado del sueño"
+              <Selector value={status} ariaLabel={tr("Estado del sueño")}
                 opciones={[{ value: "idea", label: tr("Idea") }, { value: "importante", label: tr("Importante") }]}
                 onChange={(v) => setStatus(v as DreamStatus)} /></div>
           </div>
           <div className="field"><label>{tr("¿Por qué lo quieres?")}</label>
-            <input value={why} onChange={(e) => setWhy(e.target.value)} placeholder="Lo que ese sueño te haría sentir" /></div>
+            <input value={why} onChange={(e) => setWhy(e.target.value)} placeholder={tr("Lo que ese sueño te haría sentir")} /></div>
           <div className="field"><label>{tr("Prioridad emocional")}</label>
             <div style={{ display: "flex", gap: 6 }}>
               {[1, 2, 3].map((p) => (
@@ -228,6 +228,7 @@ function DreamModal({ dream, onClose, onSaved }: { dream: Dream | null; onClose:
 }
 
 function ConvertirModal({ dream, onClose, onSaved }: { dream: Dream; onClose: () => void; onSaved: () => void }) {
+  const { t: tr } = useIdioma();
   const [title, setTitle] = useState(dream.title);
   const [area, setArea] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -251,17 +252,17 @@ function ConvertirModal({ dream, onClose, onSaved }: { dream: Dream; onClose: ()
   return (
     <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
-        <h3 style={{ marginBottom: 4 }}>🚀 De sueño a meta</h3>
+        <h3 style={{ marginBottom: 4 }}>{tr("🚀 De sueño a meta")}</h3>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 14 }}>
           “{dream.title}” pasa a Dirección como meta activa, con su origen visible. El sueño se queda aquí, marcado en ejecución.
         </p>
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}
         <form onSubmit={save}>
-          <div className="field"><label>La meta, en concreto</label>
-            <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ahorrar para viajar a Japón en 2027" autoFocus /></div>
+          <div className="field"><label>{tr("La meta, en concreto")}</label>
+            <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Ahorrar para viajar a Japón en 2027")} autoFocus /></div>
           <div className="field"><label>Área de la vida</label>
-            <Selector value={area} ariaLabel="Área de la vida" placeholder="General (toda la vida)" onChange={setArea}
-              opciones={[{ value: "", label: "General (toda la vida)" }, ...AREAS.map((a) => ({ value: a.key, label: a.name }))]} /></div>
+            <Selector value={area} ariaLabel="Área de la vida" placeholder={tr("General (toda la vida)")} onChange={setArea}
+              opciones={[{ value: "", label: tr("General (toda la vida)") }, ...AREAS.map((a) => ({ value: a.key, label: a.name }))]} /></div>
           <div className="field"><label>Fecha objetivo (opcional)</label>
             <CampoFecha value={deadline} onChange={setDeadline} ariaLabel="Fecha objetivo" /></div>
           <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? "Creando…" : "Crear la meta en Dirección"}</button>

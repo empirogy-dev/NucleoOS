@@ -101,7 +101,7 @@ export function TrabajoPage() {
         <div className="card pad" style={{ maxWidth: 640 }}>
           <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-            Faltan las tablas de Trabajo. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+            {tr("Faltan las tablas de Trabajo. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
             <code> supabase/migrations/0006_trabajo.sql</code> y presiona Run.
           </p>
           <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -167,7 +167,7 @@ export function TrabajoPage() {
                       </div>
                       {p.status === "activo" && (
                         <button className="chip" style={{ border: "none", cursor: "pointer" }}
-                          title="Arrancar un bloque de foco para este proyecto"
+                          title={tr("Arrancar un bloque de foco para este proyecto")}
                           onClick={() => abrirPomodoro({ projectId: p.id, projectName: p.name })}>
                           {tr("🎯 Foco")}
                         </button>
@@ -201,7 +201,7 @@ export function TrabajoPage() {
                     )}
                     {!ptasks.some((t) => t.project_id === p.id) && p.progress > 0 && (
                       <input type="range" min={0} max={100} step={5} defaultValue={p.progress} className="slider"
-                        aria-label="Avance del proyecto"
+                        aria-label={tr("Avance del proyecto")}
                         onMouseUp={async (e) => { await updateProject(p.id, { progress: Number((e.target as HTMLInputElement).value) }); void reload(); }}
                         onTouchEnd={async (e) => { await updateProject(p.id, { progress: Number((e.target as HTMLInputElement).value) }); void reload(); }} />
                     )}
@@ -329,7 +329,7 @@ function ChecklistProyecto({ projectId, tasks, onChanged }: { projectId: string;
             <button className="btn ghost" type="submit" disabled={!nueva.trim()}>Anotar</button>
           </form>
           <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
-            Cada paso marcado recalcula solo el porcentaje del proyecto.
+            {tr("Cada paso marcado recalcula solo el porcentaje del proyecto.")}
           </p>
           {err && <p style={{ fontSize: 12, color: "var(--err)", marginTop: 6 }}>{err}</p>}
         </div>
@@ -410,7 +410,7 @@ function WorkLogModal({ projects, onClose, onSaved }: { projects: Project[]; onC
       <form onSubmit={save}>
         {kind === "proyecto" && (
           <div className="field"><label>Proyecto</label>
-            <Selector value={projectId} ariaLabel="Proyecto de la jornada"
+            <Selector value={projectId} ariaLabel={tr("Proyecto de la jornada")}
               placeholder={projects.length === 0 ? tr("Primero crea un proyecto") : tr("Elige el proyecto")}
               opciones={projects.map((p) => ({ value: p.id, label: `💼 ${p.name}` }))}
               onChange={setProjectId} /></div>

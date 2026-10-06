@@ -112,7 +112,7 @@ export function HabitosPage() {
         <div className="card pad" style={{ maxWidth: 640 }}>
           <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-            Faltan las tablas de Hábitos. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+            {tr("Faltan las tablas de Hábitos. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
             <code> supabase/migrations/0005_habitos.sql</code> y presiona Run.
           </p>
           <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -189,14 +189,14 @@ export function HabitosPage() {
                       {logrado
                         ? <span className="chip" style={{ background: "color-mix(in srgb,var(--ok) 18%,var(--paper))", color: "var(--ok)" }}>🎉 {hechos} / {objetivo}</span>
                         : <span className="chip">{hechos} / {objetivo}</span>}
-                      <button className="xdel" title="Editar hábito" aria-label="Editar hábito" onClick={() => setHabitModal({ habit: h })}>
+                      <button className="xdel" title={tr("Editar hábito")} aria-label={tr("Editar hábito")} onClick={() => setHabitModal({ habit: h })}>
                         <Pencil size={13} />
                       </button>
-                      <button className="xdel" aria-label="Eliminar hábito" onClick={async () => { if (!window.confirm(`¿Eliminar el hábito ${h.name}? Se pierde su historial.`)) return; await deleteHabit(h.id); void reload(); }}>
+                      <button className="xdel" aria-label={tr("Eliminar hábito")} onClick={async () => { if (!window.confirm(`¿Eliminar el hábito ${h.name}? Se pierde su historial.`)) return; await deleteHabit(h.id); void reload(); }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    <div className="habit-grid" title="Toca un día para marcarlo o desmarcarlo">
+                    <div className="habit-grid" title={tr("Toca un día para marcarlo o desmarcarlo")}>
                       {ventana.map((f) => {
                         const on = marcados.has(f);
                         return (
@@ -223,7 +223,7 @@ export function HabitosPage() {
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {sugeridos.map((x) => (
                       <button key={x.name} className="chip" style={{ border: "none", cursor: "pointer" }}
-                        title={`Crear el hábito ${x.name}`}
+                        title={tr("Crear el hábito X").replace("X", x.name)}
                         onClick={() => setHabitModal({ base: x })}>
                         {x.icon} {tr(x.name)}
                       </button>
@@ -393,12 +393,12 @@ function HabitModal({ base, habit, onClose, onSaved }: {
         <form onSubmit={save}>
           <div className="frow">
             <div className="field" style={{ flex: 1 }}><label>{tr("com.nombre")}</label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Proyección de familia" autoFocus /></div>
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={tr("Proyección de familia")} autoFocus /></div>
             <IconField value={icon} onChange={setIcon} />
           </div>
           <div className="frow">
             <div className="field"><label>{tr("¿Por cuánto tiempo?")}</label>
-              <Selector value={dias} ariaLabel="Duración del desafío" onChange={setDias}
+              <Selector value={dias} ariaLabel={tr("Duración del desafío")} onChange={setDias}
                 opciones={[
                   { value: "7", label: `7 ${tr("días")}` },
                   { value: "14", label: `14 ${tr("días")}` },
@@ -422,7 +422,7 @@ function HabitModal({ base, habit, onClose, onSaved }: {
           </div>
           {metas.length > 0 && (
             <div className="field"><label>{tr("m.hab.meta")}</label>
-              <Selector value={metaId} ariaLabel="Meta de la que este hábito es motor diario" placeholder="Ninguna meta por ahora" onChange={setMetaId}
+              <Selector value={metaId} ariaLabel={tr("Meta de la que este hábito es motor diario")} placeholder="Ninguna meta por ahora" onChange={setMetaId}
                 opciones={[{ value: "", label: "Ninguna meta por ahora" }, ...metas.map((m) => ({ value: m.id, label: m.title }))]} />
               {metaId && (
                 <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>
