@@ -65,8 +65,8 @@ export function TareasHoy() {
       <div className="card panel">
         <h3>{tr("i.tareas")}</h3>
         <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-          Para estrenar el checklist del día falta un paso en Supabase: corre
-          <code> supabase/migrations/0033_tareas_dia.sql</code> en el SQL Editor y listo.
+          {tr("Para estrenar el checklist del día falta un paso en Supabase: corre")}
+          <code> supabase/migrations/0033_tareas_dia.sql</code> {tr("en el SQL Editor y listo.")}
         </p>
         <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => void reload()}>Ya lo hice, reintentar</button>
       </div>
@@ -103,7 +103,7 @@ export function TareasHoy() {
       {pendientesAyer.length > 0 && (
         <>
           <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".11em", color: "var(--muted)", fontWeight: 600, margin: "12px 0 4px" }}>
-            Quedaron de otros días
+            {tr("Quedaron de otros días")}
           </p>
           {pendientesAyer.map((t) => (
             <TareaFila key={t.id} t={t} deOtroDia onChanged={() => void reload()} />
@@ -115,6 +115,8 @@ export function TareasHoy() {
 }
 
 function TareaFila({ t, deOtroDia = false, onChanged }: { t: DayTask; deOtroDia?: boolean; onChanged: () => void }) {
+  const { t: traducir } = useIdioma();
+  const tr = traducir;
   const [dividiendo, setDividiendo] = useState(false);
   const [errDiv, setErrDiv] = useState<string | null>(null);
 
@@ -164,7 +166,7 @@ function TareaFila({ t, deOtroDia = false, onChanged }: { t: DayTask; deOtroDia?
           </button>
         )}
         {!t.done && iaConfigured && (
-          <button className="xdel" aria-label="Dividir en pasos chiquitos" title="Divídela en pasos chiquitos"
+          <button className="xdel" aria-label={tr("Dividir en pasos chiquitos")} title={tr("Divídela en pasos chiquitos")}
             style={{ width: 24, height: 24 }} disabled={dividiendo} onClick={() => void dividir()}>
             <Scissors size={12} />
           </button>
@@ -174,7 +176,7 @@ function TareaFila({ t, deOtroDia = false, onChanged }: { t: DayTask; deOtroDia?
           <Trash2 size={12} />
         </button>
       </div>
-      {dividiendo && <p style={{ fontSize: 11.5, color: "var(--ink-soft)", margin: "4px 0 0 28px" }}>Partiéndola en pasos chiquitos… ✂️</p>}
+      {dividiendo && <p style={{ fontSize: 11.5, color: "var(--ink-soft)", margin: "4px 0 0 28px" }}>{tr("Partiéndola en pasos chiquitos… ✂️")}</p>}
       {errDiv && <p style={{ fontSize: 11.5, color: "var(--err)", margin: "4px 0 0 28px" }}>{errDiv}</p>}
     </div>
   );

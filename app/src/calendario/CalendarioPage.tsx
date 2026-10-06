@@ -148,7 +148,7 @@ export function CalendarioPage() {
           {eventos.length === 0 && (
             <div className="card pad" style={{ marginTop: 14 }}>
               <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                Este mes está despejado. Los pagos con fecha, las citas médicas, los exámenes, los cumpleaños de tus vínculos, tus jornadas de trabajo y tus avances aparecerán aquí solos.
+                {tr("Este mes está despejado. Los pagos con fecha, las citas médicas, los exámenes, los cumpleaños de tus vínculos, tus jornadas de trabajo y tus avances aparecerán aquí solos.")}
               </p>
             </div>
           )}

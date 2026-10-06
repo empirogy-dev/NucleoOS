@@ -21,7 +21,9 @@ export interface Rutina {
 const LS = "nucleoos-rutinas";
 export const MAX_PASOS = 10;
 
-const SUGERIDAS: Rutina[] = [
+// Se exporta para que el revisor de traducciones pueda comprobar que estas
+// frases, que se pintan con tr(valor), están en los tres idiomas.
+export const SUGERIDAS: Rutina[] = [
   {
     id: "manana",
     nombre: "Mañana suave",

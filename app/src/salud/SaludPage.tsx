@@ -246,18 +246,18 @@ export function SaludPage() {
 
       {energiaFalta && (tab === "hoy" || tab === "nutricion") && (
         <div className="card pad" style={{ borderLeft: "3px solid var(--warn)", marginBottom: 14, maxWidth: 640 }}>
-          <b style={{ fontSize: 14 }}>Falta la migración 0018</b>
+          <b style={{ fontSize: 14 }}>{tr("Falta la migración 0018")}</b>
           <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>
-            Para registrar agua, proteína y tu nivel de energía, corre
+            {tr("Para registrar agua, proteína y tu nivel de energía, corre")}
             <code> supabase/migrations/0018_energia.sql</code> en el SQL Editor de Supabase.
           </p>
-          <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => void reload()}>Ya la corrí, reintentar</button>
+          <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => void reload()}>{tr("Ya la corrí, reintentar")}</button>
         </div>
       )}
       {habitosFalta && (tab === "hoy" || tab === "movimiento" || tab === "sueno") && (
         <div className="card pad" style={{ borderLeft: "3px solid var(--warn)", marginBottom: 14, maxWidth: 640 }}>
           <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-            El sueño y el ejercicio usan las tablas de Hábitos: corre <code>supabase/migrations/0005_habitos.sql</code>.
+            {tr("El sueño y el ejercicio usan las tablas de Hábitos: corre")} <code>supabase/migrations/0005_habitos.sql</code>.
           </p>
         </div>
       )}
@@ -339,7 +339,7 @@ function HoyTab({ agua, proteina, protComidas, nivel, metaProt, exercise, pesoKg
               </button>
             ))}
           </div>
-          {agua >= META_AGUA_VASOS && <span className="chip" style={{ marginTop: 10 }}>✓ Meta de agua cumplida</span>}
+          {agua >= META_AGUA_VASOS && <span className="chip" style={{ marginTop: 10 }}>{tr("✓ Meta de agua cumplida")}</span>}
           <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 10 }}>
             {tr("agua.nota")}
           </p>
@@ -446,7 +446,7 @@ function MovimientoRapido({ exercise, pesoKg, fecha, onChanged }: { exercise: Ex
       ))}
       <form onSubmit={save} style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 130px", minWidth: 120 }}>
-          <Selector value={kind} ariaLabel="Tipo de ejercicio" onChange={setKind}
+          <Selector value={kind} ariaLabel={tr("Tipo de ejercicio")} onChange={setKind}
             opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: tr(k) }))} />
         </div>
         <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)} placeholder={tr("minutos")} style={{ maxWidth: 110, flex: "none" }} />
@@ -490,9 +490,9 @@ function SuenoRapido({ rutinaHoy, fecha = hoyLocal(), onChanged }: { rutinaHoy: 
       <form onSubmit={save}>
         <div className="frow">
           <div className="field"><label>{tr("Me acosté a las")}</label>
-            <CampoHora value={bed} onChange={setBed} ariaLabel="Hora de acostarse" /></div>
+            <CampoHora value={bed} onChange={setBed} ariaLabel={tr("Hora de acostarse")} /></div>
           <div className="field"><label>{tr("Desperté a las")}</label>
-            <CampoHora value={wake} onChange={setWake} ariaLabel="Hora de despertar" /></div>
+            <CampoHora value={wake} onChange={setWake} ariaLabel={tr("Hora de despertar")} /></div>
         </div>
         <button className="btn ghost" disabled={busy} style={{ width: "100%" }}>{busy ? tr("com.guardando") : tr("com.guardar")}</button>
       </form>
@@ -782,7 +782,7 @@ function CorregirComidaModal({ comida, onClose, onSaved }: {
 
           <div className="field"><label>{tr("¿Qué comida es?")}</label>
             <Selector value={momento} ariaLabel={tr("¿Qué comida es?")} placeholder={tr("Sin definir")} onChange={setMomento}
-              opciones={[{ value: "", label: tr("Sin definir") }, ...MOMENTOS.map((m) => ({ value: m.key, label: `${m.emoji} ${tr(m.label)}` }))]} /></div>
+              opciones={[{ value: "", label: "Sin definir" }, ...MOMENTOS.map((m) => ({ value: m.key, label: `${m.emoji} ${tr(m.label)}` }))]} /></div>
           <div className="frow">
             <div className="field"><label>kcal</label>
               <input type="number" min="0" value={kcal} onChange={(e) => setKcal(e.target.value)} /></div>
@@ -849,7 +849,7 @@ function BalanceCalorico({ profile, edad, comido, quemadas, esHoy = true, irACli
         ))}
       </div>
       <p style={{ fontSize: 13.5, marginBottom: 8 }}>
-        Tu meta de hoy: <b className="tnum">{meta} kcal</b>, {obj.nota}.
+        {tr("Tu meta de hoy:")} <b className="tnum">{meta} kcal</b>, {obj.nota}.
         {tr("Tu mantención es")} <b className="tnum">{mantencion}</b> kcal.
       </p>
       <div className="track" style={{ height: 8 }}>
@@ -869,7 +869,7 @@ function BalanceCalorico({ profile, edad, comido, quemadas, esHoy = true, irACli
         {" "}{tr("Registra todas tus comidas para que el número sea real.")}
       </p>
       <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
-        Tu mantención ya considera tu nivel de actividad, por eso lo quemado en movimiento se muestra aparte, como referencia. Es una estimación para guiarte, no un examen de laboratorio.
+        {tr("Tu mantención ya considera tu nivel de actividad, por eso lo quemado en movimiento se muestra aparte, como referencia. Es una estimación para guiarte, no un examen de laboratorio.")}
       </p>
     </div>
   );
@@ -975,7 +975,7 @@ function RegistrarMovimiento({ onChanged }: { onChanged: () => void }) {
       <h3>{tr("Registrar sesión")}</h3>
       <form onSubmit={save}>
         <div className="field"><label>Tipo</label>
-          <Selector value={kind} ariaLabel="Tipo de ejercicio" onChange={setKind}
+          <Selector value={kind} ariaLabel={tr("Tipo de ejercicio")} onChange={setKind}
             opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: tr(k) }))} /></div>
         <div className="frow">
           <div className="field"><label>Minutos</label>

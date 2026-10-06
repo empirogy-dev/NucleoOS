@@ -325,10 +325,10 @@ function AgregarLibroModal({ faltaMigracion, onClose, onSaved }: { faltaMigracio
   return (
     <div className="tp-overlay" {...cierreDeFondo(onClose)}>
       <div className="tp" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
-        <h3 style={{ marginBottom: 14 }}>Agregar un libro tuyo</h3>
+        <h3 style={{ marginBottom: 14 }}>{tr("Agregar un libro tuyo")}</h3>
         {faltaMigracion && (
           <p style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 10 }}>
-            Falta la migración 0042 (supabase/migrations/0042_libros_propios.sql): córrela en el SQL Editor para poder guardar.
+            {tr("Falta la migración 0042 (supabase/migrations/0042_libros_propios.sql): córrela en el SQL Editor para poder guardar.")}
           </p>
         )}
         {err && <p style={{ fontSize: 12.5, color: "var(--err)", marginBottom: 10 }}>{err}</p>}

@@ -86,7 +86,7 @@ export function RelacionesPage() {
         <div className="card pad" style={{ maxWidth: 640 }}>
           <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-            Faltan las tablas de Relaciones. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+            {tr("Faltan las tablas de Relaciones. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
             <code> supabase/migrations/0010_relaciones.sql</code> y presiona Run.
           </p>
           <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -295,7 +295,7 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
             💌 {tr("tiempo de reconectar")}
           </span>
         )}
-        <button className="xdel" aria-label="Eliminar vínculo" onClick={async () => { if (!window.confirm(`${tr("¿Eliminar a")} ${r.name}? ${tr("Se borra su historial de interacciones.")}`)) return; await deleteRelationship(r.id); onChanged(); }}>
+        <button className="xdel" aria-label={tr("Eliminar vínculo")} onClick={async () => { if (!window.confirm(`${tr("¿Eliminar a")} ${r.name}? ${tr("Se borra su historial de interacciones.")}`)) return; await deleteRelationship(r.id); onChanged(); }}>
           <Trash2 size={14} />
         </button>
       </div>
@@ -394,7 +394,7 @@ function RelCard({ r, logs, onChanged }: { r: Relationship; logs: RelLog[]; onCh
                   <b>{l.date}</b>
                   {l.description}
                 </div>
-                <button className="xdel" aria-label="Eliminar interacción" style={{ width: 24, height: 24 }}
+                <button className="xdel" aria-label={tr("Eliminar interacción")} style={{ width: 24, height: 24 }}
                   onClick={async () => { await deleteRelLog(l.id); onChanged(); }}>
                   <Trash2 size={12} />
                 </button>
@@ -440,7 +440,7 @@ function RelModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
           </div>
           <div className="frow">
             <div className="field"><label>{tr("Cumpleaños (opcional)")}</label>
-              <CampoFecha value={birthday} onChange={setBirthday} ariaLabel="Cumpleaños" /></div>
+              <CampoFecha value={birthday} onChange={setBirthday} ariaLabel={tr("Cumpleaños")} /></div>
             <div className="field"><label>{tr("Contacto ideal (días)")}</label>
               <input type="number" min="1" value={cadence} onChange={(e) => setCadence(e.target.value)} placeholder="7" /></div>
           </div>

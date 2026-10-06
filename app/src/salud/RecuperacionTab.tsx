@@ -21,7 +21,9 @@ import {
 // Recuperación: descanso, pausas y tu camino de sobriedad.
 // La energía no solo se gasta, también se recupera.
 
-const IDEAS_DESCANSO = [
+// Se exporta para que el revisor de traducciones las compruebe: se
+// pintan con tr(valor), así que el literal vive aquí y la traducción allá.
+export const IDEAS_DESCANSO = [
   { emoji: "🌿", texto: "Una pausa de 10 minutos sin pantalla, mirando lejos." },
   { emoji: "🚶", texto: "Caminar despacio alrededor de la cuadra, sin audífonos." },
   { emoji: "🛁", texto: "Ducha caliente larga o baño de pies antes de dormir." },
@@ -160,7 +162,7 @@ function SobModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
         <div className="field"><label>{tr("¿Qué estás dejando?")}</label>
           <input required value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder="marihuana, alcohol, cigarro…" autoFocus /></div>
         <div className="field"><label>{tr("¿Desde cuándo estás limpia?")}</label>
-          <CampoFecha value={start} onChange={setStart} ariaLabel="Desde cuándo estás limpia" conBorrar={false} /></div>
+          <CampoFecha value={start} onChange={setStart} ariaLabel={tr("Desde cuándo estás limpia")} conBorrar={false} /></div>
         <button className="btn primary" disabled={busy} style={{ width: "100%", marginTop: 4 }}>{busy ? tr("com.guardando") : tr("Empezar a contar")}</button>
       </form>
     </ModalShell>

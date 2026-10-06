@@ -38,6 +38,10 @@ const DATOS_CON_TR = [
       ...Object.values(m.LINEAS_POR_PAIS).flat().flatMap((l) => [l.es, l.ejemplos, l.ojo]),
       ...Object.values(m.NOMBRE_PAIS), ...Object.values(m.FORMULARIO),
     ] },
+  { modulo: "src/habitos/RutinasTab.tsx",
+    saca: (m) => m.SUGERIDAS.flatMap((r) => [r.nombre, ...r.pasos.map((p) => p.texto)]) },
+  { modulo: "src/salud/RecuperacionTab.tsx", saca: (m) => m.IDEAS_DESCANSO.map((d) => d.texto) },
+  { modulo: "src/whatsapp/WhatsAppCard.tsx", saca: (m) => m.MOMENTOS.flatMap((x) => [x.label, x.desc]) },
 ];
 
 const APARTE = [
@@ -45,7 +49,7 @@ const APARTE = [
   "src/tour/guiones.ts",    // se traduce al pintarlo, lo revisa tour-idiomas
   "src/manual/",            // un archivo por idioma, lo revisa manual-idiomas
   "src/legal/documentos.ts", // un documento por idioma
-].concat(DATOS_CON_TR.map((d) => d.modulo));
+];
 
 const archivos = [];
 (function anda(d) {
@@ -86,15 +90,31 @@ for (const a of mirar) {
   }
 }
 
+// ---------- Las frases de los archivos de datos declarados ----------
+const datosDeclarados = new Map();   // modulo -> [frases]
+for (const d of DATOS_CON_TR) {
+  const t2 = join(tmpdir(), `dato-${process.pid}-${datosDeclarados.size}.mjs`);
+  await build({ entryPoints: [d.modulo], bundle: true, format: "esm",
+    platform: "node", outfile: t2, logLevel: "silent",
+    define: { "import.meta.env": "{}" } });
+  const mod = await import(t2);
+  rmSync(t2, { force: true });
+  datosDeclarados.set(d.modulo, d.saca(mod).filter(Boolean));
+}
+const yaRevisadas = new Set([...datosDeclarados.values()].flat());
+
 // ---------- 2. Texto en español que nunca pasa por tr() ----------
 const ACENTOS = /[áéíóúñÁÉÍÓÚÑ¿¡]/;
+// Nombres propios de lugares: se escriben igual en los tres idiomas.
+const LUGARES = /^(Chile|Argentina|Brasil|Uruguay|Paraguay|Bolivia|Perú|Colombia|Ecuador|Venezuela|Panamá|Costa Rica|Nicaragua|Honduras|El Salvador|Guatemala|México|Cuba|España|Canadá|Estados Unidos)\b/;
 const COMUNES = /\b(de|la|el|los|las|que|tu|tus|un|una|para|con|por|en|se|no|sin|más|lo|al|del|es|son|está|están|hay|tiene|tienes|puedes|cuando|como|donde|esto|esta|este|ya|todo|toda|cada|desde|hasta|pero|si|te|le|su|sus|mi|mis|aquí|así|solo|también)\b/i;
 function pareceTexto(s) {
   const t = s.trim();
   if (t.length < 4) return false;
   if (!/[a-záéíóúñ]/i.test(t)) return false;
   if (/^[a-z]+([A-Z][a-z]*)+$/.test(t)) return false;   // identificadorEnCamello
-  if (/^[\w.-]+$/.test(t)) return false;                 // clave.con.puntos
+  if (/^[\w.-]+$/.test(t)) return false;
+  if (LUGARES.test(t)) return false;                 // clave.con.puntos
   if (/^(https?:|\/|#|data:|var\(|--)/.test(t)) return false;
   // Un trozo de código que quedó dentro de un > ... < por casualidad.
   if (/\b(const|let|useState|function|return|=>|null|undefined)\b|===|\)\s*;/.test(t)) return false;
@@ -110,7 +130,8 @@ for (const a of mirar) {
   const lineaDe = (i) => s.slice(0, i).split("\n").length;
   const anota = (i, tipo, texto) => {
     const t = texto.trim().replace(/\s+/g, " ");
-    if (pareceTexto(t) && !claves.has(t)) crudos.push({ archivo: a, linea: lineaDe(i), tipo, texto: t });
+    if (pareceTexto(t) && !claves.has(t) && !yaRevisadas.has(t))
+      crudos.push({ archivo: a, linea: lineaDe(i), tipo, texto: t });
   };
   for (const m of s.matchAll(/>([^<>{}]{4,})</g)) anota(m.index, "jsx", m[1]);
   for (const m of s.matchAll(/\b(placeholder|title|aria-label|alt|ariaLabel|label)\s*=\s*(["'])((?:[^"'\\]|\\.)*)\2/g)) anota(m.index, m[1], m[3]);
@@ -120,15 +141,9 @@ for (const a of mirar) {
 
 // ---------- 3. Los archivos de datos que se traducen con tr(valor) ----------
 const datosSinTraducir = [];
-for (const d of DATOS_CON_TR) {
-  const tmp2 = join(tmpdir(), `dato-${process.pid}-${datosSinTraducir.length}.mjs`);
-  await build({ entryPoints: [d.modulo], bundle: true, format: "esm",
-    platform: "node", outfile: tmp2, logLevel: "silent" });
-  const mod = await import(tmp2);
-  rmSync(tmp2, { force: true });
-  for (const texto of d.saca(mod)) {
-    if (!texto) continue;
-    for (const i of IDIOMAS) if (!TEXTOS[i]?.[texto]) datosSinTraducir.push({ modulo: d.modulo, idioma: i, texto });
+for (const [modulo, frases] of datosDeclarados) {
+  for (const texto of frases) {
+    for (const i of IDIOMAS) if (!TEXTOS[i]?.[texto]) datosSinTraducir.push({ modulo, idioma: i, texto });
   }
 }
 

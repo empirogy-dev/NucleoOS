@@ -154,7 +154,7 @@ function WorkoutLibre() {
       </p>
       <form onSubmit={save} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ flex: "1 1 130px", minWidth: 120 }}>
-          <Selector value={kind} ariaLabel="Tipo de entrenamiento" onChange={setKind}
+          <Selector value={kind} ariaLabel={tr("Tipo de entrenamiento")} onChange={setKind}
             opciones={EXERCISE_KINDS.map((k) => ({ value: k, label: tr(k) }))} />
         </div>
         <input className="input-inline" type="number" min={1} max={600} value={min} onChange={(e) => setMin(e.target.value)}
@@ -231,7 +231,7 @@ function RutinaModal({ rutina, onClose }: { rutina: Rutina; onClose: () => void 
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{tr("¿Cuánto tiempo tienes?")}</span>
             <div style={{ width: 150 }}>
-              <Selector compacto value={String(minutos)} ariaLabel="Duración de la rutina"
+              <Selector compacto value={String(minutos)} ariaLabel={tr("Duración de la rutina")}
                 opciones={duraciones.map((d) => ({ value: String(d), label: `${d} min${d === rutina.minutos ? ` (${tr("sugerido")})` : ""}` }))}
                 onChange={(v) => { const m = Number(v); setMinutos(m); setRestante(m * 60); }} />
             </div>
@@ -314,7 +314,7 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
       <div className="card pad" style={{ maxWidth: 640 }}>
         <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
         <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Para guardar tu progreso en los retos, corre
+          {tr("Para guardar tu progreso en los retos, corre")}
           <code> supabase/migrations/0021_movimiento.sql</code> en el SQL Editor de Supabase.
         </p>
         <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -336,7 +336,7 @@ function ProgramasTab({ onAbrirRutina }: { onAbrirRutina: (r: Rutina) => void })
       {propiosFaltan && (
         <div className="card pad" style={{ borderLeft: "3px solid var(--warn)", marginBottom: 14, maxWidth: 640 }}>
           <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-            Para crear y editar tus propios programas, corre <code>supabase/migrations/0025_programas_propios.sql</code> en el SQL Editor.
+            {tr("Para crear y editar tus propios programas, corre")} <code>supabase/migrations/0025_programas_propios.sql</code> {tr("en el SQL Editor.")}
           </p>
         </div>
       )}
@@ -501,7 +501,7 @@ function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina, onEditar, on
           )}
         </p>
       )}
-      <div className="habit-grid" style={{ paddingLeft: 0 }} title="Toca un día para marcarlo">
+      <div className="habit-grid" style={{ paddingLeft: 0 }} title={tr("Toca un día para marcarlo")}>
         {programa.dias.map((d, i) => {
           const dia = i + 1;
           const on = marcados.has(dia);
@@ -509,7 +509,7 @@ function ProgramaCard({ programa, hechos, onChanged, onAbrirRutina, onEditar, on
             <button key={dia} type="button"
               className={"hg-cell" + (on ? " on" : "")}
               style={on ? { background: "var(--mov)", borderColor: "var(--mov)" } : undefined}
-              title={`Día ${dia}: ${d.titulo}`}
+              title={tr("Día N: TITULO").replace("N", String(dia)).replace("TITULO", d.titulo)}
               aria-label={`Día ${dia}, ${d.titulo}${on ? ", hecho" : ""}`}
               onClick={async () => { await toggleProgramDay(programa.key, dia, !on); onChanged(); }} />
           );

@@ -1,3 +1,4 @@
+import { useIdioma } from "../idioma/IdiomaProvider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpToLine, ImagePlus, RotateCcw, RotateCw, Sparkles, StickyNote, Trash2, Type } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
@@ -30,6 +31,7 @@ type Arrastre = {
 };
 
 export function CollageTab() {
+  const { t: tr } = useIdioma();
   const [items, setItems] = useState<VisionItem[]>([]);
   const [sel, setSel] = useState<string | null>(null);
   const [editando, setEditando] = useState<string | null>(null);
@@ -260,8 +262,8 @@ export function CollageTab() {
       <div className="card pad" style={{ maxWidth: 640 }}>
         <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
         <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Falta la tabla del collage. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
-          <code> supabase/migrations/0017_vision_canvas.sql</code> y presiona Run. Si tampoco has corrido la 0016 (el bucket de imágenes), córrela primero.
+          {tr("Falta la tabla del collage. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
+          <code> supabase/migrations/0017_vision_canvas.sql</code> {tr("y presiona Run. Si tampoco has corrido la 0016 (el bucket de imágenes), córrela primero.")}
         </p>
         <button className="btn primary" onClick={() => void cargar()}>Ya lo hice, reintentar</button>
       </div>
@@ -291,7 +293,7 @@ export function CollageTab() {
       {bucketFalta && (
         <div className="card pad" style={{ borderLeft: "3px solid var(--warn)", marginBottom: 14, maxWidth: 640 }}>
           <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-            Para subir imágenes falta el bucket: corre <code>supabase/migrations/0016_vision_board.sql</code> en el SQL Editor.
+            {tr("Para subir imágenes falta el bucket: corre")} <code>supabase/migrations/0016_vision_board.sql</code> en el SQL Editor.
           </p>
         </div>
       )}
@@ -299,12 +301,12 @@ export function CollageTab() {
 
       {seleccionado && (
         <div className="vc-toolbar">
-          <button className="vc-tool" title="Traer al frente" onClick={() => capa(true)}><ArrowUpToLine size={15} /></button>
-          <button className="vc-tool" title="Enviar atrás" onClick={() => capa(false)}><ArrowDownToLine size={15} /></button>
-          <button className="vc-tool" title="Girar a la izquierda" onClick={() => rotar(-8)}><RotateCcw size={15} /></button>
-          <button className="vc-tool" title="Girar a la derecha" onClick={() => rotar(8)}><RotateCw size={15} /></button>
+          <button className="vc-tool" title={tr("Traer al frente")} onClick={() => capa(true)}><ArrowUpToLine size={15} /></button>
+          <button className="vc-tool" title={tr("Enviar atrás")} onClick={() => capa(false)}><ArrowDownToLine size={15} /></button>
+          <button className="vc-tool" title={tr("Girar a la izquierda")} onClick={() => rotar(-8)}><RotateCcw size={15} /></button>
+          <button className="vc-tool" title={tr("Girar a la derecha")} onClick={() => rotar(8)}><RotateCw size={15} /></button>
           {seleccionado.kind === "nota" && COLORES_NOTA.map((c) => (
-            <button key={c} className="vc-color" style={{ background: c }} title="Color de la nota" onClick={() => pintar(c)} />
+            <button key={c} className="vc-color" style={{ background: c }} title={tr("Color de la nota")} onClick={() => pintar(c)} />
           ))}
           {seleccionado.kind === "nota" && FUENTES.map((f) => (
             <button key={f.key} className="vc-tool"
@@ -321,18 +323,18 @@ export function CollageTab() {
                 onClick={() => void cambiarEstilo({ bold: !seleccionado.bold })}>
                 B
               </button>
-              <button className="vc-tool" title="Letra más chica" style={{ fontSize: 11.5, width: "auto", padding: "0 8px" }}
+              <button className="vc-tool" title={tr("Letra más chica")} style={{ fontSize: 11.5, width: "auto", padding: "0 8px" }}
                 onClick={() => void cambiarEstilo({ font_size: Math.max(11, (seleccionado.font_size ?? 15) - 3) })}>
                 A−
               </button>
-              <button className="vc-tool" title="Letra más grande" style={{ fontSize: 14, width: "auto", padding: "0 8px" }}
+              <button className="vc-tool" title={tr("Letra más grande")} style={{ fontSize: 14, width: "auto", padding: "0 8px" }}
                 onClick={() => void cambiarEstilo({ font_size: Math.min(64, (seleccionado.font_size ?? 15) + 3) })}>
                 A+
               </button>
               <button className="vc-tool" title={seleccionado.color === "none" ? "Ponerle fondo de nota" : "Dejar el texto suelto, sin fondo"}
                 style={{ fontSize: 11.5, width: "auto", padding: "0 9px", outline: seleccionado.color === "none" ? "2px solid var(--accent)" : "none" }}
                 onClick={() => pintar(seleccionado.color === "none" ? COLORES_NOTA[0] : "none")}>
-                Sin fondo
+                {tr("Sin fondo")}
               </button>
             </>
           )}
@@ -348,11 +350,11 @@ export function CollageTab() {
           style={{ width: ANCHO, height: ALTO, transform: `scale(${escala})`, transformOrigin: "top left" }}
           onPointerDown={() => { cerrarEdicion(); setSel(null); }}
         >
-          {loading && <p style={{ color: "var(--muted)", padding: 20 }}>Cargando tu collage…</p>}
+          {loading && <p style={{ color: "var(--muted)", padding: 20 }}>{tr("Cargando tu collage…")}</p>}
           {!loading && items.length === 0 && (
             <div className="vc-vacio">
               <Sparkles size={22} />
-              <p>Tu lienzo está listo. Sube imágenes de lo que proyectas, agrégales frases y arma tu collage: todo se puede mover, girar y superponer.</p>
+              <p>{tr("Tu lienzo está listo. Sube imágenes de lo que proyectas, agrégales frases y arma tu collage: todo se puede mover, girar y superponer.")}</p>
             </div>
           )}
           {items.map((it) => (
@@ -379,7 +381,7 @@ export function CollageTab() {
             >
               {it.kind === "imagen" ? (
                 it.url
-                  ? <img src={it.url} alt="Imagen de tu tablero de visión" draggable={false} loading="lazy" style={{ objectFit: "contain" }} />
+                  ? <img src={it.url} alt={tr("Imagen de tu tablero de visión")} draggable={false} loading="lazy" style={{ objectFit: "contain" }} />
                   : <div className="vc-cargando">🖼️</div>
               ) : editando === it.id ? (
                 <textarea
@@ -396,7 +398,7 @@ export function CollageTab() {
               {sel === it.id && (
                 <div
                   className="vc-handle"
-                  title="Arrastra para cambiar el tamaño"
+                  title={tr("Arrastra para cambiar el tamaño")}
                   onPointerDown={(e) => empezar(e, it, "tamano")}
                   onPointerMove={mover}
                   onPointerUp={soltar}
@@ -408,7 +410,7 @@ export function CollageTab() {
         </div>
       </div>
       <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>
-        Toca un elemento para seleccionarlo: arriba aparecen sus controles. Arrastra para moverlo, usa la esquina para el tamaño y doble clic en una nota para editar su texto. Todo se guarda solo.
+        {tr("Toca un elemento para seleccionarlo: arriba aparecen sus controles. Arrastra para moverlo, usa la esquina para el tamaño y doble clic en una nota para editar su texto. Todo se guarda solo.")}
       </p>
     </>
   );

@@ -77,7 +77,7 @@ export function CicloTab() {
       <div className="card pad" style={{ maxWidth: 640 }}>
         <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
         <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Para el calendario del ciclo falta correr <code>supabase/migrations/0036_ciclo.sql</code> en el SQL Editor.
+          {tr("Para el calendario del ciclo falta correr")} <code>supabase/migrations/0036_ciclo.sql</code> en el SQL Editor.
         </p>
         <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
       </div>
@@ -99,7 +99,7 @@ export function CicloTab() {
       {otraFecha && (
         <>
           <div style={{ width: 180, flex: "none" }}>
-            <CampoFecha compacto value={fechaInicio} onChange={setFechaInicio} ariaLabel="Fecha de inicio del período" max={hoyLocal()} conBorrar={false} />
+            <CampoFecha compacto value={fechaInicio} onChange={setFechaInicio} ariaLabel={tr("Fecha de inicio del período")} max={hoyLocal()} conBorrar={false} />
           </div>
           <button className="btn ghost" onClick={() => void registrar(fechaInicio)}>{tr("com.guardar")}</button>
         </>
@@ -138,7 +138,7 @@ export function CicloTab() {
                   <div style={{ width: `${(cfg.period_length / largo) * 100}%`, background: "var(--rel)" }} title="Menstrual" />
                   <div style={{ flex: 1, background: "var(--sec)" }} title="Folicular" />
                   <div style={{ width: `${(3 / largo) * 100}%`, background: "var(--sal)" }} title="Ovulatoria" />
-                  <div style={{ width: `${(Math.max(0, largo - Math.max(cfg.period_length + 2, largo - 14) - 1) / largo) * 100}%`, background: "var(--tra)" }} title="Lútea" />
+                  <div style={{ width: `${(Math.max(0, largo - Math.max(cfg.period_length + 2, largo - 14) - 1) / largo) * 100}%`, background: "var(--tra)" }} title={tr("Lútea")} />
                 </div>
                 <div style={{ position: "relative", height: 14 }}>
                   <span style={{ position: "absolute", left: `${Math.min(99, (((dia - 1) % largo) / largo) * 100)}%`, transform: "translateX(-50%)", fontSize: 11 }}>▲</span>

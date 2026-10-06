@@ -157,7 +157,7 @@ export function AprendizajePage() {
         <div className="card pad" style={{ maxWidth: 640 }}>
           <h3 style={{ marginBottom: 10 }}>Un paso pendiente en Supabase</h3>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 12 }}>
-            Faltan las tablas de Aprendizaje. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de
+            {tr("Faltan las tablas de Aprendizaje. Es una sola vez: abre el SQL Editor de Supabase, pega el contenido de")}
             <code> supabase/migrations/0008_aprendizaje.sql</code> y presiona Run.
           </p>
           <button className="btn primary" onClick={() => void reload()}>Ya lo hice, reintentar</button>
@@ -180,7 +180,7 @@ export function AprendizajePage() {
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("Buscar en todas tus notas...")} aria-label="Buscar notas" />
             </div>
             <span style={{ flex: 1 }} />
-            <button className="btn ghost" title="Un bloque de foco para estudiar"
+            <button className="btn ghost" title={tr("Un bloque de foco para estudiar")}
               onClick={() => abrirPomodoro({ area: "aprendizaje" })}>
               🎯 {tr("Foco de estudio")}
             </button>
@@ -340,10 +340,10 @@ function MaterialSection({ notebookId, summarizing, onResumir }: {
 
   return (
     <div style={{ borderTop: "1px solid var(--line-soft)", marginTop: 14, paddingTop: 12 }}>
-      <h3 style={{ fontSize: 13.5, marginBottom: 10 }}><FileUp size={13} style={{ verticalAlign: "-2px" }} /> Material del cuaderno</h3>
+      <h3 style={{ fontSize: 13.5, marginBottom: 10 }}><FileUp size={13} style={{ verticalAlign: "-2px" }} /> {tr("Material del cuaderno")}</h3>
       {bucketMissing ? (
         <p style={{ fontSize: 12.5, color: "var(--muted)" }}>
-          Para subir archivos, corre <code>supabase/migrations/0009_material.sql</code> en el SQL Editor y vuelve a entrar aquí.
+          {tr("Para subir archivos, corre")} <code>supabase/migrations/0009_material.sql</code> {tr("en el SQL Editor y vuelve a entrar aquí.")}
         </p>
       ) : (
         <>
@@ -376,7 +376,7 @@ function MaterialSection({ notebookId, summarizing, onResumir }: {
           </label>
           {!iaConfigured && files.length > 0 && (
             <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 8 }}>
-              Para los resúmenes con IA, consigue tu llave gratis en aistudio.google.com/apikey y agrégala como VITE_GEMINI_API_KEY en app/.env.
+              {tr("Para los resúmenes con IA, consigue tu llave gratis en aistudio.google.com/apikey y agrégala como VITE_GEMINI_API_KEY en app/.env.")}
             </p>
           )}
         </>

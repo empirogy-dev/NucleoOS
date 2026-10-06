@@ -27,7 +27,7 @@ interface Vinculo {
 
 // Los momentos del día en que el coach pregunta solo. Mismo orden que en el
 // motor (wa-motor): mañana, almuerzo y cierre del día.
-const MOMENTOS: Array<{ activo: keyof Vinculo; hora: keyof Vinculo; label: string; desc: string; porDefecto: string }> = [
+export const MOMENTOS: Array<{ activo: keyof Vinculo; hora: keyof Vinculo; label: string; desc: string; porDefecto: string }> = [
   {
     activo: "checkin_activo", hora: "checkin_hora", porDefecto: "08:00",
     label: "☀️ Check-in de la mañana",
