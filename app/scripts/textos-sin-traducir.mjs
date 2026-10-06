@@ -42,6 +42,11 @@ const DATOS_CON_TR = [
     saca: (m) => m.SUGERIDAS.flatMap((r) => [r.nombre, ...r.pasos.map((p) => p.texto)]) },
   { modulo: "src/salud/RecuperacionTab.tsx", saca: (m) => m.IDEAS_DESCANSO.map((d) => d.texto) },
   { modulo: "src/whatsapp/WhatsAppCard.tsx", saca: (m) => m.MOMENTOS.flatMap((x) => [x.label, x.desc]) },
+  { modulo: "src/mente/practicas.ts",
+    saca: (m) => [
+      ...m.CATEGORIAS_MENTE.flatMap((c) => [c.label, c.descripcion]),
+      ...m.PRACTICAS.flatMap((p) => [p.nombre, p.descripcion, ...(p.fases ?? []).map((f) => f.etiqueta), ...(p.pasos ?? [])]),
+    ] },
 ];
 
 const APARTE = [
@@ -152,7 +157,7 @@ const arg = process.argv[2];
 const faltan = {};
 for (const i of IDIOMAS) faltan[i] = [...claves.keys()].filter((k) => claveDeVerdad(k) && !TEXTOS[i]?.[k]);
 
-if (arg && arg !== "--claves") {
+if (arg && arg !== "--claves" && arg !== "--datos") {
   const dentro = (a) => a.includes(arg);
   console.log(`\n--- ${arg}\n`);
   for (const i of IDIOMAS) {
@@ -183,7 +188,11 @@ if (arg === "--claves") {
 console.log(`texto crudo en español, sin pasar por tr(): ${crudos.length}`);
 if (datosSinTraducir.length) {
   console.log(`\ndatos que se pintan con tr(valor) y no están en el diccionario: ${datosSinTraducir.length}`);
-  for (const d of datosSinTraducir.slice(0, 20)) console.log(`   [${d.idioma}] ${d.modulo} ${JSON.stringify(d.texto.slice(0, 70))}`);
+  const cuenta = {};
+  for (const d of datosSinTraducir) cuenta[d.idioma] = (cuenta[d.idioma] ?? 0) + 1;
+  console.log("   por idioma: " + Object.entries(cuenta).map(([k, v]) => `${k} ${v}`).join(", "));
+  const cuantas = arg === "--datos" ? datosSinTraducir.length : 12;
+  for (const d of datosSinTraducir.slice(0, cuantas)) console.log(`   [${d.idioma}] ${d.modulo} ${JSON.stringify(d.texto)}`);
 } else {
   console.log(`datos que se pintan con tr(valor): completos (${DATOS_CON_TR.map((d) => d.modulo).join(", ")})`);
 }
