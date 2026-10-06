@@ -243,9 +243,9 @@ export const MANUAL_ES: Manual = {
       id: "aprendizaje",
       titulo: "Aprendizaje",
       parrafos: [
-        "Para que lo que aprendes no se pierda en cuadernos sueltos.",
+        "Para que lo que aprendes no se pierda en cuadernos sueltos, y para no partir de cero preguntándote qué leer.",
         "Las notas viven en cuadernos por tema, para que un apunte de un curso no quede mezclado con una receta. El buscador mira dentro de todas tus notas a la vez, así que da lo mismo en qué cuaderno la dejaste. Esa es la diferencia entre guardar algo y poder encontrarlo un año después.",
-        "La biblioteca es aparte: lo que quieres leer y lo que ya leíste, con su fecha. No hay meta de libros al año ni nada que te rete.",
+        "La biblioteca es otra cosa, y es curada: libros elegidos por lo que de verdad le sirven a un cerebro con TDAH y TDA, no por moda. Cada uno trae por qué está ahí, sus ideas principales y ejercicios concretos, así que te llevas lo suyo aunque nunca lo compres. Marcas lo que quieres leer y lo que ya leíste, sin meta de libros al año ni nada que te rete.",
       ],
     },
     {

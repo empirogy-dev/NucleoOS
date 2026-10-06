@@ -243,9 +243,9 @@ export const MANUAL_EN: Manual = {
       id: "aprendizaje",
       titulo: "Learning",
       parrafos: [
-        "So that what you learn does not get lost in loose notebooks.",
+        "So that what you learn does not get lost in loose notebooks, and so you do not start from scratch wondering what to read.",
         "Notes live in notebooks by topic, so a note from a course does not end up mixed with a recipe. The search looks inside all your notes at once, so it does not matter which notebook you left it in. That is the difference between saving something and being able to find it a year later.",
-        "The library is separate: what you want to read and what you have read, with its date. There is no books-per-year target and nothing that scolds you.",
+        "The library is a different thing, and it is curated: books chosen for what they actually give an ADHD and ADD brain, not for being in fashion. Each one carries why it is there, its main ideas and concrete exercises, so you take away what it has even if you never buy it. You mark what you want to read and what you have read, with no books-per-year target and nothing that scolds you.",
       ],
     },
     {

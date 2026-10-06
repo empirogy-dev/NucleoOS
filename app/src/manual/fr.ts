@@ -247,9 +247,9 @@ export const MANUAL_FR: Manual = {
       id: "aprendizaje",
       titulo: "Apprentissage (Learning)",
       parrafos: [
-        "Pour que ce que vous apprenez ne se perde pas dans des carnets épars.",
+        "Pour que ce que vous apprenez ne se perde pas dans des carnets épars, et pour ne pas partir de zéro en vous demandant quoi lire.",
         "Les notes vivent dans des carnets par thème, pour qu'une note de cours ne finisse pas mélangée à une recette. La recherche regarde dans toutes vos notes à la fois, donc peu importe dans quel carnet vous l'avez laissée. C'est la différence entre garder quelque chose et pouvoir le retrouver un an plus tard.",
-        "La bibliothèque (Library) est à part : ce que vous voulez lire et ce que vous avez lu, avec la date. Aucun objectif de livres par an, rien qui vous fasse la morale.",
+        "La bibliothèque (Library) est autre chose, et elle est sélectionnée : des livres choisis pour ce qu'ils apportent vraiment à un cerveau TDAH, pas pour la mode. Chacun porte la raison de sa présence, ses idées principales et des exercices concrets, donc vous en tirez l'essentiel même sans jamais l'acheter. Vous cochez ce que vous voulez lire et ce que vous avez lu, sans objectif de livres par an et sans rien qui vous fasse la morale.",
       ],
     },
     {

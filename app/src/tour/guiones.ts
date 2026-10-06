@@ -271,7 +271,7 @@ const aprendizaje: PasoTour[] = [
     id: "apr-cuadernos",
     objetivo: ".ftabs",
     titulo: "Cuadernos y biblioteca",
-    texto: "Las notas viven en cuadernos por tema, para que un apunte de un curso no quede mezclado con una receta. La biblioteca es aparte: lo que quieres leer y lo que ya leíste.",
+    texto: "Las notas viven en cuadernos por tema, para que un apunte de un curso no quede mezclado con una receta. La biblioteca es otra cosa: libros ya elegidos, con sus ideas resumidas.",
   },
   {
     id: "apr-buscar",
@@ -282,8 +282,8 @@ const aprendizaje: PasoTour[] = [
   {
     id: "apr-biblioteca",
     objetivo: ".ftabs",
-    titulo: "La biblioteca, sin culpa",
-    texto: "Anotas lo que quieres leer y lo que terminaste, con su fecha. No hay meta de libros al año ni nada que te rete: es una lista, no un examen.",
+    titulo: "La biblioteca ya viene elegida",
+    texto: "No es tu lista de pendientes: son libros elegidos por lo que le sirven a un cerebro con TDAH y TDA, cada uno con sus ideas y sus ejercicios. Te llevas lo suyo aunque nunca lo compres, y marcas lo que quieres leer y lo que ya leíste.",
   },
 ];
 
@@ -460,7 +460,7 @@ export const PROPOSITOS: Record<string, string> = {
   "/relaciones": "Para no perder de vista a la gente que te importa cuando la vida se pone densa. Anotas a quién quieres cuidar y cada cuánto te gustaría hablarle, y la app te avisa cuando pasa mucho tiempo.",
   "/objetivos": "Para convertir lo que quieres en algo que de verdad avanza. Cada meta se parte en hitos con fecha, y puede alimentarse sola de lo que ya registras en movimiento, hábitos, trabajo o ahorro.",
   "/trabajo": "Para saber en qué se te fue el tiempo, y no solo en qué creías que se te iba. Tus proyectos con sus tareas, tu jornada y tus bloques de foco, todos ligados entre sí.",
-  "/aprendizaje": "Para que lo que aprendes no se pierda en cuadernos sueltos. Tus notas ordenadas por tema y buscables, y una biblioteca con lo que quieres leer y lo que ya leíste.",
+  "/aprendizaje": "Para que lo que aprendes no se pierda, y para no partir de cero preguntándote qué leer. Tus notas ordenadas por tema y buscables, y una biblioteca curada de libros para un cerebro con TDAH y TDA, cada uno con sus ideas y sus ejercicios.",
   "/calendario": "Para ver en una sola pantalla todo lo que tiene fecha en tu vida: tus tareas, tus pagos, tus citas, tus cumpleaños y lo que vas registrando en los otros módulos.",
   "/revision": "Para que todo lo que registras se convierta en algo que se entiende. Mira tu día, tu semana y tu mes, cruza módulos para encontrar patrones, y arma un informe que puedes exportar y llevarle a un profesional.",
   "/vision": "Para acordarte de por qué haces todo lo demás. Aquí van tu visión de vida y tus sueños, sin obligaciones; cuando uno madura, lo pasas a Dirección y se vuelve una meta con fecha.",
