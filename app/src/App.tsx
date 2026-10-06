@@ -14,6 +14,7 @@ import { MovimientoPage } from "./movimiento/MovimientoPage";
 import { RevisionPage } from "./revision/RevisionPage";
 import { VisionPage } from "./vision/VisionPage";
 import { Ajustes } from "./pages/Ajustes";
+import { ManualPage } from "./manual/ManualPage";
 import { Login } from "./pages/Login";
 import { useAuth } from "./auth/AuthProvider";
 import { SettingsProvider } from "./settings/SettingsProvider";
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/revision" element={<RevisionPage />} />
             <Route path="/vision" element={<VisionPage />} />
             <Route path="/ajustes" element={<Ajustes />} />
+            <Route path="/manual" element={<ManualPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

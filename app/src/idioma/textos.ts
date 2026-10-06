@@ -3622,6 +3622,15 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Sueños es la lista de lo que quieres vivir, Visual board es para verlo en imágenes, y Vida ideal es el texto donde te describes el día que quieres tener.": "Dreams is the list of what you want to live, Vision board is for seeing it in images, and Ideal life is the text where you describe the day you want to have.",
     "Cuando un sueño madura": "When a dream matures",
     "Aquí nada tiene fecha ni te persigue, a propósito. El día que un sueño deje de ser sueño, lo pasas a Dirección y recién ahí se vuelve una meta con pasos.": "Nothing here has a date or chases you, on purpose. The day a dream stops being a dream, you move it to Direction and only then does it become a goal with steps.",
+    // El manual de usuario
+    "Ayuda": "Help",
+    "Buscar en el manual...": "Search the manual...",
+    "Imprimir o guardar en PDF": "Print or save as PDF",
+    "Nada con esa palabra. Prueba con una más corta, o escríbenos.": "Nothing with that word. Try a shorter one, or write to us.",
+    "Este mismo manual está publicado en": "This same manual is published at",
+    "para compartírselo a alguien que todavía no tiene cuenta.": "so you can share it with someone who does not have an account yet.",
+    "Leer el manual": "Read the manual",
+    "Todo explicado por escrito, para buscar algo concreto": "Everything explained in writing, for looking something up",
   },
   pt: {
     lema: "Um sistema para mudar o rumo da sua vida",
@@ -5786,6 +5795,15 @@ export const TEXTOS: Record<Idioma, Record<string, string>> = {
     "Sueños es la lista de lo que quieres vivir, Visual board es para verlo en imágenes, y Vida ideal es el texto donde te describes el día que quieres tener.": "Sonhos é a lista do que você quer viver, Visual board é para ver em imagens, e Vida ideal é o texto onde você descreve o dia que quer ter.",
     "Cuando un sueño madura": "Quando um sonho amadurece",
     "Aquí nada tiene fecha ni te persigue, a propósito. El día que un sueño deje de ser sueño, lo pasas a Dirección y recién ahí se vuelve una meta con pasos.": "Aqui nada tem data nem te persegue, de propósito. No dia em que um sonho deixar de ser sonho, você o passa para Direção e só aí ele vira uma meta com passos.",
+    // El manual de usuario
+    "Ayuda": "Ajuda",
+    "Buscar en el manual...": "Buscar no manual...",
+    "Imprimir o guardar en PDF": "Imprimir ou salvar em PDF",
+    "Nada con esa palabra. Prueba con una más corta, o escríbenos.": "Nada com essa palavra. Tente uma mais curta, ou escreva para nós.",
+    "Este mismo manual está publicado en": "Este mesmo manual está publicado em",
+    "para compartírselo a alguien que todavía no tiene cuenta.": "para compartilhar com alguém que ainda não tem conta.",
+    "Leer el manual": "Ler o manual",
+    "Todo explicado por escrito, para buscar algo concreto": "Tudo explicado por escrito, para procurar algo específico",
   },
 };
 
