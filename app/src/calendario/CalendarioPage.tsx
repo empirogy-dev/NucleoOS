@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cierreDeFondo } from "../components/cierreDeFondo";
 import { useIdioma } from "../idioma/IdiomaProvider";
-import { CALENDARIO } from "../idioma/textos";
+import { CALENDARIO, type Idioma } from "../idioma/textos";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { hoyLocal, mesActualLocal } from "../lib/fechas";
 import { AREAS } from "../areas";
@@ -18,10 +18,12 @@ function nombreArea(key: string): string {
   return AREAS.find((a) => a.key === key)?.name ?? "General";
 }
 
-function nombreMes(ym: string, idioma: "es" | "en" | "pt"): string {
+function nombreMes(ym: string, idioma: Idioma): string {
   const [y, m] = ym.split("-").map(Number);
   const mesNombre = CALENDARIO[idioma].meses[m - 1];
-  const nombre = idioma === "en" ? `${mesNombre} ${y}` : `${mesNombre} de ${y}`;
+  // Cada idioma junta el mes y el año a su manera: "enero de 2026",
+  // "January 2026", "janvier 2026".
+  const nombre = idioma === "en" || idioma === "fr" ? `${mesNombre} ${y}` : `${mesNombre} de ${y}`;
   return nombre.charAt(0).toUpperCase() + nombre.slice(1);
 }
 

@@ -52,7 +52,7 @@ for (const s of ["de", "Saltar", "Atrás", "Siguiente", "Listo", "Aprende a usar
 const iguales = { pt: new Set(["de"]) };
 
 let malas = 0;
-for (const idioma of ["en", "pt"]) {
+for (const idioma of ["en", "pt", "fr"]) {
   const faltan = [...frases].filter((f) => !TEXTOS[idioma]?.[f] && !iguales[idioma]?.has(f));
   if (faltan.length === 0) { console.log(`${idioma}: completo (${frases.size} frases)`); continue; }
   malas += faltan.length;

@@ -6,7 +6,6 @@ import type { Manual } from "./tipos";
 export const MANUAL_FR: Manual = {
   titulo: "Manuel de NucleoOS",
   intro: "Tout ce que fait l'application, expliqué dans l'ordre et en mots simples. Pas besoin de tout lire : trouvez la section qui vous intéresse et lisez celle-là. Si vous venez d'arriver, les trois premières suffisent pour démarrer.",
-  avisoIdioma: "L'application elle-même n'est pas encore traduite en français : elle existe en espagnol, en anglais et en portugais. Ce manuel donne donc le nom de chaque écran en français, suivi entre parenthèses de son libellé anglais, celui que vous verrez à l'écran.",
   indice: "Sommaire",
   secciones: [
     {

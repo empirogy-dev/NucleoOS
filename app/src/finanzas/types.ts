@@ -125,6 +125,7 @@ const DUE_TEXTOS = {
   es: { vencido: (n: number) => `vencido hace ${n} día${n === 1 ? "" : "s"}`, hoy: "¡hoy!", manana: "mañana", en: (n: number) => `en ${n} días` },
   en: { vencido: (n: number) => `overdue by ${n} day${n === 1 ? "" : "s"}`, hoy: "today!", manana: "tomorrow", en: (n: number) => `in ${n} days` },
   pt: { vencido: (n: number) => `vencido há ${n} dia${n === 1 ? "" : "s"}`, hoy: "hoje!", manana: "amanhã", en: (n: number) => `em ${n} dias` },
+  fr: { vencido: (n: number) => `en retard de ${n} jour${n === 1 ? "" : "s"}`, hoy: "aujourd'hui !", manana: "demain", en: (n: number) => `dans ${n} jours` },
 } as const;
 
 export function dueLabel(days: number): { text: string; tone: "err" | "warn" | "ok" } {
