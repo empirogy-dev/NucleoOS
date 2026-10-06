@@ -9,7 +9,7 @@
 // "mándame cómo se usa esto": un enlace que abre cualquiera.
 
 import { build } from "esbuild";
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -167,25 +167,6 @@ for (const idioma of IDIOMAS_MANUAL) {
   await writeFile(join(dist, archivo), pagina({
     manual: MANUAL[idioma], chrome, idioma, version: VERSION_MANUAL,
   }), "utf8");
-}
-
-// El pie de la landing enlaza al manual, para que se pueda leer sin tener
-// cuenta: es el enlace que se le manda a alguien que pregunta cómo se usa.
-const indexPath = join(dist, "index.html");
-let landing = await readFile(indexPath, "utf8");
-if (!landing.includes('href="/manual"')) {
-  const enlaces = `<p class="muted" style="margin-top:10px;font-size:13px">
-        <a href="/manual">Manual de usuario</a> · <a href="/manual-en">User manual</a>
-        · <a href="/manual-pt">Manual</a> · <a href="/manual-fr">Manuel</a>
-      </p>`;
-  const anc = '<p class="muted" style="margin-top:10px;font-size:13px">';
-  if (landing.includes(anc)) {
-    landing = landing.replace(anc, enlaces + "\n      " + anc);
-    await writeFile(indexPath, landing, "utf8");
-  } else {
-    console.error("manual: no encontré dónde poner los enlaces en la landing.");
-    process.exit(1);
-  }
 }
 
 console.log(`postbuild: manual publicado en ${IDIOMAS_MANUAL.length} idiomas (${IDIOMAS_MANUAL.join(", ")}) ✔`);

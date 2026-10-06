@@ -69,6 +69,8 @@
   .brand{display:flex;align-items:center;gap:11px;font-family:var(--title);font-weight:600;font-size:19px;letter-spacing:-.02em}
   .badge{width:40px;height:40px;border-radius:12px;background:var(--pri);display:grid;place-items:center;flex:none;box-shadow:var(--sh-sm)}
   .nav-r{display:flex;align-items:center;gap:12px}
+  .nav-link{font-size:14.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .nav-link:hover{color:var(--ink)}
   .nav .btn{padding:10px 20px;font-size:14.5px}
   .langs{display:flex;gap:2px;background:var(--white);border:1px solid var(--line);border-radius:999px;padding:3px}
   .langbtn{font-family:var(--body);font-size:12.5px;font-weight:700;letter-spacing:.03em;color:var(--muted);background:none;border:none;cursor:pointer;padding:5px 11px;border-radius:999px}
@@ -106,6 +108,11 @@
   .mod .e{font-size:24px;line-height:1}
   .mod h3{margin-top:12px}
   .mod p{font-size:14px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .foot-manual{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;
+    font-size:13px;color:var(--muted);margin-top:10px}
+  .foot-manual b{font-weight:600}
+  .mods-manual{margin-top:26px;font-size:15px}
+  .mods-manual a{color:var(--pri);font-weight:600}
   .coach{background:linear-gradient(180deg, var(--wash), var(--paper))}
   .split{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,64px);align-items:center}
   .chat{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh);padding:20px;max-width:400px}
@@ -174,6 +181,7 @@
     .nav-in{padding:10px 16px;gap:8px}
     .nav .btn.primary{padding:9px 16px;font-size:14px}
     .langs{gap:2px}
+    .nav-link{display:none}
   }
 </style>
 
@@ -185,6 +193,9 @@
         NucleoOS
       </div>
       <div class="nav-r">
+        <!-- El manual se enlaza desde la barra y no solo desde el pie: quien
+             llega a decidir si baja la app quiere ver primero cómo se usa. -->
+        <a class="nav-link js-manual" href="/manual" data-i18n="nav.manual">Manual</a>
         <div class="langs">
           <button class="langbtn" data-lang="es">ES</button>
           <button class="langbtn" data-lang="en">EN</button>
@@ -237,17 +248,24 @@
     <div class="wrap center">
       <span class="eyebrow" data-i18n="mod.eyebrow">Todo en un lugar</span>
       <h2 style="margin-top:14px" data-i18n="mod.h2">Toda tu vida, por fin junta y en calma.</h2>
-      <p class="lede" style="max-width:52ch;margin:18px auto 0" data-i18n="mod.lede">Diez áreas que suelen vivir en diez apps distintas, aquí conversan entre sí. Registras una vez, y todo se ordena solo.</p>
+      <p class="lede" style="max-width:52ch;margin:18px auto 0" data-i18n="mod.lede">Doce áreas que suelen vivir en doce apps distintas, aquí conversan entre sí. Registras una vez, y todo se ordena solo.</p>
       <div class="mods" style="text-align:left">
         <div class="mod"><div class="e">⚡</div><h3 data-i18n="mod.energia.t">Energía</h3><p data-i18n="mod.energia.d">Sueño, agua, comida y movimiento. El pulso de tu cuerpo, día a día.</p></div>
         <div class="mod"><div class="e">🧘</div><h3 data-i18n="mod.mente.t">Mente</h3><p data-i18n="mod.mente.d">Calma, diario y prácticas para regularte cuando la cabeza va a mil.</p></div>
+        <div class="mod"><div class="e">🏃</div><h3 data-i18n="mod.movimiento.t">Movimiento</h3><p data-i18n="mod.movimiento.d">Rutinas guiadas o entreno libre. Los minutos suman solos a tus hábitos y tus metas.</p></div>
         <div class="mod"><div class="e">🔁</div><h3 data-i18n="mod.habitos.t">Hábitos</h3><p data-i18n="mod.habitos.d">Rutinas con racha, pensadas para días buenos y días malos.</p></div>
-        <div class="mod"><div class="e">🧭</div><h3 data-i18n="mod.direccion.t">Dirección</h3><p data-i18n="mod.direccion.d">Tu visión de vida y las metas que la construyen, paso a paso.</p></div>
         <div class="mod"><div class="e">💞</div><h3 data-i18n="mod.relaciones.t">Relaciones</h3><p data-i18n="mod.relaciones.d">Cuida tus vínculos con recordatorios amables, sin que se te olviden.</p></div>
+        <div class="mod"><div class="e">🧭</div><h3 data-i18n="mod.direccion.t">Dirección</h3><p data-i18n="mod.direccion.d">Tu visión de vida y las metas que la construyen, paso a paso.</p></div>
+        <div class="mod"><div class="e">💼</div><h3 data-i18n="mod.trabajo.t">Trabajo</h3><p data-i18n="mod.trabajo.d">Proyectos, jornadas y bloques de foco. A fin de mes sabes en qué se te fue el tiempo.</p></div>
         <div class="mod"><div class="e">💰</div><h3 data-i18n="mod.finanzas.t">Finanzas</h3><p data-i18n="mod.finanzas.d">Gastos, presupuestos y recibos. Registra hasta por foto de la boleta.</p></div>
-        <div class="mod"><div class="e">📚</div><h3 data-i18n="mod.aprendizaje.t">Aprendizaje</h3><p data-i18n="mod.aprendizaje.d">Tu biblioteca de libros que de verdad ayudan a un cerebro TDAH y TDA.</p></div>
-        <div class="mod"><div class="e">✨</div><h3 data-i18n="mod.vision.t">Visión</h3><p data-i18n="mod.vision.d">Tu vision board y los sueños que te mueven, siempre a la vista.</p></div>
+        <div class="mod"><div class="e">📚</div><h3 data-i18n="mod.aprendizaje.t">Aprendizaje</h3><p data-i18n="mod.aprendizaje.d">Tus notas en cuadernos por tema, buscables, y la biblioteca de lo que lees.</p></div>
+        <div class="mod"><div class="e">📅</div><h3 data-i18n="mod.calendario.t">Calendario</h3><p data-i18n="mod.calendario.d">Todo lo que tiene fecha, junto. Llega solo desde los otros módulos.</p></div>
+        <div class="mod"><div class="e">📊</div><h3 data-i18n="mod.revision.t">Revisión</h3><p data-i18n="mod.revision.d">Tu día, tu semana y tu mes, con los patrones entre áreas. Y un informe que puedes exportar.</p></div>
+        <div class="mod"><div class="e">✨</div><h3 data-i18n="mod.vision.t">Visión</h3><p data-i18n="mod.vision.d">Tu visual board y los sueños que te mueven, siempre a la vista.</p></div>
       </div>
+      <p class="mods-manual">
+        <a class="js-manual" href="/manual" data-i18n="mod.manual">Cómo funciona cada una, paso a paso, en el manual →</a>
+      </p>
     </div>
   </section>
 
@@ -388,6 +406,10 @@
         NucleoOS
       </div>
       <p class="muted" data-i18n="foot.tag">Hecho con cariño para tu mente. 🌱</p>
+      <p class="foot-manual">
+        <b data-i18n="foot.manual">Manual de usuario</b>
+        <a href="/manual">Español</a><a href="/manual-en">English</a><a href="/manual-pt">Português</a><a href="/manual-fr">Français</a>
+      </p>
       <a href="/app" data-i18n="foot.link">Entrar a la app →</a>
     </div>
   </footer>
@@ -396,7 +418,8 @@
 <script>
 (function(){
   var EN = {
-    "nav.enter":"Sign in",
+    "nav.enter":"Sign in","nav.manual":"Manual",
+    "mod.manual":"How each one works, step by step, in the manual \u2192",
     "hero.eyebrow":"The operating system for your life",
     "hero.h1":"Built for your brain, not against it.",
     "hero.lede":"NucleoOS is the all-in-one app for ADHD & ADD minds. Log your day by voice, put your whole life in one place, and let an AI coach turn the chaos into clarity. No guilt, no endless lists, at your own pace.",
@@ -410,15 +433,19 @@
     "emp.4":"You promise to start tomorrow. Again.",
     "emp.punch":"It's not a lack of willpower. It's that productivity apps are built <b>for a different kind of brain.</b>",
     "mod.eyebrow":"All in one place","mod.h2":"Your whole life, finally together and calm.",
-    "mod.lede":"Ten areas that usually live in ten different apps here talk to each other. Log once, and everything sorts itself out.",
+    "mod.lede":"Twelve areas that usually live in twelve different apps here talk to each other. Log once, and everything sorts itself out.",
     "mod.energia.t":"Energy","mod.energia.d":"Sleep, water, food and movement. Your body's pulse, day by day.",
     "mod.mente.t":"Mind","mod.mente.d":"Calm, journaling and practices to regulate when your head races.",
     "mod.habitos.t":"Habits","mod.habitos.d":"Streak-based routines, made for good days and bad days.",
     "mod.direccion.t":"Direction","mod.direccion.d":"Your life vision and the goals that build it, step by step.",
     "mod.relaciones.t":"Relationships","mod.relaciones.d":"Nurture your bonds with gentle reminders, so you don't forget.",
     "mod.finanzas.t":"Finances","mod.finanzas.d":"Expenses, budgets and receipts. Log even by snapping the receipt.",
-    "mod.aprendizaje.t":"Learning","mod.aprendizaje.d":"Your library of books that truly help an ADHD & ADD brain.",
-    "mod.vision.t":"Vision","mod.vision.d":"Your vision board and the dreams that move you, always in sight.",
+    "mod.movimiento.t":"Movement","mod.movimiento.d":"Guided routines or free training. The minutes add themselves to your habits and your goals.",
+    "mod.trabajo.t":"Work","mod.trabajo.d":"Projects, workdays and focus blocks. At month's end you know where your time went.",
+    "mod.aprendizaje.t":"Learning","mod.aprendizaje.d":"Your notes in notebooks by topic, searchable, plus the library of what you read.",
+    "mod.calendario.t":"Calendar","mod.calendario.d":"Everything with a date, together. It arrives on its own from the other modules.",
+    "mod.revision.t":"Review","mod.revision.d":"Your day, your week and your month, with the patterns between areas. Plus a report you can export.",
+    "mod.vision.t":"Vision","mod.vision.d":"Your visual board and the dreams that move you, always in sight.",
     "coach.eyebrow":"Your coach by chat","coach.h2":"Just say it. It logs it for you.",
     "coach.lede":"\"I did 30 minutes at the gym.\" \"I took my vitamins.\" You talk to it on Telegram and it fills the app for you. It tells you when your fast ends, reminds you of tasks and birthdays, and gives advice that understands how your brain works. It's your second brain, always in your pocket.",
     "coach.you1":"You · voice note","coach.msg1":"Did 30 min at the gym and took my vitamins 💪",
@@ -459,7 +486,8 @@
     "sup.sending":"Sending…","sup.ok":"Thank you! We got your report. 🌱","sup.err":"Couldn't send it. Please try again.","sup.needmsg":"Tell us what happened first.",
     "end.eyebrow":"Your moment is now","end.h2":"Your whole life, calm and in order.",
     "end.cta":"Create my free account","end.fine":"Free to start. No card. At your own pace.",
-    "foot.tag":"Made with care for your mind. 🌱","foot.link":"Go to the app →"
+    "foot.tag":"Made with care for your mind. 🌱","foot.link":"Go to the app →",
+    "foot.manual":"User manual"
   };
   var ES_JS = { "sup.sending":"Enviando…","sup.ok":"¡Gracias! Recibimos tu reporte. 🌱","sup.err":"No se pudo enviar. Intenta de nuevo.","sup.needmsg":"Cuéntanos primero qué pasó." };
   var curLang = 'es';
@@ -485,6 +513,10 @@
       el.setAttribute('placeholder', lang === 'en' ? (EN[k] !== undefined ? EN[k] : ESph[k]) : ESph[k]);
     });
     document.querySelectorAll('.langbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-lang') === lang); });
+    // El manual tiene una página por idioma: el enlace de la barra lleva a la
+    // que corresponde, no a la española con el resto de la web en inglés.
+    var destino = lang === 'en' ? '/manual-en' : '/manual';
+    document.querySelectorAll('.js-manual').forEach(function(a){ a.setAttribute('href', destino); });
     try { localStorage.setItem('nucleoos-landing-lang', lang); } catch(e){}
   }
   document.querySelectorAll('.langbtn').forEach(function(b){
