@@ -645,3 +645,62 @@ button{font-family:inherit}
 .tour-menu-opt svg{flex:none;margin-top:2px;color:var(--accent-ink)}
 .tour-menu-opt b{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:1px}
 .tour-menu-opt small{display:block;font-size:11.5px;color:var(--muted);line-height:1.4}
+/* El enlace que ofrece el recorrido desde dentro de una ventana, escrito
+   dentro de un párrafo: tiene que leerse como texto, no como un botón más. */
+.enlace-tour{display:inline;padding:0;border:none;background:none;font:inherit;
+  color:var(--accent-ink);font-weight:600;text-decoration:underline;
+  text-underline-offset:2px;cursor:pointer}
+.enlace-tour:hover{color:var(--ink)}
+
+/* El signo de pregunta al lado del título de cada sección, con su "para qué
+   es esto". Los nombres no empiezan con `ayuda-` a propósito: ya existe
+   `.ayuda-pop` para los globitos de los campos, y compartir prefijo terminó
+   una vez con un menú saliéndose de la pantalla. */
+.tit-fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.page-head .tit-fila h1{margin-bottom:0}
+.modayuda{position:relative;display:inline-flex}
+.modayuda-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer}
+.modayuda-btn:hover{color:var(--accent-ink);border-color:var(--accent-ink)}
+.modayuda-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:80;display:block;width:330px;
+  max-width:calc(100vw - 32px);background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-md);box-shadow:var(--sh);padding:13px 15px 12px;
+  font-family:var(--sans);letter-spacing:normal}
+.modayuda-tit{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--muted);font-weight:600;margin-bottom:6px}
+.modayuda-txt{display:block;font-size:13px;line-height:1.55;font-weight:400;color:var(--ink-soft)}
+.modayuda-ir{display:inline-flex;align-items:center;gap:7px;margin-top:11px;
+  font-size:12.5px;padding:6px 12px}
+.modayuda-ir small{color:var(--muted);font-size:11px}
+@media (max-width:560px){
+  /* En el celular se queda abajo, fija, igual que la ventanita del tour:
+     colgada del botón se salía por la derecha en cuanto el título era largo. */
+  .modayuda-pop{position:fixed;top:auto;bottom:14px;left:12px;right:12px;width:auto}
+}
+
+/* ==========================================================
+   El manual de usuario
+   ========================================================== */
+.manual-barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.manual-indice{margin-bottom:16px}
+.manual-indice ol{margin:8px 0 0;padding-left:20px;columns:2;column-gap:28px}
+.manual-indice li{margin-bottom:5px;font-size:13.5px;break-inside:avoid}
+.manual-indice a{color:var(--accent-ink);text-decoration:none}
+.manual-indice a:hover{text-decoration:underline}
+.manual-sec{margin-bottom:14px;scroll-margin-top:76px}
+.manual-sec h2{font-size:18px;margin-bottom:10px}
+.manual-sec p{font-size:14px;line-height:1.68;color:var(--ink-soft);margin-bottom:10px}
+.manual-sec p:last-child{margin-bottom:0}
+.manual-pasos,.manual-puntos{margin:4px 0 0;padding-left:22px}
+.manual-pasos li,.manual-puntos li{font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:8px}
+.manual-pasos li::marker{color:var(--accent-ink);font-weight:600}
+.manual-pie{margin-top:18px;font-size:12.5px;color:var(--muted);line-height:1.6}
+@media (max-width:700px){.manual-indice ol{columns:1}}
+/* Impreso: el manual es largo y la gente lo va a querer en papel o en PDF.
+   Fuera los controles, fuera los bordes, y que ninguna sección se corte en
+   dos páginas si cabe entera. */
+@media print{
+  .manual-barra,.modayuda{display:none!important}
+  .manual-sec{border:none;box-shadow:none;padding:0;margin-bottom:18px;break-inside:avoid}
+  .manual-indice{border:none;box-shadow:none;padding:0}
+}

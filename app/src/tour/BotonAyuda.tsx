@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Compass, HelpCircle, MapPin } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { BookOpen, Compass, HelpCircle, MapPin } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useIdioma } from "../idioma/IdiomaProvider";
 import { useTour } from "./TourProvider";
 import { TOUR_GENERAL } from "./guiones";
@@ -120,6 +120,15 @@ export function BotonAyuda() {
                 : tr("Te muestro el recorrido general")}</small>
             </span>
           </button>
+          {/* El manual es la tercera respuesta posible: quien quiere leerlo
+              todo de una vez no quiere doce ventanitas. */}
+          <Link to="/manual" role="menuitem" className="tour-menu-opt" onClick={() => setAbierto(false)}>
+            <BookOpen size={15} />
+            <span>
+              <b>{tr("Leer el manual")}</b>
+              <small>{tr("Todo explicado por escrito, para buscar algo concreto")}</small>
+            </span>
+          </Link>
         </div>
       )}
     </div>

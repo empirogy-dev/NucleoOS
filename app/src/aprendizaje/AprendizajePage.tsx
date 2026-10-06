@@ -28,6 +28,7 @@ import { blobToBase64, iaConfigured, resumirArchivo, resumirTexto } from "../lib
 import { abrirPomodoro } from "../foco/data";
 import { BibliotecaTab } from "./BibliotecaTab";
 import { MetasDeArea } from "../components/MetasDeArea";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 export function AprendizajePage() {
   const { t: tr } = useIdioma();
@@ -389,7 +390,9 @@ function Head() {
   return (
     <div className="page-head">
       <div className="eyebrow"><BookOpen size={13} /> {tr("sec.mivida")}</div>
-      <h1>{tr("area.aprendizaje")}</h1>
+      <div className="tit-fila"><h1>{tr("area.aprendizaje")}</h1>
+        <AyudaModulo clave="/aprendizaje" />
+      </div>
       <p>{tr("head.sub.aprendizaje")}</p>
     </div>
   );

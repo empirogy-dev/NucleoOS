@@ -9,6 +9,7 @@ import { fechaRegistro, mesActualLocal } from "../lib/fechas";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Mail, Plus, Trash2, Users } from "lucide-react";
 import { TablesMissingError } from "../finanzas/data";
+import { AyudaModulo } from "../tour/AyudaModulo";
 import {
   ACCIONES,
   addRelLog,
@@ -215,7 +216,9 @@ function Head() {
   return (
     <div className="page-head">
       <div className="eyebrow"><Users size={13} /> {tr("sec.mivida")}</div>
-      <h1>{tr("area.relaciones")}</h1>
+      <div className="tit-fila"><h1>{tr("area.relaciones")}</h1>
+        <AyudaModulo clave="/relaciones" />
+      </div>
       <p>{tr("head.sub.relaciones")}</p>
     </div>
   );

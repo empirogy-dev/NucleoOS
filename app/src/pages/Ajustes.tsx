@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { CampoFecha } from "../components/CampoFecha";
 import { Palette, Settings } from "lucide-react";
@@ -26,6 +27,7 @@ import { FORMULARIO, type PaisImpuestos } from "../finanzas/impuestos";
 import { useModulos } from "../modulos/ModulosProvider";
 import { GRUPOS_MODULOS } from "../modulos/modulos";
 import { Toggle } from "../components/Toggle";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 const CURRENCY_NAMES: Record<string, string> = {
   CAD: "Dólar canadiense",
@@ -44,7 +46,9 @@ export function Ajustes() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><Settings size={13} /> {tr("nav.ajustes")}</div>
-        <h1>{tr("nav.ajustes")}</h1>
+        <div className="tit-fila"><h1>{tr("nav.ajustes")}</h1>
+          <AyudaModulo clave="/ajustes" />
+        </div>
         <p>{tr("head.sub.ajustes")}</p>
       </div>
 
@@ -152,9 +156,13 @@ function PaisImpuestosCard() {
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 10, lineHeight: 1.5 }}>
           {tr("Te muestra para qué sirve cada parte de la app. También puedes pedirlo en cualquier pantalla con el signo de pregunta de arriba.")}
         </p>
-        <button className="btn ghost" onClick={() => { reiniciarTour(); iniciar(TOUR_GENERAL); }}>
-          {tr("Ver el recorrido otra vez")}
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn ghost" onClick={() => { reiniciarTour(); iniciar(TOUR_GENERAL); }}>
+            {tr("Ver el recorrido otra vez")}
+          </button>
+          {/* El manual, para quien prefiere leer antes que seguir ventanitas. */}
+          <Link className="btn ghost" to="/manual">{tr("Leer el manual")}</Link>
+        </div>
       </div>
 
       <h3 style={{ fontSize: 15, marginBottom: 4 }}>{tr("País donde declaras impuestos")}</h3>

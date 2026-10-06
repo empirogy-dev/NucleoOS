@@ -48,6 +48,7 @@ import { CampoHora } from "../components/CampoHora";
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { esProgramado, listRetos, toggleRetoDay } from "../habitos/retos";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 /** El día en palabras, para cuando estás registrando un día pasado. */
 function fmtDiaLargo(iso: string): string {
@@ -212,7 +213,9 @@ export function SaludPage() {
     <div className="page">
       <div className="page-head">
         <div className="eyebrow"><HeartPulse size={13} /> {tr("sec.nucleo")}</div>
-        <h1>{tr("area.salud")}</h1>
+        <div className="tit-fila"><h1>{tr("area.salud")}</h1>
+          <AyudaModulo clave="/salud" />
+        </div>
         <p>{tr("head.sub.salud")}</p>
       </div>
 

@@ -9,6 +9,7 @@ import { Camera, Eye, EyeOff, Paperclip, Pencil, Plus, Trash2, Wallet } from "lu
 import { MetasDeArea } from "../components/MetasDeArea";
 import { Selector } from "../components/Selector";
 import { AyudaTip } from "../components/AyudaTip";
+import { useTourCartola } from "../tour/cartola";
 import { listReciboTxIds, listRecibos, uploadRecibo, deleteRecibo, openRecibo, type ReciboFile } from "./recibos";
 import { comprimirImagen } from "../lib/comprimir";
 import { PALETA_TAGS, addTag, deleteTag, desetiquetarCategoria, desetiquetarTx, etiquetarCategoria, etiquetarTx, listTags, tagsPorCategoria, tagsPorTransaccion, updateTag, type Etiqueta } from "./tags";
@@ -108,6 +109,7 @@ import {
   type Tx,
 } from "./types";
 import { listObjectives, updateObjective, type Objective } from "../objetivos/data";
+import { AyudaModulo } from "../tour/AyudaModulo";
 
 type TabKey = "resumen" | "transacciones" | "cuentas" | "deudas" | "recurrentes" | "auto" | "metas" | "categorias" | "reporte";
 
@@ -1422,6 +1424,10 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
   const dups = rows ? rows.filter((r) => r.dup).length : 0;
   const incluidas = rows ? rows.filter((r) => !excluidos.has(r.id)) : [];
 
+  // El recorrido guiado de esta ventana, que es donde la gente se pierde:
+  // llega aquí, ve "cartola" y no sabe ni qué archivo es ni de dónde bajarlo.
+  const { empezar: empezarTour } = useTourCartola(Boolean(rows && rows.length > 0));
+
   // Varias cartolas de una vez: el mes se arma de más de un archivo (la
   // cuenta, la tarjeta, el mes partido en dos descargas). Hacerlo de a uno
   // significaba abrir la ventana seis veces.
@@ -1537,8 +1543,12 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
         <>
           <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
             {tr("Descarga tus cartolas del banco y súbelas aquí, de a una o varias juntas. Si es CSV, OFX o QFX la leo tal cual; si es PDF la lee la IA y tú revisas antes de importar. En cualquier caso miro cuáles ya tienes y marco los repetidos para que no entren dos veces.")}
+            {" "}
+            <button type="button" className="enlace-tour" onClick={empezarTour}>
+              {tr("¿Primera vez? Te acompaño paso a paso.")}
+            </button>
           </p>
-          <div className="frow">
+          <div className="frow" data-tour="cartola-fuente">
             <div className="field"><label>{tr("¿De qué cuenta o tarjeta es?")}</label>
               <Selector value={fuenteImp} ariaLabel={tr("¿De qué cuenta o tarjeta es?")} placeholder={tr("Elige una")} onChange={setFuenteImp}
                 opciones={[
@@ -1548,7 +1558,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
             <div className="field"><label>{tr("Mes de la cartola")}</label>
               <input type="month" className="input-inline" value={mesCartola} onChange={(e) => setMesCartola(e.target.value)} aria-label={tr("Mes de la cartola")} /></div>
           </div>
-          <div className="field"><label>{tr("Archivo")}</label>
+          <div className="field" data-tour="cartola-archivo"><label>{tr("Archivo")}</label>
             <input type="file" multiple accept=".csv,.ofx,.qfx,.pdf,.xlsx,text/csv,application/pdf" disabled={!fuenteImp || !mesCartola} onChange={(e) => { setArchivos([...(e.target.files ?? [])].slice(0, TOPE_ARCHIVOS)); void onFile(e); }} />
             <small style={{ color: "var(--muted)", fontSize: 11.5 }}>
               {tr("Puedes elegir varios de una vez, hasta")} {TOPE_ARCHIVOS}.
@@ -1563,7 +1573,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
           )}
           {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
           {rows && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 12 }} data-tour="cartola-revision">
               <p style={{ fontSize: 13.5, marginBottom: 2 }}>
                 {tr("Encontré")} <b>{rows.length}</b> {tr("movimientos.")}
                 {tipoArchivo !== "pdf" && warnings.length > 0 && <> {warnings.length} {tr("filas no se pudieron leer.")}</>}
@@ -1574,11 +1584,11 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
                 </p>
               )}
               {dups > 0 ? (
-                <p style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 8 }}>
+                <p data-tour="cartola-repetidos" style={{ fontSize: 12.5, color: "var(--warn)", marginBottom: 8 }}>
                   ⚠️ {dups} {dups === 1 ? tr("ya está en el sistema, lo dejé sin marcar.") : tr("ya están en el sistema, los dejé sin marcar.")} {tr("Márcalos solo si quieres importarlos igual.")}
                 </p>
               ) : (
-                <p style={{ fontSize: 12.5, color: "var(--ok)", marginBottom: 8 }}>✓ {tr("Ninguno está repetido.")}</p>
+                <p data-tour="cartola-repetidos" style={{ fontSize: 12.5, color: "var(--ok)", marginBottom: 8 }}>✓ {tr("Ninguno está repetido.")}</p>
               )}
               <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 10, padding: "4px 10px" }}>
                 {rows.map((r) => (
@@ -1596,7 +1606,7 @@ function ImportModal({ accounts, cards, categories, existing, currency, onClose,
               </div>
             </div>
           )}
-          <button className="btn primary" {...sinRobarFoco} style={{ width: "100%" }} disabled={!rows || busy || incluidas.length === 0} onClick={() => void doImport()}>
+          <button className="btn primary" data-tour="cartola-importar" {...sinRobarFoco} style={{ width: "100%" }} disabled={!rows || busy || incluidas.length === 0} onClick={() => void doImport()}>
             {busy ? tr("Importando…") : rows ? `${tr("Importar")} ${incluidas.length} ${tr("movimientos")}` : tr("Elige un archivo primero")}
           </button>
         </>
@@ -1981,7 +1991,9 @@ function Head() {
       <div className="eyebrow">
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fin)", display: "inline-block" }} /> {tr("sec.mivida")}
       </div>
-      <h1>{tr("area.finanzas")}</h1>
+      <div className="tit-fila"><h1>{tr("area.finanzas")}</h1>
+        <AyudaModulo clave="/finanzas" />
+      </div>
       <p>{tr("head.sub.finanzas")}</p>
     </div>
   );

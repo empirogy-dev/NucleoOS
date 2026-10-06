@@ -39,6 +39,10 @@
     { "source": "/terminos", "destination": "/terminos.html" },
     { "source": "/privacidad", "destination": "/privacidad.html" },
     { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/privacy", "destination": "/privacy.html" }
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/manual", "destination": "/manual.html" },
+    { "source": "/manual-en", "destination": "/manual-en.html" },
+    { "source": "/manual-pt", "destination": "/manual-pt.html" },
+    { "source": "/manual-fr", "destination": "/manual-fr.html" }
   ]
 }
