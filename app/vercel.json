@@ -3,150 +3,46 @@
     {
       "source": "/assets/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(self), microphone=(self), geolocation=(), payment=(), usb=()"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(self), microphone=(self), geolocation=(), payment=(), usb=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains" }
       ]
     }
   ],
   "redirects": [
-    {
-      "source": "/inicio",
-      "destination": "/app",
-      "permanent": false
-    },
-    {
-      "source": "/finanzas",
-      "destination": "/app/finanzas",
-      "permanent": false
-    },
-    {
-      "source": "/objetivos",
-      "destination": "/app/objetivos",
-      "permanent": false
-    },
-    {
-      "source": "/calendario",
-      "destination": "/app/calendario",
-      "permanent": false
-    },
-    {
-      "source": "/habitos",
-      "destination": "/app/habitos",
-      "permanent": false
-    },
-    {
-      "source": "/trabajo",
-      "destination": "/app/trabajo",
-      "permanent": false
-    },
-    {
-      "source": "/salud",
-      "destination": "/app/salud",
-      "permanent": false
-    },
-    {
-      "source": "/aprendizaje",
-      "destination": "/app/aprendizaje",
-      "permanent": false
-    },
-    {
-      "source": "/relaciones",
-      "destination": "/app/relaciones",
-      "permanent": false
-    },
-    {
-      "source": "/mente",
-      "destination": "/app/mente",
-      "permanent": false
-    },
-    {
-      "source": "/movimiento",
-      "destination": "/app/movimiento",
-      "permanent": false
-    },
-    {
-      "source": "/revision",
-      "destination": "/app/revision",
-      "permanent": false
-    },
-    {
-      "source": "/vision",
-      "destination": "/app/vision",
-      "permanent": false
-    },
-    {
-      "source": "/ajustes",
-      "destination": "/app/ajustes",
-      "permanent": false
-    }
+    { "source": "/inicio", "destination": "/app", "permanent": false },
+    { "source": "/finanzas", "destination": "/app/finanzas", "permanent": false },
+    { "source": "/objetivos", "destination": "/app/objetivos", "permanent": false },
+    { "source": "/calendario", "destination": "/app/calendario", "permanent": false },
+    { "source": "/habitos", "destination": "/app/habitos", "permanent": false },
+    { "source": "/trabajo", "destination": "/app/trabajo", "permanent": false },
+    { "source": "/salud", "destination": "/app/salud", "permanent": false },
+    { "source": "/aprendizaje", "destination": "/app/aprendizaje", "permanent": false },
+    { "source": "/relaciones", "destination": "/app/relaciones", "permanent": false },
+    { "source": "/mente", "destination": "/app/mente", "permanent": false },
+    { "source": "/movimiento", "destination": "/app/movimiento", "permanent": false },
+    { "source": "/revision", "destination": "/app/revision", "permanent": false },
+    { "source": "/vision", "destination": "/app/vision", "permanent": false },
+    { "source": "/ajustes", "destination": "/app/ajustes", "permanent": false }
   ],
   "rewrites": [
-    {
-      "source": "/app",
-      "destination": "/app.html"
-    },
-    {
-      "source": "/app/(.*)",
-      "destination": "/app.html"
-    },
-    {
-      "source": "/terminos",
-      "destination": "/terminos.html"
-    },
-    {
-      "source": "/privacidad",
-      "destination": "/privacidad.html"
-    },
-    {
-      "source": "/terms",
-      "destination": "/terms.html"
-    },
-    {
-      "source": "/privacy",
-      "destination": "/privacy.html"
-    },
-    {
-      "source": "/manual",
-      "destination": "/manual.html"
-    },
-    {
-      "source": "/manual-en",
-      "destination": "/manual-en.html"
-    },
-    {
-      "source": "/manual-pt",
-      "destination": "/manual-pt.html"
-    },
-    {
-      "source": "/manual-fr",
-      "destination": "/manual-fr.html"
-    }
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/app/(.*)", "destination": "/app.html" },
+    { "source": "/terminos", "destination": "/terminos.html" },
+    { "source": "/privacidad", "destination": "/privacidad.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/manual", "destination": "/manual.html" },
+    { "source": "/manual-en", "destination": "/manual-en.html" },
+    { "source": "/manual-pt", "destination": "/manual-pt.html" },
+    { "source": "/manual-fr", "destination": "/manual-fr.html" }
   ]
 }
